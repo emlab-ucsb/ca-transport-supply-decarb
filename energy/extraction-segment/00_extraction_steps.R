@@ -18,7 +18,7 @@
 # source from other scripts -------
   
   # source function to predict extraction
-    source(here::here('energy', 'extraction-segment', 'extraction_model_fun.R'))
+    source(here::here('energy', 'extraction-segment', 'fun_extraction_model.R'))
   
   # source function to predict extraction
     source(here::here('energy', 'extraction-segment', 'fun_process_extraction.R'))

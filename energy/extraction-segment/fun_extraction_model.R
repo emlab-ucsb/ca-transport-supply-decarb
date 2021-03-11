@@ -26,7 +26,7 @@ run_extraction_model <- function(oil_px_selection) {
       source(here::here('energy', 'scenario-prep', 'ccs_parameterization.R'))
     
     # source function to create matrix of scenarios and forecasted variables
-      source(here::here('energy', 'extraction-segment', 'input_scenarios_fun.R'))
+      source(here::here('energy', 'extraction-segment', 'fun_input_scenarios.R'))
     
   # load data -----
     
