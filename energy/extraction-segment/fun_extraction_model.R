@@ -686,6 +686,8 @@ run_extraction_model <- function(oil_px_selection) {
         temp_prod_quota[, adj_new_wells := fifelse(sum_over == 1 & vintage == "new", adj_prod_limited / (production_bbl / num_wells), 
                                                    fifelse(sum_over > 1 & vintage == "new", 0, 
                                                            fifelse(sum_over > 0 & vintage != "new", 0, num_wells)))]
+        temp_prod_quota[, c('adj_prod_limited', 'adj_new_wells') := lapply(.SD, as.numeric), .SDcols = c('adj_prod_limited', 'adj_new_wells')] 
+        
         # mmeng-prev:
         # temp_prod_quota5 <- temp_prod_quota4 %>%
         #   mutate(over_quota_ranks = fifelse(prod_cumsum > quota, 1, 0)) %>%
