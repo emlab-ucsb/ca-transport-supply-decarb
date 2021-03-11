@@ -217,7 +217,35 @@ run_extraction_model <- function(oil_px_selection) {
   
     scen_sel = unique(scenarios_dt[, .(oil_price_scenario, setback_scenario, prod_quota_scenario,
                                        carbon_price_scenario, ccs_scenario, innovation_scenario, excise_tax_scenario)])
-  
+    
+  # keep diagnostics only (if that is input) ------
+    
+    if (oil_px_selection == 'diagnostic') {
+      
+      scen_sel = scen_sel[(oil_price_scenario == 'iea oil price' & 
+                                     innovation_scenario == 'low innovation' & 
+                                     carbon_price_scenario == 'price floor' & 
+                                     ccs_scenario == 'medium CCS cost' &
+                                     excise_tax_scenario == 'no tax' &
+                                     setback_scenario == 'no_setback' &
+                                     prod_quota_scenario == 'no quota') |
+                                    (oil_price_scenario == 'iea oil price' & 
+                                       innovation_scenario == 'low innovation' & 
+                                       carbon_price_scenario == 'price floor' & 
+                                       ccs_scenario == 'medium CCS cost' &
+                                       excise_tax_scenario == 'no tax' &
+                                       setback_scenario == 'no_setback' &
+                                       prod_quota_scenario == 'quota_20') |
+                                    (oil_price_scenario == 'iea oil price' & 
+                                       innovation_scenario == 'low innovation' & 
+                                       carbon_price_scenario == 'price floor' & 
+                                       ccs_scenario == 'medium CCS cost' &
+                                       excise_tax_scenario == 'no tax' &
+                                       setback_scenario == 'setback_2500ft' &
+                                       prod_quota_scenario == 'quota_20')]
+    }
+    
+    
   # START OF LOOP -------
 
     # scen_sel = scen_combos[oil_price_scenario == fcase(oil_px_selection == 'reference', 'reference case',

@@ -2,7 +2,7 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  oil_price_selection   = 'iea'
+  oil_price_selection   = 'diagnostic'
     # choose from: reference, high, low, iea
     
 # outputs -------
