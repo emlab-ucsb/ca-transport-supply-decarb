@@ -20,13 +20,13 @@ run_extraction_model <- function(oil_px_selection) {
   # source from other scripts -----
     
     # source function to rank costs
-      source(here::here('scripts', 'model', 'entry', 'prod_quota.R'))
+      # source(here::here('energy', 'extraction-segment', 'prod_quota.R'))
   
     # source ccs emissions mean b calculation script
-      source(here::here('scripts', 'model', 'ghg-emissions', 'ccs_parameterization.R'))
+      source(here::here('energy', 'scenario-prep', 'ccs_parameterization.R'))
     
     # source function to create matrix of scenarios and forecasted variables
-      source(here::here('scripts', 'model', 'entry', 'input_scenarios_fun.R'))
+      source(here::here('energy', 'extraction-segment', 'input_scenarios_fun.R'))
     
   # load data -----
     

@@ -1,8 +1,8 @@
 # inputs -----
 
-  args = commandArgs(trailingOnly = TRUE)
-  oil_price_selection    = args[1]
-  # oil_price_selection   = 'iea'
+  # args = commandArgs(trailingOnly = TRUE)
+  # oil_price_selection    = args[1]
+  oil_price_selection   = 'iea'
     # choose from: reference, high, low, iea
     
 # outputs -------
@@ -18,14 +18,15 @@
 # source from other scripts -------
   
   # source function to predict extraction
-    source(here::here('scripts', 'model', 'entry', 'extraction_model_fun.R'))
+    source(here::here('energy', 'extraction-segment', 'extraction_model_fun.R'))
   
   # source function to predict extraction
-    source(here::here('scripts', 'model', 'entry', 'fun_process_extraction.R'))
+    source(here::here('energy', 'extraction-segment', 'fun_process_extraction.R'))
   
 # load libraries ------
 
   library(data.table)
+  library(dplyr)
 
 # step 1: run extraction model and get outputs -------
   
