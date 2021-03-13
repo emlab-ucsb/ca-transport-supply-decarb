@@ -902,8 +902,11 @@ run_extraction_model <- function(oil_px_selection) {
         ## set up new wells prod df that will be used to find future production for new wells
         ## this will be used to predict future annual production for new wells
         
+        ## tracey's attempt: set vintage == t to filter for only new wells from time t (not previous "new" wells vintages between 2020 and t-1)
         ## vintage == t
-        temp_prod_quota_new_wells[, vintage_start := t]
+        # temp_prod_quota_new_wells[, vintage_start := t]
+        temp_prod_quota_new_wells = temp_prod_quota_new_wells[vintage_start == t]
+
         temp_prod_quota_new_wells[, c('quota', 'ccs_adopted', 'innovation_multiplier', 'ccs_scalar',
                                       'upstream_kgCO2e_bbl_inno_adj', 'upstream_kgCO2e_bbl_inno_ccs_adj',
                                       'upstream_kgCO2e', 'upstream_kgCO2e_inno_adj', 'upstream_kgCO2e_inno_ccs_adj') := NULL]
@@ -1016,6 +1019,7 @@ run_extraction_model <- function(oil_px_selection) {
         #   list_pred_prod[[i-1]] = list_pred_prod[[i-1]][as.numeric(as.character(year)) > t]
         # }
         
+        ## tracey return 
         list_pred_prod[[i]] = new_wells_prod_long[as.numeric(as.character(year)) > t, 
                                                   .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, 
                                                     carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario,
