@@ -221,30 +221,29 @@ run_extraction_model <- function(oil_px_selection) {
   # keep diagnostics only (if that is input) ------
     
     if (oil_px_selection == 'diagnostic') {
-      
-      scen_sel = scen_sel[(oil_price_scenario == 'iea oil price' & 
-                                     innovation_scenario == 'low innovation' & 
-                                     carbon_price_scenario == 'price floor' & 
+
+      scen_sel = scen_sel[(oil_price_scenario == 'iea oil price' &
+                                     innovation_scenario == 'low innovation' &
+                                     carbon_price_scenario == 'price floor' &
                                      ccs_scenario == 'medium CCS cost' &
                                      excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'no_setback' &
                                      prod_quota_scenario == 'no quota') |
-                                    (oil_price_scenario == 'iea oil price' & 
-                                       innovation_scenario == 'low innovation' & 
-                                       carbon_price_scenario == 'price floor' & 
+                                    (oil_price_scenario == 'iea oil price' &
+                                       innovation_scenario == 'low innovation' &
+                                       carbon_price_scenario == 'price floor' &
                                        ccs_scenario == 'medium CCS cost' &
                                        excise_tax_scenario == 'no tax' &
                                        setback_scenario == 'no_setback' &
                                        prod_quota_scenario == 'quota_20') |
-                                    (oil_price_scenario == 'iea oil price' & 
-                                       innovation_scenario == 'low innovation' & 
-                                       carbon_price_scenario == 'price floor' & 
+                                    (oil_price_scenario == 'iea oil price' &
+                                       innovation_scenario == 'low innovation' &
+                                       carbon_price_scenario == 'price floor' &
                                        ccs_scenario == 'medium CCS cost' &
                                        excise_tax_scenario == 'no tax' &
                                        setback_scenario == 'setback_2500ft' &
                                        prod_quota_scenario == 'quota_20')]
     }
-    
     
   # START OF LOOP -------
 
@@ -290,8 +289,6 @@ run_extraction_model <- function(oil_px_selection) {
         
         t = pred_years[i]
         # print(t)
-        
-        # if(t == 2045){browser()}
         
         # set up variables for top 10 fields
         temp_top10 = dt_info_z[year == t & doc_field_code %in% top10_fields[, doc_field_code]]
@@ -675,7 +672,11 @@ run_extraction_model <- function(oil_px_selection) {
         
         ## calculating remaining production if relevant
         temp_prod_quota[, over_quota_ranks := fifelse(prod_cumsum > quota, 1, 0)]
-        temp_prod_quota[, ':=' (last_prod = lag(prod_cumsum),
+        
+        ## TRACEY: LAG IN LAST PROD NOT WORKING QUITE RIGHT
+        temp_prod_quota[, ':=' (
+                                # last_prod = lag(prod_cumsum),
+                                last_prod = shift(prod_cumsum, n=1, fill = NA, type = "lag"),
                                 sum_over = cumsum(over_quota_ranks)), by = .(oil_price_scenario, innovation_scenario, 
                                                                              carbon_price_scenario, ccs_scenario, 
                                                                              setback_scenario, prod_quota_scenario, excise_tax_scenario)]
@@ -687,6 +688,8 @@ run_extraction_model <- function(oil_px_selection) {
                                                    fifelse(sum_over > 1 & vintage == "new", 0, 
                                                            fifelse(sum_over > 0 & vintage != "new", 0, num_wells)))]
         temp_prod_quota[, c('adj_prod_limited', 'adj_new_wells') := lapply(.SD, as.numeric), .SDcols = c('adj_prod_limited', 'adj_new_wells')] 
+        
+         if(t == 2039){browser()}
         
         # mmeng-prev:
         # temp_prod_quota5 <- temp_prod_quota4 %>%
@@ -905,6 +908,7 @@ run_extraction_model <- function(oil_px_selection) {
         ## tracey's attempt: set vintage == t to filter for only new wells from time t (not previous "new" wells vintages between 2020 and t-1)
         ## vintage == t
         # temp_prod_quota_new_wells[, vintage_start := t]
+        
         temp_prod_quota_new_wells = temp_prod_quota_new_wells[vintage_start == t]
 
         temp_prod_quota_new_wells[, c('quota', 'ccs_adopted', 'innovation_multiplier', 'ccs_scalar',
@@ -916,6 +920,8 @@ run_extraction_model <- function(oil_px_selection) {
         #   filter(vintage_start == t) %>%
         #   select(-quota, -ccs_adopted, -innovation_multiplier, -ccs_scalar, - upstream_kgCO2e_bbl_inno_adj, -upstream_kgCO2e_bbl_inno_ccs_adj,
         #          -upstream_kgCO2e, -upstream_kgCO2e_inno_adj, -upstream_kgCO2e_inno_ccs_adj)
+        
+     
         
         new_wells_prod_new = new_wells_prod[year == t & m_new_wells_pred > 0 & peak_production > 0]
         new_wells_prod_new[, c('peak_production', 'm_new_wells_pred') := NULL]
@@ -930,6 +936,9 @@ run_extraction_model <- function(oil_px_selection) {
         new_wells_prod_new[, vintage := NULL]
         setnames(new_wells_prod_new, c('production_bbl', 'n_wells'), c('peak_production', 'm_new_wells_pred'))
         new_wells_prod_new = new_wells_prod_new[peak_production > 0]
+        
+        # if(t == 2028){browser()}
+
         # mmeng-prev:
         # new_wells_prod_new <- 
         #   ## new wells prod filtered for fields that enter and peak prod > 0
@@ -1368,7 +1377,10 @@ run_extraction_model <- function(oil_px_selection) {
     # output_list = list(prod_existing,
     #                    prod_new)
     
-    res = lapply(1:nrow(scen_sel), func_yearly_production)
+    # res = lapply(1:nrow(scen_sel), func_yearly_production)
+    
+    ## for diagnostic
+    res = lapply(2:2, func_yearly_production)
     
     output_list = do.call(Map, c(f = rbind, res))
     
