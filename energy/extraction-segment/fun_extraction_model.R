@@ -373,6 +373,7 @@ run_extraction_model <- function(oil_px_selection) {
         # dtt = dt_info[year == t]
         dtt[, cost_existing := m_opex_imputed_adj]
         dtt[, cost_new := m_capex_imputed + m_opex_imputed_adj]
+        if(t == 2039){browser()}
         dtt_long = melt(dtt, measure.vars = c('cost_new', 'cost_existing'), variable.name = 'cost_type', value.name = 'cost')
         dtt_long[, cost_rank := rank(unclass(cost)), by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
                                                             setback_scenario, prod_quota_scenario, excise_tax_scenario)]
@@ -507,6 +508,7 @@ run_extraction_model <- function(oil_px_selection) {
         ## -------------------------------------------------------------------------
         
         temp_prod_new_vintage = rbindlist(list_pred_prod)
+      
 
         # temp_prod_new_vintage = unique(temp_prod_new_vintage)
         
@@ -600,6 +602,7 @@ run_extraction_model <- function(oil_px_selection) {
                                        "carbon_price_scenario", "ccs_scenario", "setback_scenario", "prod_quota_scenario", 
                                        "excise_tax_scenario"),
                                 all.x = T)
+     
         # mmeng-prev:
         # temp_prod_quota = temp_prod_quota %>%
         #   left_join(temp_dt_info_rank)
@@ -607,6 +610,8 @@ run_extraction_model <- function(oil_px_selection) {
         # put ranks in one column
         temp_prod_quota[, cost_rank := fifelse(vintage_start == t, cost_new_rank, cost_existing_rank)]
         temp_prod_quota[, c('cost_existing_rank', 'cost_new_rank') := NULL]
+        
+        
         # mmeng-prev:
         # temp_prod_quota$cost_rank = fifelse(temp_prod_quota$vintage_start == t, temp_prod_quota$cost_new_rank, temp_prod_quota$cost_existing_rank)
         # temp_prod_quota = subset(temp_prod_quota, select = -c(cost_existing_rank, cost_new_rank))
@@ -628,6 +633,9 @@ run_extraction_model <- function(oil_px_selection) {
                                                                                      oil_price_scenario, innovation_scenario, 
                                                                                      carbon_price_scenario, ccs_scenario,
                                                                                      setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+  
+
+        
         # mmeng-prev:
         # temp_prod_quota2 = temp_prod_quota %>%
         #   group_by(doc_field_code,
@@ -673,10 +681,7 @@ run_extraction_model <- function(oil_px_selection) {
         ## calculating remaining production if relevant
         temp_prod_quota[, over_quota_ranks := fifelse(prod_cumsum > quota, 1, 0)]
         
-        ## TRACEY: LAG IN LAST PROD NOT WORKING QUITE RIGHT
-        temp_prod_quota[, ':=' (
-                                # last_prod = lag(prod_cumsum),
-                                last_prod = shift(prod_cumsum, n=1, fill = NA, type = "lag"),
+        temp_prod_quota[, ':=' (last_prod = shift(prod_cumsum, n=1, fill = NA, type = "lag"),
                                 sum_over = cumsum(over_quota_ranks)), by = .(oil_price_scenario, innovation_scenario, 
                                                                              carbon_price_scenario, ccs_scenario, 
                                                                              setback_scenario, prod_quota_scenario, excise_tax_scenario)]
@@ -684,29 +689,9 @@ run_extraction_model <- function(oil_px_selection) {
         temp_prod_quota[, adj_prod_limited := fifelse(sum_over == 1 & vintage == "new", prod_quota_remainder,
                                                       fifelse(sum_over > 1 & vintage == "new", 0,
                                                               fifelse(sum_over > 0 & vintage != "new", 0, production_bbl)))]
-        temp_prod_quota[, adj_new_wells := fifelse(sum_over == 1 & vintage == "new", adj_prod_limited / (production_bbl / num_wells), 
-                                                   fifelse(sum_over > 1 & vintage == "new", 0, 
-                                                           fifelse(sum_over > 0 & vintage != "new", 0, num_wells)))]
+        temp_prod_quota[, adj_new_wells := fifelse(sum_over == 1 & vintage == "new", adj_prod_limited / (production_bbl / num_wells), num_wells)]
+
         temp_prod_quota[, c('adj_prod_limited', 'adj_new_wells') := lapply(.SD, as.numeric), .SDcols = c('adj_prod_limited', 'adj_new_wells')] 
-        
-         if(t == 2039){browser()}
-        
-        # mmeng-prev:
-        # temp_prod_quota5 <- temp_prod_quota4 %>%
-        #   mutate(over_quota_ranks = fifelse(prod_cumsum > quota, 1, 0)) %>%
-        #   group_by(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario) %>%
-        #   ## find previous productoin, calc cumulative sum
-        #   mutate(last_prod = lag(prod_cumsum),
-        #          sum_over = cumsum(over_quota_ranks)) %>%
-        #   ungroup() %>%
-        #   mutate(prod_quota_remainder = quota - last_prod,
-        #          adj_prod_limited = fifelse(sum_over == 1 & vintage == "new", prod_quota_remainder,
-        #                                    fifelse(sum_over > 1 & vintage == "new", 0,
-        #                                           fifelse(sum_over > 0 & vintage != "new", 0, production_bbl))),
-        #          adj_new_wells = fifelse(sum_over == 1 & vintage == "new", adj_prod_limited / (production_bbl / num_wells), 
-        #                                        fifelse(sum_over > 1 & vintage == "new", 0, 
-        #                                               fifelse(sum_over > 0 & vintage != "new", 0, num_wells))))
-        
         
         
         
@@ -738,9 +723,7 @@ run_extraction_model <- function(oil_px_selection) {
         ## remove some columns, add 
         temp_prod_quota[, c('production_bbl', 'num_wells', 'prod_limited', 'over_quota_ranks', 
                             'sum_over', 'last_prod', 'prod_quota_remainder', 'prod_cumsum') := NULL]
-        # mmeng-prev:
-        # temp_prod_quota6 <- temp_prod_quota5 %>%
-        #   select(-production_bbl, -num_wells, -prod_limited, -over_quota_ranks, -sum_over, -last_prod, -prod_quota_remainder, -prod_cumsum) 
+ 
         
         # update new_wells_prod (wells that start in year t)
         temp_prod_quota_new_wells = temp_prod_quota[vintage == "new"]
@@ -756,29 +739,7 @@ run_extraction_model <- function(oil_px_selection) {
                                                                   ccs_scalar, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj,
                                                                   n_wells = adj_new_wells, production_bbl = adj_prod_limited, 
                                                                   upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
-        # mmeng-prev:
-        # temp_prod_quota_new_wells <- temp_prod_quota %>%
-        #   filter(vintage == "new") %>%
-        #   mutate(year = t,
-        #          upstream_kgCO2e_inno_ccs_adj = upstream_kgCO2e_bbl_inno_ccs_adj * adj_prod_limited,
-        #          upstream_kgCO2e_inno_adj = upstream_kgCO2e_bbl_inno_adj * adj_prod_limited,
-        #          upstream_kgCO2e = upstream_kgCO2e_bbl * adj_prod_limited) %>%
-        #   select(year, doc_field_code, doc_fieldname, vintage, vintage_start, oil_price_scenario, innovation_scenario, 
-        #          carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-        #          quota, innovation_multiplier, ccs_adopted, ccs_scalar, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj,
-        #          n_wells = adj_new_wells, production_bbl = adj_prod_limited, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj) %>%
-        #   as.data.table()
-        
-        # ## test
-        # t <- temp_prod_quota6 %>%
-        #   group_by(oil_price_scenario, innovation_scenario, 
-        #            carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario) %>%
-        #   mutate(upstream_kgCO2e_adj  = upstream_kgCO2e_bbl_adj * adj_prod_limited,
-        #          upstream_kgCO2e = upstream_kgCO2e_bbl * adj_prod_limited) %>%
-        #   summarise(bbl = sum(adj_prod_limited, na.rm = T),
-        #             kgco2e_adj = sum(upstream_kgCO2e_adj),
-        #             kgco2e = sum(upstream_kgCO2e)) %>%
-        #   ungroup()
+ 
         
         
         # temp_prod_quota_new_wells2 <- temp_prod_quota_new_wells %>%
@@ -854,45 +815,7 @@ run_extraction_model <- function(oil_px_selection) {
                                                                             ccs_scalar, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj,
                                                                             n_wells = adj_new_wells, production_bbl = adj_prod_limited, 
                                                                             upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
-        # mmeng-prev:
-        # temp_prod_quota_existing_wells <- temp_prod_quota %>%
-        #   filter(vintage != "new") %>%
-        #   mutate(year = t,
-        #          upstream_kgCO2e_inno_ccs_adj = upstream_kgCO2e_bbl_inno_ccs_adj * adj_prod_limited,
-        #          upstream_kgCO2e_inno_adj = upstream_kgCO2e_bbl_inno_adj * adj_prod_limited,
-        #          upstream_kgCO2e = upstream_kgCO2e_bbl * adj_prod_limited) %>%
-        #   select(year, doc_field_code, doc_fieldname, vintage, vintage_start, oil_price_scenario, innovation_scenario, 
-        #          carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-        #          quota, innovation_multiplier, ccs_adopted, ccs_scalar, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj,
-        #          n_wells = adj_new_wells, production_bbl = adj_prod_limited, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj) %>%
-        #   as.data.table()
-        
-        
-        ### test - sum production by scenario
-        # test <- temp_prod_quota6 %>%
-        #   mutate(type = fifelse(vintage == "new", "new", "existing")) %>%
-        #   group_by(oil_price_scenario, innovation_scenario,
-        #            carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, type) %>%
-        #   summarise(total_prod = sum(adj_prod_limited)) %>%
-        #   ungroup() %>%
-        #   mutate(total_prod_m = total_prod / 1e6) %>%
-        #   group_by(oil_price_scenario, innovation_scenario,
-        #            carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario) %>%
-        #   mutate(total_scen_prod = sum(total_prod_m)) %>%
-        #   ungroup()
-        # 
-        # test2 <- temp_prod_quota_existing_wells %>%
-        #   group_by(oil_price_scenario, innovation_scenario,
-        #            carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario) %>%
-        #   summarise(total_prod = sum(production_bbl)) %>%
-        #   ungroup() %>%
-        #   mutate(total_prod_m = total_prod / 1e6)
-        
-        
-        ## old code
-        # temp_prod_existing = unique(subset(temp_prod_quota_existing_wells, select = -c(prod_limited, vintage)))
-        # temp_prod_existing$year = t
-        
+
         # uncomment to implement
         # setDT(temp_prod_quota_existing_wells)
         ## note, this includes zero production field-vintages -- make sure they remain 0 in t + 1
@@ -936,27 +859,10 @@ run_extraction_model <- function(oil_px_selection) {
         new_wells_prod_new[, vintage := NULL]
         setnames(new_wells_prod_new, c('production_bbl', 'n_wells'), c('peak_production', 'm_new_wells_pred'))
         new_wells_prod_new = new_wells_prod_new[peak_production > 0]
-        
-        # if(t == 2028){browser()}
 
-        # mmeng-prev:
-        # new_wells_prod_new <- 
-        #   ## new wells prod filtered for fields that enter and peak prod > 0
-        #   new_wells_prod[year == t & m_new_wells_pred > 0 & peak_production > 0] %>%
-        #   select(-peak_production, -m_new_wells_pred) %>%
-        #   left_join(new_entry_prod) %>%
-        #   select(-vintage) %>%
-        #   rename(peak_production = production_bbl) %>%
-        #   ## filter out field vintages that are not extracted bc of quota
-        #   filter(peak_production > 0) %>%
-        #   rename(m_new_wells_pred = n_wells) %>%
-        #   as.data.table()
         
-        
-        # prod_existing = temp_prod_existing
-        # setDT(prod_existing)
-        
-        rm(dt_info_rank, temp_dt_info_rank, prev_existing_prod, existing_vintage_prod_t, 
+        ## remove objects
+        rm(dt_info_rank, temp_dt_info_rank, prev_existing_prod, existing_vintage_prod_t, dtt_long,
            temp_new_wells_prod, temp_prod_new_vintage_adj, temp_prod_new_vintage, temp_prod_existing_vintage, temp_prod_existing_vintage_adj, 
            temp_prod_quota, temp_prod_quota_new_wells, temp_prod_quota_existing_wells)  
         ## end section that implements production quota
@@ -1071,54 +977,20 @@ run_extraction_model <- function(oil_px_selection) {
                                         "setback_scenario", "prod_quota_scenario", 
                                         "excise_tax_scenario", "year"),
                                  all = T)
+          
           prod_next_year[, ':=' (old_bbl = fifelse(is.na(old_bbl), 0, old_bbl),
                                  new_bbl = fifelse(is.na(new_bbl), 0, new_bbl))]
+          
           prod_next_year[, production_bbl := old_bbl + new_bbl]
           prod_next_year = prod_next_year[, .(doc_field_code, 
                                               oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
                                               setback_scenario, prod_quota_scenario, excise_tax_scenario, year, production_bbl)]
-          # mmeng-prev:
-          # prod_next_year <- prod_new %>%
-          #   full_join(prod_old) %>%
-          #   mutate(old_bbl = fifelse(is.na(old_bbl), 0, old_bbl),
-          #          new_bbl = fifelse(is.na(new_bbl), 0, new_bbl)) %>%
-          #   rowwise() %>%
-          #   mutate(production_bbl = old_bbl + new_bbl) %>%
-          #   ungroup() %>% 
-          #   select(doc_field_code, 
-          #          oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-          #          setback_scenario, prod_quota_scenario, excise_tax_scenario, year, production_bbl) %>%
-          #   as.data.table()
           
-          
-          
-          # #rl 
-          # prod_next_year = merge(prod_new[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, 
-          #                                     carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year, new_bbl)],
-          #                        prod_old[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, 
-          #                                     carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year, old_bbl)],
-          #                        by = c('doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 
-          #                               'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'year'),
-          #                        all = T)
-          # 
-          # prod_next_year[is.na(old_bbl), old_bbl := 0]
-          # prod_next_year[, production_bbl := new_bbl + old_bbl]
-          
-          
-          
-          #rl
-          
-          # prod_next_year <- setDT(prod_next_year)
-          
-          # prod_next_year = prod_next_year[, .(production_bbl = sum(production_bbl, na.rm = T)),
-          #                                 by = .(doc_field_code, doc_fieldname, 
-          #                                        oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-          #                                        setback_scenario, prod_quota_scenario, excise_tax_scenario, year)]
-          #rl
           depl_prev = dt_depl_z[year == t, .(doc_field_code, oil_price_scenario, innovation_scenario, 
                                              carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, depl)]
           setnames(depl_prev, 'depl', 'depl_prev')
           depl_prev = unique(depl_prev)
+          
           #rl
           trr_prev = unique(scenarios_dt_z[year == t, .(doc_field_code, oil_price_scenario, 
                                                         innovation_scenario, carbon_price_scenario, ccs_scenario, 
@@ -1129,13 +1001,16 @@ run_extraction_model <- function(oil_px_selection) {
           prod_next_year = prod_next_year[depl_prev, on = .(doc_field_code, 
                                                             oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
                                                             setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+          
           prod_next_year = prod_next_year[trr_prev, on = .(doc_field_code, 
                                                            oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
                                                            setback_scenario, prod_quota_scenario, excise_tax_scenario)]
-          
+      
           ## fill in missing info
           prod_next_year[, ':=' (year = fifelse(is.na(year), t, year),
                                  production_bbl = fifelse(is.na(production_bbl), 0 , production_bbl))]
+          
+          
           # mmeng-prev:
           # prod_next_year <- prod_next_year %>%
           #   mutate(year = fifelse(is.na(year), t, year),
@@ -1145,7 +1020,7 @@ run_extraction_model <- function(oil_px_selection) {
           ## calculate depletion
           prod_next_year[, depl := depl_prev + (production_bbl / resource)]
           prod_next_year = unique(prod_next_year)
-          
+        
           #rl
           depl_next_year = prod_next_year[, .(doc_field_code, 
                                               oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
@@ -1156,9 +1031,11 @@ run_extraction_model <- function(oil_px_selection) {
           
           dt_depl_z = rbindlist(list(dt_depl_z, depl_next_year))
           
+          
           # calculate adjustments to input variables for next year
           
           info_next_year = unique(scenarios_dt_z[year == t+1])
+          
           #rl
           info_next_year = merge(info_next_year,
                                  prod_next_year[, .(doc_field_code, 
@@ -1167,6 +1044,7 @@ run_extraction_model <- function(oil_px_selection) {
                                  by = c('doc_field_code',  
                                         'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario', 
                                         'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario'))
+          
           setnames(info_next_year, 'production_bbl', 'total_bbls')
           
           ccs_prev = dt_info_z[year == t, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
@@ -1198,6 +1076,7 @@ run_extraction_model <- function(oil_px_selection) {
           # info_next_year[, mean_b := mean(b, na.rm = T), 
           #                by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario)]
           # info_next_year[, total_cost := solve_tc(a, mean_b, upstream_mtCO2e)]
+          
           info_next_year[, ccs_adj_usd_per_mt := total_cost / upstream_mtCO2e]
           info_next_year[, ccs_adj_usd_per_kg := total_cost / upstream_kgCO2e]
           info_next_year[is.na(ccs_adj_usd_per_kg), ccs_adj_usd_per_kg := ccs_price_usd_per_kg]
@@ -1227,7 +1106,6 @@ run_extraction_model <- function(oil_px_selection) {
           
           
           info_next_year = unique(info_next_year)
-          
           # # adjust ghg emissions factor by innovation scenario
           #   info_next_year[, upstream_kgCO2e_bbl := upstream_kgCO2e_bbl*innovation_multiplier]
           #   
@@ -1269,7 +1147,6 @@ run_extraction_model <- function(oil_px_selection) {
           
           # combine input variables
           dt_info_z = rbindlist(list(dt_info_z, info_next_year), use.names = T)
-          
           
         }  
         
