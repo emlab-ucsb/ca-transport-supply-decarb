@@ -419,12 +419,7 @@ run_extraction_model <- function(oil_px_selection) {
                                            all.x = T,
                                            allow.cartesian = T)
         temp_prod_existing_vintage[, num_wells := 1]
-        # mmeng-prev:
-        # temp_prod_existing_vintage <- left_join(temp_prod_existing_vintage, existing_vintage_prod_t) %>%
-        #   mutate(num_wells = 1) %>%
-        #   as.data.table()
-        
-        
+   
         # temp_prod_existing_vintage = temp_prod_existing_vintage[scen_combos, on = .(setback_scenario), allow.cartesian = T]
         # temp_prod_existing_vintage = crossing(temp_prod_existing_vintage, scen_combos)
         # temp_prod_existing_vintage[, num_wells := 1]
@@ -442,8 +437,9 @@ run_extraction_model <- function(oil_px_selection) {
         # temp_prod_existing_vintage[, k := NULL]
         # temp_prod_existing_vintage[, num_wells := 1]
         # scen_combos[, k := NULL]
+  
         
-        if(t == 2039){browser()}
+        
         ## if t > 1, refer to pred_prod_existing in t - 1 to find out which field vintages are still producing
         if(i > 1) {
           
@@ -685,7 +681,20 @@ run_extraction_model <- function(oil_px_selection) {
         temp_prod_quota[, c('adj_prod_limited', 'adj_new_wells') := lapply(.SD, as.numeric), .SDcols = c('adj_prod_limited', 'adj_new_wells')] 
         
         temp_prod_quota[, zero_prod_quota := fifelse(adj_prod_limited == 0 & production_bbl > 0, 1, 0)]
-       
+        
+      
+      ## update old and new vintage production curve years to reflect if a field-vintage doesn't produce due to the quota
+        zero_prod_quota_old <- temp_prod_quota[vintage != "new", .(doc_field_code, setback_scenario, vintage, zero_prod_quota)]
+        
+        prod_existing_vintage_z <- merge(prod_existing_vintage_z, zero_prod_quota_old, all.x = T)
+        prod_existing_vintage_z[year := fifese(zero_prod_quota == 1, year = year + 1), year]
+        if(t == 2038){browser()}
+        prod_existing_vintage_z[, zero_prod_quota := NULL]
+      
+        
+      ## update old and new vintage production curve years to reflect if a field-vintage doesn't produce due to the quota 
+        
+        
         
         ## previous code
         ## Get the field-vintage quota lands in (call it quota_bin)
