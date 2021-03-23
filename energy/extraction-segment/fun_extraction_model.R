@@ -419,6 +419,14 @@ run_extraction_model <- function(oil_px_selection) {
                                            all.x = T,
                                            allow.cartesian = T)
         temp_prod_existing_vintage[, num_wells := 1]
+        
+        temp_prod_existing_vintage[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
+                                       innovation_scenario, carbon_price_scenario, ccs_scenario, 
+                                       setback_scenario, prod_quota_scenario, excise_tax_scenario, 
+                                       quota, innovation_multiplier, ccs_adopted, 
+                                       ccs_scalar, upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, 
+                                       upstream_kgCO2e_bbl_inno_ccs_adj, num_wells, production_bbl,
+                                       vintage)]
    
         # temp_prod_existing_vintage = temp_prod_existing_vintage[scen_combos, on = .(setback_scenario), allow.cartesian = T]
         # temp_prod_existing_vintage = crossing(temp_prod_existing_vintage, scen_combos)
@@ -437,55 +445,54 @@ run_extraction_model <- function(oil_px_selection) {
         # temp_prod_existing_vintage[, k := NULL]
         # temp_prod_existing_vintage[, num_wells := 1]
         # scen_combos[, k := NULL]
-  
-        
+
         
         ## if t > 1, refer to pred_prod_existing in t - 1 to find out which field vintages are still producing
-        if(i > 1) {
-          
-          prev_existing_prod = copy(list_prod_existing[[i-1]])
-          prev_existing_prod = prev_existing_prod[, .(doc_field_code, doc_fieldname, vintage, vintage_start, 
-                                                      oil_price_scenario, innovation_scenario,
-                                                      carbon_price_scenario, ccs_scenario, setback_scenario, 
-                                                      prod_quota_scenario, excise_tax_scenario, production_bbl)]
-          prev_existing_prod = unique(prev_existing_prod)
-          setnames(prev_existing_prod, 'production_bbl', 'prev_prod_bbl')
-          # prev-mmeng:
-          # prev_existing_prod <- list_prod_existing[[i-1]] %>%
-          #   select(doc_field_code:excise_tax_scenario, prev_prod_bbl = production_bbl)
-          
-          temp_prod_existing_vintage = merge(temp_prod_existing_vintage, prev_existing_prod,
-                                             by = c("doc_field_code", "setback_scenario", 
-                                                    "oil_price_scenario", "innovation_scenario", 
-                                                    "carbon_price_scenario", "ccs_scenario", 
-                                                    "prod_quota_scenario", "excise_tax_scenario", 
-                                                    "doc_fieldname", "vintage"),
-                                             all.x = T)
-          temp_prod_existing_vintage[, production_bbl_adj := fifelse(prev_prod_bbl == 0 & production_bbl > 0, 0, production_bbl)]
-          temp_prod_existing_vintage[, c('production_bbl', 'prev_prod_bbl') := NULL]
-          setnames(temp_prod_existing_vintage, 'production_bbl_adj', 'production_bbl')
-          temp_prod_existing_vintage = temp_prod_existing_vintage[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
-                                                                      innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                                      setback_scenario, prod_quota_scenario, excise_tax_scenario, quota, innovation_multiplier, 
-                                                                      ccs_adopted, ccs_scalar, upstream_kgCO2e_bbl, 
-                                                                      upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj, 
-                                                                      num_wells, production_bbl,
-                                                                      vintage, vintage_start)]
-          
-          # mmeng-prev:
-          # temp_prod_existing_vintage_adj <- temp_prod_existing_vintage %>%
-          #   left_join(prev_existing_prod) %>%
-          #   select(doc_field_code:vintage, vintage_start, num_wells, production_bbl, prev_prod_bbl) %>%
-          #   mutate(production_bbl_adj = fifelse(prev_prod_bbl == 0, 0, production_bbl)) %>%
-          #   select(-production_bbl, -prev_prod_bbl) %>%
-          #   rename(production_bbl = production_bbl_adj) %>%
-          #   select(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-          #          setback_scenario, prod_quota_scenario, excise_tax_scenario, quota, innovation_multiplier, ccs_adopted, ccs_scalar, upstream_kgCO2e_bbl, 
-          #          upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj, num_wells, production_bbl,
-          #          vintage, vintage_start) 
-          # temp_prod_existing_vintage <- setDT(temp_prod_existing_vintage_adj)
-          
-        }
+        # if(i > 1) {
+        #   
+        #   prev_existing_prod = copy(list_prod_existing[[i-1]])
+        #   prev_existing_prod = prev_existing_prod[, .(doc_field_code, doc_fieldname, vintage, vintage_start, 
+        #                                               oil_price_scenario, innovation_scenario,
+        #                                               carbon_price_scenario, ccs_scenario, setback_scenario, 
+        #                                               prod_quota_scenario, excise_tax_scenario, production_bbl)]
+        #   prev_existing_prod = unique(prev_existing_prod)
+        #   setnames(prev_existing_prod, 'production_bbl', 'prev_prod_bbl')
+        #   # prev-mmeng:
+        #   # prev_existing_prod <- list_prod_existing[[i-1]] %>%
+        #   #   select(doc_field_code:excise_tax_scenario, prev_prod_bbl = production_bbl)
+        #   
+        #   temp_prod_existing_vintage = merge(temp_prod_existing_vintage, prev_existing_prod,
+        #                                      by = c("doc_field_code", "setback_scenario", 
+        #                                             "oil_price_scenario", "innovation_scenario", 
+        #                                             "carbon_price_scenario", "ccs_scenario", 
+        #                                             "prod_quota_scenario", "excise_tax_scenario", 
+        #                                             "doc_fieldname", "vintage"),
+        #                                      all.x = T)
+        #   temp_prod_existing_vintage[, production_bbl_adj := fifelse(prev_prod_bbl == 0 & production_bbl > 0, 0, production_bbl)]
+        #   temp_prod_existing_vintage[, c('production_bbl', 'prev_prod_bbl') := NULL]
+        #   setnames(temp_prod_existing_vintage, 'production_bbl_adj', 'production_bbl')
+        #   temp_prod_existing_vintage = temp_prod_existing_vintage[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
+        #                                                               innovation_scenario, carbon_price_scenario, ccs_scenario, 
+        #                                                               setback_scenario, prod_quota_scenario, excise_tax_scenario, 
+        #                                                               quota, innovation_multiplier, ccs_adopted, 
+        #                                                               ccs_scalar, upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, 
+        #                                                               upstream_kgCO2e_bbl_inno_ccs_adj, num_wells, production_bbl,
+        #                                                               vintage, vintage_start)]
+        #   
+        #   # mmeng-prev:
+        #   # temp_prod_existing_vintage_adj <- temp_prod_existing_vintage %>%
+        #   #   left_join(prev_existing_prod) %>%
+        #   #   select(doc_field_code:vintage, vintage_start, num_wells, production_bbl, prev_prod_bbl) %>%
+        #   #   mutate(production_bbl_adj = fifelse(prev_prod_bbl == 0, 0, production_bbl)) %>%
+        #   #   select(-production_bbl, -prev_prod_bbl) %>%
+        #   #   rename(production_bbl = production_bbl_adj) %>%
+        #   #   select(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
+        #   #          setback_scenario, prod_quota_scenario, excise_tax_scenario, quota, innovation_multiplier, ccs_adopted, ccs_scalar, upstream_kgCO2e_bbl, 
+        #   #          upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj, num_wells, production_bbl,
+        #   #          vintage, vintage_start) 
+        #   # temp_prod_existing_vintage <- setDT(temp_prod_existing_vintage_adj)
+        #   
+        # }
         
         temp_prod_existing_vintage[, vintage_start := fifelse(vintage == 'pre 1978', 1977, as.numeric(substr(vintage, 1, 4)))]
         # mmeng-prev:
@@ -496,30 +503,66 @@ run_extraction_model <- function(oil_px_selection) {
         
         # set up copy of dataframe for vintages from previous interations
         ## -------------------------------------------------------------------------
-        temp_prod_new_vintage = rbindlist(list_pred_prod)
+        # temp_prod_new_vintage = rbindlist(list_pred_prod)
+        if(i > 1) {
+        temp_prod_new_vintage <- copy(prod_new_vintage_z)
+        
+        temp_prod_new_vintage_info = dt_info_z[year == t, . (doc_field_code, oil_price_scenario, 
+                                                        innovation_scenario, carbon_price_scenario, 
+                                                        ccs_scenario, prod_quota_scenario, excise_tax_scenario, 
+                                                        setback_scenario, quota, innovation_multiplier, ccs_adopted, ccs_scalar, 
+                                                        upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj)]
+        
+        temp_prod_new_vintage_t = temp_prod_new_vintage[year == t]
+        temp_prod_new_vintage_t[, year := NULL]
+          
+        # temp_prod_new_vintage_t[, ':=' (vintage = "new",
+        #                                 vintage_start = entry_year)]
+        
+        temp_prod_new_vintage_t = temp_prod_new_vintage_t[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, 
+                                                              carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario,
+                                                              excise_tax_scenario, num_wells = m_new_wells_pred, production_bbl, vintage, vintage_start)]
+        temp_prod_new_vintage_t = merge(temp_prod_new_vintage_t, temp_prod_new_vintage_info,
+                                      by = c("doc_field_code", "oil_price_scenario", 
+                                             "innovation_scenario", "carbon_price_scenario", 
+                                             "ccs_scenario", "setback_scenario", 
+                                             "prod_quota_scenario", "excise_tax_scenario"),
+                                      all.x = T)
+        
+        
+
+        
+        temp_prod_new_vintage_t[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
+                                       innovation_scenario, carbon_price_scenario, ccs_scenario, 
+                                       setback_scenario, prod_quota_scenario, excise_tax_scenario, 
+                                       quota, innovation_multiplier, ccs_adopted, 
+                                       ccs_scalar, upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, 
+                                       upstream_kgCO2e_bbl_inno_ccs_adj, num_wells, production_bbl,
+                                       vintage)]
+        
       
 
         # temp_prod_new_vintage = unique(temp_prod_new_vintage)
-        if(i > 1) {
+        # if(i > 1) {
           
-          temp_prod_new_vintage_info = dt_info_z[year == t, . (doc_field_code, oil_price_scenario, 
-                                                               innovation_scenario, carbon_price_scenario, 
-                                                               ccs_scenario, prod_quota_scenario, excise_tax_scenario, 
-                                                               setback_scenario, quota, innovation_multiplier, ccs_adopted, ccs_scalar,
-                                                               upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj)]
+          # temp_prod_new_vintage_info = dt_info_z[year == t, . (doc_field_code, oil_price_scenario, 
+          #                                                      innovation_scenario, carbon_price_scenario, 
+          #                                                      ccs_scenario, prod_quota_scenario, excise_tax_scenario, 
+          #                                                      setback_scenario, quota, innovation_multiplier, ccs_adopted, ccs_scalar,
+          #                                                      upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj)]
           
-          temp_prod_new_vintage = temp_prod_new_vintage[year == t]
-          temp_prod_new_vintage[, ':=' (vintage = "new",
-                                        vintage_start = entry_year)]
-          temp_prod_new_vintage = temp_prod_new_vintage[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, 
-                                                            carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario,
-                                                            excise_tax_scenario, num_wells = m_new_wells_pred, production_bbl, vintage, vintage_start)]
-          temp_prod_new_vintage = merge(temp_prod_new_vintage, temp_prod_new_vintage_info,
-                                        by = c("doc_field_code", "oil_price_scenario", 
-                                               "innovation_scenario", "carbon_price_scenario", 
-                                               "ccs_scenario", "setback_scenario", 
-                                               "prod_quota_scenario", "excise_tax_scenario"),
-                                        all.x = T)
+          # temp_prod_new_vintage = temp_prod_new_vintage[year == t]
+          # temp_prod_new_vintage[, ':=' (vintage = "new",
+          #                               vintage_start = entry_year)]
+          # temp_prod_new_vintage = temp_prod_new_vintage[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, 
+          #                                                   carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario,
+          #                                                   excise_tax_scenario, num_wells = m_new_wells_pred, production_bbl, vintage, vintage_start)]
+          # temp_prod_new_vintage = merge(temp_prod_new_vintage, temp_prod_new_vintage_info,
+          #                               by = c("doc_field_code", "oil_price_scenario", 
+          #                                      "innovation_scenario", "carbon_price_scenario", 
+          #                                      "ccs_scenario", "setback_scenario", 
+          #                                      "prod_quota_scenario", "excise_tax_scenario"),
+          #                               all.x = T)
           # temp_prod_new_vintage = unique(temp_prod_new_vintage)
           # mmeng-prev:
           # temp_prod_new_vintage <- temp_prod_new_vintage %>%
@@ -532,30 +575,30 @@ run_extraction_model <- function(oil_px_selection) {
           
           ## refer to t - 1 to determine which recent field-vintages are still producing
           
-          prev_new_prod = copy(list_prod_new[[i - 1]])[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
-                                                           innovation_scenario, carbon_price_scenario,
-                                                           ccs_scenario, setback_scenario, prod_quota_scenario, 
-                                                           excise_tax_scenario, vintage, vintage_start,
-                                                           num_wells = n_wells, prev_prod_bbl = production_bbl)]
-          prev_new_prod = unique(prev_new_prod)
+          # prev_new_prod = copy(list_prod_new[[i - 1]])[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
+          #                                                  innovation_scenario, carbon_price_scenario,
+          #                                                  ccs_scenario, setback_scenario, prod_quota_scenario, 
+          #                                                  excise_tax_scenario, vintage, vintage_start,
+          #                                                  num_wells = n_wells, prev_prod_bbl = production_bbl)]
+          # prev_new_prod = unique(prev_new_prod)
           # mmeng-prev:
           # prev_new_prod <- list_prod_new[[i - 1]] %>%
           #   select(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario,
           #          ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, vintage, vintage_start,
           #          num_wells = n_wells, prev_prod_bbl = production_bbl)
-          
-          temp_prod_new_vintage = merge(temp_prod_new_vintage, prev_new_prod,
-                                        by = c("doc_field_code", "oil_price_scenario", 
-                                               "innovation_scenario", "carbon_price_scenario", 
-                                               "ccs_scenario", "setback_scenario", "prod_quota_scenario", 
-                                               "excise_tax_scenario", "doc_fieldname", 
-                                               "num_wells", "vintage", "vintage_start"),
-                                        all.x = T)
-          temp_prod_new_vintage[, ':=' (production_bbl_adj = fifelse(prev_prod_bbl == 0, 0, production_bbl),
-                                        num_wells = fifelse(prev_prod_bbl == 0, 0, num_wells))]
-          temp_prod_new_vintage[, production_bbl_adj := fifelse(prev_prod_bbl == 0 & production_bbl > 0, 0, production_bbl)]
-          temp_prod_new_vintage[, c('production_bbl', 'prev_prod_bbl') := NULL]
-          setnames(temp_prod_new_vintage, 'production_bbl_adj', 'production_bbl')
+          # 
+          # temp_prod_new_vintage = merge(temp_prod_new_vintage, prev_new_prod,
+          #                               by = c("doc_field_code", "oil_price_scenario", 
+          #                                      "innovation_scenario", "carbon_price_scenario", 
+          #                                      "ccs_scenario", "setback_scenario", "prod_quota_scenario", 
+          #                                      "excise_tax_scenario", "doc_fieldname", 
+          #                                      "num_wells", "vintage", "vintage_start"),
+          #                               all.x = T)
+          # temp_prod_new_vintage[, ':=' (production_bbl_adj = fifelse(prev_prod_bbl == 0, 0, production_bbl),
+          #                               num_wells = fifelse(prev_prod_bbl == 0, 0, num_wells))]
+          # temp_prod_new_vintage[, production_bbl_adj := fifelse(prev_prod_bbl == 0 & production_bbl > 0, 0, production_bbl)]
+          # temp_prod_new_vintage[, c('production_bbl', 'prev_prod_bbl') := NULL]
+          # setnames(temp_prod_new_vintage, 'production_bbl_adj', 'production_bbl')
           # temp_prod_new_vintage = unique(temp_prod_new_vintage)
           
           # mmeng-prev:
@@ -568,7 +611,7 @@ run_extraction_model <- function(oil_px_selection) {
           # temp_prod_new_vintage <- setDT(temp_prod_new_vintage_adj)
           
           # one data table with production data of both new and existing wells
-          temp_prod_quota = rbind(temp_new_wells_prod, temp_prod_existing_vintage, temp_prod_new_vintage, use.names = T)
+          temp_prod_quota = rbind(temp_new_wells_prod, temp_prod_existing_vintage, temp_prod_new_vintage_t, use.names = T)
           
         } else {
           
@@ -683,17 +726,26 @@ run_extraction_model <- function(oil_px_selection) {
         temp_prod_quota[, zero_prod_quota := fifelse(adj_prod_limited == 0 & production_bbl > 0, 1, 0)]
         
       
-      ## update old and new vintage production curve years to reflect if a field-vintage doesn't produce due to the quota
+      ## update old vintage production curve years to reflect if a field-vintage doesn't produce due to the quota
         zero_prod_quota_old <- temp_prod_quota[vintage != "new", .(doc_field_code, setback_scenario, vintage, zero_prod_quota)]
         
+        ## update existing vintage production: shift years if vintage doesn't produce due to quota
         prod_existing_vintage_z <- merge(prod_existing_vintage_z, zero_prod_quota_old, all.x = T)
-        prod_existing_vintage_z[year := fifese(zero_prod_quota == 1, year = year + 1), year]
-        if(t == 2038){browser()}
+        prod_existing_vintage_z[, year := fifelse(zero_prod_quota == 1, year + 1, year)]
         prod_existing_vintage_z[, zero_prod_quota := NULL]
       
         
-      ## update old and new vintage production curve years to reflect if a field-vintage doesn't produce due to the quota 
+      ## update new vintage production curve years to reflect if a field-vintage doesn't produce due to the quota 
+        zero_prod_quota_new <- temp_prod_quota[vintage == "new", .(doc_field_code, setback_scenario, vintage, vintage_year, zero_prod_quota)]
         
+        ## update new vintage production: shift years if vintage doesn't produce due to quota
+        prod_new_vintage_z <- rbindlist(list_pred_prod)
+        setorder(prod_new_vintage_z, doc_field_code, entry_year, year)
+        setnames(prod_new_vintage_z, "entry_year", "vintage_start")
+        prod_new_vintage_z <- merge(prod_new_vintage_z, zero_prod_quota_new, all.x = T)
+        prod_new_vintage_z[, year := fifelse(zero_prod_quota == 1, year + 1, year)]
+        prod_new_vintage_z[, zero_prod_quota := NULL]
+
         
         
         ## previous code
@@ -860,7 +912,7 @@ run_extraction_model <- function(oil_px_selection) {
         ## remove objects
         rm(dt_info_rank, temp_dt_info_rank, prev_existing_prod, existing_vintage_prod_t, dtt_long,
            temp_new_wells_prod, temp_prod_new_vintage_adj, temp_prod_new_vintage, temp_prod_existing_vintage, temp_prod_existing_vintage_adj, 
-           temp_prod_quota, temp_prod_quota_new_wells, temp_prod_quota_existing_wells)  
+           temp_prod_quota, temp_prod_quota_new_wells, temp_prod_quota_existing_wells, zero_prod_quota_old)  
         ## end section that implements production quota
         
         # for 2020 up to current year, make prod = 0
