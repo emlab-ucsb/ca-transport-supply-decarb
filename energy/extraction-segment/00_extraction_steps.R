@@ -15,6 +15,9 @@
   save_path             = file.path(save_path, paste0('extraction_', cur_date))
   dir.create(save_path, showWarnings = FALSE)
   
+# set seed
+  set.seed(228)
+    
 # source from other scripts -------
   
   # source function to predict extraction
