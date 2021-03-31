@@ -893,15 +893,17 @@ run_extraction_model <- function(oil_px_selection) {
       #                                                 upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)])
       
       existing_prod_dt = rbindlist(list_prod_existing)[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                                           setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-                                                           doc_field_code, doc_fieldname, year, ccs_adopted, production_bbl, zero_prod_quota,
-                                                           upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
+                                                           setback_scenario, prod_quota_scenario, quota, excise_tax_scenario, doc_field_code, 
+                                                           doc_fieldname, vintage, vintage_start, year, ccs_adopted, production_bbl, 
+                                                           zero_prod_quota, n_wells, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
       new_prod_dt = rbindlist(list_prod_new)[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                                 setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-                                                 doc_field_code, doc_fieldname, year, vintage_start, ccs_adopted, production_bbl, zero_prod_quota,
-                                                 n_wells, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
+                                                 setback_scenario, prod_quota_scenario, quota, excise_tax_scenario, doc_field_code, 
+                                                 doc_fieldname, vintage, vintage_start, year, ccs_adopted, production_bbl, 
+                                                 zero_prod_quota, n_wells, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
       
       rm(list_pred_prod, list_prod_existing, list_prod_new)
+      
+      
       
       existing_prod_dt[, ccs_adopted := as.character(ccs_adopted)]
       new_prod_dt[, ccs_adopted := as.character(ccs_adopted)]
@@ -911,6 +913,14 @@ run_extraction_model <- function(oil_px_selection) {
       setkey(new_prod_dt, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
              setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code, year, ccs_adopted)
       
+      ## combine new and old production
+      vintage_all <- rbind(existing_prod_dt, new_prod_dt)
+      setorder(vintage_all, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+               setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code, 
+               doc_fieldname, year, vintage_start)
+      
+      
+      ## field well entry
       field_well_entry = new_prod_dt[vintage_start == year, .(new_wells = sum(n_wells, na.rm = T)), 
                                      by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
                                             setback_scenario, prod_quota_scenario, excise_tax_scenario, 
@@ -946,6 +956,9 @@ run_extraction_model <- function(oil_px_selection) {
                                'doc_field_code', 'doc_fieldname', 'year'),
                         all = T)
       
+      field_all[is.na(new_wells), new_wells := 0]
+      
+      
       cols = c('new_wells', 'existing_prod_bbl', 'new_prod_bbl', 'total_prod_bbl', 
                'existing_ghg_kgCO2e', 'new_ghg_kgCO2e', 'total_ghg_kgCO2e')
       state_all = field_all[ , lapply(.SD, sum, na.rm = T), .SDcols = cols,
@@ -954,10 +967,11 @@ run_extraction_model <- function(oil_px_selection) {
       
       state_all[, total_ghg_mtCO2e := total_ghg_kgCO2e/1e9]
       
-      output_scen = list(field_all,
+      output_scen = list(vintage_all,
+                         field_all,
                          state_all)
       
-      rm(state_all, field_all, existing_prod_dt, new_prod_dt)
+      rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt)
 
       return(output_scen)
       
@@ -971,6 +985,7 @@ run_extraction_model <- function(oil_px_selection) {
     # output_list = list(prod_existing,
     #                    prod_new)
     
+    ## res selection
     # res = lapply(1:nrow(scen_sel), func_yearly_production)
     
     ## for diagnostic
@@ -1002,16 +1017,22 @@ run_extraction_model <- function(oil_px_selection) {
     save_processed_path = file.path(save_path, oil_price_selection)
     dir.create(save_processed_path, showWarnings = FALSE)
     
+    # save vintage-level results ----
+    
+    vintage_fname = paste0(oil_price_selection, '-vintage-level-results.csv')
+    fwrite(output_list[[1]], file.path(save_processed_path, vintage_fname), row.names = F)
+    print(paste0('Saved vintage-level results to ', vintage_fname))
+    
     # save field-level results -----
     
     field_fname = paste0(oil_price_selection, '-field-level-results.csv')
-    fwrite(output_list[[1]], file.path(save_processed_path, field_fname), row.names = F)
+    fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
     print(paste0('Saved field-level results to ', field_fname))
     
     # save state-level results ------
     
     state_fname = paste0(oil_price_selection, '-state-level-results.csv')
-    fwrite(output_list[[2]], file.path(save_processed_path, state_fname), row.names = F)
+    fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
     print(paste0('Saved state-level results to ', state_fname))
     
     rm(solve_b, solve_mean_b, ghg_all)
