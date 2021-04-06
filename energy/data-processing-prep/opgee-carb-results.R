@@ -40,16 +40,15 @@
   
 # calculate upstream emissions ------
   
-  dt_res[, upstream_gCO2e_MJ := exploration_gCO2e_MJ + drilling_gCO2e_MJ + crude_production_gCO2e_MJ]
-  dt_res[, difference_gCO2e_MJ := surface_processing_gCO2e_MJ + maintenance_gCO2e_MJ + waste_gCO2e_MJ + other_gCO2e_MJ]
-  
+  dt_res[, upstream_gCO2e_MJ := exploration_gCO2e_MJ + drilling_gCO2e_MJ + crude_production_gCO2e_MJ + surface_processing_gCO2e_MJ + maintenance_gCO2e_MJ + waste_gCO2e_MJ + other_gCO2e_MJ]
+
 # convert some columns to kg/bbl ------
   
   dt_res[, upstream_kgCO2e_bbl := upstream_gCO2e_MJ*(1/(2e-4))*(1/1000)]
-  dt_res[, difference_kgCO2e_bbl := difference_gCO2e_MJ*(1/(2e-4))*(1/1000)]
+  # dt_res[, difference_kgCO2e_bbl := difference_gCO2e_MJ*(1/(2e-4))*(1/1000)]
   dt_res[, lifecycle_kgCO2e_bbl := lifecycle_gCO2e_MJ*(1/(2e-4))*(1/1000)]
   
 # save to csv -----
   
-  fwrite(dt_res, paste0(data_dir, 'field-level-emissions-results_processed.csv'), row.names = F)
+  fwrite(dt_res, paste0(data_dir, 'field-level-emissions-results_processed_revised.csv'), row.names = F)
     
