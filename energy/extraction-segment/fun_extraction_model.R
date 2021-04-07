@@ -986,10 +986,10 @@ run_extraction_model <- function(oil_px_selection) {
     #                    prod_new)
     
     ## res selection
-    # res = lapply(1:nrow(scen_sel), func_yearly_production)
+    res = lapply(1:nrow(scen_sel), func_yearly_production)
     
     ## for diagnostic
-    res = lapply(2:2, func_yearly_production)
+    # res = lapply(2:2, func_yearly_production)
     
     output_list = do.call(Map, c(f = rbind, res))
     
