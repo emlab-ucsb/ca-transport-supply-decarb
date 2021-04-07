@@ -8,7 +8,7 @@
   opgee_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/OPGEE'
   entry_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
   inj_file          = 'injection-by-well-type-per-field-per-year_1977-2018.csv'
-  emfactor_file     = 'field-level-emissions-results_processed.csv'
+  emfactor_file     = 'field-level-emissions-results_processed_revised.csv'
   entry_file        = 'entry_df_final.csv'
   prod_file         = 'crude_prod_x_field.csv'
   wells_file        = 'wells_19.csv'
@@ -16,8 +16,8 @@
 # outputs -----
   
   save_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
-  pre_file          = 'opgee_emission_factors_x_field_2015.csv'
-  save_file         = 'ghg_emissions_x_field_2015.csv'
+  pre_file          = 'opgee_emission_factors_x_field_2015_revised.csv'
+  save_file         = 'ghg_emissions_x_field_2015_revised.csv'
   
 # load packages -----
   
@@ -33,9 +33,9 @@
   
   # load opgee emissions factors
     emission_factors = fread(file.path(opgee_path, emfactor_file), header = T)
-    emission_factors = emission_factors[, c('field_name', 'upstream_kgCO2e_bbl', 'difference_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl')]
+    emission_factors = emission_factors[, c('field_name', 'upstream_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl')]
     setnames(emission_factors, 'field_name', 'doc_fieldname')
-  
+
   # load entry data file
     entry_df =  fread(file.path(entry_path, entry_file), header = T)
   
@@ -79,7 +79,7 @@
 # match field codes to emission factors -----
   
   emission_factors = emission_factors[un_fields, on = 'doc_fieldname', nomatch = 0]
-  setcolorder(emission_factors, c('doc_field_code', 'doc_fieldname', 'upstream_kgCO2e_bbl', 'difference_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl'))
+  setcolorder(emission_factors, c('doc_field_code', 'doc_fieldname', 'upstream_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl'))
 
 # separate fields that don't use steam injection with fields that do -----
   
@@ -101,8 +101,8 @@
   
 # get medians for steam and non-steam emission factors
   
-  steam_ghg_median = steam_ghg[, lapply(.SD, median, na.rm = T), .SDcols = c('upstream_kgCO2e_bbl', 'difference_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl') ] 
-  nonsteam_ghg_median = nonsteam_ghg[, lapply(.SD, median, na.rm = T), .SDcols = c('upstream_kgCO2e_bbl', 'difference_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl') ] 
+  steam_ghg_median = steam_ghg[, lapply(.SD, median, na.rm = T), .SDcols = c('upstream_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl') ] 
+  nonsteam_ghg_median = nonsteam_ghg[, lapply(.SD, median, na.rm = T), .SDcols = c('upstream_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl') ] 
   
 # merge entry fields with emission factors -----
   
@@ -113,9 +113,6 @@
   all_fields[is.na(upstream_kgCO2e_bbl), upstream_kgCO2e_bbl := ifelse(doc_field_code %in% steam_fields[, doc_field_code],
                                                                        steam_ghg_median[, upstream_kgCO2e_bbl],
                                                                        nonsteam_ghg_median[, upstream_kgCO2e_bbl])]
-  all_fields[is.na(difference_kgCO2e_bbl), difference_kgCO2e_bbl := ifelse(doc_field_code %in% steam_fields[, doc_field_code],
-                                                                           steam_ghg_median[, difference_kgCO2e_bbl],
-                                                                           nonsteam_ghg_median[, difference_kgCO2e_bbl])]
   all_fields[is.na(lifecycle_kgCO2e_bbl), lifecycle_kgCO2e_bbl := ifelse(doc_field_code %in% steam_fields[, doc_field_code],
                                                                         steam_ghg_median[, lifecycle_kgCO2e_bbl],
                                                                         nonsteam_ghg_median[, lifecycle_kgCO2e_bbl])]
@@ -124,11 +121,10 @@
   
   all_fields_prod = all_fields[prod_dt[year == 2015], on = c('doc_field_code'), nomatch = 0]
   all_fields_prod[, upstream_kgCO2e := upstream_kgCO2e_bbl*total_bbls]
-  all_fields_prod[, difference_kgCO2e := difference_kgCO2e_bbl*total_bbls]
   all_fields_prod[, lifecycle_kgCO2e := lifecycle_kgCO2e_bbl*total_bbls]
   setcolorder(all_fields_prod, c('doc_field_code', 'doc_fieldname', 'year', 'total_bbls', 
-                                 'upstream_kgCO2e_bbl', 'difference_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl', 
-                                 'upstream_kgCO2e', 'difference_kgCO2e', 'lifecycle_kgCO2e'))
+                                 'upstream_kgCO2e_bbl', 'lifecycle_kgCO2e_bbl', 
+                                 'upstream_kgCO2e', 'lifecycle_kgCO2e'))
    
 # write to csv -----
   
