@@ -12,7 +12,9 @@
 # create save path that is based on the specified path and the run date ------
   
   cur_date              = Sys.Date()
-  save_path             = file.path(save_path, paste0('extraction_', cur_date))
+  run_type              = "baseline"
+  save_path             = file.path(save_path, paste0('extraction_', cur_date), run_type)
+  
   dir.create(save_path, showWarnings = FALSE)
   
 # set seed
@@ -34,8 +36,10 @@
   
   output_extraction = run_extraction_model(oil_price_selection)
   
-# step 2: process outputs ------
+# step 2: if relevant, run diagnostic plots
   
-  # output_processed = process_extraction_outputs(oil_price_selection, output_extraction)
+# step 3: process outputs ------
   
-# step 3: plot outputs -------
+# output_processed = process_extraction_outputs(oil_price_selection, output_extraction)
+  
+# step 4: plot outputs -------
