@@ -1001,7 +1001,7 @@ run_extraction_model <- function(oil_px_selection) {
     print(paste("Model took ", round(time_diff[[1]]), " minutes to complete. Now saving results ..."))
     
     # save info file
-      save_info_path = file.path(save_path, oil_price_selection)
+      save_info_path = file.path(save_path, run_type)
       dir.create(save_info_path)
       print(paste0("Saving run information file to ", save_info_path))
       run_info = data.table(oil_price_selection = oil_price_selection,
@@ -1012,9 +1012,9 @@ run_extraction_model <- function(oil_px_selection) {
     
     # save outputs to csv -----
     
-    # create subdirectory of save_path for each oil price ------
+    # create subdirectory of save_path, currently based on run_type ------
     
-    save_processed_path = file.path(save_path, oil_price_selection)
+    save_processed_path = file.path(save_path, run_type)
     dir.create(save_processed_path, showWarnings = FALSE)
     
     # save vintage-level results ----
