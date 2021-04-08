@@ -4,7 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'diagnostic'
     # choose from: reference, high, low, iea
-  run_type = "test"
+  run_type = "revised-carbon-px"
     
 # outputs -------
   
@@ -18,7 +18,7 @@
   dir.create(save_path, showWarnings = FALSE)
   
 # set binary switches
-  # run_diagnostic_figs   = 1
+  run_diagnostic_figs   = 1
   
 # set seed
   set.seed(228)
@@ -40,12 +40,17 @@
   output_extraction = run_extraction_model(oil_price_selection)
   
 # step 2: if relevant, run diagnostic plots
+  
+  # source function to predict extraction
+  source(here::here('energy', 'extraction-segment', 'fun_diagnostic_plot.R'))
+  
   if (run_diagnostic_figs == 1) {
   
     library(stringr)  
     library(hrbrthemes)
     library(extrafont)
-  plot_diagnostic_outputs(oil_price_selection, output_extraction)
+  
+    plot_diagnostic_outputs(oil_price_selection, output_extraction)
     
   }
   

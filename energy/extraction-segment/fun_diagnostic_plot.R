@@ -10,7 +10,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
   state_out = output_extraction[[3]]
 
-  state_out[, version := paste0("adj_", run_type)]
+  state_out[, version := paste0("adj-", run_type)]
   
   # read in baseline for comparison ------
   
@@ -97,7 +97,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   # extraction (state, old, new)
   extraction_fig = ggplot(state_all_long, 
                                   aes(x = year, y = production_bbls / 1e6, group = type, color = version)) + 
-    geom_line(alpha = 0.85, size = 1.5) +
+    geom_line(alpha = 0.7, size = 1) +
     facet_grid(type ~ scen_name) +
     labs(title = 'State-level crude oil extraction',
          subtitle = 'million barrels', 
@@ -110,7 +110,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   # ghg (state, old, new)
   ghg_fig = ggplot(state_all_long, 
                           aes(x = year, y = ghg_kgCO2e / 1e9, color = version)) + 
-    geom_line(alpha = 0.85, size = 2) +
+    geom_line(alpha = 0.7, size = 1) +
     facet_grid(type ~ scen_name) +
     labs(title = 'State-level emissions',
          subtitle = 'MtCO2e', 
@@ -123,7 +123,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   # new wells
   new_wells_fig = ggplot(state_all_long %>% filter(type == "new"), 
                    aes(x = year, y = new_wells, color = version)) + 
-    geom_line(alpha = 0.85, size = 2) +
+    geom_line(alpha = 0.7, size = 1) +
     facet_grid(~ scen_name) +
     labs(title = 'State-level new wells',
          subtitle = 'number of new wells', 
@@ -136,11 +136,12 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   # save figures  -----
   
   # save info file
-  save_info_path = file.path(save_path, run_type)
+  save_info_path = file.path(save_path, run_type, "diagnostic-figs")
+  dir.create(save_info_path, showWarnings = FALSE)
   print(paste0("Saving diagnostic figures to ", save_info_path))
   
   # save figures ----
-  extraction_fname = paste0(oil_price_selection, '-extraction_fig.pdf')
+  extraction_fname = paste0(oil_price_selection, '_extraction_fig.pdf')
   ggsave(extraction_fig, 
          filename = file.path(save_info_path, extraction_fname), 
          width = 23, 
@@ -151,7 +152,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   print(paste0('Saved diagnostic figures to ', extraction_fname))
  
   
-  ghg_fname = paste0(oil_price_selection, '-ghg_fig.pdf')
+  ghg_fname = paste0(oil_price_selection, '_ghg_fig.pdf')
   ggsave(ghg_fig, 
          filename = file.path(save_info_path, ghg_fname), 
          width = 23, 
@@ -162,7 +163,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   print(paste0('Saved diagnostic figures to ', ghg_fname))
   
   
-  new_wells_fname = paste0(oil_price_selection, '-new_wells_fig.pdf')
+  new_wells_fname = paste0(oil_price_selection, '_new_wells_fig.pdf')
   ggsave(new_wells_fig, 
          filename = file.path(save_info_path, new_wells_fname), 
          width = 23, 
