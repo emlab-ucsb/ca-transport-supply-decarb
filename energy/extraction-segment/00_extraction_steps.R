@@ -4,6 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'diagnostic'
     # choose from: reference, high, low, iea
+  run_type = "test"
     
 # outputs -------
   
@@ -12,10 +13,12 @@
 # create save path that is based on the specified path and the run date ------
   
   cur_date              = Sys.Date()
-  run_type              = "baseline"
-  save_path             = file.path(save_path, paste0('extraction_', cur_date), run_type)
+  save_path             = file.path(save_path, paste0('extraction_', cur_date))
   
   dir.create(save_path, showWarnings = FALSE)
+  
+# set binary switches
+  # run_diagnostic_figs   = 1
   
 # set seed
   set.seed(228)
@@ -37,6 +40,15 @@
   output_extraction = run_extraction_model(oil_price_selection)
   
 # step 2: if relevant, run diagnostic plots
+  if (run_diagnostic_figs == 1) {
+  
+    library(stringr)  
+    library(hrbrthemes)
+    library(extrafont)
+  plot_diagnostic_outputs(oil_price_selection, output_extraction)
+    
+  }
+  
   
 # step 3: process outputs ------
   
