@@ -17,11 +17,12 @@ load_scenarios_dt = function(oil_px_selection) {
   carbon_file       = 'carbon_prices_revised.csv'
   ccs_ext_file      = 'ccs_extraction_scenarios.csv'
   ccs_ref_file      = 'ccs_refining_scenarios.csv'
-  ghg_file          = 'ghg_emissions_x_field_2015.csv'
+  ghg_file          = 'ghg_emissions_x_field_2015_revised.csv'
   setback_file      = 'setback_coverage.csv'
   prod_quota_file   = 'prod_quota_scenarios.csv'
   excise_tax_file   = 'excise_tax_scenarios.csv'
   
+
   # load packages -----
   
   library(data.table)

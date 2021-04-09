@@ -92,12 +92,15 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
           legend.text = element_text(size = 16),
           legend.position = 'bottom',
           )
-  
+
   
   # extraction (state, old, new)
   extraction_fig = ggplot(state_all_long, 
-                                  aes(x = year, y = production_bbls / 1e6, group = type, color = version)) + 
+                                  aes(x = year, y = production_bbls / 1e6, color = version)) + 
     geom_line(alpha = 0.7, size = 1) +
+    facet_grid(type ~ scen_name) +
+    geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
+              aes(x = year, y = production_bbls / 1e6, color = version), shape = 3) +
     facet_grid(type ~ scen_name) +
     labs(title = 'State-level crude oil extraction',
          subtitle = 'million barrels', 
@@ -111,6 +114,8 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   ghg_fig = ggplot(state_all_long, 
                           aes(x = year, y = ghg_kgCO2e / 1e9, color = version)) + 
     geom_line(alpha = 0.7, size = 1) +
+    geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
+               aes(x = year, y = ghg_kgCO2e / 1e9, color = version), shape = 3) +
     facet_grid(type ~ scen_name) +
     labs(title = 'State-level emissions',
          subtitle = 'MtCO2e', 
@@ -124,6 +129,8 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   new_wells_fig = ggplot(state_all_long %>% filter(type == "new"), 
                    aes(x = year, y = new_wells, color = version)) + 
     geom_line(alpha = 0.7, size = 1) +
+    geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
+               aes(x = year, y = new_wells, color = version), shape = 3) +
     facet_grid(~ scen_name) +
     labs(title = 'State-level new wells',
          subtitle = 'number of new wells', 
