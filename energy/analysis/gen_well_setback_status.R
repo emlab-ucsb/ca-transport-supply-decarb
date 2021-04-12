@@ -2,7 +2,7 @@
 # This script generates the well attributes within_Xft of SR for X = {1,000ft, 2,500ft, 1 mille, and 10,000ft}
 # Sandy Sum
 # sandysum@ucsb.edu
-# written: 4/9/2021 | modified
+# written: 4/9/2021 | modified: 4/12/2021
 ##################################################################
 
 # comment out and add your own machine's file path
@@ -14,19 +14,24 @@ library(tidyverse)
 library(purrr)
 library(rgdal)
 
-# read data in 
+################################# READ DATA AND TRANSFORM
 
+# to get the names of layers in the shapefile
 layers <- sf::st_layers(dsn = file.path(home, "emlab/projects/current-projects/calepa-cn/data/FracTracker/FracTrackerSetbackgdb-newest/FracTrackerSetbackgdb/FracTrackerSetbackdata.gdb"))
 
 sr <- sf::st_read(dsn = file.path(home, "emlab/projects/current-projects/calepa-cn/data/FracTracker/FracTrackerSetbackgdb-newest/FracTrackerSetbackgdb/FracTrackerSetbackdata.gdb"), layer = "SetbackOutlines_SR_Dwellings_082220")
 sr <- sr  %>% st_transform(3488) 
+
 # transform to NAD83(NSRS2007) / California Albers
 # units will be in meters
+
+# transform to NAD83(NSRS2007) / California Albers as well for wells and field boundaries
 wells <- sf::st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/allwells/Wells_All.shp")) %>% st_transform(3488)
 
-boundaries <- st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp")) %>%  st_transform(3488)
+boundaries <- st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp")) %>% st_transform(3488)
 
-######### Define function
+################################# DEFINE FUNCTIONS 
+
 ensure_multipolygons <- function(X) {
   tmp1 <- tempfile(fileext = ".gpkg")
   tmp2 <- tempfile(fileext = ".gpkg")
@@ -48,12 +53,34 @@ gen_within_vars <- function(sr_df, wells_df, ft) {
   wells_df
 }
 
+gen_field_setback_coverage <- function(field_index, sr, ft = c(1000, 2500, 5280, 10000)) {
+  field <- boundaries[field_index,]
+  for (i in 1:length(ft)){
+    # browser()
+    d = ft[i]
+    m = d*0.3048
+    buf <- st_buffer(st_geometry(sr), dist = m) %>% st_union()
+    int <- as_tibble(st_intersection(buf, field))
+    if (nrow(int)==0){
+      area = 0
+    } else {
+      area = st_area(int$geometry)/st_area(field)
+    }
+    field <- field %>% 
+      mutate(!!(paste0("percent_within_", d)) := area)
+  }
+  field %>% as_tibble()
+}
+
 # convert the multisurface to multipolygon
 
 sr_1 <- ensure_multipolygons(sr[1,])
 sr[1,] <- sr_1
 
-# drop the MULTISURFACE
+# drop the MULTISURFACE as it seems to be the union of all the other MULTIPOLYGONS in the rest of the file 
+# see Sandy's notes in https://docs.google.com/document/d/1j_5GoAH2Mpqon4sHqZt29Qh31yAP5kKgCgGddfOQ4Nw/edit#
+
+################################# GENERATE WELL SETBACK SCENARIO ATTRIBUTES (IN OR OUT FOR d = c(1000, 2500, 5280, 10000))
 sr <- sr[-1,]
 
 out <- gen_within_vars(sr, wells, ft = c(1000, 2500, 5280, 10000))
@@ -97,26 +124,7 @@ tracey_wells %>% group_by(setback_scenario) %>%
 # 3 setback_2500ft   16806
 # 4 setback_5280ft   35274
 
-##################### to find buffer #####################
-
-gen_field_setback_coverage <- function(field_index, sr, ft = c(1000, 2500, 5280, 10000)) {
-  field <- boundaries[field_index,]
-  for (i in 1:length(ft)){
-    # browser()
-    d = ft[i]
-    m = d*0.3048
-    buf <- st_buffer(st_geometry(sr), dist = m) %>% st_union()
-    int <- as_tibble(st_intersection(buf, field))
-    if (nrow(int)==0){
-      area = 0
-    } else {
-      area = st_area(int$geometry)/st_area(field)
-    }
-    field <- field %>% 
-      mutate(!!(paste0("percent_within_", d)) := area)
-  }
-  field %>% as_tibble()
-}
+################################# GENERATE FIELD COVERAGE ATTRIBUTES (IN OR OUT FOR d = c(1000, 2500, 5280, 10000))
 
 field_out <- map(1:nrow(boundaries), gen_field_setback_coverage, sr=sr, ft = c(1000, 2500, 5280, 10000))
 field_df <- field_out %>% purrr::map(~(.x %>% mutate_at(vars(contains('percent')), as.double))) %>% 
@@ -125,9 +133,6 @@ field_df <- field_out %>% purrr::map(~(.x %>% mutate_at(vars(contains('percent')
 # read in tracey's output
 
 tracey_coverage <- read_csv(file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage.csv"))
-
-tracey_wells %>% group_by(setback_scenario) %>% 
-  summarize(n_in = sum(in_setback))
 
 field_df <- field_df %>%
   as_tibble() %>%
