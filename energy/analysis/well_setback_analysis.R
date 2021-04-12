@@ -24,7 +24,7 @@ sr <- sr  %>% st_transform(3488)
 # units will be in meters
 wells <- sf::st_read(file.path(sandy, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/allwells/Wells_All.shp")) %>% st_transform(3488)
 
-boundaries <- st_read(file.path(sandy, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp"))
+boundaries <- st_read(file.path(sandy, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp")) %>% st_transform(3488)
 
 # read in Tracey's input 
 
@@ -107,6 +107,63 @@ ggplot(data = sub) +
   geom_sf(data = test, aes(color = factor(within1000)), fill = NA, size = 2) +
   theme_bw()
 
-####################### read in Tracey's input to get format ####################
+####################### field analysis ####################
+
+d = 2000
+
+# test on subset geom # 1000-1005
+sub <- sr[-1,]
+
+# approach for this differently, do for each field
+# for field i
+i=50
+plot(st_geometry(boundaries[i,]), axes = TRUE)
+
+# expand the bbox to see more
+b <- st_bbox(boundaries[i,]) 
+b$xmin <- b$xmin %>% as.double()-1000
+b$xmax <- b$xmax+1000
+b$ymin <- b$ymin-1000
+b$ymax <- b$ymax+1000
+
+b <- b %>% unlist() %>% sf::st_bbox(crs = st_crs(3488)) %>% 
+  sf::st_as_sfc(.)
+
+id_sr <- sf::st_intersects(sub, b, sparse = TRUE)
+sub_sr <- sr[which(lengths(id_sr) != 0), ]
 
 
+buf <- st_buffer(st_geometry(sub_sr), dist = d) %>% st_union()
+int <- as_tibble(st_intersection(buf, boundaries[i,]))
+st_area(int$geometry)
+st_area(boundaries[i,])
+plot(buf, border = 'red', )
+plot(st_geometry(boundaries[i,]), axes = TRUE, add = TRUE, col = "gray")
+plot(int, add=TRUE, border = "green", col =" green")
+plot(st_geometry(sub_sr), add = TRUE)
+plot(buf, border = 'red', add = TRUE)
+
+# ok this works
+
+# use a for loop instead of function
+sr <- sr[-1,]
+gen_field_setback_coverage <- function(field_index, sr, ft = c(1000, 2500, 5280, 10000)) {
+  field <- boundaries[field_index,]
+  for (i in 1:length(ft)){
+    # browser()
+    d = ft[i]
+    m = d*0.3048
+    buf <- st_buffer(st_geometry(sr), dist = m) %>% st_union()
+    int <- as_tibble(st_intersection(buf, field))
+    if (nrow(int)==0){
+      area = 0
+    } else {
+    area = st_area(int$geometry)/st_area(field)
+    }
+    field <- field %>% 
+      mutate(!!(paste0("percent_within_", d)) := area)
+  }
+  field %>% as_tibble()
+}
+
+chk <- gen_field_setback_coverage(100, sr, ft = c(1000, 2500, 5280, 10000))

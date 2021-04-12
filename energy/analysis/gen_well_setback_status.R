@@ -24,7 +24,7 @@ sr <- sr  %>% st_transform(3488)
 # units will be in meters
 wells <- sf::st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/allwells/Wells_All.shp")) %>% st_transform(3488)
 
-boundaries <- st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp"))
+boundaries <- st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp")) %>%  st_transform(3488)
 
 ######### Define function
 ensure_multipolygons <- function(X) {
@@ -75,6 +75,7 @@ out_df <- out %>%
 out_df %>% group_by(setback_scenario) %>% 
   summarize(n_in = sum(in_setback))
 
+# save output
 write_csv(out_df, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_test_R.csv"))
 # setback_scenario   n_in
 # <chr>             <dbl>
@@ -95,3 +96,50 @@ tracey_wells %>% group_by(setback_scenario) %>%
 # 2 setback_1000ft    8055
 # 3 setback_2500ft   16806
 # 4 setback_5280ft   35274
+
+##################### to find buffer #####################
+
+gen_field_setback_coverage <- function(field_index, sr, ft = c(1000, 2500, 5280, 10000)) {
+  field <- boundaries[field_index,]
+  for (i in 1:length(ft)){
+    # browser()
+    d = ft[i]
+    m = d*0.3048
+    buf <- st_buffer(st_geometry(sr), dist = m) %>% st_union()
+    int <- as_tibble(st_intersection(buf, field))
+    if (nrow(int)==0){
+      area = 0
+    } else {
+      area = st_area(int$geometry)/st_area(field)
+    }
+    field <- field %>% 
+      mutate(!!(paste0("percent_within_", d)) := area)
+  }
+  field %>% as_tibble()
+}
+
+field_out <- map(1:nrow(boundaries), gen_field_setback_coverage, sr=sr, ft = c(1000, 2500, 5280, 10000))
+field_df <- field_out %>% purrr::map(~(.x %>% mutate_at(vars(contains('percent')), as.double))) %>% 
+  bind_rows()
+
+# read in tracey's output
+
+tracey_coverage <- read_csv(file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage.csv"))
+
+tracey_wells %>% group_by(setback_scenario) %>% 
+  summarize(n_in = sum(in_setback))
+
+field_df <- field_df %>%
+  as_tibble() %>%
+  dplyr::select(
+    FieldCode = FIELD_CODE,
+    setback_2500ft = percent_within_2500,
+    setback_5280ft = percent_within_5280,
+    setback_1000ft = percent_within_1000,
+    setback_10000ft = percent_within_10000
+  ) %>% 
+  gather("setback_scenario", "percent_coverage", -FieldCode)
+
+# save output
+
+write_csv(field_df, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage_R.csv"))
