@@ -13,6 +13,7 @@ library(sf)
 library(tidyverse)
 library(purrr)
 library(rgdal)
+library(maps)
 
 ################################# READ DATA AND TRANSFORM
 
@@ -26,7 +27,10 @@ sr <- sr  %>% st_transform(3488)
 # units will be in meters
 
 # transform to NAD83(NSRS2007) / California Albers as well for wells and field boundaries
-wells <- sf::st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/allwells/Wells_All.shp")) %>% st_transform(3488)
+wells <- sf::st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/allwells/Wells_All.shp")) %>% 
+  st_transform(3488) %>%
+  dplyr::select(API, WellStatus) %>%
+  unique()
 
 boundaries <- st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp")) %>% st_transform(3488)
 
@@ -89,12 +93,13 @@ out_df <- out %>%
   as_tibble() %>%
   dplyr::select(
     api_ten_digit = API,
+    well_status = WellStatus,
     setback_2500ft = within2500,
     setback_5280ft = within5280,
     setback_1000ft = within1000,
     setback_10000ft = within10000
   ) %>% 
-  gather("setback_scenario", "in_setback", -api_ten_digit) %>% 
+  gather("setback_scenario", "in_setback", -c(api_ten_digit, well_status)) %>% 
   mutate(in_setback = as.numeric(in_setback))
 
 # check number in setback compared to tracey's output
@@ -102,27 +107,67 @@ out_df <- out %>%
 out_df %>% group_by(setback_scenario) %>% 
   summarize(n_in = sum(in_setback))
 
-# save output
-write_csv(out_df, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_test_R.csv"))
-# setback_scenario   n_in
-# <chr>             <dbl>
-#   1 setback_10000ft  138783
-# 2 setback_1000ft    19529
-# 3 setback_2500ft    41446
-# 4 setback_5280ft    82256
+tracey_wells <- read_csv(file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_test.csv")) %>%
+  mutate(api_ten_digit = as.character(paste0("0", api_ten_digit))) %>%
+  rename(in_setback_orig = in_setback) %>%
+  filter(setback_scenario != "no_setback")
 
-tracey_wells <- read_csv(file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_test.csv"))
+
+## get wells that produce oil
+well_prod <- read_rds(paste0(home, "/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/well_prod_m.rds")) %>%
+  mutate(api_ten_digit = substr(APINumber, 1, 10)) %>%
+  dplyr::select(api_ten_digit, OilorCondensateProduced) %>%
+  group_by(api_ten_digit) %>%
+  summarise(prod = sum(OilorCondensateProduced, na.rm = T)) %>%
+  ungroup() %>%
+  filter(prod > 0)
+
+compare_df <- full_join(out_df, tracey_wells) %>%
+  filter(api_ten_digit %in% well_prod$api_ten_digit)
 
 tracey_wells %>% group_by(setback_scenario) %>% 
   summarize(n_in = sum(in_setback))
 
-# # A tibble: 4 x 2
-# setback_scenario  n_in
-# <chr>            <dbl>
-#   1 no_setback           0
-# 2 setback_1000ft    8055
-# 3 setback_2500ft   16806
-# 4 setback_5280ft   35274
+# save output
+write_csv(out_df, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_test_R.csv"))
+
+## make plot
+## map
+
+ca <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
+  filter(ID == "california")
+
+## buffers
+buf1000 <- st_buffer(st_geometry(sr), dist = 1000 * 0.3048)
+buf10000 <- st_buffer(st_geometry(sr), dist = 10000 * 0.3048)  
+
+
+map_figure <- ggplot(data = ca) +
+  geom_sf() +
+  geom_sf(data = out, aes(color = within10000), size = 0.2, alpha = 0.4) +
+  geom_sf(data = buf10000, color = "black", fill = NA) +
+  # scale_fill_viridis_c(option = "plasma") +
+  # # scale_fill_viridis_c(option = "plasma", trans = "sqrt") +
+  # facet_wrap(~ year) +
+  theme_minimal() +
+  labs(
+    x = "",
+    y = "") +
+  theme(
+    panel.background = element_rect(fill="white"),
+    panel.grid.major = element_line(colour = "white"),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    text = element_text(size=15),
+    legend.direction = "vertical"
+  ) 
+
+
+
+
 
 ################################# GENERATE FIELD COVERAGE ATTRIBUTES (IN OR OUT FOR d = c(1000, 2500, 5280, 10000))
 

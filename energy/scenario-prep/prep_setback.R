@@ -9,7 +9,7 @@ path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/cal
 
 ## read in files
 setback_coverage <- read_csv(paste0(path, "outputs/setback/oilfields_setbackeffects.csv"))
-setback_wells <- read_csv(paste0(path, "outputs/setback/activewells_prod_nearSR_multdist_csv.csv"))
+setback_wells <- read.csv(paste0(path, "outputs/setback/activewells_prod_nearSR_multdist_csv.csv"))
 
 ## new wells -- coverage
 ## ---------------------------------------------------
