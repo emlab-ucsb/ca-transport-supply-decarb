@@ -126,7 +126,7 @@ compare_df <- full_join(out_df, tracey_wells) %>%
   filter(api_ten_digit %in% well_prod$api_ten_digit)
 
 tracey_wells %>% group_by(setback_scenario) %>% 
-  summarize(n_in = sum(in_setback))
+  summarize(n_in = sum(in_setback_orig))
 
 # save output
 write_csv(out_df, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_test_R.csv"))
