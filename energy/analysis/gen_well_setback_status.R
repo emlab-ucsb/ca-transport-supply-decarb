@@ -13,6 +13,7 @@ library(sf)
 library(tidyverse)
 library(purrr)
 library(rgdal)
+library(gdalUtilities)
 library(maps)
 
 ################################# READ DATA AND TRANSFORM
