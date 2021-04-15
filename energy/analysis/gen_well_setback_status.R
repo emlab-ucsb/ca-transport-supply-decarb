@@ -130,7 +130,7 @@ tracey_wells %>% group_by(setback_scenario) %>%
   summarize(n_in = sum(in_setback_orig))
 
 # save output
-write_csv(out_df, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_test_R.csv"))
+write_csv(out_df, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_revised.csv"))
 
 ## make plot
 ## map
