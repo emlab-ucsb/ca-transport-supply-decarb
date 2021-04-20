@@ -36,8 +36,8 @@ fieldcodes <- unique(wells_19[, .(FieldCode, FieldName)])
   
 ## join to well prod
 well_prod <- merge(well_prod, fieldcodes)
-well_prod[, ':=' (FieldCode = fifelse(FieldCode == "848", "849", FieldCode),
-                  FieldName = fifelse(FieldName == "Old Wilmington (ABD)", "Wilmington", FieldName))]
+# well_prod[, ':=' (FieldCode = fifelse(FieldCode == "848", "849", FieldCode),
+#                   FieldName = fifelse(FieldName == "Old Wilmington (ABD)", "Wilmington", FieldName))]
 
 setnames(well_prod, c("FieldCode", "FieldName"), c('doc_field_code', "doc_fieldname"))
 
