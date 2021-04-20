@@ -15,6 +15,11 @@ library(purrr)
 library(rgdal)
 library(gdalUtilities)
 library(maps)
+library(mapview)
+
+## quick CA
+ca <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
+  filter(ID == "california")
 
 ################################# READ DATA AND TRANSFORM
 
@@ -23,6 +28,7 @@ layers <- sf::st_layers(dsn = file.path(home, "emlab/projects/current-projects/c
 
 sr <- sf::st_read(dsn = file.path(home, "emlab/projects/current-projects/calepa-cn/data/FracTracker/FracTrackerSetbackgdb-newest/FracTrackerSetbackgdb/FracTrackerSetbackdata.gdb"), layer = "SetbackOutlines_SR_Dwellings_082220")
 sr <- sr  %>% st_transform(3488) 
+sr <- sf::st_cast(sr, "MULTIPOLYGON")
 
 # transform to NAD83(NSRS2007) / California Albers
 # units will be in meters
@@ -37,13 +43,21 @@ boundaries <- st_read(file.path(home, "emlab/projects/current-projects/calepa-cn
 
 ################################# DEFINE FUNCTIONS 
 
-ensure_multipolygons <- function(X) {
-  tmp1 <- tempfile(fileext = ".gpkg")
-  tmp2 <- tempfile(fileext = ".gpkg")
-  st_write(X, tmp1)
-  ogr2ogr(tmp1, tmp2, f = "GPKG", nlt = "MULTIPOLYGON")
-  Y <- st_read(tmp2)
-  st_sf(st_drop_geometry(X), geom = st_geometry(Y))
+# ensure_multipolygons <- function(X) {
+#   tmp1 <- tempfile(fileext = ".gpkg")
+#   tmp2 <- tempfile(fileext = ".gpkg")
+#   st_write(X, tmp1)
+#   ogr2ogr(tmp1, tmp2, f = "GPKG", nlt = "MULTIPOLYGON")
+#   Y <- st_read(tmp2)
+#   st_sf(st_drop_geometry(X), geom = st_geometry(Y))
+# }
+
+create_buffer <- function(dist_ft) {
+  
+  buffer <- sr %>%
+    st_buffer(dist = dist_ft * ft_to_m) %>%
+    st_union() 
+  
 }
 
 gen_within_vars <- function(sr_df, wells_df, ft) {
@@ -79,14 +93,39 @@ gen_field_setback_coverage <- function(field_index, sr, ft = c(1000, 2500, 5280,
 
 # convert the multisurface to multipolygon
 
-sr_1 <- ensure_multipolygons(sr[1,])
-sr[1,] <- sr_1
+# sr_1 <- ensure_multipolygons(sr[1,])
+# sr[1,] <- sr_1
 
 # drop the MULTISURFACE as it seems to be the union of all the other MULTIPOLYGONS in the rest of the file 
 # see Sandy's notes in https://docs.google.com/document/d/1j_5GoAH2Mpqon4sHqZt29Qh31yAP5kKgCgGddfOQ4Nw/edit#
 
 ################################# GENERATE WELL SETBACK SCENARIO ATTRIBUTES (IN OR OUT FOR d = c(1000, 2500, 5280, 10000))
-sr <- sr[-1,]
+# sr <- sr[-1,]
+
+
+ft_to_m <- 0.3048
+dist_list <- as.list(c(1000, 2500, 5280, 10000))
+
+b1000 <- create_buffer(dist_list[[1]])
+b2500 <- create_buffer(dist_list[[2]])
+b5280 <- create_buffer(dist_list[[3]])
+b10000 <- create_buffer(dist_list[[4]])
+
+test <- wells %>%
+  mutate(within_1000 = st_within(b1000))
+
+test <- wells %>% 
+  mutate(within_1000 = st_contains(wells, b1000) %>% lengths() > 0 %>% as.numeric())
+
+
+## buffers
+buf1000 <- st_buffer(st_geometry(sr), dist = 1000 * 0.3048)
+buf2500 <- st_buffer(st_geometry(sr), dist = 2500 * 0.3048)
+buf5280 <- st_buffer(st_geometry(sr), dist = 5280 * 0.3048) 
+buf10000 <- st_buffer(st_geometry(sr), dist = 10000 * 0.3048)  
+
+
+
 
 out <- gen_within_vars(sr, wells, ft = c(1000, 2500, 5280, 10000))
 
@@ -132,15 +171,8 @@ tracey_wells %>% group_by(setback_scenario) %>%
 # save output
 write_csv(out_df, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/wells_in_setbacks_revised.csv"))
 
-## make plot
-## map
+## make maps
 
-ca <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
-  filter(ID == "california")
-
-## buffers
-buf1000 <- st_buffer(st_geometry(sr), dist = 1000 * 0.3048)
-buf10000 <- st_buffer(st_geometry(sr), dist = 10000 * 0.3048)  
 
 
 map_figure <- ggplot(data = ca) +
@@ -172,24 +204,54 @@ map_figure <- ggplot(data = ca) +
 
 ################################# GENERATE FIELD COVERAGE ATTRIBUTES (IN OR OUT FOR d = c(1000, 2500, 5280, 10000))
 
-field_out <- map(1:nrow(boundaries), gen_field_setback_coverage, sr=sr, ft = c(1000, 2500, 5280, 10000))
+field_out <- purrr::map(1:nrow(boundaries), gen_field_setback_coverage, sr=sr, ft = c(1000, 2500, 5280, 10000))
+field_out <- purrr::map(c(1, 60, 57, 170), gen_field_setback_coverage, sr=sr, ft = c(1000, 2500, 5280, 10000))
 field_df <- field_out %>% purrr::map(~(.x %>% mutate_at(vars(contains('percent')), as.double))) %>% 
   bind_rows()
-
-# read in tracey's output
-
-tracey_coverage <- read_csv(file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage.csv"))
 
 field_df <- field_df %>%
   as_tibble() %>%
   dplyr::select(
     FieldCode = FIELD_CODE,
+    area_sq_mi = AREA_SQ_MI,
+    area_acre = AREA_ACRE, 
     setback_2500ft = percent_within_2500,
     setback_5280ft = percent_within_5280,
     setback_1000ft = percent_within_1000,
     setback_10000ft = percent_within_10000
   ) %>% 
-  gather("setback_scenario", "percent_coverage", -FieldCode)
+  gather("setback_scenario", "percent_coverage", -FieldCode, -area_sq_mi, -area_acre)
+
+## compare output
+
+# read in original output
+orig_coverage <- read_csv(file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage.csv")) %>%
+  rename(orig_area_coverage = area_coverage)
+
+
+output <- read_csv(paste0(home, "/emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage_R.csv")) %>%
+  rename(revised_coverage = percent_coverage)
+
+comp_coverage <- full_join(output, orig_coverage) %>%
+  mutate(diff = revised_coverage - orig_area_coverage) %>%
+  filter(!is.na(orig_area_coverage),
+         diff < -0.01 | diff > 0.01)
+
+
+## save maps for examining
+
+coverage_map <-  
+  mapview(boundaries %>% filter(FIELD_CODE %in% field_df$FieldCode), layer.name = "Field boundary", label = 'NAME', col.regions = "yellow", legend = FALSE) +
+  mapview(buf1000, layer.name = "1000ft") +
+  mapview(buf2500, layer.name = "2500ft") +
+  mapview(buf5280, layer.name = "5280ft") +
+  mapview(buf10000, layer.name = "10000ft")
+
+# # save output
+# mapshot(coverage_map, url = paste0(home, "/emlab/projects/current-projects/calepa-cn/outputs/setback/review/coverage/coverage_map.html"), selfcontained = F)
+                
+                            
+
 
 # save output
 
