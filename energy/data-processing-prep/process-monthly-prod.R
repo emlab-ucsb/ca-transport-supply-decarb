@@ -58,3 +58,9 @@ setcolorder(well_prod, c("ReportType", "APINumber", "api_ten_digit", "doc_field_
                          "GasProduced", "WaterProduced", "ReportedOrEstimated"))
 
 fwrite(well_prod, paste0(data_dir, 'well_prod_m_processed.csv'))
+
+## doc field codes, field names
+field_info <- unique(well_prod[, c("doc_field_code", "doc_fieldname")])
+
+fwrite(field_info, paste0(data_dir, 'field_info.csv'))
+
