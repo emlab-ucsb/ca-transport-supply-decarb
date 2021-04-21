@@ -31,6 +31,9 @@ setnames(field_asset_match, "FieldCode", "doc_field_code")
 ## monthly well production
 well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                      'doc_field_code' = 'character'))
+## fieldcodes 
+fieldcodes <- unique(well_prod[, c("doc_field_code", "doc_fieldname")])
+
 ## field boundaries
 fields_loc <- st_read(paste0(sp_dir, field_b_file)) %>%
   st_transform(CRS("+init=epsg:3310"))
@@ -49,7 +52,7 @@ well_match_df <- well_match_df[!is.na(original_asset_name) & !is.na(total_prod)]
 
 
 ## fields that get matched with assets
-matches <- unique(well_match_df[, c("total_prod", "n_wells_asset") := NULL])
+matches <- unique(well_match_df[, c("total_prod") := NULL])
  
 # ## save file
 # write_csv(field_asset_well_match, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/well_doc_asset_match_revised.csv")
@@ -134,7 +137,7 @@ nn_fields_n <- nn_fields %>%
 write_csv(nn_fields, file = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/field_x_field_match_revised.csv")
 
 
-# 
+## ---------------------------------------------
 ## visualizations
 fields_sf2 <- fields_loc %>%
   filter(FIELD_CODE %in% productive_fields$doc_field_code) %>%
@@ -149,6 +152,64 @@ counties <- read_sf(dsn = paste0("/Volumes/GoogleDrive/Shared\ drives/emlab/proj
 ## mapview
 mapview::mapview(fields_sf2, zcol = "cost_info", layer.name = "Fields", label = fields_sf2$NAME) +
   mapview::mapview(counties, layer.name = "County boundaries", col.regions = "grey", alpha = 0.1, label = counties$NAME)
+
+##########################################################
+# finish matching
+##########################################################
+
+## are there multiple assets in a field?
+n_assets_x_field <- well_match_df[, .(n = .N), by = original_asset_name]
+
+ggplot(n_assets_x_field, aes(x = n)) +
+  geom_histogram(binwidth = 1)
+## yes
+
+## are there any doc fields without assets?
+full_merge <- merge(productive_fields, field_asset_match, all = TRUE)
+full_merge[, n_wells_asset := NULL]
+
+na_asset <- full_merge[is.na(original_asset_name)]
+
+nrow(na_asset)
+## 124
+
+## filter for the fields without an asset
+na_asset2 <- unique(na_asset[, c("total_prod", "original_asset_name") := NULL])
+
+## filter field to field match for fields missing assets
+sp_match <- merge(na_asset2, nn_fields)
+sp_match[, ':=' (n_wells_asset = 1,
+                 match_method = "spatial")]
+
+
+anti_join(na_asset2 %>% select(doc_field_code) %>% unique(), sp_match %>% select(doc_field_code) %>% unique())
+# 154 - Coal Oil Point Offshore (ABD) -- this field is not in the field boundary spatial data
+
+## join with original matches to get assets
+w_matches <- copy(full_merge) 
+setnames(w_matches, "doc_field_code", "nn_field_code")
+w_matches[, total_prod := NULL]
+w_matches <- w_matches[!is.na(original_asset_name)]
+
+
+sp_matches2 <- merge(sp_match, w_matches, by = "nn_field_code") 
+sp_matches2 <- sp_matches2[, c("doc_field_code", "original_asset_name", "n_wells_asset",  "match_method", "dist")]
+
+
+## all combos
+all_combos <- copy(matches) 
+all_combos[, ':=' (match_method = "well_match",
+                   dist = NA)]
+
+all_combos <- rbind(all_combos, sp_matches2)
+all_combos <- merge(all_combos, fieldcodes)
+setnames(all_combos, "dist", "dist_m")
+all_combos <- all_combos[, c("doc_field_code", "doc_fieldname", "original_asset_name", "n_wells_asset", "match_method", "dist_m")]
+
+
+## save file
+write_csv(all_combos, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/field_asset_matches_v2_revised.csv")
+
 
 
 
