@@ -13,17 +13,13 @@ rystad_file  <- "field_rystad_match_apis.csv"
 prod_file    <- "well_prod_m_processed.csv"
 field_b_file <- "DOGGR_Admin_Boundaries_Master.shp"
 
-## -------------------------- ibrary
+## -------------------------- library
 library(tidyverse)
 library(data.table)
 library(sf)
 library(rgeos) #nearest poly to each point
 library(nngeo) #nearest point to each poly
 
-# ## source items
-# items <- list.files(here::here("src"))
-# 
-# walk(items, ~ here::here("src", .x) %>% source()) # load local items
 
 ## --------------------------- read inputs
 
@@ -59,13 +55,10 @@ matches <- unique(well_match_df[, c("total_prod", "n_wells_asset") := NULL])
 # write_csv(field_asset_well_match, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/well_doc_asset_match_revised.csv")
 
 ##########################################################
-##########################################################
+# find nearest field
 ##########################################################
 
 
-library(mapview)
-library(leaflet)
-library(maps)
 
 ## reassign 848 to 849 because Old Wilmington does not have a spatial boundary, but we know it is in the
 ## same spot at 849
@@ -141,18 +134,19 @@ nn_fields_n <- nn_fields %>%
 write_csv(nn_fields, file = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/field_x_field_match_revised.csv")
 
 
-# ## figure
-# fields_sf2 <- fields_loc %>%
-#   mutate(cost_info = ifelse(NAME %in% field_options$NAME, "yes", "no"))
-# 
-# 
-# ## counties
-# counties <- read_sf(dsn = paste0(sp_dir, "raw/CA_Counties/", layer = "CA_Counties_TIGER2016.shp")) %>%
-#   st_transform(CRS("+init=epsg:3310"))
-# 
-# ## mapview 
-# mapview(fields_sf2, zcol = "cost_info", layer.name = "Fields", label = fields_sf2$NAME) + 
-#   mapview(counties, layer.name = "County boundaries", col.regions = "grey", alpha = 0.1, label = counties$NAME) 
+
+## figure
+fields_sf2 <- fields_loc %>%
+  filter(FIELD_CODE %in% productive_fields$doc_field_code) %>%
+  mutate(cost_info = ifelse(NAME %in% field_options$NAME, "yes", "no"))
+
+## counties
+counties <- read_sf(dsn = paste0("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/GIS/raw/CA_Counties/", layer = "CA_Counties_TIGER2016.shp")) %>%
+  st_transform(CRS("+init=epsg:3310"))
+
+## mapview
+mapview::mapview(fields_sf2, zcol = "cost_info", layer.name = "Fields", label = fields_sf2$NAME) +
+  mapview::mapview(counties, layer.name = "County boundaries", col.regions = "grey", alpha = 0.1, label = counties$NAME)
 
 
 
