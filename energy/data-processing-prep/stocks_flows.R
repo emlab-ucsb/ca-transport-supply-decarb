@@ -85,6 +85,24 @@ spt_price_m2 <- spt_price_m %>%
 ## save clean file
 write_csv(spt_price_m2, path = paste0(data_directory, "processed/spot_price_wti_m.csv"))
 
+## WTI annual prices of crude
+## ---------------------------------------------------------------------------------------
+
+## read in data
+spt_price_a <- read_xls(paste0(data_directory, "raw/PET_PRI_SPT_S1_A.xls"), sheet = 2, skip = 2)
+colnames(spt_price_a) <- c("date", "cushing_ok_wti_FOB", "europe_brent_FOB")
+
+spt_price_a2 <- spt_price_a %>%
+  pivot_longer(cushing_ok_wti_FOB:europe_brent_FOB, names_to = "price", values_to = "value") %>%
+  mutate(unit = "dollars_per_barrel",
+         description = ifelse(price == "cushing_ok_wti_FOB", "Cushing, OK WTI Spot Price FOB", "Europe Brent Spot Price FOB"),
+         product = "crude_oil") %>%
+  select(date, description, product, price, value, unit) %>%
+  mutate(source = "EIA",
+         url = "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_a.htm")
+
+## save clean file
+write_csv(spt_price_a2, file = paste0(data_directory, "processed/eia_spot_price_a.csv"))
 
 ## Domestic Crude Oil First Purchase Prices for Selected Crude Streams
 ## ---------------------------------------------------------------------------------------
