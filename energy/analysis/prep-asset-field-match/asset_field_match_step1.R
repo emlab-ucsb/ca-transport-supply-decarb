@@ -134,11 +134,13 @@ nn_fields_n <- nn_fields %>%
 write_csv(nn_fields, file = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/field_x_field_match_revised.csv")
 
 
-
-## figure
+# 
+## visualizations
 fields_sf2 <- fields_loc %>%
   filter(FIELD_CODE %in% productive_fields$doc_field_code) %>%
-  mutate(cost_info = ifelse(NAME %in% field_options$NAME, "yes", "no"))
+  mutate(cost_info = ifelse(NAME %in% field_options$NAME, "yes", "no")) %>%
+  left_join(nn_fields, by = c("FIELD_CODE" = "doc_field_code")) %>%
+  select(NAME, FIELD_CODE, nn_field_code, nn_field_name, cost_info)
 
 ## counties
 counties <- read_sf(dsn = paste0("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/GIS/raw/CA_Counties/", layer = "CA_Counties_TIGER2016.shp")) %>%
@@ -147,7 +149,6 @@ counties <- read_sf(dsn = paste0("/Volumes/GoogleDrive/Shared\ drives/emlab/proj
 ## mapview
 mapview::mapview(fields_sf2, zcol = "cost_info", layer.name = "Fields", label = fields_sf2$NAME) +
   mapview::mapview(counties, layer.name = "County boundaries", col.regions = "grey", alpha = 0.1, label = counties$NAME)
-
 
 
 
