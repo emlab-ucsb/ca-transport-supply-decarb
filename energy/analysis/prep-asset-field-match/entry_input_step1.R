@@ -62,7 +62,6 @@ matches <- unique(well_match_df[, c("total_prod") := NULL])
 ##########################################################
 
 
-
 ## reassign 848 to 849 because Old Wilmington does not have a spatial boundary, but we know it is in the
 ## same spot at 849
 
@@ -72,6 +71,8 @@ matches[, doc_field_code := fifelse(doc_field_code == "848", "849", doc_field_co
 field_options <- fields_loc %>%
   st_transform(CRS("+init=epsg:3310")) %>%
   filter(FIELD_CODE %in% matches$doc_field_code) 
+
+## no match for 000 Any field
 
 ## function - find nearest neighbor
 
@@ -123,6 +124,9 @@ find_nfield <- function(fcode) {
 valid_fields <- fields_loc %>% 
   filter(FIELD_CODE %in% productive_fields$doc_field_code)
 
+# anti_join(productive_fields %>% select(doc_field_code) %>% unique(), valid_fields %>% rename(doc_field_code = FIELD_CODE) %>% select(doc_field_code) %>% unique())
+
+
 field_vec <- unique(valid_fields$FIELD_CODE)
 
 nn_fields <- purrr::map(field_vec, find_nfield) %>%
@@ -165,7 +169,7 @@ ggplot(n_assets_x_field, aes(x = n)) +
 ## yes
 
 ## are there any doc fields without assets?
-full_merge <- merge(productive_fields, field_asset_match, all = TRUE)
+full_merge <- merge(productive_fields, field_asset_match, all.x = TRUE)
 full_merge[, n_wells_asset := NULL]
 
 na_asset <- full_merge[is.na(original_asset_name)]
@@ -186,12 +190,13 @@ anti_join(na_asset2 %>% select(doc_field_code) %>% unique(), sp_match %>% select
 # 154 - Coal Oil Point Offshore (ABD) -- this field is not in the field boundary spatial data
 
 ## join with original matches to get assets
+## direct field to asset matches baased on wells:
 w_matches <- copy(full_merge) 
 setnames(w_matches, "doc_field_code", "nn_field_code")
 w_matches[, total_prod := NULL]
 w_matches <- w_matches[!is.na(original_asset_name)]
 
-
+## add asset (asset of nn)
 sp_matches2 <- merge(sp_match, w_matches, by = "nn_field_code") 
 sp_matches2 <- sp_matches2[, c("doc_field_code", "original_asset_name", "n_wells_asset",  "match_method", "dist")]
 
