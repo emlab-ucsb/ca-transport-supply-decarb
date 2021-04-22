@@ -61,11 +61,10 @@ matches <- unique(well_match_df[, c("total_prod") := NULL])
 # find nearest field
 ##########################################################
 
-
+## OFF FOR NOW
 ## reassign 848 to 849 because Old Wilmington does not have a spatial boundary, but we know it is in the
 ## same spot at 849
-
-matches[, doc_field_code := fifelse(doc_field_code == "848", "849", doc_field_code)]
+# matches[, doc_field_code := fifelse(doc_field_code == "848", "849", doc_field_code)]
 
 ## field options
 field_options <- fields_loc %>%
@@ -199,6 +198,7 @@ w_matches <- w_matches[!is.na(original_asset_name)]
 ## add asset (asset of nn)
 sp_matches2 <- merge(sp_match, w_matches, by = "nn_field_code") 
 sp_matches2 <- sp_matches2[, c("doc_field_code", "original_asset_name", "n_wells_asset",  "match_method", "dist")]
+sp_matches2 <- sp_matches2 %>% unique()
 
 
 ## all combos
