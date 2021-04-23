@@ -115,7 +115,10 @@ test <- wells %>%
   mutate(within_1000 = st_within(b1000))
 
 test <- wells %>% 
-  mutate(within_1000 = st_contains(wells, b1000) %>% lengths() > 0 %>% as.numeric())
+  mutate(within_1000 = st_within(wells, b1000) %>% lengths() > 0 %>% as.numeric())
+
+mapview(b1000) +
+  mapview(wells, cex = 0.5)
 
 
 ## buffers
