@@ -56,8 +56,6 @@ eia <- eia %>%
 
 rystad_b <- fread(paste0(proj_dir, rystad_path, "raw/", rystad_b))
 
-
-
 rystad<- rystad_b %>%
   rename(year = `[Data Values]`,
          wti = `WTI Cushing oil price (USD/bbl)`,
@@ -82,7 +80,7 @@ ggplot(rystad %>% filter(year <= 2020), aes(x = year, y = brent_price, color = s
   theme(axis.title.x = element_blank())
   
   
-ggplot(rystad %>% filter(year %in% unique()), aes(x = year, y = brent_price, color = source, group = source, lty = source)) +
+ggplot(rystad %>% filter(year %in% unique(eia$year)), aes(x = year, y = brent_price, color = source, group = source, lty = source)) +
   geom_path(size = 0.7, alpha = 0.8) +
   ylab("price") +
   theme_line +
