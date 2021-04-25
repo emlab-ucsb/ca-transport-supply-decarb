@@ -19,7 +19,7 @@ prod_file               <- "well_prod_m_processed.csv"
 # n_wells_file            <- "well_type_x_field_no_plugged.csv"
 well_start_file         <- "well_start_prod_api10_revised.csv"
 # api_file                <- "annual_wm_api_x_field.csv"
-brent_file              <- "eia_spot_price_a.csv"
+brent_file              <- "wti_brent.csv"
 brent_p_file            <- "brent_oil_price_projections.csv"
 
 
@@ -61,8 +61,7 @@ init_yr_prod <- fread(paste0(proj_dir, output_dir, "well_start_yr/", well_start_
                                                                                                      'doc_field_code' = 'character',
                                                                                                      'api_field' = 'character')) 
 ## prices
-prices <- fread(paste0(proj_dir, data_directory, brent_file))
-
+prices <- fread(paste0(proj_dir, rystad_path, "raw/", brent_file))
 
 ## start with the matches, add all variables
 ## ----------------------------------------------------------------------
@@ -200,7 +199,7 @@ wm_prod_econ_df <- all_combos %>%
 #   rename(doc_field_code = FieldCode)
 
 prod_econ_df4 <- left_join(prod_econ_df3, wm_prod_econ_df) %>%
-  select(doc_fieldname:capex_imputed, wm_capex_imputed, opex_imputed, wm_opex_imputed, wm_cumsum_div_my_prod, wm_cumsum_div_max_res, wm_cumsum_eer_prod_bbl)
+  select(doc_field_code:capex_imputed, wm_capex_imputed, opex_imputed, wm_opex_imputed, wm_cumsum_div_my_prod, wm_cumsum_div_max_res, wm_cumsum_eer_prod_bbl)
 
 ## which fields don't have wells?
 # no_wells <- prod_econ_df4 %>%
@@ -246,17 +245,13 @@ write_csv(final_set, path = paste0(proj_dir, output_dir, "docfield_asset_crosswa
 
 
 ## add price
-prices2 <- prices %>%
-  select(date, price, value) %>%
-  filter(price == "europe_brent_FOB")
-
-price_names <- c("year", "wti", "brent")
-colnames(prices) <- price_names
+colnames(prices) <- c("year", "wti", "brent")
 
 prices2 <- prices %>%
   filter(year != "Year",
          year >= 1977 & year <= 2019) %>%
-  mutate(year = as.numeric(year))
+  mutate(year = as.numeric(year)) %>%
+  dplyr::select(year, brent)
 
 prod_econ_prices_df <- prod_econ_df4 %>%
   left_join(prices2)
@@ -270,14 +265,6 @@ prod_econ_prices_df <- prod_econ_df4 %>%
 
 options(scipen = 999) 
 
-cost_per_eur2 <- cost_per_eur %>%
-  mutate(APInumber = as.character(APInumber),
-         nchar = nchar(APInumber),
-         APINumber = substr(APInumber, 1, 12),
-         api_ten_digit = substr(APInumber, 1, 10)) %>%
-  select(APINumber, api_ten_digit, well_cost_eurusd_per_bbl)
-
-
 ## 10 digit API
 ## -----------------------------------------
 
@@ -290,85 +277,28 @@ cost_per_eur2 <- cost_per_eur %>%
 #   mutate(api_ten_digit = as.character(paste0("0", api_ten_digit)))
 
 
-cost_per_eur2_api10 <- cost_per_eur2 %>%
-  select(api_ten_digit, well_cost_eurusd_per_bbl) %>%
-  group_by(api_ten_digit) %>%
-  mutate(n = n()) %>%
-  ungroup() %>%
-  group_by(api_ten_digit) %>%
-  summarise(well_cost_eurusd_per_bbl = mean(well_cost_eurusd_per_bbl, na.rm = T)) %>%
-  ungroup()
+## "0403702049" has production in first month in two fields
+## how should we treat wells that enter two fields in its first year of production?
+## how should we treat wells that produce in two different fields?
 
 new_prod_df <- init_yr_prod %>%
-  mutate(FieldCode2 = paste0("00", FieldCode),
-         FieldCode3 = str_sub(FieldCode2, start= -3)) %>%
-  rename(orig_fc = FieldCode) %>%
-  rename(FieldCode = FieldCode3) %>%
-  select(-orig_fc, -FieldCode2) %>%
-  mutate(api_ten_digit = as.character(paste0("0", api_ten_digit))) %>%
-  # ## is right?
-  # filter(FieldCode == "848") %>%
-  # ####
-mutate(start_year = year(start_date)) %>%
-  filter(year == start_year) %>%
-  unique() %>%
-  left_join(fieldcodes) %>%
-  group_by(api_ten_digit, FieldName, FieldCode, year) %>%
-  summarise(new_well_prod = sum(prod, na.rm = T)) %>%
+  arrange(api_field, month_year) %>%
+  mutate(year = year(month_year),
+         start_year = year(start_date),
+         start_field = ifelse(start_date == month_year & prod_bbl > 0, doc_field_code, NA)) %>%
+  fill(start_field) %>%
+  filter(year == start_year & doc_field_code == start_field) %>%
+  group_by(api_ten_digit, doc_field_code, year) %>%
+  summarise(new_well_prod = sum(prod_bbl, na.rm = T)) %>%
   ungroup() %>%
-  left_join(cost_per_eur2_api10) %>%
-  group_by(FieldName, FieldCode, year) %>%
+  filter(new_well_prod > 0) %>%
+  group_by(doc_field_code, year) %>%
   summarise(new_prod = sum(new_well_prod),
-            n_new_wells = n(),
-            m_wc_eur_usd_per_bbl = mean(well_cost_eurusd_per_bbl, na.rm = T)) %>%
-  ungroup() %>%
-  rename(doc_field_code = FieldCode) %>%
-  select(-FieldName)
+            n_new_wells = n()) %>%
+  ungroup() 
 
 
 
-## 12 digit API
-## -----------------------------------------
-
-# init_yr_prod2 <- init_yr_prod %>%
-#   mutate(FieldCode2 = paste0("00", FieldCode),
-#          FieldCode3 = str_sub(FieldCode2, start= -3)) %>%
-#   rename(orig_fc = FieldCode) %>%
-#   rename(FieldCode = FieldCode3) %>%
-#   select(-orig_fc, -FieldCode2) %>%
-#   mutate(APINumber = as.character(paste0("0", APINumber))) 
-# 
-# 
-# 
-# new_prod_df <- init_yr_prod %>%
-#   mutate(FieldCode2 = paste0("00", FieldCode),
-#          FieldCode3 = str_sub(FieldCode2, start= -3)) %>%
-#   rename(orig_fc = FieldCode) %>%
-#   rename(FieldCode = FieldCode3) %>%
-#   select(-orig_fc, -FieldCode2) %>%
-#   mutate(APINumber = as.character(paste0("0", APINumber))) %>%
-#   # ## is kern river right?
-#   # filter(FieldCode == "340",
-#   #        year == 2018) %>%
-#   # ####
-#   mutate(start_year = year(start_date)) %>%
-#   filter(year == start_year) %>%
-#   left_join(fieldcodes) %>%
-#   group_by(APINumber, FieldName, FieldCode, api_field, year) %>%
-#   summarise(new_well_prod = sum(api_prod)) %>%
-#   ungroup() %>%
-#   left_join(cost_per_eur2) %>% 
-#   group_by(FieldName, FieldCode, year) %>%
-#   summarise(new_prod = sum(new_well_prod),
-#             n_new_wells = n(),
-#             m_wc_eur_usd_per_bbl = mean(well_cost_eurusd_per_bbl, na.rm = T)) %>%
-#   ungroup() %>%
-#   rename(doc_field_code = FieldCode) %>%
-#   select(-FieldName)
-
-
-
-# 
 # ## test with 582
 # # test_df <- init_yr_prod2 %>%
 # #   filter(year == start_year) %>%
@@ -387,8 +317,7 @@ mutate(start_year = year(start_date)) %>%
 prod_econ_prices_df2 <- prod_econ_prices_df %>%
   left_join(new_prod_df) %>%
   mutate(new_prod = ifelse(is.na(new_prod), 0, new_prod),
-         n_new_wells = ifelse(is.na(n_new_wells), 0, n_new_wells),
-         capex_div_new_prod = capex / new_prod)
+         n_new_wells = ifelse(is.na(n_new_wells), 0, n_new_wells))
 
 test <- prod_econ_prices_df2 %>%
   mutate(div= new_prod / doc_prod)
@@ -400,20 +329,21 @@ test <- prod_econ_prices_df2 %>%
 # write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_v2_10122020.csv")
 # write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_v2_10132020_v1.csv")
 # write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_v2_10132020_v2.csv")
-write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_final.csv")
+# write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_final.csv")
+write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_final_revised.csv")
 
-agg_new_wells <- prod_econ_prices_df2 %>%
-  group_by(year) %>%
-  summarise(sum_new_wells = sum(n_new_wells, na.rm = T)) %>%
-  ungroup()
-
-## n new wells
-ggplot(prod_econ_prices_df2 %>% filter(doc_field_code == "849"), aes(x = year, y = n_new_wells)) +
-  geom_line(size = 1)
-
-ggplot(agg_new_wells %>% filter(year > 1992), aes(x = year, y = sum_new_wells)) +
-  geom_line(size = 1)
-
-ggplot(prod_econ_prices_df2 %>% filter(year > 1977,
-                                       doc_field_code == "228"), aes(x = year, y = n_new_wells)) +
-  geom_line(size = 1)
+# agg_new_wells <- prod_econ_prices_df2 %>%
+#   group_by(year) %>%
+#   summarise(sum_new_wells = sum(n_new_wells, na.rm = T)) %>%
+#   ungroup()
+# 
+# ## n new wells
+# ggplot(prod_econ_prices_df2 %>% filter(doc_field_code == "849"), aes(x = year, y = n_new_wells)) +
+#   geom_line(size = 1)
+# 
+# ggplot(agg_new_wells %>% filter(year > 1992), aes(x = year, y = sum_new_wells)) +
+#   geom_line(size = 1)
+# 
+# ggplot(prod_econ_prices_df2 %>% filter(year > 1977,
+#                                        doc_field_code == "228"), aes(x = year, y = n_new_wells)) +
+#   geom_line(size = 1)
