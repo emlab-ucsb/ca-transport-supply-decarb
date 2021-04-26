@@ -36,11 +36,6 @@ field_asset_matches_v2 <- fread(paste0(proj_dir, output_dir, "entry-model-input/
 ## load rystad econ information (asset, year, econ group)
 rystad_econ <- fread(paste0(proj_dir, rystad_path, "processed/", rystad_econ_file))
 
-## load well_cost_euruds_per_bbl
-cost_per_eur <- fread(paste0(proj_dir, rystad_path, "processed/", cost_eur_file)) 
-cost_per_eur[, field := NULL]
-cost_per_eur <- unique(cost_per_eur)
-
 ## entry varibales (now made in create_entry_econ_variables.R )
 rystad_entry_variables <- fread(paste0(proj_dir, output_dir, rystad_entry_file))
 rystad_entry_variables[, FieldName := NULL]                  
@@ -65,6 +60,17 @@ prices <- fread(paste0(proj_dir, rystad_path, "raw/", brent_file))
 ## productive fields
 productive_fields <- well_prod[, .(total_prod = sum(OilorCondensateProduced, na.rm = T)), by = .(doc_field_code)]
 productive_fields <- productive_fields[total_prod > 0]
+
+## top 10 fields using 2019 production data
+top_fields <- well_prod %>%
+  filter(year == 2019) %>%
+  group_by(doc_field_code, doc_fieldname) %>%
+  summarise(prod19 = sum(OilorCondensateProduced, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(prod_rank = rank(-prod19),
+         top_field = ifelse(prod_rank <= 10, 1, 0)) %>%
+  select(doc_field_code, top_field)
+
 
 ## productive fields x year
 field_year <- expand.grid(doc_field_code = unique(productive_fields$doc_field_code),
@@ -313,7 +319,8 @@ new_prod_df <- init_yr_prod %>%
 prod_econ_prices_df2 <- prod_econ_prices_df %>%
   left_join(new_prod_df) %>%
   mutate(new_prod = ifelse(is.na(new_prod), 0, new_prod),
-         n_new_wells = ifelse(is.na(n_new_wells), 0, n_new_wells))
+         n_new_wells = ifelse(is.na(n_new_wells), 0, n_new_wells)) %>%
+  left_join(top_fields)
 
 test <- prod_econ_prices_df2 %>%
   mutate(div= new_prod / doc_prod)
