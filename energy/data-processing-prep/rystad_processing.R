@@ -199,7 +199,7 @@ api_asset3 <- api_asset2 %>%
   select(-asset_name)
   
 
-write_csv(api_asset3, paste0(rystad_path, "processed/rystad_asset_apis.csv"))
+# write_csv(api_asset3, paste0(rystad_path, "processed/rystad_asset_apis.csv"))
 
 ## add fields
 ## --------------------------
