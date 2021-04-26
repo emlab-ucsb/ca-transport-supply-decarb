@@ -16,7 +16,6 @@ data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-pr
 # economics_df <- read_csv(paste0(rystad_path, "raw/archive/ca_asset_opex_apex_govtt.csv"))
 economics_df_update <- read_csv(paste0(rystad_path, "raw/asset_opex_capex_govtt.csv"))
 production_df <- read_csv(paste0(rystad_path, "raw/ca_production.csv"))
-fieldnames <- read_csv("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/field_codes.csv")
 econ_cats <- read_csv(paste0(rystad_path, "raw/asset_econ_categories.csv"))
 err_df <- fread(paste0(rystad_path, "raw/resources_prod_myprod.csv"), skip = 1)
 rystad_capex_recov_bbl <- read_csv(paste0(rystad_path, "raw/capex_per_recoverable_bbl.csv"))
@@ -26,6 +25,14 @@ rystad_opex_bbl_nom <- read_csv(paste0(rystad_path, "raw/opex_per_bbl_nom.csv"))
 asset_rename <- read_csv(paste0(rystad_path, "processed/rystad_asset_rename.csv"))
 well_cost_eur <- read.csv(paste0(rystad_path, "raw/well_cost_per_eur.csv"))
 field_asset <- read_csv(paste0(rystad_path, "raw/field_to_asset.csv"))
+
+## well prod
+
+prod_file               <- "well_prod_m_processed.csv"
+
+well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
+                                                                               'doc_field_code' = 'character'))
+
 
 ## economics
 ##-----------------------------------------
@@ -160,8 +167,10 @@ capex_recov_bbl2 <- rystad_capex_recov_bbl %>%
 
 write_csv(capex_recov_bbl2, paste0(rystad_path, "processed/capex_bbl_reserves.csv"))
 
+## ---------------------------------------------------------------------------
 ## wells in assets
-## -------------------------------------
+## --------------------------------------------------------------------------
+
 
 api_asset2 <- api_asset %>%
   rename(APINumber = API.Number,
@@ -180,7 +189,7 @@ n_asset <- api_asset2 %>%
   ungroup() 
 ## 1 to 1
 
-diff_df <- api_asset2%>%
+diff_df <- api_asset2 %>%
   mutate(diff = Sum - prod)
 ## 0 diff
 
@@ -193,20 +202,7 @@ api_asset3 <- api_asset2 %>%
 write_csv(api_asset3, paste0(rystad_path, "processed/rystad_asset_apis.csv"))
 
 ## add fields
-well_prod <- read_rds(paste0(data_directory, "well_prod_m.rds")) %>%
-  mutate(api_ten_digit = substr(APINumber, 1, 10)) %>%
-  mutate(FieldCode2 = paste0("00", FieldCode),
-         FieldCode3 = str_sub(FieldCode2, start= -3)) %>%
-  rename(orig_fc = FieldCode,
-         FieldCode = FieldCode3) %>%
-  select(-orig_fc, -FieldCode2)
-
-wells_19 <- read_csv("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/wells_19.csv") %>%
-  mutate(api_ten_digit = substr(API, 1, 10))
-
-fieldcodes <- wells_19 %>%
-  select(FieldCode, FieldName) %>%
-  unique()
+## --------------------------
 
 ## work with API ten digit
 api_asset4 <- api_asset3 %>%
@@ -221,19 +217,25 @@ api_asset4 <- api_asset3 %>%
 
 ## unique api_ten_digit - field combos
 api_field_df <- well_prod %>%
-  group_by(api_ten_digit, FieldCode) %>%
+  group_by(api_ten_digit, doc_field_code, doc_fieldname) %>%
   summarise(total_prod = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
-  filter(total_prod > 0) %>%
-  left_join(fieldcodes)
+  filter(total_prod > 0) 
+
+## multiple field matches?
+View(api_field_df %>% group_by(api_ten_digit) %>% mutate(n = n()) %>% ungroup())
+## yes
 
 ## try to match
 api_asset_match <- api_asset4 %>%
   left_join(api_field_df)
 
+## how many na?
+nrow(api_asset_match %>% filter(is.na(doc_field_code))) / nrow(api_asset4)
+
 ## asset n wells
 asset_fields <- api_asset_match %>%
-  group_by(original_asset_name, FieldName) %>%
+  group_by(original_asset_name, doc_fieldname) %>%
   summarise(n_field = n()) %>%
   ungroup() %>%
   group_by(original_asset_name) %>%
@@ -241,7 +243,7 @@ asset_fields <- api_asset_match %>%
   ungroup() %>%
   mutate(rel_field = n_field / n_asset)
   
-unique(asset_fields$FieldName)
+unique(asset_fields$doc_fieldname)
 
 ## reverse, reverse!
 api_asset_match_rev <- api_field_df %>%
@@ -251,11 +253,11 @@ api_asset_match_rev <- api_field_df %>%
 field_n_asset <- api_asset_match_rev %>%
   filter(!is.na(original_asset_name),
          original_asset_name != "no_asset") %>%
-  group_by(FieldCode, FieldName, original_asset_name) %>%
+  group_by(doc_field_code, doc_fieldname, original_asset_name) %>%
   summarise(n_wells_asset = n(),
             bbl_prod = sum(total_prod, na.rm = T)) %>%
   ungroup() %>%
-  group_by(FieldCode, FieldName) %>%
+  group_by(doc_field_code, doc_fieldname) %>%
   mutate(n_wells_field = sum(n_wells_asset),
          field_prod = sum(bbl_prod)) %>%
   ungroup() %>%
@@ -264,7 +266,7 @@ field_n_asset <- api_asset_match_rev %>%
 
 anti_join(api_asset4 %>% select(original_asset_name) %>%  unique(), field_n_asset %>% select(original_asset_name) %>% unique())
 
-write_csv(field_n_asset, paste0(rystad_path, "processed/field_rystad_match_apis.csv"))
+write_csv(field_n_asset, paste0(rystad_path, "processed/field_rystad_match_apis_revised.csv"))
   
 ## capex per bbl nominal
 rystad_capex_bbl_nom2 <- rystad_capex_bbl_nom %>%
