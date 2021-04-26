@@ -9,7 +9,7 @@ sp_dir             <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/curren
 save_directory     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/"
 
 ## files
-rystad_file  <- "field_rystad_match_apis.csv"
+rystad_file  <- "field_rystad_match_apis_revised.csv"
 prod_file    <- "well_prod_m_processed.csv"
 field_b_file <- "DOGGR_Admin_Boundaries_Master.shp"
 
@@ -24,9 +24,9 @@ library(nngeo) #nearest point to each poly
 ## --------------------------- read inputs
 
 ## asset to field match using well APIs
-field_asset_match <- fread(paste0(rystad_path, rystad_file), colClasses = c('FieldCode' = 'character'))
-field_asset_match[, c("FieldName", "bbl_prod", "n_wells_field", "field_prod", "rel_field", "rel_prod") := NULL]
-setnames(field_asset_match, "FieldCode", "doc_field_code")
+field_asset_match <- fread(paste0(rystad_path, rystad_file), colClasses = c('doc_field_code' = 'character'))
+field_asset_match[, c("doc_fieldname", "bbl_prod", "n_wells_field", "field_prod", "rel_field", "rel_prod") := NULL]
+
 
 ## monthly well production
 well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
@@ -213,7 +213,7 @@ all_combos <- all_combos[, c("doc_field_code", "doc_fieldname", "original_asset_
 
 
 ## save file
-write_csv(all_combos, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/field_asset_matches_v2_revised.csv")
+write_csv(all_combos, file = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/field_asset_matches_v2_revised.csv")
 
 
 
