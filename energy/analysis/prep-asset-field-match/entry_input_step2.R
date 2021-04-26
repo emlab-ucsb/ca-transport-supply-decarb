@@ -12,15 +12,11 @@ save_directory     <- "outputs/"
 ## files
 field_asset_match_file  <- "field_asset_matches_v2_revised.csv"
 rystad_econ_file        <- "oil_asset_opex_capex_govtt_clean.csv"
-cost_eur_file           <- "well_cost_per_eur_clean.csv"
 rystad_entry_file       <- "rystad_entry_variables.csv"
 rystad_imputed_file     <- "Rystad_cost_imputed_10132020_v3.csv"
 prod_file               <- "well_prod_m_processed.csv"
-# n_wells_file            <- "well_type_x_field_no_plugged.csv"
 well_start_file         <- "well_start_prod_api10_revised.csv"
-# api_file                <- "annual_wm_api_x_field.csv"
 brent_file              <- "wti_brent.csv"
-brent_p_file            <- "brent_oil_price_projections.csv"
 
 
 ## input file needs the following info:
