@@ -10,7 +10,9 @@ library(readxl)
 library(openxlsx)
 
 ## set directory
+proj_dir <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/"
 data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
+output_dir <- "outputs/exit/"
 
 ## files
 prod_file       <- "well_prod_m_processed.csv"
@@ -122,7 +124,36 @@ zero_prod_hist <- ggplot(zero_prod_dt_filt2 %>% filter(remove_tail_all == 0), ae
 ## of the wells in our data that had ever stopped producing for X months consecutively, 
 ## how many were never reactivated, i.e. never produced again. Try 6, 12, 24 months.
 
+calc_zero_prod <- function(n_month_val) {
+  
+  ## filter for number of months
+  tmp_zero_prod <- zero_prod_dt_filt2[zero_prod_months >= n_month_val]
 
+  ## filter for wells that stop producing after x number of months
+  tmp_zero_prod[, n := .N, by = .(api_ten_digit)]
 
+  tmp_break <- tmp_zero_prod[n > 1]
+  
+  tmp_n_break_vec <- length(unique(tmp_break[, api_ten_digit]))
+  
+  ## prod stop
+  tmp_stop <- tmp_zero_prod[n == 1]
 
+  tmp_n_stop_vec <- length(unique(tmp_stop[, api_ten_digit]))
+
+  ## make data table
+  out_df <- data.table(zero_prod_length = n_month_val,
+                       n_stop = tmp_n_stop_vec,
+                       n_break = tmp_n_break_vec,
+                       n_sum = tmp_n_stop_vec + tmp_n_break_vec,
+                       rel_stop = tmp_n_stop_vec / (tmp_n_stop_vec + tmp_n_break_vec))
+  
+}
+
+month_vec <- c(1:10) * 12
+
+zero_prod_out <- purrr::map(as.list(month_vec), calc_zero_prod) %>%
+  bind_rows()
+
+fwrite(zero_prod_out, paste0(proj_dir, output_dir, 'zero_prod_breaks_stops.csv'), row.names = F)
 
