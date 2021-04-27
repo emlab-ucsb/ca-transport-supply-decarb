@@ -13,7 +13,7 @@ save_directory     <- "outputs/"
 field_asset_match_file  <- "field_asset_matches_v2_revised.csv"
 rystad_econ_file        <- "oil_asset_opex_capex_govtt_clean.csv"
 rystad_entry_file       <- "rystad_entry_variables.csv"
-rystad_imputed_file     <- "Rystad_cost_imputed_10132020_v3.csv"
+rystad_imputed_file     <- "Rystad_cost_imputed_revised.csv"
 prod_file               <- "well_prod_m_processed.csv"
 well_start_file         <- "well_start_prod_api10_revised.csv"
 brent_file              <- "wti_brent.csv"
@@ -320,10 +320,12 @@ prod_econ_prices_df2 <- prod_econ_prices_df %>%
   left_join(new_prod_df) %>%
   mutate(new_prod = ifelse(is.na(new_prod), 0, new_prod),
          n_new_wells = ifelse(is.na(n_new_wells), 0, n_new_wells)) %>%
-  left_join(top_fields)
+  left_join(top_fields) %>%
+  mutate(top_field = ifelse(is.na(top_field), 0, top_field))
 
 test <- prod_econ_prices_df2 %>%
-  mutate(div= new_prod / doc_prod)
+  mutate(div = new_prod / doc_prod,
+         diff = doc_prod - new_prod)
 
 
 # ## save file
