@@ -8,7 +8,7 @@ run_extraction_model <- function(oil_px_selection) {
   # inputs -----
     model_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
     scen_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
-    entry_file      = 'entry_df_final.csv'
+    entry_file      = 'entry_df_final_revised.csv'
     coef_file       = 'poisson_regression_coefficients_10132020_v3.csv'
     param_file      = 'forecasted_decline_parameters_2020_2050.csv'
     peak_file       = 'field-vintage_peak-production_yearly.csv'
