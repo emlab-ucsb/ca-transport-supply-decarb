@@ -8,42 +8,29 @@ library(zoo)
 library(scales)
 library(readxl)
 library(openxlsx)
-
-## source items
-items <- list.files(here::here("src"))
-
-walk(items, ~ here::here("src", .x) %>% source()) # load local items
+library(data.table)
 
 ## set directory
 data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
 save_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/"
 
-well_prod <- read_rds(paste0(data_directory, "well_prod_m.rds")) %>%
-  mutate(api_ten_digit = substr(APINumber, 1, 10))
+prod_file    <- "well_prod_m_processed.csv"
 
-wells_19 <- read_csv("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/wells_19.csv") %>%
-  mutate(api_ten_digit = substr(API, 1, 10))
+## monthly well production
+well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
+                                                                     'doc_field_code' = 'character'))
+## prod by field
+field_prod <- well_prod[, .(total_bbls = sum(OilorCondensateProduced, na.rm = T)), by = .(doc_field_code, doc_fieldname, year)]
 
-
-## well prod
-well_prod_field <- well_prod %>%
-  mutate(api_ten_digit = substr(APINumber, 1, 10)) %>%
-  mutate(FieldCode2 = paste0("00", FieldCode),
-         FieldCode3 = str_sub(FieldCode2, start= -3)) %>%
-  rename(orig_fc = FieldCode) %>%
-  rename(FieldCode = FieldCode3) %>%
-  group_by(FieldCode, year) %>%
-  summarise(total_bbls = sum(OilorCondensateProduced, na.rm = T)) %>%
-  ungroup()
-
-well_prod_field2 <- expand.grid(FieldCode = unique(well_prod_field$FieldCode),
-                                year = unique(well_prod_field$year)) %>%
-  left_join(well_prod_field) %>%
+field_prod2 <- expand.grid(doc_field_code = unique(field_prod$doc_field_code),
+                           year = unique(field_prod$year)) %>%
+  left_join(field_prod) %>%
   mutate(total_bbls = ifelse(is.na(total_bbls), 0, total_bbls)) %>%
-  arrange(FieldCode, year)
+  arrange(doc_field_code, year) %>%
+  select(doc_field_code, doc_fieldname, year, total_bbls)
   
 
-write_csv(well_prod_field2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/crude_prod_x_field.csv")
+write_csv(field_prod2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/crude_prod_x_field_revised.csv")
 
 
 
