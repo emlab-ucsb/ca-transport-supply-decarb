@@ -5,7 +5,7 @@
 # inputs ------------
 
   emdata_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
-  fprod_file    = 'crude_prod_x_field.csv'
+  fprod_file    = 'crude_prod_x_field_revised.csv'
   emfac_file    = 'ghg_emissions_x_field_2015_revised.csv'
   ref_file      = 'refinery_ghg_emissions.csv'
   
