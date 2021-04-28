@@ -3,20 +3,28 @@ data_directory     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/curren
 raw_dir            <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/"
 rystad_path        <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/Rystad/data/processed/"
 sp_dir             <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/GIS/raw/AllWells_gis/"
-save_directory     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/"
+save_directory     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/exit/"
 
 
 library(sf)
 library(tidyverse)
 library(data.table)
 library(plotly)
+library(readxl)
 
 
 prod_file    <- "well_prod_m_processed.csv"
 well_file    <- "AllWells_table/AllWells_20210427.csv"
 well_shp     <- "Wells_All.shp"
 field_b_file <- "DOGGR_Admin_Boundaries_Master.shp"
+ws_permits_file <- "Historic Permit WellStar.xlsx"
+cw_permits_file <- "historic_permit_calwims.csv"
 
+
+## permits
+permits_ws <- read_xlsx(paste0(raw_dir, ws_permits_file))
+
+permits_cw <- fread(paste0(data_directory, cw_permits_file))
 
 ## 
 well_df <- fread(paste0(raw_dir, well_file))
@@ -84,5 +92,18 @@ test <- ggplot(well_status_df, aes(x = year, y = prod, color = status, group = a
   geom_line(size = 0.1, alpha = 0.2)
 
 ggplotly(test)
+
+## add permit data
+permits_ws2 <- janitor::clean_names(permits_ws) %>%
+  select(api_ten_digit = well_api_number, permit_well_status = well_status, application_status, notice_type, notice_received_date, notice_approval_date)
+
+## merge
+status_permit_df <- well_status_df %>%
+  left_join(permits_ws2)
+
+fwrite(status_permit_df, paste0(save_directory, 'plugged_prod_permit.csv'), row.names = F)
+
+
+
 
 
