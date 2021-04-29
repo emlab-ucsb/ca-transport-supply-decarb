@@ -11,9 +11,11 @@ library(tidyverse)
 library(data.table)
 library(plotly)
 library(readxl)
+library(zoo)
 
 
 prod_file    <- "well_prod_m_processed.csv"
+inj_file     <- "well_inj_m_processed.csv"
 well_file    <- "AllWells_table/AllWells_20210427.csv"
 well_shp     <- "Wells_All.shp"
 field_b_file <- "DOGGR_Admin_Boundaries_Master.shp"
@@ -30,6 +32,10 @@ permits_cw <- fread(paste0(data_directory, cw_permits_file))
 well_df <- fread(paste0(raw_dir, well_file))
 
 well_shp_df <- st_read(dsn = file.path(sp_dir, well_shp))
+
+## monthly well injection
+well_inj <- fread(paste0(data_directory, inj_file), colClasses = c('api_ten_digit' = 'character',
+                                                                     'doc_field_code' = 'character'))
 
 ## monthly well production
 well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
@@ -69,19 +75,55 @@ prod_well_status <- well_prod[api_ten_digit %chin% pos_vec]
 
 ## status
 status_df <- well_df %>%
-  select(api_ten_digit = API, status = WellStatus) %>%
+  select(api_ten_digit = API, status = WellStatus, spud_date = SpudDate) %>%
   mutate(api_ten_digit = paste0("0", api_ten_digit))
 
-status_shp <- well_shp_df %>%
-  select(api_ten_digit = API, status_shp = WellStatus)
+# status_shp <- well_shp_df %>%
+#   select(api_ten_digit = API, status_shp = WellStatus)
+# 
+# st_geometry(status_shp) <- NULL
 
-st_geometry(status_shp) <- NULL
+well_info1 <- prod_well_status[, c("api_ten_digit", "month_year", "OilorCondensateProduced")]
+
+well_inj[, injecting := fifelse(GasAirInjected > 0 | SteamWaterInjected > 0 |
+                                 DaysInjecting > 0, 1, 0)]
+
+inj_info <- well_inj[, c("api_ten_digit", "month_year", "injecting")]
+
+well_info2 <- full_join(well_info1, inj_info)
+
 
 ## merge
-well_status_df <- prod_well_status %>%
+well_status_df <- well_info2 %>%
   left_join(status_df) %>%
-  left_join(status_shp) %>%
-  mutate(same_status = ifelse(status_shp == status, 1, 0)) %>%
+  rename(prod = OilorCondensateProduced) %>%
+  mutate(month_year = as.Date(month_year),
+         spud_date = as.Date(spud_date, format="%m/%d/%Y"),
+         spud_month = month(spud_date),
+         spud_year = year(spud_date),
+         spud_my = as.Date(as.yearmon(paste(spud_year, spud_month, sep = "-"))),
+         injecting = ifelse(is.na(injecting), 0, injecting),
+         prod = ifelse(is.na(prod), 0, prod),
+         activity = ifelse(prod > 0 | injecting == 1, 1, 0),
+         activity_before_spud = ifelse(activity == 1 & month_year < spud_my, 1, 0))
+
+## how many wells have production before spud date?
+activity_before_spud_df <- well_status_df %>%
+  filter(activity_before_spud == 1) %>%
+  select(api_ten_digit) %>%
+  unique()
+
+## min
+min_df <- well_status_df %>% 
+  filter(activity_before_spud == 1) %>%
+  group_by(api_ten_digit) %>%
+  slice(which.min(spud_my)) %>%
+  ungroup()
+  
+
+
+# left_join(status_shp) %>%
+  # mutate(same_status = ifelse(status_shp == status, 1, 0)) %>%
   filter(status %in% c("Plugged", "PluggedOnly")) %>%
   group_by(api_ten_digit, year, status) %>%
   summarise(prod = sum(OilorCondensateProduced, na.rm = T)) %>%
