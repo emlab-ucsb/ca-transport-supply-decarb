@@ -11,26 +11,27 @@ library(openxlsx)
 
 ## set directory
 proj_dir <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/"
+raw_dir            <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/"
 data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
 output_dir <- "outputs/exit/"
 
 ## files
 prod_file       <- "well_prod_m_processed.csv"
+well_file    <- "AllWells_table/AllWells_20210427.csv"
 
 ## read in files
 well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                      'doc_field_code' = 'character'))
 
 ## all wells
-all_wells <- read_xlsx("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/All_wells_20200417.xlsx") %>%
-  mutate(spud_date = convertToDate(SpudDate)) 
+# all_wells <- read_xlsx("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/All_wells_20200417.xlsx") %>%
+#   mutate(spud_date = convertToDate(SpudDate)) 
+
+all_wells <- fread(paste0(raw_dir, well_file))
 
 ## wells status
 status <- all_wells %>%
-  select(-SpudDate, -spud_date) %>%
-  unique() %>%
-  # filter(WellStatus %in% c("Plugged", "PluggedOnly")) %>%
-  rename(api_ten_digit = API) %>%
+  mutate(api_ten_digit = paste0("0", API)) %>%
   select(api_ten_digit, well_status = WellStatus)
 
 ## find wells that produce at some point over time period
