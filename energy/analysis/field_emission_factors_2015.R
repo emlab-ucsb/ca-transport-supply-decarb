@@ -9,10 +9,9 @@
   entry_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
   inj_file          = 'injection-by-well-type-per-field-per-year_1977-2018.csv'
   emfactor_file     = 'field-level-emissions-results_processed_revised.csv'
-  entry_file        = 'entry_df_final.csv'
-  prod_file         = 'crude_prod_x_field.csv'
-  wells_file        = 'wells_19.csv'
-  
+  entry_file        = 'entry_df_final_revised.csv'
+  prod_file         = 'crude_prod_x_field_revised.csv'
+
 # outputs -----
   
   save_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
@@ -41,30 +40,18 @@
   
   # load field-level production
     prod_dt = fread(file.path(entry_path, prod_file), header = T)
-    setnames(prod_dt, 'FieldCode', 'doc_field_code')
 
-  # load file with field codes and field names -------
-    wells_dt = fread(file.path(data_path, wells_file), header = T)
-    setnames(wells_dt, 'FieldCode', 'doc_field_code')
-    setnames(wells_dt, 'FieldName', 'doc_fieldname')
-    
 # pad field codes ------
   
   field_inj[, doc_field_code := sprintf("%03s", doc_field_code)]
   entry_df[, doc_field_code := sprintf("%03s", doc_field_code)]
   prod_dt[, doc_field_code := sprintf("%03s", doc_field_code)]
-  wells_dt[, doc_field_code := sprintf("%03s", doc_field_code)]
-  
-# get all field names and field codes ------
-  
-  field_names = unique(wells_dt[, .(doc_field_code, doc_fieldname)])
-  
+
 # get unique list of field codes and field names that are used in the entry df AND the production file -----
   
-  un_fields = unique(rbindlist(list(entry_df[, .(doc_field_code)],
-                                    prod_dt[, .(doc_field_code)])))
-  un_fields = un_fields[field_names, on = 'doc_field_code', nomatch = 0]
-
+  un_fields = unique(rbindlist(list(entry_df[, .(doc_field_code, doc_fieldname)],
+                                    prod_dt[, .(doc_field_code, doc_fieldname)])))
+  
 # fix field names to match DOC naming conventions -----
   
   emission_factors[doc_fieldname %like% 'North$', doc_fieldname := gsub('North', ' North', doc_fieldname)]
@@ -119,7 +106,7 @@
   
 # calculate total GHG emissions based on 2015 production ------
   
-  all_fields_prod = all_fields[prod_dt[year == 2015], on = c('doc_field_code'), nomatch = 0]
+  all_fields_prod = all_fields[prod_dt[year == 2015], on = c('doc_field_code', 'doc_fieldname'), nomatch = 0]
   all_fields_prod[, upstream_kgCO2e := upstream_kgCO2e_bbl*total_bbls]
   all_fields_prod[, lifecycle_kgCO2e := lifecycle_kgCO2e_bbl*total_bbls]
   setcolorder(all_fields_prod, c('doc_field_code', 'doc_fieldname', 'year', 'total_bbls', 
