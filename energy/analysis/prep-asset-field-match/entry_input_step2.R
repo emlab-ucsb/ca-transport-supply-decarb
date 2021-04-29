@@ -321,7 +321,9 @@ prod_econ_prices_df2 <- prod_econ_prices_df %>%
   mutate(new_prod = ifelse(is.na(new_prod), 0, new_prod),
          n_new_wells = ifelse(is.na(n_new_wells), 0, n_new_wells)) %>%
   left_join(top_fields) %>%
-  mutate(top_field = ifelse(is.na(top_field), 0, top_field))
+  mutate(top_field = ifelse(is.na(top_field), 0, top_field)) %>%
+  ## remove Any Field
+  filter(doc_field_code != "000")
 
 test <- prod_econ_prices_df2 %>%
   mutate(div = new_prod / doc_prod,
