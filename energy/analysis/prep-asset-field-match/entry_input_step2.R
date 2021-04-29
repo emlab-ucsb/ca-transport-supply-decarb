@@ -68,7 +68,7 @@ top_fields <- well_prod %>%
   summarise(prod19 = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
   mutate(prod_rank = rank(-prod19),
-         top_field = ifelse(prod_rank <= 10, 1, 0)) %>%
+         top_field = ifelse(prod_rank <= 10, prod_rank, 0)) %>%
   select(doc_field_code, top_field)
 
 
