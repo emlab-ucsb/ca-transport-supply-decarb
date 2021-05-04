@@ -183,7 +183,7 @@ all_combos <- well_match_df %>%
   select(doc_field_code, doc_fieldname, original_asset_name, n_wells_asset, match_method, dist_m = dist)
 
 ## save file
-write_csv(all_combos, file = paste0(save_directory, "stocks-flows/entry-model-input/field_asset_matches_v1_revised.csv")
+write_csv(all_combos, file = paste0(save_directory, "stocks-flows/entry-model-input/field_asset_matches_v1_revised.csv"))s
 
 
 
