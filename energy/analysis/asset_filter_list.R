@@ -5,22 +5,15 @@
 library(tidyverse)
 library(lubridate)
 
-## source items
-items <- list.files(here::here("src"))
-
-walk(items, ~ here::here("src", .x) %>% source()) # load local items
-
 ## set directory
 data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
 rystad_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/Rystad/data/"
 save_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/"
 
-
 ## 
 rystad_econ <- read_csv(paste0(rystad_path, "processed/oil_asset_opex_capex_govtt_clean.csv"))
 field_assets <- read_csv(paste0(rystad_path, "raw/asset_latlon.csv"))
 rystad_prod <- read_csv(paste0(rystad_path, "processed/ca_oil_production.csv"))
-
 
 ## econ info
 ## change rystad econ fields
@@ -41,13 +34,11 @@ asset_econ_info <- rystad_econ_adj %>%
   ungroup()
 
 ## add production
-
 rystad_info <- rystad_prod %>%
   group_by(original_asset_name) %>%
   summarise(bbls = sum(bbls, na.rm = T)) %>%
   ungroup() %>%
   left_join(asset_econ_info)
-
 
 ## filter bbls  == 0
 asset_zero_bbl <- rystad_info %>%
