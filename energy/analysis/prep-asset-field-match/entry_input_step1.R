@@ -12,6 +12,7 @@ save_directory     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/curren
 rystad_file  <- "field_rystad_match_apis_revised.csv"
 prod_file    <- "well_prod_m_processed.csv"
 field_b_file <- "DOGGR_Admin_Boundaries_Master.shp"
+asset_loc_file <- "asset_latlon_adj.csv"
 
 ## -------------------------- library
 library(tidyverse)
@@ -22,6 +23,10 @@ library(nngeo) #nearest point to each poly
 
 
 ## --------------------------- read inputs
+
+## viable assets
+asset_loc <- read.csv(paste0(rystad_path, asset_loc_file)) %>%
+  select(original_asset_name = Asset, X)
 
 ## asset to field match using well APIs
 field_asset_match <- fread(paste0(rystad_path, rystad_file), colClasses = c('doc_field_code' = 'character'))
@@ -35,8 +40,9 @@ well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_di
 fieldcodes <- unique(well_prod[, c("doc_field_code", "doc_fieldname")])
 
 ## field boundaries
-fields_loc <- st_read(paste0(sp_dir, field_b_file)) %>%
-  st_transform(CRS("+init=epsg:3310"))
+fields_loc <- st_read(paste0(sp_dir, field_b_file)) 
+# %>%
+#   st_transform(CRS("+init=epsg:3310"))
 
 ## ---------------------------- start match
 
@@ -53,6 +59,9 @@ well_match_df <- well_match_df[!is.na(original_asset_name) & !is.na(total_prod)]
 
 ## fields that get matched with assets
 matches <- unique(well_match_df[, c("total_prod") := NULL])
+matches_check <- left_join(matches, asset_loc)
+## all matches are with viable assets contained ins asset_loc 
+## (except 1 for 000, but that gets filtered out)
  
 # ## save file
 # write_csv(field_asset_well_match, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/well_doc_asset_match_revised.csv")
@@ -68,7 +77,7 @@ matches <- unique(well_match_df[, c("total_prod") := NULL])
 
 ## field options
 field_options <- fields_loc %>%
-  st_transform(CRS("+init=epsg:3310")) %>%
+  # st_transform(CRS("+init=epsg:3310")) %>%
   filter(FIELD_CODE %in% matches$doc_field_code) 
 
 ## no match for 000 Any field
@@ -150,7 +159,7 @@ fields_sf2 <- fields_loc %>%
 
 ## counties
 counties <- read_sf(dsn = paste0("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/GIS/raw/CA_Counties/", layer = "CA_Counties_TIGER2016.shp")) %>%
-  st_transform(CRS("+init=epsg:3310"))
+  st_transform(st_crs(fields_loc))
 
 ## mapview
 mapview::mapview(fields_sf2, zcol = "cost_info", layer.name = "Fields", label = fields_sf2$NAME) +
@@ -211,6 +220,7 @@ all_combos <- merge(all_combos, fieldcodes)
 setnames(all_combos, "dist", "dist_m")
 all_combos <- all_combos[, c("doc_field_code", "doc_fieldname", "original_asset_name", "n_wells_asset", "match_method", "dist_m")]
 
+all_combos <- all_combos[doc_field_code != "000"]
 
 ## save file
 write_csv(all_combos, file = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/field_asset_matches_v2_revised.csv")
