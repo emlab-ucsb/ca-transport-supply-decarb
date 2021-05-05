@@ -67,7 +67,7 @@ write.csv(asset_zero_bbl, paste0(rystad_path, "processed/asset_zero_bbl.csv"))
 field_assets_adj <- field_assets %>%
   filter(Asset %in% rystad_prod_th$original_asset_name,
          !Asset %in% asset_zero_bbl$original_asset_name,
-         !Asset %in% asset_zero_econ)
+         !Asset %in% asset_zero_econ$original_asset_name)
 
 write.csv(field_assets_adj, paste0(rystad_path, "processed/asset_latlon_adj.csv"))
 
