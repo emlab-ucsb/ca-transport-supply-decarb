@@ -97,7 +97,8 @@ all_matches <- well_match_api_df %>%
          match_method = "well_match") %>%
   select(doc_field_code, doc_fieldname, original_asset_name, dist, n_wells_asset, match_method) %>%
   rbind(no_match_assets) %>%
-  filter(doc_field_code != "000") 
+  filter(doc_field_code != "000") %>%
+  unique()
 
 ## save file
 write_csv(all_matches, file = paste0(match_out_path, "field_asset_matches_v3_revised.csv"))
