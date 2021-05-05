@@ -133,21 +133,32 @@ calc_zero_prod <- function(n_month_val) {
   ## filter for wells that stop producing after x number of months
   tmp_zero_prod[, n := .N, by = .(api_ten_digit)]
 
+  ## prod stop
+  tmp_stop <- tmp_zero_prod[n == 1]
+  
+  tmp_n_stop_vec <- length(unique(tmp_stop[, api_ten_digit]))
+  
+  ## n plugged in stop 
+  tmp_stop_status <- tmp_stop[well_status == "Plugged", c(n = .N), by = .(well_status)]
+  
+  tmp_plugged_val <- as.numeric(tmp_stop_status[, V1])
+  
+  ## break
   tmp_break <- tmp_zero_prod[n > 1]
   
   tmp_n_break_vec <- length(unique(tmp_break[, api_ten_digit]))
   
-  ## prod stop
-  tmp_stop <- tmp_zero_prod[n == 1]
-
-  tmp_n_stop_vec <- length(unique(tmp_stop[, api_ten_digit]))
+  ## total wells in threshold
+  tmp_n_total <- length(unique(tmp_zero_prod[, api_ten_digit]))
 
   ## make data table
   out_df <- data.table(zero_prod_length = n_month_val,
                        n_stop = tmp_n_stop_vec,
+                       n_stop_plugged = tmp_plugged_val,
+                       rel_plugged = tmp_plugged_val / tmp_n_stop_vec,
                        n_break = tmp_n_break_vec,
-                       n_sum = tmp_n_stop_vec + tmp_n_break_vec,
-                       rel_stop = tmp_n_stop_vec / (tmp_n_stop_vec + tmp_n_break_vec))
+                       n_stop_break = tmp_n_total,
+                       rel_stop = tmp_n_stop_vec / tmp_n_total)
   
 }
 
