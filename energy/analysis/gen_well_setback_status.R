@@ -66,7 +66,9 @@ sr_ec <- sf::st_read(dsn = file.path(home, ft_path), layer = "reselderlyCare") %
 
 ## chhs adult day health care
 sr_adhc <- sf::st_read(dsn = file.path(home, ft_path), layer = "CHHS_adultdayhealthcare_csv_Events") %>%
-  st_transform(ca_crs)
+  st_transform(ca_crs) %>%
+  mutate(fac_type = "adult day health care") %>%
+  dplyr::select(fac_type)
 
 ## alt birthing
 sr_ab <- sf::st_read(dsn = file.path(home, ft_path), layer = "CHHS_altbirthing_csv_Events") %>%
@@ -85,6 +87,14 @@ sr_hc <- sf::st_read(dsn = file.path(home, ft_path), layer = "CHHS_healthcare_fa
   st_transform(ca_crs) %>%
   mutate(fac_type = "skilled nursing facility") %>%
   dplyr::select(fac_type)
+
+
+## health care
+sr_pcc <- sf::st_read(dsn = file.path(home, ft_path), layer = "CHHS_PrimaryCareClinic_csv_Events") %>%
+  st_transform(ca_crs) %>%
+  mutate(fac_type = "primary care clinic") %>%
+  dplyr::select(fac_type)
+
 
 ## med care
 sr_imc <- sf::st_read(dsn = file.path(home, ft_path), layer = "CHHS_intermedcarefac_csv_Events") %>%
@@ -112,7 +122,9 @@ sr_snf <- sf::st_read(dsn = file.path(home, ft_path), layer = "CHHS_skillednursi
 
 ## surgical clinic
 sr_sc <- sf::st_read(dsn = file.path(home, ft_path), layer = "CHHS_surgicalclinic_csv_Events") %>%
-  st_transform(ca_crs)
+  st_transform(ca_crs) %>%
+  mutate(fac_type = "surgical clinic") %>%
+  dplyr::select(fac_type)
 
 ## acute care hospital
 sr_ach <- sf::st_read(dsn = file.path(home, ft_path), layer = "CHHS_acutecarehospital_csv_Events_1") %>%
@@ -145,6 +157,29 @@ sr_sca <- sf::st_read(dsn = file.path(home, ft_path), layer = "SchoolsCA_Sabins_
   dplyr::select(fac_type)
 
 
+sr_pts <- rbind(sr_pg,
+                sr_dc,
+                sr_ec,
+                sr_adhc,
+                sr_ab,
+                sr_d,
+                sr_hc,
+                sr_imc,
+                sr_pc,
+                sr_rc,
+                sr_snf,
+                sr_sc,
+                sr_ach,
+                sr_caach,
+                sr_ps,
+                sr_sca,
+                sr_pcc)
+
+sr_pts <- st_union(sr_pts)
+
+
+
+
 
 ## functions
 ## ----------------------------------------
@@ -158,7 +193,7 @@ gen_within_vars <- function(dist_m) {
     
     buff_pts <- st_union(st_buffer(sr_dwellings, dist = d))
     
-    
+    buff_s <- st_buffer(sr_s, dist = d)
     
     wells_df <- wells_df %>% 
       mutate(!!(paste0("within", d)) := (sf::st_within(wells_df, buf) %>% lengths() > 0 %>% as.numeric()))
