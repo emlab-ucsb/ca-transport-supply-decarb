@@ -21,8 +21,9 @@ rystad_econ_adj <- rystad_econ %>%
   filter(economics_group %in% c("Capex", "Opex")) %>%
   select(original_asset_name, year, economics_group, usd_nom) %>%
   pivot_wider(names_from = economics_group, values_from = usd_nom) %>%
-  rename(capex = Capex, opex = Opex) %>%
-  filter(year >= 1977 & year <= 2019)
+  rename(capex = Capex, opex = Opex) 
+  # %>%
+  # filter(year >= 1977 & year <= 2019)
 
 ## which assets do not have economic information?
 asset_econ_info <- rystad_econ_adj %>%
@@ -63,11 +64,10 @@ write.csv(asset_zero_econ, paste0(rystad_path, "processed/asset_zero_econ.csv"))
 write.csv(asset_zero_bbl, paste0(rystad_path, "processed/asset_zero_bbl.csv"))
 
 ## filter field asset to remove asset zero bbl
+## keep all assets with any econ info
 
 field_assets_adj <- field_assets %>%
-  filter(Asset %in% rystad_prod_th$original_asset_name,
-         !Asset %in% asset_zero_bbl$original_asset_name,
-         !Asset %in% asset_zero_econ$original_asset_name)
+  filter(Asset %in% rystad_prod_th$original_asset_name)
 
 write.csv(field_assets_adj, paste0(rystad_path, "processed/asset_latlon_adj.csv"))
 
