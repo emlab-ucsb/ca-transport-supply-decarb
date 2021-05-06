@@ -108,7 +108,7 @@ n_asset <- n_asset[, .N, by = .(doc_field_code)]
 ## add the economic information
 all_combos <- prod_df %>%
   left_join(rystad_cost_imputed) %>%
-  select(doc_field_code, doc_fieldname, original_asset_name, year, total_prod, n_wells_asset, match_method, dist_m = dist, capex_impute = capex_forecast, opex_impute = opex_forecast)
+  select(doc_field_code, doc_fieldname, original_asset_name, year, total_prod, n_wells_asset, match_method, dist_m, capex_impute = capex_forecast, opex_impute = opex_forecast)
 
 ## make sure all fields have all years
 View(all_combos %>% select(doc_field_code, year, original_asset_name) %>% group_by(doc_field_code, original_asset_name) %>% summarise(n = n()) %>% ungroup())

@@ -20,8 +20,8 @@ nn_asset_file <- "fieldsAssets_adj_revised.csv"
 ## -------------------------- library
 library(tidyverse)
 library(data.table)
-library(mapview)
-library(sf)
+# library(mapview)
+# library(sf)
 
 ## --------------------------- read inputs
 
@@ -98,6 +98,7 @@ all_matches <- well_match_api_df %>%
   select(doc_field_code, doc_fieldname, original_asset_name, dist, n_wells_asset, match_method) %>%
   rbind(no_match_assets) %>%
   filter(doc_field_code != "000") %>%
+  rename(dist_m = dist) %>%
   unique()
 
 ## save file
