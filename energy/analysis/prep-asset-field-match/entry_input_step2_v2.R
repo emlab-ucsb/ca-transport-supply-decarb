@@ -7,13 +7,16 @@ proj_dir           <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/curren
 data_directory     <- "data/stocks-flows/processed/"
 output_dir         <- "outputs/stocks-flows/"
 rystad_path        <- "data/Rystad/data/"
-save_directory     <- "outputs/"
+save_directory     <- "outputs/stocks-flows/entry-input-df/v2/"
+
+## save suffix
+s_suff <- "_v2"
 
 ## files
 field_asset_match_file  <- "field_asset_matches_v2_revised.csv"
 rystad_econ_file        <- "oil_asset_opex_capex_govtt_clean.csv"
 rystad_entry_file       <- "rystad_entry_variables.csv"
-rystad_imputed_file     <- "Rystad_cost_imputed_revised.csv"
+rystad_imputed_file     <- "Rystad_cost_imputed_v2_revised.csv"
 prod_file               <- "well_prod_m_processed.csv"
 well_start_file         <- "well_start_prod_api10_revised.csv"
 brent_file              <- "wti_brent.csv"
@@ -234,7 +237,7 @@ econ_forecast <- all_combos %>%
 # write_csv(econ_forecast, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/field_capex_opex_forecast_10122020.csv")
 # write_csv(econ_forecast, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/field_capex_opex_forecast_10132020_v2.csv")
 # write_csv(econ_forecast, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/field_capex_opex_forecast_final.csv")
-write_csv(econ_forecast, path = paste0(proj_dir, output_dir, "field_capex_opex_forecast_revised.csv"))
+write_csv(econ_forecast, path = paste0(proj_dir, save_directory, "field_capex_opex_forecast_revised", s_suff, ".csv"))
 
 
 ## final set of field - asset matches
@@ -243,7 +246,7 @@ final_set <- all_combos %>%
   unique()
 
 # ## save file 
-write_csv(final_set, path = paste0(proj_dir, output_dir, "docfield_asset_crosswalk_entrydf_revised.csv"))
+write_csv(final_set, path = paste0(proj_dir, save_directory, "docfield_asset_crosswalk_entrydf_revised", s_suff,".csv"))
 
 
 ## add price
@@ -337,7 +340,7 @@ test <- prod_econ_prices_df2 %>%
 # write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_v2_10132020_v1.csv")
 # write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_v2_10132020_v2.csv")
 # write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_final.csv")
-write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_final_revised.csv")
+write_csv(prod_econ_prices_df2, path = paste0(proj_dir, save_directory, "entry_df_final_revised", s_suff, ".csv"))
 
 # agg_new_wells <- prod_econ_prices_df2 %>%
 #   group_by(year) %>%
