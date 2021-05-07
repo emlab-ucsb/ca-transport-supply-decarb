@@ -343,7 +343,7 @@ test <- prod_econ_prices_df2 %>%
 # write_csv(prod_econ_prices_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_final.csv")
 
 ## v3 refers to matching method
-write_csv(prod_econ_prices_df2, path = paste0(proj_dir, save_directory, "entry_df_final_revised", s_suff, ".csv")
+write_csv(prod_econ_prices_df2, path = paste0(proj_dir, save_directory, "entry_df_final_revised", s_suff, ".csv"))
 
 # agg_new_wells <- prod_econ_prices_df2 %>%
 #   group_by(year) %>%
