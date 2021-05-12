@@ -17,7 +17,7 @@ s_suff <- "_v3"
 field_asset_match_file  <- "field_asset_matches_v3_revised.csv"
 rystad_econ_file        <- "oil_asset_opex_capex_govtt_clean.csv"
 rystad_entry_file       <- "rystad_entry_variables.csv"
-rystad_imputed_file     <- "Rystad_cost_imputed_v3_revised.csv"
+rystad_imputed_file     <- "Rystad_cost_imputed_revised.csv"
 prod_file               <- "well_prod_m_processed.csv"
 well_start_file         <- "well_start_prod_api10_revised.csv"
 brent_file              <- "wti_brent.csv"
@@ -44,7 +44,7 @@ rystad_econ <- fread(paste0(proj_dir, rystad_path, "processed/", rystad_econ_fil
 rystad_entry_variables <- fread(paste0(proj_dir, output_dir, rystad_entry_file))
 rystad_entry_variables[, FieldName := NULL]                  
 
-## inputed cost values
+## imputed cost values
 rystad_cost_imputed <- fread(paste0(proj_dir, output_dir, "rystad-imputed-cost/", rystad_imputed_file))
 
 ## well production
