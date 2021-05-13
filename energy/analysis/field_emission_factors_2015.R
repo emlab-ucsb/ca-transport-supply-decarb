@@ -9,7 +9,7 @@
   entry_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
   inj_file          = 'injection-by-well-type-per-field-per-year_1977-2018.csv'
   emfactor_file     = 'field-level-emissions-results_processed_revised.csv'
-  entry_file        = 'entry_df_final_revised.csv'
+  entry_file        = 'entry-input-df/final/entry_df_final_revised.csv'
   prod_file         = 'crude_prod_x_field_revised.csv'
 
 # outputs -----
