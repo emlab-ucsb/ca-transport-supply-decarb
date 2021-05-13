@@ -8,14 +8,14 @@ run_extraction_model <- function(oil_px_selection) {
   # inputs -----
     model_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
     scen_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
-    entry_file      = 'entry_df_final_revised.csv'
-    coef_file       = 'poisson_regression_coefficients_10132020_v3.csv'
+    entry_file      = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
+    coef_file       = 'poisson_regression_coefficients_revised.csv'
     param_file      = 'forecasted_decline_parameters_2020_2050.csv'
     peak_file       = 'field-vintage_peak-production_yearly.csv'
     prod_file       = 'predicted-production_2020-2045_field_test.csv'
     prod_vintage_file = 'predicted-production_2020-2045_field_vintage_test.csv'
     # hist_file       = 'new_wells_pred_weighted_R.csv'  ## update this
-    histprod_file   = 'crude_prod_x_field.csv'
+    histprod_file   = 'crude_prod_x_field_revised.csv'
   
   # source from other scripts -----
     
