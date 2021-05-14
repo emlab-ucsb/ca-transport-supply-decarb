@@ -156,7 +156,7 @@ sr_sca <- sf::st_read(dsn = file.path(home, ft_path), layer = "SchoolsCA_Sabins_
   mutate(fac_type = "school") %>%
   dplyr::select(fac_type)
 
-
+## combine points, union
 sr_pts <- rbind(sr_pg,
                 sr_dc,
                 sr_ec,
@@ -178,8 +178,17 @@ sr_pts <- rbind(sr_pg,
 sr_pts <- st_union(sr_pts)
 
 
+## ---------------------------------------------------------------s
+## testing zone
+## ---------------------------------------------------------------
 
+## simplify dwellings
+simp_sr_dwell <- rmapshaper::ms_simplify(sr_dwellings, keep = 0.4, keep_shapes = TRUE)
 
+## mapview
+mapview(simp_sr_dwell, layer.name = "dwellings") 
+
+test <- st_union(st_buffer(simp_sr_dwell, dist = 400))
 
 ## functions
 ## ----------------------------------------
