@@ -16,8 +16,6 @@ doc_df <- read_csv(paste0(data_directory, "DOC_production_reserves_2009.csv"))
 # Rename columns
 doc_df <- rename(doc_df, cum_prod=`Cumulative_oil_and_condensate(Mbbl)`)
 doc_df <- rename(doc_df, reserves=`Estimated_oil_reserves(Mbbl)`)
-# Drop county subtotals
-doc_df <- doc_df[1:500,]
 # Drop if doc_field_code is NA (fields that don't exist in main dataset)
 doc_df <- doc_df %>% drop_na(doc_field_code)
 # Replace NA values with zero for cumulative production and estimated remaining reserves 
