@@ -4,15 +4,13 @@
 
 # inputs ------
 
-  data_dir        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/decline-historic/data/'
-  fv_year_fil     = 'production_field-vintange_yearly_entry.csv'
-  peak_fil        = 'field-vintage_peak-production_yearly.csv'
-  entry_file      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry_df_final.csv'
-  well_file       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/wells_19.csv'
-  init_file       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/well_start_yr/well_start_prod_api10_x_field.csv'
-  # plot_dir        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/decline-historic/figures/'
-  plot_dir        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/figures/interim-report-figures/drafts/fuels-model/decline_figs/'
-  save_dir        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/decline-historic/parameters/'
+  emlab_dir       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn'
+  data_dir        = 'outputs/decline-historic/data'
+  fv_year_fil     = 'production_field-vintange_yearly_entry_revised.csv'
+  peak_fil        = 'field-vintage_peak-production_yearly_revised.csv'
+  entry_file      = 'outputs/stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
+  plot_dir        = 'outputs/figures/interim-report-figures/drafts/fuels-model/decline_figs/'
+  save_dir        = 'outputs/decline-historic/parameters/'
 
 # load libraries -------- 
 
@@ -29,19 +27,9 @@
 
 # read in data ------
   
-  prod_fv_year = fread(paste0(data_dir, fv_year_fil), colClasses = c(rep('character',2), rep(NA,12)))
-  dt_entry = fread(entry_file, header = T)
-  peak_prod = fread(paste0(data_dir, peak_fil), header = T)
-
-# rename field code columns -----
-  
-  setnames(prod_fv_year, 'FieldCode', 'doc_field_code')
-  setnames(peak_prod, 'FieldCode', 'doc_field_code')
-  
-# rename field name columns -----
-  
-  setnames(prod_fv_year, 'FieldName', 'doc_fieldname')
-  setnames(peak_prod, 'FieldName', 'doc_fieldname')
+  prod_fv_year = fread(file.path(emlab_dir, data_dir, fv_year_fil), colClasses = c(rep('character',2), rep(NA,12)))
+  peak_prod = fread(file.path(emlab_dir, data_dir, peak_fil), header = T)
+  dt_entry = fread(file.path(emlab_dir, entry_file), header = T)
   
 # pad field code with leading zeroes -----
   
