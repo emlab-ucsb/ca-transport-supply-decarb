@@ -7,7 +7,7 @@
   outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
   data_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
   scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
-  forecast_file     = 'field_capex_opex_forecast_final.csv'
+  forecast_file     = 'field_capex_opex_forecast_revised.csv'
   resource_file     = 'field_resource.csv'
   # brent_file        = 'brent_oil_price_projections.csv'
   # brent_file        = 'brent_oil_price_projections_real.xlsx'
@@ -70,7 +70,7 @@
   ccs_scens = ccs_scens[, c('year', 'ccs_scenario', 'ccs_price_usd_per_kg')]
   ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost'))]
 
-  price_data = fread(file.path(outputs_path, 'stocks-flows', forecast_file), header = T)
+  price_data = fread(file.path(outputs_path, 'stocks-flows', 'entry-input-df', 'final', forecast_file), header = T)
   
   resource_data = fread(file.path(outputs_path, 'entry-model-results', resource_file), header = T)
   resource_data = resource_data[, c('doc_field_code', 'resource')]
