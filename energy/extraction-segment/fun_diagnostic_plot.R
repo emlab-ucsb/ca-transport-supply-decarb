@@ -6,6 +6,154 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
   base_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
   
+  ## cal epa report outputs
+  
+  report_out <- read.csv("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/production_state_1977-2045.csv")
+  report_wells_out <- fread("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/well_entry_state_1977-2045.csv")
+  extract_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T)
+  
+  ## assemble outputs from cal epa report
+  ## -------------------------------------------
+  
+  ## bau
+  report_out_bau <- report_out %>%
+    filter(oil_price_scenario == "iea oil price",
+           carbon_price_scenario == "price floor",
+           innovation_scenario == "low innovation",
+           ccs_scenario == "medium CCS cost",
+           excise_tax_scenario == "no tax",
+           prod_quota_scenario == "no quota",
+           setback_scenario %in% c("no_setback")) %>%
+    mutate(scenario_name = "BAU",
+           scenario = "BAU") %>%
+    select(scenario_name, scenario, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
+           prod_quota_scenario, excise_tax_scenario, year, production_bbl, type) %>%
+    arrange(scenario) %>%
+    mutate(type = ifelse(type == "future production from new wells", "new_prod_bbl",
+                         ifelse(type == "future production from existing wells", "existing_prod_bbl", "historic_prod"))) %>%
+    pivot_wider(names_from = type, values_from = production_bbl) %>%
+    mutate(existing_prod_bbl = ifelse(year < 2020, historic_prod, existing_prod_bbl)) %>%
+    select(scenario:existing_prod_bbl) %>%
+    rename(scenario_name = scenario) %>%
+    rowwise() %>%
+    mutate(total_prod_bbl = sum(new_prod_bbl, existing_prod_bbl, na.rm = T)) %>%
+    ungroup() %>%
+    arrange(year)
+    
+  
+  ## scenarios
+  report_out2 <- report_out %>%
+    filter(oil_price_scenario == "iea oil price",
+           carbon_price_scenario == "price floor",
+           innovation_scenario == "low innovation",
+           ccs_scenario == "medium CCS cost",
+           excise_tax_scenario == "no tax",
+           prod_quota_scenario == "quota_20",
+           setback_scenario %in% c("no_setback", "setback_2500ft")) %>%
+    mutate(scenario = ifelse(setback_scenario == "no_setback", "LC1", "LC2")) %>%
+    select(scenario, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
+           prod_quota_scenario, excise_tax_scenario, year, production_bbl, type) %>%
+    arrange(scenario) %>%
+    mutate(type = ifelse(type == "future production from new wells", "new_prod_bbl",
+                         ifelse(type == "future production from existing wells", "existing_prod_bbl", "historic_prod"))) %>%
+    pivot_wider(names_from = type, values_from = production_bbl) %>%
+    mutate(existing_prod_bbl = ifelse(year < 2020, historic_prod, existing_prod_bbl)) %>%
+    select(scenario:existing_prod_bbl) %>%
+    rename(scenario_name = scenario) %>%
+    rowwise() %>%
+    mutate(total_prod_bbl = sum(new_prod_bbl, existing_prod_bbl, na.rm = T)) %>%
+    ungroup() %>%
+    arrange(scenario_name, year)
+  
+  ## all future
+  report_out_prod <- rbind(report_out_bau, report_out2) %>%
+    pivot_longer(new_prod_bbl:total_prod_bbl, names_to = "type", values_to = "production_bbls") %>%
+    mutate(type = ifelse(type == "existing_prod_bbl", "existing",
+                         ifelse(type == "total_prod_bbl", "total", "new"))) %>%
+    mutate(version = "calepa-report") %>%
+    select(version, scenario_name:production_bbls) %>%
+    rename(scen_name = scenario_name)
+  
+  
+  ## filter scenarios - new wells
+  report_wells_out2 <- report_wells_out %>%
+    filter(oil_price_scenario == "iea oil price",
+           carbon_price_scenario == "price floor",
+           innovation_scenario == "low innovation",
+           ccs_scenario == "medium CCS cost",
+           excise_tax_scenario == "no tax",
+           prod_quota_scenario == "quota_20",
+           setback_scenario %in% c("no_setback", "setback_2500ft")) %>%
+    mutate(scen_name = ifelse(setback_scenario == "no_setback", "LC1", "LC2")) %>%
+    select(scen_name, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
+           prod_quota_scenario, excise_tax_scenario, year, new_wells_pred) %>%
+    arrange(scen_name, year) %>%
+    filter(year != 1977)
+  
+  report_wells_out_all <- report_wells_out %>%
+    filter(oil_price_scenario == "iea oil price",
+           carbon_price_scenario == "price floor",
+           innovation_scenario == "low innovation",
+           ccs_scenario == "medium CCS cost",
+           excise_tax_scenario == "no tax",
+           prod_quota_scenario == "no quota",
+           setback_scenario %in% c("no_setback"),
+           year != 1977) %>%
+    mutate(scen_name = "BAU") %>%
+    select(scen_name, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
+           prod_quota_scenario, excise_tax_scenario, year, new_wells_pred) %>%
+    rbind(report_wells_out2) %>%
+    rename(new_wells = new_wells_pred) %>%
+    arrange(scen_name, year)
+
+  ## ghg emeissions
+  ## ---------------------
+  
+  ## summarise at state level
+  ghg_state <- extract_field_out %>%
+    group_by(year, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+             setback_scenario, prod_quota_scenario, excise_tax_scenario, well_type) %>%
+    summarise(upstream_kgCO2e = sum(upstream_kgCO2e,  na.rm = T)) %>%
+    ungroup() %>%
+    pivot_wider(names_from = well_type, values_from = upstream_kgCO2e) %>%
+    rowwise() %>%
+    mutate(total = sum(existing, new, na.rm = T)) %>%
+    ungroup() %>%
+    pivot_longer(existing:total, names_to = "type", values_to = "upstream_kgCO2e")
+  
+  
+  ## bau
+  report_ghg_bau <- ghg_state %>%
+    filter(oil_price_scenario == "iea oil price",
+           carbon_price_scenario == "price floor",
+           innovation_scenario == "low innovation",
+           ccs_scenario == "medium CCS cost",
+           excise_tax_scenario == "no tax",
+           prod_quota_scenario == "no quota",
+           setback_scenario %in% c("no_setback")) %>%
+    mutate(scen_name = "BAU") %>%
+    select(scen_name, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
+           prod_quota_scenario, excise_tax_scenario, year, type, upstream_kgCO2e) %>%
+    arrange(scen_name, year) 
+  
+  ## scenarios
+  report_ghg_all <- ghg_state %>%
+    filter(oil_price_scenario == "iea oil price",
+           carbon_price_scenario == "price floor",
+           innovation_scenario == "low innovation",
+           ccs_scenario == "medium CCS cost",
+           excise_tax_scenario == "no tax",
+           prod_quota_scenario == "quota_20",
+           setback_scenario %in% c("no_setback", "setback_2500ft")) %>%
+    mutate(scen_name = ifelse(setback_scenario == "no_setback", "LC1", "LC2")) %>%
+    select(scen_name, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
+           prod_quota_scenario, excise_tax_scenario, year, type, upstream_kgCO2e) %>%
+    arrange(scen_name, year) %>%
+    rbind(report_ghg_bau) %>%
+    mutate(version = "calepa-report") %>%
+    rename(ghg_kgCO2e = upstream_kgCO2e)
+  
+
   # create objects for list items -------
   
   state_out = output_extraction[[3]]
@@ -101,6 +249,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
     facet_grid(type ~ scen_name) +
     geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
               aes(x = year, y = production_bbls / 1e6, color = version), shape = 3) +
+    geom_line(data = report_out_prod, aes(x = year, y = production_bbls / 1e6, color = version)) +
     facet_grid(type ~ scen_name) +
     labs(title = 'State-level crude oil extraction',
          subtitle = 'million barrels', 
@@ -116,6 +265,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
     geom_line(alpha = 0.7, size = 1) +
     geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
                aes(x = year, y = ghg_kgCO2e / 1e9, color = version), shape = 3) +
+    geom_line(data = report_ghg_all, aes(x = year, y = ghg_kgCO2e / 1e9, color = version)) +
     facet_grid(type ~ scen_name) +
     labs(title = 'State-level emissions',
          subtitle = 'MtCO2e', 
@@ -131,6 +281,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
     geom_line(alpha = 0.7, size = 1) +
     geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
                aes(x = year, y = new_wells, color = version), shape = 3) +
+    geom_line(data = report_wells_out_all, aes(x = year, y = new_wells, color = version)) +
     facet_grid(~ scen_name) +
     labs(title = 'State-level new wells',
          subtitle = 'number of new wells', 
