@@ -7,7 +7,7 @@
   data_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
   opgee_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/OPGEE'
   entry_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
-  inj_file          = 'injection-by-well-type-per-field-per-year_1977-2018.csv'
+  inj_file          = 'injection-by-well-type-per-field-per-year_1977-2018_revised.csv'
   emfactor_file     = 'field-level-emissions-results_processed_revised.csv'
   entry_file        = 'entry-input-df/final/entry_df_final_revised.csv'
   prod_file         = 'crude_prod_x_field_revised.csv'
@@ -25,10 +25,9 @@
 # load data -----
   
   # load field injection data
-    field_inj = fread(file.path(data_path, inj_file), header = T)
-    field_inj = field_inj[, c('FieldCode', 'FieldName', 'year', 'well_type_name', 'type_inj', 'total_inj_year', 'perc')]
-    setnames(field_inj, 'FieldCode', 'doc_field_code')
-    setnames(field_inj, 'FieldName', 'doc_fieldname')
+    field_inj = fread(file.path(data_path, inj_file), header = T, colClasses = c('doc_field_code' = 'character'))
+    field_inj = field_inj[, c('doc_field_code', 'doc_fieldname', 'year', 'well_type_name', 'type_inj', 'total_inj_year', 'perc')]
+
   
   # load opgee emissions factors
     emission_factors = fread(file.path(opgee_path, emfactor_file), header = T)
@@ -36,16 +35,10 @@
     setnames(emission_factors, 'field_name', 'doc_fieldname')
 
   # load entry data file
-    entry_df =  fread(file.path(entry_path, entry_file), header = T)
+    entry_df =  fread(file.path(entry_path, entry_file), header = T, colClasses = c('doc_field_code' = 'character'))
   
   # load field-level production
-    prod_dt = fread(file.path(entry_path, prod_file), header = T)
-
-# pad field codes ------
-  
-  field_inj[, doc_field_code := sprintf("%03s", doc_field_code)]
-  entry_df[, doc_field_code := sprintf("%03s", doc_field_code)]
-  prod_dt[, doc_field_code := sprintf("%03s", doc_field_code)]
+    prod_dt = fread(file.path(entry_path, prod_file), header = T, colClasses = c('doc_field_code' = 'character'))
 
 # get unique list of field codes and field names that are used in the entry df AND the production file -----
   
