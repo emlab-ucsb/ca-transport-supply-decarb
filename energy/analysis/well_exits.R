@@ -9,6 +9,7 @@ library(readxl)
 library(openxlsx)
 library(scales)
 library(zoo)
+library(data.table)
 
 ## source items
 items <- list.files(here::here("src"))
@@ -60,13 +61,9 @@ calc_adj_val <- function(x, pval) {
 data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
 
 ## well production
-well_prod <- read_rds(paste0(data_directory, "well_prod_m.rds")) %>%
-  mutate(api_ten_digit = substr(APINumber, 1, 10)) %>%
-  mutate(FieldCode2 = paste0("00", FieldCode),
-         FieldCode3 = str_sub(FieldCode2, start= -3)) %>%
-  rename(orig_fc = FieldCode,
-         FieldCode = FieldCode3) %>%
-  select(-orig_fc, -FieldCode2)
+well_prod <- fread(paste0(data_directory, "well_prod_m_processed.csv"), colClasses = c('api_ten_digit' = 'character',
+                                                                                       'doc_field_code' = 'character'))
+
 
 # ## for initial year production
 # init_yr_prod <- read.csv("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/well_start_yr/well_start_prod_api10_x_field.csv") %>%
@@ -77,30 +74,24 @@ well_prod <- read_rds(paste0(data_directory, "well_prod_m.rds")) %>%
 #          FieldCode = FieldCode3) %>%
 #   select(-orig_fc, -FieldCode2)
 
-## wells 19
-wells_19 <- read_csv("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/wells_19.csv") %>%
-  mutate(api_ten_digit = substr(API, 1, 10))
 
-field_names_df <- wells_19 %>%
-  select(FieldCode, FieldName) %>%
-  unique()
 
 ## all wells
-all_wells <- read_xlsx("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/All_wells_20200417.xlsx") %>%
-  mutate(spud_date = convertToDate(SpudDate)) 
+all_wells <- fread("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/AllWells_table/AllWells_20210427.csv", colClasses = c('API' = 'character')) %>%
+  mutate(spud_date = as.Date(SpudDate, format = "%m/%d/%Y")) 
+
+old_all_wells <- read_xlsx("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/All_wells_20200417.xlsx")
 
 ## well field codes
 well_fields <- all_wells %>%
-  select(api_ten_digit = API, FieldName) %>%
-  unique() %>%
-  left_join(field_names_df) 
+  select(api_ten_digit = API, doc_fieldname = FieldName) %>%
+  unique() 
 
 ## plugged wells
 plugged <- all_wells %>%
   select(-SpudDate, -spud_date) %>%
   unique() %>%
-  filter(WellStatus == "Plugged") %>%
-  left_join(field_names_df)
+  filter(WellStatus == "Plugged") 
 
 ## any duplicates?
 # all_wells_p <- all_wells %>%
@@ -115,26 +106,20 @@ plugged <- all_wells %>%
 pluggedonly <- all_wells %>%
   select(-SpudDate, -spud_date) %>%
   unique() %>%
-  filter(WellStatus == "PluggedOnly") %>%
-  left_join(field_names_df)
+  filter(WellStatus == "PluggedOnly") 
 
 ## top 10 fields 2019
 top_fields_2019 <- well_prod %>%
   filter(year == 2019) %>%
-  group_by(FieldCode, year) %>%
+  group_by(doc_field_code, doc_fieldname, year) %>%
   summarise(total_prod = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
   arrange(-total_prod) %>%
   mutate(field_rank = rank(-total_prod)) %>%
   filter(field_rank <= 10) %>%
-  rename(doc_field_code = FieldCode) %>%
-  select(doc_field_code, field_rank)
+  select(doc_field_code, doc_fieldname, field_rank)
 
 
-##
-tf2 <- top_fields_2019 %>%
-  rename(FieldCode = doc_field_code) %>%
-  left_join(field_names_df)
 
 # ## filter init_year for plugged wells
 # plugged_prod <- init_yr_prod %>%
@@ -160,13 +145,13 @@ tf2 <- top_fields_2019 %>%
 ## zero_production
 well_api_prod <- well_prod %>%
   # filter(api_ten_digit %in% c(plugged$API)) %>%
-  filter(api_ten_digit %in% c(plugged$API, pluggedonly$API)) %>%
-  mutate(FieldCode = ifelse(FieldCode == "848", "849", FieldCode)) %>%
-  group_by(api_ten_digit, FieldCode, year, month) %>%
+  filter(api_ten_digit %in% plugged$API) %>%
+  # filter(api_ten_digit %in% c(plugged$API, pluggedonly$API)) %>%
+  # mutate(doc_field_code = ifelse(doc_field_code == "848", "849", doc_field_code)) %>%
+  group_by(api_ten_digit, doc_field_code, doc_fieldname, year, month, month_year) %>%
   summarise(prod = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
-  mutate(api_field = paste0(api_ten_digit, "-", FieldCode),
-         month_year = as.Date(as.yearmon(paste(year, month, sep = "-"))))
+  mutate(api_field = paste0(api_ten_digit, "-", doc_field_code))
 
 # total_api_field_prod <- well_api_prod %>%
 #   group_by(api_field) %>%
@@ -178,26 +163,26 @@ pos_well_api_prod <- well_api_prod %>%
   group_by(api_ten_digit, api_field) %>%
   summarise(api_total = sum(prod)) %>%
   ungroup() %>%
-  filter(api_total > 0)
+  filter(api_total > 0) %>%
+  mutate(doc_field_code = as.character(str_sub(api_field, -3, -1)))
 
 ### test
 test_fc <- "052"
 
 test_df <- pos_well_api_prod %>%
-  mutate(FieldCode = as.character(str_sub(api_field, -3, -1))) %>%
-  filter(FieldCode == test_fc) %>%
+  mutate(doc_field_code = as.character(str_sub(api_field, -3, -1))) %>%
+  filter(doc_field_code == test_fc) %>%
   select(api_ten_digit) %>%
   unique() 
 
-
-## get all combos
-well_year_combos <- expand.grid(api_field = as.character(unique(pos_well_api_prod$api_field)),
-                                  month_year = unique(well_api_prod$month_year))
+anti_join(well_api_prod %>% select(doc_field_code) %>% unique(), pos_well_api_prod %>% select(doc_field_code) %>% unique())
 
 
+## last date of production info
 
 plugged_last_prod <- well_api_prod %>%
   filter(api_field %in% pos_well_api_prod$api_field) %>%
+  # filter(api_ten_digit %in% test_df$api_ten_digit) %>%
   # filter(prod > 0) %>%
   ## CHANGE ABOVE TO FILTER OUT TRAILING ZEROS
   # group_by(api_ten_digit, FieldCode, api_field) %>%
@@ -205,7 +190,7 @@ plugged_last_prod <- well_api_prod %>%
   filter(month_year == max(month_year)) %>%
   ungroup() %>%
   # select(api_ten_digit, FieldCode, api_field, last_prod_date = month_year) %>%
-  select(api_ten_digit, last_prod_date = month_year) %>%
+  select(api_ten_digit, doc_field_code, doc_fieldname, api_field, last_prod_date = month_year) %>%
   unique()
 
 ## which have two values?
@@ -215,17 +200,22 @@ plugged_field_n <- plugged_last_prod %>%
   ungroup() %>% 
   filter(n > 1)
 
+## get all combos
+well_year_combos <- expand.grid(api_field = as.character(unique(plugged_last_prod$api_field)),
+                                month_year = unique(well_api_prod$month_year))
+
+
 ## find last 12 months
 plugged_prod_12mo <- well_api_prod %>%
   filter(api_ten_digit %in% pos_well_api_prod$api_ten_digit) %>%
   full_join(well_year_combos) %>%
   mutate(api_ten_digit = ifelse(is.na(api_ten_digit), as.character(str_sub(api_field, 1, 10)), api_ten_digit),
-         FieldCode = ifelse(is.na(FieldCode), as.character(str_sub(api_field, -3, -1)), FieldCode)) %>%
+         doc_field_code = ifelse(is.na(doc_field_code), as.character(str_sub(api_field, -3, -1)), doc_field_code)) %>%
   mutate(prod = ifelse(is.na(prod), 0, prod)) %>%
   filter(api_field %in% pos_well_api_prod$api_field) %>%
   left_join(plugged_last_prod) %>%
   filter(month_year <= last_prod_date) %>%
-  arrange(month_year) %>%
+  arrange(api_ten_digit, month_year) %>%
   mutate(count = 1) %>%
   group_by(api_ten_digit) %>%
   mutate(cumsum = cumsum(count),
@@ -248,7 +238,7 @@ ntime <- plugged_prod_12mo %>%
 
 ## how many in multiple fields
 plug_prod_n <- plugged_prod_12mo %>%
-  select(api_ten_digit, FieldCode) %>%
+  select(api_ten_digit, doc_field_code) %>%
   unique() %>%
   group_by(api_ten_digit) %>%
   mutate(n = n()) %>%
@@ -263,20 +253,19 @@ q2 <- 0.99
 ## final year production
 plugged_prod_final_yr <- plugged_prod_12mo %>%
   # group_by(api_ten_digit, FieldCode) %>%
-  group_by(api_ten_digit, FieldCode) %>%
+  group_by(api_ten_digit, doc_field_code, doc_fieldname) %>%
   summarise(final_yr_prod = sum(prod, na.rm = T)) %>%
   ungroup() %>%
-  group_by(FieldCode) %>%
+  group_by(doc_field_code, doc_fieldname) %>%
   mutate(n_wells = n()) %>%
   ungroup() %>%
-  group_by(FieldCode) %>%
+  group_by(doc_field_code, doc_fieldname) %>%
   mutate(minq = calc_adj_val(x = final_yr_prod, pval = q1),
          maxq = calc_adj_val(x = final_yr_prod, pval = q2)) %>%  
   ungroup() %>%
   mutate(final_yr_prod_adj = ifelse(n_wells < 3, final_yr_prod,
-                                    ifelse(final_yr_prod >= minq & final_yr_prod <= maxq, final_yr_prod, NA))) %>%
-  left_join(field_names_df) %>%
-  rename(doc_field_code = FieldCode) 
+                                    ifelse(final_yr_prod >= minq & final_yr_prod <= maxq, final_yr_prod, NA))) 
+
 # %>%
 #   left_join(top_fields_2019) %>%
 #   mutate(field_rank = ifelse(is.na(field_rank), 11, field_rank)) %>%
@@ -299,10 +288,10 @@ test3 <- plugged_prod_final_yr %>%
 
 
 
-## add factors
-plugged_prod_final_yr$adj_field_name <- factor(plugged_prod_final_yr$adj_field_name, levels = c("Belridge  South: Rank = 1", "Midway-Sunset: Rank = 2", "Kern River: Rank = 3",
-                                                                                                "Cymric: Rank = 4", "Wilmington: Rank = 5", "Lost Hills: Rank = 6", "San Ardo: Rank = 7", 
-                                                                                                "Elk Hills: Rank = 8", "Coalinga: Rank = 9", "Poso Creek: Rank = 10", "Other"))
+# ## add factors
+# plugged_prod_final_yr$adj_field_name <- factor(plugged_prod_final_yr$adj_field_name, levels = c("Belridge  South: Rank = 1", "Midway-Sunset: Rank = 2", "Kern River: Rank = 3",
+#                                                                                                 "Cymric: Rank = 4", "Wilmington: Rank = 5", "Lost Hills: Rank = 6", "San Ardo: Rank = 7", 
+#                                                                                                 "Elk Hills: Rank = 8", "Coalinga: Rank = 9", "Poso Creek: Rank = 10", "Other"))
 
 ggplot(plugged_prod_final_yr, aes(x = adj_field_name, y = final_yr_prod)) + 
   geom_boxplot(na.rm = TRUE, coef = 5) +  # remove NAs, and set the whisker length to all included points
@@ -314,7 +303,7 @@ ggplot(plugged_prod_final_yr, aes(x = adj_field_name, y = final_yr_prod)) +
 
 ## summary of exit info
 exit_prod <- plugged_prod_final_yr %>%
-  group_by(doc_field_code, FieldName) %>%
+  group_by(doc_field_code, doc_fieldname) %>%
   summarise(mean_final_yr_prod = mean(final_yr_prod),
             mean_final_yr_prod_adj = mean(final_yr_prod_adj, na.rm = T),
             diff = mean_final_yr_prod - mean_final_yr_prod_adj,
@@ -326,7 +315,20 @@ exit_prod <- plugged_prod_final_yr %>%
 exit_prod_output <- exit_prod %>%
   select(doc_field_code, mean_final_yr_prod, mean_final_yr_prod_adj, n_wells) 
 
-write_csv(exit_prod_output, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/well_exit_volume_x_field_v1.csv")
+# old <- fread("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/well_exit_volume_x_field_v1.csv", colClasses = c('doc_field_code' = 'character'))
+# 
+# old <- old %>%
+#   rename(old_mean_final_yr_prod = mean_final_yr_prod,
+#          old_mean_final_yr_prod_adj = mean_final_yr_prod_adj,
+#          old_n_wells = n_wells)
+# 
+# comp <- old %>%
+#   full_join(exit_prod_output) %>%
+#   mutate(diff = mean_final_yr_prod - old_mean_final_yr_prod,
+#          diff_adj = mean_final_yr_prod_adj - old_mean_final_yr_prod_adj,
+#          diff_wells = n_wells - old_n_wells)
+
+write_csv(exit_prod_output, file = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/well_exit_volume_x_field_v1_revised.csv")
 
 
 

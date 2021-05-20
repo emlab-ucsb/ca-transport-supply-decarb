@@ -5,11 +5,11 @@
 # inputs ------
 
   data_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/decline-historic/'
-  prod_file       = 'data/production_api10_monthly.csv'
+  prod_file       = 'data/production_api10_monthly_revised.csv'
   param_file      = 'parameters/fitted-parameters_field-vintage_yearly_entry.csv'
-  peak_file       = 'data/field-vintage_peak-production_yearly.csv'
+  peak_file       = 'data/field-vintage_peak-production_yearly_revised.csv'
   exit_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/'
-  exit_file       = 'well_exit_volume_x_field_v1.csv'
+  exit_file       = 'well_exit_volume_x_field_v1_revised.csv'
   setback_path    = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/'
   w_setback_file  = 'wells_in_setbacks_test.csv'
 
