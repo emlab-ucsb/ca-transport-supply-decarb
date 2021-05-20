@@ -6,7 +6,7 @@
 # inputs ------
 
 data_dir        = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/'
-save_dir        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/focus-areas-1-2/figs/injection-well-type/'
+save_dir        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/project-materials/focus-areas-1-2/figs/injection-well-type/'
 # inj_file        = 'well_inject_m.rds'
 inj_file        = 'well_inj_m_processed.csv'
 type_file       = 'well_type_df.csv'
@@ -127,7 +127,7 @@ top10prod = c('Belridge  South', 'Midway-Sunset', 'Kern River', 'Cymric', 'Wilmi
 
 prim_calepa_pal <- c("#DBB95E", "#47778B", "#98B468", "#7A7095", "#636466", "#D1585C")
 
-bar_top10inj = ggplot(type_field_yr[ year %in% c(2015,2018) & doc_fieldname %in% top10inj], 
+bar_top10inj = ggplot(type_field_yr[ year %in% c(2015,2018) & doc_fieldname %in% top10inj & well_type_name %in% c('Water Flood', 'Cyclic Steam', 'Steam Flood')], 
                       aes(x = doc_fieldname, y = type_inj/1e6)) + geom_bar(stat = 'identity', aes(fill = well_type_name)) +
   labs(title = 'Breakdown of water and steam injection by well type for top 10 injection fields',
        subtitle = 'Million bbls of water/steam injected', 
@@ -136,7 +136,7 @@ bar_top10inj = ggplot(type_field_yr[ year %in% c(2015,2018) & doc_fieldname %in%
        fill = NULL) +
   facet_wrap(vars(year), nrow = 2) +
   scale_y_continuous(limits = c(0, 600), breaks = seq(0,600,100)) + 
-  # scale_fill_manual(values = prim_calepa_pal[c(1,3,2)]) + 
+  scale_fill_manual(values = prim_calepa_pal[c(1,3,2)]) +
   geom_text(data = labs_field_yr[year %in% c(2015,2018) & doc_fieldname %in% top10inj], 
             aes(x = doc_fieldname, y = (total_inj_year/1e6) + 30, label = paste0(ci_2015, ' g/MJ')),
             size = 5.5, fontface = 'plain', family = 'Secca Soft') +
@@ -144,13 +144,13 @@ bar_top10inj = ggplot(type_field_yr[ year %in% c(2015,2018) & doc_fieldname %in%
 # bar_top10inj
 
 ggsave(bar_top10inj,
-       filename = paste0(save_dir, 'injection-by-well-type_top10inj_2015-vs-2018.png'),
+       filename = paste0(save_dir, 'injection-by-well-type_top10inj_2015-vs-2018_revised.png'),
        width = 16,
        height = 9,
        dpi = 400)
 
 
-bar_top10prod = ggplot(type_field_yr[ year %in% c(2015,2018) & doc_fieldname %in% top10prod], 
+bar_top10prod = ggplot(type_field_yr[ year %in% c(2015,2018) & doc_fieldname %in% top10prod & well_type_name %in% c('Water Flood', 'Cyclic Steam', 'Steam Flood')], 
                        aes(x = doc_fieldname, y = type_inj/1e6)) + geom_bar(stat = 'identity', aes(fill = well_type_name)) +
   labs(title = 'Breakdown of water and steam injection by well type for top ten oil producing fields',
        subtitle = 'Billion bbls of water/steam injected', 
@@ -166,7 +166,7 @@ bar_top10prod = ggplot(type_field_yr[ year %in% c(2015,2018) & doc_fieldname %in
 # bar_top10prod
 
 ggsave(bar_top10prod,
-       filename = paste0(save_dir, 'injection-by-well-type_top10prod_2015-vs-2018.png'),
+       filename = paste0(save_dir, 'injection-by-well-type_top10prod_2015-vs-2018_revised.png'),
        width = 16,
        height = 9,
        dpi = 400)
