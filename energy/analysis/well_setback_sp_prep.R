@@ -5,6 +5,7 @@
 # comment out and add your own machine's file path
 home <- "/Volumes/GoogleDrive/Shared drives"
 ft_path <- "emlab/projects/current-projects/calepa-cn/data/FracTracker/FracTrackerSetbackgdb-newest/FracTrackerSetbackgdb/FracTrackerSetbackdata.gdb"
+save_path <- paste0(home, "/emlab/projects/current-projects/calepa-cn/data/GIS/processed/fracktracker-sr/")
 
 # load packages
 library(sf)
@@ -43,6 +44,7 @@ sr_dwellings <- sf::st_read(dsn = file.path(home, ft_path), layer = "SetbackOutl
 sr_dwellings <- sr_dwellings  %>% st_transform(ca_crs) 
 sr_dwellings <- sf::st_cast(sr_dwellings, "MULTIPOLYGON")
 sr_dwellings <- st_union(sr_dwellings)
+
 
 ## playgrounds
 sr_pg <- sf::st_read(dsn = file.path(home, ft_path), layer = "PlaygroundsinCities") %>%
@@ -179,9 +181,14 @@ sr_pts <- st_union(sr_pts)
 
 ## simplify dwellings
 simp_sr_dwell <- rmapshaper::ms_simplify(sr_dwellings, keep = 0.3, keep_shapes = TRUE, explode = TRUE)
+length(st_geometry(simp_sr_dwell))
 
 ## mapview
-mapview(simp_sr_dwell, layer.name = "dwellings") 
+# mapviewOptions(fgb = FALSE) -- if map not rendering, run this
+mapview(sr_dwellings, layer.name = "dwellings") 
+
+## save simplified version to view in QGIS and compare
+# st_write(simp_sr_dwell, dsn = paste0(save_path, "simplified_dwellings.shp"))
 
 
 ## create an sf object for each buffer
@@ -190,10 +197,11 @@ mapview(simp_sr_dwell, layer.name = "dwellings")
 buffer_dist_ft <- c(1000, 2500, 5280)
 ft_meter_val <- 0.3048
 
-buff_dist_m <- buffer_dist_ft * ft_meter_val
-
-
-create_buffer <- function(dist_m) {
+create_buffer <- function(dist_ft) {
+  
+  buff_dist_ft_name <- paste0(dist_ft, "ft")
+  
+  dist_m <- dist_ft * ft_meter_val
   
   pt_buff_tmp <- sr_pts %>%
     st_buffer(dist = dist_m) %>%
@@ -211,8 +219,11 @@ create_buffer <- function(dist_m) {
   
   out_tmp2 <- st_union(dwelling_buff_tmp, out_tmp1)
   
+  ## save output
+  st_write(out_tmp2, dsn = paste0(save_path, paste0("buffer_", buff_dist_ft_name, ".shp")))
+  
 }
 
-
+purrr::map(buffer_dist_ft, create_buffer)
 
 
