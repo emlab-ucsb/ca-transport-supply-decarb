@@ -278,6 +278,9 @@ View(field_boundaries2 %>%
        summarise(n = n()) %>%
        ungroup())
 
+# save output
+
+write_csv(field_boundaries2, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage_R.csv"))
 
 
 ## save maps for examining
@@ -310,12 +313,3 @@ mapshot(coverage_map, url = paste0(home, "/emlab/projects/current-projects/calep
 #          diff < -0.01 | diff > 0.01)
 
 
-
-
-              
-                            
-
-
-# save output
-
-write_csv(field_boundaries2, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage_R.csv"))
