@@ -56,37 +56,37 @@
   l_nls_year = list()
   for (i in 1:nrow(un_fv)) {
     
-    temp = prod_fv_year[un_fv[i], on = c('doc_field_code', 'doc_fieldname', 'vintage'), nomatch = 0]
-    temp2 = temp[ peak_year_diff >= 0 ]
-    temp2[, t := 1:nrow(temp2)]
-    temp2[, moving_decline_rate := rollmean(decline_rate, 5, align = 'left', na.pad = T)]
+    temp = prod_fv_year[un_fv[i], on = c('doc_field_code', 'doc_fieldname', 'vintage'), nomatch = 0] # get production for specified field-vintage
+    temp2 = temp[peak_year_diff >= 0] # only keep years from peak year onwards
+    temp2[, t := 1:nrow(temp2)] # add sequence of years
+    temp2[, moving_decline_rate := rollmean(decline_rate, 5, align = 'left', na.pad = T)] # calculate a moving decline rate by taking a 5-year left-aligned rolling mean
     exp_year = ifelse(is.na(temp2[moving_decline_rate < 0 & abs(moving_decline_rate) <= 10/100 & t >= quantile(t, 0.3) ][1, t]),
                       max(temp2[, t] + 1),
-                      temp2[moving_decline_rate < 0 & abs(moving_decline_rate) <= 10/100 & t >= quantile(t, 0.3) ][1, t])
-    temp2[ t < exp_year, type := 'hyperbolic' ]
-    temp2[ t >= exp_year, type := 'exponential' ]
+                      temp2[moving_decline_rate < 0 & abs(moving_decline_rate) <= 10/100 & t >= quantile(t, 0.3) ][1, t]) # condition to calculate estimate year when curve changes from hyperbolic to exponential
+    temp2[t < exp_year, type := 'hyperbolic'] # assign years before exp_year as hyperbolic decline
+    temp2[t >= exp_year, type := 'exponential'] # assign years after exp_year as exponential decline
 
-    q_i = max(temp2[, prod_rate][1:3], na.rm = T)
-    D_h = max(abs(temp2[, decline_rate][1:5]), na.rm = T)
+    q_i = max(temp2[, prod_rate][1:3], na.rm = T) # calculate q_i (peak production rate)
+    D_h = max(abs(temp2[, decline_rate][1:5]), na.rm = T) # calculate D_h (initial decline rate) by taking max of first five decline rates
     # D_e = mean(temp2[ type == 'exponential', decline_rate], na.rm = T)
     
-    hypfunc = function(b,t) {  q_i/((1 + b*D_h*t)^(1/b)) }
-    expfunc = function(d,t) {   q_i*exp(-d*t)      }
+    hypfunc = function(b,t) {  q_i/((1 + b*D_h*t)^(1/b)) } # write hyperbolic function
+    expfunc = function(d,t) {   q_i*exp(-d*t)      } # write exponential function
     
-    error = try(res <- nls(prod_rate ~ q_i/((1+b*D_h*t)^(1/b)), data = temp2, start = list(b = 1)))
+    error = try(res <- nls(prod_rate ~ q_i/((1+b*D_h*t)^(1/b)), data = temp2, start = list(b = 1))) # check if a field-vintage's production curve is able to be fitted as a hyperbolic decline
     
-    if(class(error)!="try-error"){
+    if(class(error)!="try-error"){ # if the error check above does not given an error, then do the following:
       
-      exponly = nls(prod_rate ~ q_i*exp(-d*t), data = temp2, start = list(d = -0.008))
-      temp2[, fitone := fitted(exponly) ]
-      dval = coef(exponly)[1]
+      exponly = nls(prod_rate ~ q_i*exp(-d*t), data = temp2, start = list(d = -0.008)) # first, fit the entire production curve as an exponential decline
+      temp2[, fitone := fitted(exponly)] 
+      dval = coef(exponly)[1] # exponential decline coefficient
       
-      # nlsonly = nls(prod_rate ~ q_i/((1+b*D_h*t)^(1/b)), data = temp2, start = list(b = 1))
+      # nlsonly = nls(prod_rate ~ q_i/((1+b*D_h*t)^(1/b)), data = temp2, start = list(b = 1)) # fit the entire production curve as a hyperbolic decline
       # temp2[, fitone := fitted(nlsonly) ]
       # bval = coef(nlsonly)[1]
       # temp2[, hypfit := hypfunc(bval,(1:nrow(temp2)))]
       
-        catchmult = tryCatch({
+        catchmult = tryCatch({ # check if hyperbolic years can be properly fitted using nls
           mult <- nls(prod_rate ~ q_i/((1+b*D_h*t)^(1/b)), data = temp2[type == 'hyperbolic'], start = list(b = 1))
           ('yes')
         }, error = function(e) {
@@ -94,28 +94,28 @@
         })
       
 
-        if ( catchmult == 'yes' & exp_year < max(temp2[, t]) ) {
+        if ( catchmult == 'yes' & exp_year < max(temp2[, t]) ) { # if yes (can be fitted as hyperbolic), then fit the first portion as hyperbolic
           nlsmod = nls(prod_rate ~ q_i/((1+b*D_h*t)^(1/b)), data = temp2[type == 'hyperbolic'], start = list(b = 1))
           bval2 = coef(nlsmod)[1]
           
           # q_ie = hypfunc(bval2,exp_year)
           
-          expmod = nls(prod_rate ~ q_i*exp(-d*t), data = temp2[type == 'exponential'], start = list(d = -0.008))
+          expmod = nls(prod_rate ~ q_i*exp(-d*t), data = temp2[type == 'exponential'], start = list(d = -0.008)) # fit second portion as exponential
           # temp2[type == 'hyperbolic' , fitmult := fitted(nlsmod) ]
           # temp2[type == 'exponential' , fitmult := fitted(expmod) ]
           dval2 = coef(expmod)[1]
 
-          fullfunc  = function(t) {  q_i/((1 + bval2*D_h*t)^(1/bval2)) - q_i*exp(-dval2*t)  }
+          fullfunc  = function(t) {  q_i/((1 + bval2*D_h*t)^(1/bval2)) - q_i*exp(-dval2*t)  } # full function of hyperbolic + exponential
           
           intercept_yr = NA
-          try(intercept_yr <- uniroot(f = fullfunc, interval = c(1, 100))$root, silent=T)
+          try(intercept_yr <- uniroot(f = fullfunc, interval = c(1, 100))$root, silent=T) # calculate root of full function to find intercept year
           if(is.na(intercept_yr)) intercept_yr = 1
           intercept_yr = round(intercept_yr,0)
           
-          maxpredt = max(intercept_yr, nrow(temp2))
+          maxpredt = max(intercept_yr, nrow(temp2)) # max number of predicted years
           
-          hypfit2 = hypfunc(bval2,(1:maxpredt))
-          expfit = expfunc(dval2,(1:maxpredt))
+          hypfit2 = hypfunc(bval2,(1:maxpredt)) # hyperbolic fitted line
+          expfit = expfunc(dval2,(1:maxpredt)) # exponential fitted line
           
           # fullfunc  = function(t) {  q_i/((1 + bval2*D_h*t)^(1/bval2)) - q_i*exp(-dval*t)  }
           # intercept_yr = uniroot(f = fullfunc, interval = c(1, 50))$root
