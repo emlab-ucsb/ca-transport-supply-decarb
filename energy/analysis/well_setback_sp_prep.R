@@ -158,7 +158,22 @@ sr_sca <- sf::st_read(dsn = file.path(home, ft_path), layer = "SchoolsCA_Sabins_
   mutate(fac_type = "school") %>%
   dplyr::select(fac_type)
 
+# sandy's checks
+# ensure that everything is read in: looks ok 19 SR objects
+length(layer_vec)
+ls(pattern = "sr") %>% length()
+
+# put everything into a list
+all <- lapply(ls(pattern= "sr"), get)
+
+all %>% purrr::map(~( .x %>% summary()))
+
+# sr_r and ar_dwellings are multipolygons
+
+# all are points except for 7 and 16 --> multipolygons
+
 ## combine points, union
+# everything above except the multipolygons
 sr_pts <- rbind(sr_pg,
                 sr_dc,
                 sr_ec,
@@ -177,15 +192,46 @@ sr_pts <- rbind(sr_pg,
                 sr_sca,
                 sr_pcc)
 
+# st_union()'s help file
+# Unioning a set of overlapping polygons has the effect of merging the areas (i.e. the same effect as iteratively unioning all individual polygons together). Unioning a set of LineStrings has the effect of fully noding and dissolving the input linework. In this context "fully noded" means that there will be a node or endpoint in the output for every endpoint or line segment crossing in the input. "Dissolved" means that any duplicate (e.g. coincident) line segments or portions of line segments will be reduced to a single line segment in the output. Unioning a set of Points has the effect of merging all identical points (producing a set with no duplicates).
+
 sr_pts <- st_union(sr_pts)
 
 ## simplify dwellings
+
 simp_sr_dwell <- rmapshaper::ms_simplify(sr_dwellings, keep = 0.3, keep_shapes = TRUE, explode = TRUE)
 length(st_geometry(simp_sr_dwell))
 
+# sandy's checks
+# the reduction in size by 20% could probably go further since look so similar
+(object.size(sr_dwellings)-object.size(simp_sr_dwell))/object.size(sr_dwellings)
+
+# plot close up to see what is lost
+# looks very similar
+
+# define random bounding box to check
+xcheck <- c(200000, 230000)
+ycheck <- c(-500000,-480000)
+
+par(mfrow = c(1, 2))
+
+plot(sr_dwellings,
+     xlim = xcheck ,
+     ylim = ycheck,
+     border = 1,
+     axes = TRUE)
+
+plot(simp_sr_dwell,
+     xlim = xcheck ,
+     ylim = ycheck,
+     border = 1,
+     axes = TRUE)
+
+par(mfrow = c(1, 1))
 ## mapview
 # mapviewOptions(fgb = FALSE) -- if map not rendering, run this
 mapview(sr_dwellings, layer.name = "dwellings") 
+# sandy: this function is not running for me
 
 ## save simplified version to view in QGIS and compare
 # st_write(simp_sr_dwell, dsn = paste0(save_path, "simplified_dwellings.shp"))
@@ -207,6 +253,10 @@ create_buffer <- function(dist_ft) {
     st_buffer(dist = dist_m) %>%
     st_union() 
   
+  # looking good!!!
+  plot(pt_buff_tmp, xlim = xcheck, ylim = ycheck)
+  plot(sr_pts, xlim = xcheck, ylim = ycheck, add = TRUE, pch = 16, cex = .5)
+  
   schl_buff_tmp <- sr_s %>%
     st_buffer(dist = dist_m) %>%
     st_union()
@@ -218,6 +268,12 @@ create_buffer <- function(dist_ft) {
   out_tmp1 <- st_union(pt_buff_tmp, schl_buff_tmp)
   
   out_tmp2 <- st_union(dwelling_buff_tmp, out_tmp1)
+  
+  # uncomment to check
+  # plot(out_tmp2, xlim = xcheck, ylim = ycheck)
+  # plot(sr_pts, xlim = xcheck, ylim = ycheck, add = TRUE, pch = 16, cex = .5)
+  # plot(simp_sr_dwell, xlim = xcheck, ylim = ycheck, add = TRUE, col = "red")
+  # plot(sr_s, xlim = xcheck, ylim = ycheck, add = TRUE, col = "blue")
   
   ## save output
   st_write(out_tmp2, dsn = paste0(save_path, paste0("buffer_", buff_dist_ft_name, ".shp")))
