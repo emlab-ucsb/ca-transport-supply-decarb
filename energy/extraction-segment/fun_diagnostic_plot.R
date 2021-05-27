@@ -11,6 +11,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   report_out <- read.csv("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/production_state_1977-2045.csv")
   report_wells_out <- fread("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/well_entry_state_1977-2045.csv")
   extract_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T)
+  hist_ghg <- fread('/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/historic_ghg_emissions_og.csv')
   
   ## assemble outputs from cal epa report
   ## -------------------------------------------
@@ -267,6 +268,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
                aes(x = year, y = ghg_kgCO2e / 1e9, color = version), shape = 3) +
     geom_line(data = report_ghg_all, aes(x = year, y = ghg_kgCO2e / 1e9, color = version)) +
     facet_grid(type ~ scen_name) +
+    geom_line(data = hist_ghg, aes(x = year, y = co2e), color = "grey") +
     labs(title = 'State-level emissions',
          subtitle = 'MtCO2e', 
          x = 'Year',
