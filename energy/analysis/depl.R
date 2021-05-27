@@ -121,6 +121,7 @@ final_df <- final_df %>%
   )  
 
 # Adjust resource so that depletion rate is not greater than 1
+# But some fields that are still producing already have depletion rate of 1
 final_df <- final_df %>% 
   mutate(
     resource_adj = max(cum_prod_adj,resource)
