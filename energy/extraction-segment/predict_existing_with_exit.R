@@ -11,7 +11,7 @@
   exit_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/'
   exit_file       = 'well_exit_volume_x_field_v1_revised.csv'
   setback_path    = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/'
-  w_setback_file  = 'wells_in_setbacks_test.csv'
+  w_setback_file  = 'wells_in_setbacks_revised.csv'
 
 # outputs ------
   
@@ -24,31 +24,31 @@
   
 # read in data ------
   
-  dt_prod = fread(paste0(data_path, prod_file), header = T)
-  exit_prod = fread(paste0(exit_path, exit_file), header = T)
-  decline_params = fread(paste0(data_path, param_file), header = T)
-  peak_prod = fread(paste0(data_path, peak_file), header = T)
-  well_setbacks = fread(paste0(setback_path, w_setback_file), header = T)
+  dt_prod = fread(paste0(data_path, prod_file), header = T, colClasses = c('api_ten_digit' = 'character',
+                                                                           'doc_field_code' = 'character'))
+  
+  exit_prod = fread(paste0(exit_path, exit_file), header = T, colClasses = c('doc_field_code' = 'character'))
+  
+  decline_params = fread(paste0(data_path, param_file), header = T, colClasses = c('FieldCode' = 'character'))
+  
+  peak_prod = fread(paste0(data_path, peak_file), header = T, colClasses = c('doc_field_code' = 'character'))
+  
+  well_setbacks = fread(paste0(setback_path, w_setback_file), header = T, colClasses = c('api_ten_digit' = 'character'))
   
 # rename field code columns -----
   
-  setnames(dt_prod, 'FieldCode', 'doc_field_code')
   setnames(decline_params, 'FieldCode', 'doc_field_code')
-  setnames(peak_prod, 'FieldCode', 'doc_field_code')
-  
-  setnames(dt_prod, 'FieldName', 'doc_fieldname')
   setnames(decline_params, 'FieldName', 'doc_fieldname')
-  setnames(peak_prod, 'FieldName', 'doc_fieldname')
   
 # pad field codes to width = 3 with zeroes -----
   
-  dt_prod[, doc_field_code := sprintf("%03d", doc_field_code)]
-  exit_prod[, doc_field_code := sprintf("%03s", doc_field_code)]
-  decline_params[, doc_field_code := sprintf("%03d", doc_field_code)]
-  peak_prod[, doc_field_code := sprintf("%03d", doc_field_code)]
+  # dt_prod[, doc_field_code := sprintf("%03d", doc_field_code)]
+  # exit_prod[, doc_field_code := sprintf("%03s", doc_field_code)]
+  # decline_params[, doc_field_code := sprintf("%03d", doc_field_code)]
+  # peak_prod[, doc_field_code := sprintf("%03d", doc_field_code)]
 
 # remove fields with " Gas" in the name
-  dt_prod = dt_prod[!grepl(" Gas", dt_prod$doc_fieldname),]
+  # dt_prod = dt_prod[!grepl(" Gas", dt_prod$doc_fieldname),]
   
 # get fields that produced oil in recent years and the number of wells in each vintage that produced oil -----
   
@@ -70,31 +70,31 @@
   op_wells_agg <- op_wells %>%
     ## join with setback info
     left_join(well_setbacks) %>%
-    ## assume NA means not in setback
-    mutate(in_setback = ifelse(is.na(in_setback), 0, in_setback)) %>%
+    ## assume NA means not in setback (note that there are about 20 wells that are na)
+    mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback)) %>%
     ## number of wells in each field vintage by setback scenario
     group_by(setback_scenario, doc_field_code, doc_fieldname, vintage) %>%
     summarise(n_wells = n(),
-              n_wells_in_setback = sum(in_setback)) %>%
+              n_wells_in_setback = sum(within_setback)) %>%
     ungroup() %>%
     mutate(adj_no_wells = n_wells - n_wells_in_setback) %>%
-    select(-n_wells, -n_wells_in_setback)
+    dplyr::select(-n_wells, -n_wells_in_setback)
   
   ## create version with n wells and adj n wells for density calculation
   n_well_df <- op_wells %>%
     ## join with setback info
     left_join(well_setbacks) %>%
     ## assume NA means not in setback
-    mutate(in_setback = ifelse(is.na(in_setback), 0, in_setback)) %>%
+    mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback)) %>%
     ## number of wells in each field vintage by setback scenario
     group_by(setback_scenario, doc_field_code, doc_fieldname, vintage) %>%
     summarise(n_wells = n(),
-              n_wells_in_setback = sum(in_setback)) %>%
+              n_wells_in_setback = sum(within_setback)) %>%
     ungroup() %>%
     mutate(adj_no_wells = n_wells - n_wells_in_setback) 
   
   
-  fwrite(n_well_df, paste0(save_path, 'n_well_setbacks.csv'))
+  fwrite(n_well_df, paste0(save_path, 'n_well_setback_revised.csv'))
 
   ## original objv
   # op_wells_agg = op_wells[, .(annual_bbl_recent = sum(as.numeric(oil_prod), na.rm = T),
