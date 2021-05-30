@@ -19,6 +19,7 @@ library(sf)
 library(tidyverse)
 library(purrr)
 library(rgdal)
+library(data.table)
 library(gdalUtilities)
 library(maps)
 library(mapview)
@@ -121,6 +122,7 @@ pos_prod <- well_prod[, .(api_prod = sum(OilorCondensateProduced, na.rm = T)), b
 
 ## join wells with buffers
 wells_within_df <- wells %>% 
+  # it returns NA for those outside and 0 for those inside in the FID column
   st_join(buff1000, left = TRUE) %>%
   rename(within_1000 = FID) %>%
   st_join(buff2500, left = TRUE) %>%
@@ -152,6 +154,27 @@ View(wells_within_df_all %>%
        summarise(n = n()) %>%
        ungroup())
 
+## mske sure that the number of wells within larger buffers are increasing
+wells_within_df_all %>%
+       group_by(setback_scenario) %>%
+       summarise(wells_within = sum(within_setback)) 
+
+## finally, make a plot to ensure that the wells are encoded correctly
+
+wells_within_df <- wells %>% 
+  st_join(buff1000, left = TRUE) %>%
+  rename(within_1000 = FID) %>%
+  # st_join(buff2500, left = TRUE) %>%
+  # rename(within_2500 = FID) %>%
+  # st_join(buff5280, left = TRUE) %>%
+  # rename(within_5280 = FID) %>% 
+  mutate(within_setback = ifelse(within_1000 == 0, 1, within_1000),
+         within_setback = ifelse(is.na(within_setback), 0, within_setback))
+
+ggplot(data = buff1000) +
+  geom_sf() +
+  lims(x=xcheck, y=ycheck) +
+  geom_sf(data = wells_within_df, aes(color = factor(within_setback)))
 
 
 # # check number in setback compared to tracey's output
@@ -232,6 +255,18 @@ anti_join(pos_fields %>% dplyr::select(doc_field_code) %>% unique(),
 
 field_coverage_df_1000 <- field_boundaries %>% 
   st_intersection(buff1000)
+
+# plot(field_boundaries %>% dplyr::select(doc_field_code), 
+#      xlim = xcheck, 
+#      ylim = ycheck, 
+#      axes = TRUE)
+# 
+# plot(field_coverage_df_1000 %>% dplyr::select(doc_field_code), 
+#      xlim = xcheck, 
+#      ylim = ycheck, 
+#      axes = TRUE,
+#      add = TRUE, 
+#      color = "yellow")
 
 field_coverage_df_1000_2 <- field_coverage_df_1000 %>%
   mutate(setback_area = st_area(field_coverage_df_1000),
