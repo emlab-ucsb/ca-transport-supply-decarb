@@ -1,5 +1,6 @@
+## Tracey Mangin and Ruiwen Lee
 ## May 24, 2021
-## well exit
+## Create well exit variable
 
 library(tidyverse)
 library(data.table)
@@ -10,7 +11,7 @@ library(zoo)
 proj_dir <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/"
 raw_dir            <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/"
 data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
-output_dir <- "outputs/exit/"
+output_dir <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/exit/"
 
 ## files
 prod_file       <- "well_prod_m_processed.csv"
@@ -41,6 +42,14 @@ pos_well_api_prod <- well_prod %>%
 
 pos_api_vec <- pos_well_api_prod$api_ten_digit
 
+## wells that are now plugged
+plugged_api <- status %>%
+  filter(well_status == "Plugged")
+plugged_api_vec <- plugged_api$api_ten_digit
+
+## wells that produced at some point and are now plugged
+pos_plugged_api_vec <- intersect(plugged_api_vec, pos_api_vec)
+
 ## well add column for month_year, select certain columns
 well_prod2 <- well_prod[, .(api_ten_digit, doc_field_code, doc_fieldname, month_year, OilorCondensateProduced)]
 
@@ -49,7 +58,7 @@ setnames(well_prod2, c("OilorCondensateProduced"),
 
 
 ## filter for wells with positive production 
-prod_dt <- well_prod2[api_ten_digit %chin% pos_api_vec]
+prod_dt <- well_prod2[api_ten_digit %chin% pos_plugged_api_vec]
 
 prod_dt <- prod_dt[, lapply(.SD, sum, na.rm = T), .SDcols = c("oil_prod"), by = .(api_ten_digit, doc_field_code, doc_fieldname, month_year)]
 
@@ -71,9 +80,50 @@ prod_dt[, `:=` (month = month(month_year),
 setorder(prod_dt, api_ten_digit, month_year)
 
 ## add vintage
+# wait on this, get annual no. of exits for now
 
 ## find final year of positive production by 
+prod_dt <- prod_dt %>%
+  group_by(api_ten_digit) %>%
+  mutate(pos_year = ifelse(oil_prod > 0, year, 0))
+
+prod_dt <- prod_dt %>%
+  group_by(api_ten_digit) %>%
+  mutate(
+    last_pos_year = max(pos_year)
+  )  
 
 ## calculate relevant values
+well_exit_dt <- prod_dt %>%
+  select(api_ten_digit, doc_field_code, doc_fieldname, last_pos_year)
 
+# Keep unique rows
+well_exit_dt <- distinct(well_exit_dt)
 
+# Exit year is first year with zero production
+well_exit_dt <- well_exit_dt %>%
+  mutate(
+    exit_year = last_pos_year+1
+  )
+
+well_exit_dt <- well_exit_dt %>%
+  group_by(doc_field_code) %>%
+  add_count(exit_year)
+
+field_exit_dt <- well_exit_dt %>%
+  select(doc_field_code, doc_fieldname, exit_year, n)
+field_exit_dt <- distinct(field_exit_dt)
+
+field_year_combos <- expand.grid(doc_field_code = unique(field_exit_dt$doc_field_code),
+                                 exit_year = unique(field_exit_dt$exit_year)) 
+
+field_exit_dt2 <- field_year_combos %>%
+  left_join(field_exit_dt, by=c("doc_field_code","exit_year"))
+
+field_exit_dt2 <- field_exit_dt2 %>%
+  select(doc_field_code, exit_year, n)
+field_exit_dt2[is.na(field_exit_dt2)] <- 0
+field_exit_dt2 <- rename(field_exit_dt2, well_exits=n)
+
+## Save field-year-level well exit data
+write_csv(field_exit_dt2, path = paste0(output_dir, "well_exits.csv"))

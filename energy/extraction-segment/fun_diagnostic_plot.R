@@ -3,14 +3,15 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   print('Now plotting outputs...')
   
   # baseline comparison output path
-  
-  base_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
-  
+  # 
+  # base_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+  # 
   ## cal epa report outputs
   
   report_out <- read.csv("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/production_state_1977-2045.csv")
   report_wells_out <- fread("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/well_entry_state_1977-2045.csv")
   extract_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T)
+  hist_ghg <- fread('/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/historic_ghg_emissions_og.csv')
   
   ## assemble outputs from cal epa report
   ## -------------------------------------------
@@ -251,6 +252,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
               aes(x = year, y = production_bbls / 1e6, color = version), shape = 3) +
     geom_line(data = report_out_prod, aes(x = year, y = production_bbls / 1e6, color = version)) +
     facet_grid(type ~ scen_name) +
+    geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
     labs(title = 'State-level crude oil extraction',
          subtitle = 'million barrels', 
          x = 'Year',
@@ -258,6 +260,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
          color = '') +
     # scale_color_gradient(low = "#f7fbff", high = "#08306b") +
     theme_line
+  
   
   # ghg (state, old, new)
   ghg_fig = ggplot(state_all_long, 
@@ -267,6 +270,8 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
                aes(x = year, y = ghg_kgCO2e / 1e9, color = version), shape = 3) +
     geom_line(data = report_ghg_all, aes(x = year, y = ghg_kgCO2e / 1e9, color = version)) +
     facet_grid(type ~ scen_name) +
+    geom_line(data = hist_ghg, aes(x = year, y = co2e), color = "grey") +
+    geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
     labs(title = 'State-level emissions',
          subtitle = 'MtCO2e', 
          x = 'Year',
@@ -274,6 +279,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
          color = '') +
     # scale_color_gradient(low = "#f7fbff", high = "#08306b") +
     theme_line
+  
   
   # new wells
   new_wells_fig = ggplot(state_all_long %>% filter(type == "new"), 
@@ -283,6 +289,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
                aes(x = year, y = new_wells, color = version), shape = 3) +
     geom_line(data = report_wells_out_all, aes(x = year, y = new_wells, color = version)) +
     facet_grid(~ scen_name) +
+    geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
     labs(title = 'State-level new wells',
          subtitle = 'number of new wells', 
          x = 'Year',

@@ -18,7 +18,7 @@ load_scenarios_dt = function(oil_px_selection) {
   ccs_ext_file      = 'ccs_extraction_scenarios.csv'
   ccs_ref_file      = 'ccs_refining_scenarios.csv'
   ghg_file          = 'ghg_emissions_x_field_2015_revised.csv'
-  setback_file      = 'setback_coverage.csv'
+  setback_file      = 'setback_coverage_R.csv'
   prod_quota_file   = 'prod_quota_scenarios.csv'
   excise_tax_file   = 'excise_tax_scenarios.csv'
   
@@ -74,8 +74,10 @@ load_scenarios_dt = function(oil_px_selection) {
   
   # load setback coverage file
   setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T) 
-  setback_scens[, V1 := NULL]
-  setnames(setback_scens, 'FieldCode', 'doc_field_code')
+  setback_scens <- setback_scens[, c("doc_field_code", "setback_scenario", "rel_coverage")]
+  setnames(setback_scens, 'rel_coverage', 'area_coverage')
+  # setback_scens[, V1 := NULL]
+  # setnames(setback_scens, 'FieldCode', 'doc_field_code')
   
   # load production quota file
   prod_quota_scens = fread(file.path(scen_path, prod_quota_file), header = T)
@@ -101,7 +103,7 @@ load_scenarios_dt = function(oil_px_selection) {
   price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
   resource_data[, doc_field_code := sprintf("%03d", doc_field_code)]
   ghg_factors[, doc_field_code := sprintf("%03d", doc_field_code)]
-  setback_scens[, doc_field_code := sprintf("%03d", doc_field_code)]
+  # setback_scens[, doc_field_code := sprintf("%03d", doc_field_code)]
   
   # create datatable of forecasted input variables -----
   

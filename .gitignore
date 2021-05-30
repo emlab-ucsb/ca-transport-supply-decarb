@@ -42,3 +42,6 @@ vignettes/*.pdf
 *.DS_Store
 .Rproj.user
 energy/*.DS_Store
+
+# diagnostic figures (meas)
+energy/figures-and-results/compare-diagnostic-scenarios.R
