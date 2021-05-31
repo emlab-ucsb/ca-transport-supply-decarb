@@ -168,8 +168,51 @@
 # get field-start years that were unable to have hyperbolic + exponential fit ------
   
   non_mult_fit = un_fy[!res_mult_fit, on = .(doc_field_code, start_year)]
+  non_mult_fit = non_mult_fit[doc_field_code %in% unique(res_mult_fit[, doc_field_code])]
   
 # get fields that were not able to fit at all ------
   
   non_fields = non_mult_fit[!doc_field_code %in% unique(res_mult_fit[, doc_field_code])]
+  
+# match fields that could not be fit to hyperbolic + exponential curves -----
+  
+  l_stat_mult = list()
+  
+  for (i in 1:nrow(non_mult_fit)) {
+    
+    temp = non_mult_fit[i]
+    setnames(temp, 'start_year', 'missing_year')
+    
+    # get regression results for all start years in the same field 
+    res = res_mult_fit[doc_field_code == temp[, doc_field_code]]
+    
+    # match field together 
+    res = res[temp[, .(doc_field_code, missing_year)], on = .(doc_field_code)]
+    
+    # calculate the difference between the years that do have curve fits and the missing year
+    res[, year_diff := abs(start_year - missing_year)]
+    
+    # sort res by year difference
+    setorder(res, year_diff)
+    
+    # select the top five year_diff (therefore the closest 5 start years to the missing year)
+    sel = res[1:5]
+    
+    # take the medians of the results
+    stat = sel[, lapply(.SD, median, na.rm = T), .SDcols = c('q_i', 'D', 'b', 'd', 'int_yr')]
+    
+    # save results 
+    l_stat_mult[[i]] = data.table(temp, 
+                                  q_i = stat[, q_i], 
+                                  D = stat[, D], 
+                                  b = stat[, b],
+                                  d = stat[, d],
+                                  int_yr = stat[, int_yr])
+
+    rm(temp, res, sel, stat)
+    
+    
+  }
+  
+  res_stat_fit = rbindlist(l_stat_mult)
   
