@@ -57,7 +57,9 @@
     
     temp = prod_fv_year[un_fy[i], on = c('doc_field_code', 'doc_fieldname', 'start_year'), nomatch = 0] # get production for specified field-start year
     temp2 = temp[peak_year_diff >= 0] # only keep years from peak year onwards
-    
+    # temp2 = temp2[!prod_rate %in% boxplot(temp2[, prod_rate])$out]
+    # temp2 = temp2[prod_rate < boxplot(temp2[, prod_rate])$out] # remove outliers
+
     if (nrow(temp2) >= 5) { # CHECK 1: if the number of rows for yearly production is less than 10, skip
       
       temp2[, t := 1:nrow(temp2)] # add sequence of years
@@ -76,7 +78,7 @@
         
         # perform hyperbolic + exponential regression
         
-        b_seq = seq(0.001, 2, 0.001) # sequence of b values to start at
+        b_seq = seq(0.001, 5, 0.001) # sequence of b values to start at
         
         for (b_num in 1:length(b_seq)) { # loop through the b values until a hyperbolic regression fit can be applied (if applicable)
           
@@ -140,7 +142,7 @@
           
           # l_nls_mult[[i]] = dt
           
-          rm(q_i,D_h,b_seq,b_num,nlsmod,expmod,bval,dval,intercept_yr,maxpredt,hypfit,expfit,mult)
+          rm(q_i,D_h,b_seq,b_num,nlsmod,expmod,bval,dval,intercept_yr,maxpredt,hypfit,expfit,mult,exp_year,catch_hyp)
           
           
         } else { # skip for CHECK 3
@@ -168,11 +170,11 @@
 # get field-start years that were unable to have hyperbolic + exponential fit ------
   
   non_mult_fit = un_fy[!res_mult_fit, on = .(doc_field_code, start_year)]
-  non_mult_fit = non_mult_fit[doc_field_code %in% unique(res_mult_fit[, doc_field_code])]
   
 # get fields that were not able to fit at all ------
   
   non_fields = non_mult_fit[!doc_field_code %in% unique(res_mult_fit[, doc_field_code])]
+  non_mult_fit = non_mult_fit[doc_field_code %in% unique(res_mult_fit[, doc_field_code])]
   
 # match fields that could not be fit to hyperbolic + exponential curves -----
   
@@ -209,10 +211,72 @@
                                   d = stat[, d],
                                   int_yr = stat[, int_yr])
 
-    rm(temp, res, sel, stat)
+    rm(temp, res, sel, stat, i)
     
     
   }
   
   res_stat_fit = rbindlist(l_stat_mult)
+  
+# get production for fields that do not have any curve fitting ------
+  
+  # fields_nonmatch_prod = prod_fv_year[doc_field_code %in% non_fields[, doc_field_code]]
+  # fields_nonmatch_prod[, year := start_year + year_no]
+  # fields_nonmatch_prod[, max_year := max(year_no, na.rm = T), by = .(doc_field_code, start_year)]
+  # fields_nonmatch_prod = fields_nonmatch_prod[tot_oil_prod > 0]
+  # fields_nonmatch_prod = fields_nonmatch_prod[year > 2010]
+  # 
+  # # View(prod_non_fields[year_no == max_year])
+  # # View(prod_fv_year[doc_field_code %in% non_fields[, doc_field_code]])
+  # 
+  # # prod_non_fields = non_fields[doc_field_code %in% unique(fields_nonmatch_prod[, doc_field_code])]
+  # prod_non_fields = non_fields[unique(fields_nonmatch_prod[, .(doc_field_code, start_year)]), on = .(doc_field_code, start_year), nomatch = 0]
+
+# for remaining field-start years, perform exponential decline ------
+  
+  l_nls_exp = list()
+  
+  for (i in 1:nrow(non_fields)) {
+    
+    temp = prod_fv_year[non_fields[i], on = c('doc_field_code', 'doc_fieldname', 'start_year'), nomatch = 0] # get production for specified field-start year
+    temp2 = temp[peak_year_diff >= 0] # only keep years from peak year onwards
+    temp2 = temp2[!prod_rate %in% boxplot(temp2[, prod_rate])$out]
+    
+    total_prod = sum(temp2[, tot_oil_prod])
+    
+    if (total_prod > 0) { # CHECK 1: if no production at all, skip
+      
+      if (nrow(temp2) >= 5) {
+        
+        temp2[, t := 1:nrow(temp2)] # add sequence of years
+        q_i = max(temp2[, prod_rate], na.rm = T) # calculate q_i (peak production rate)
+        D_h = max(abs(temp2[!is.infinite(decline_rate) & !is.na(decline_rate) & decline_rate < 0, decline_rate][1:5]), na.rm = T) # calculate D_h (initial decline rate) by taking max of first five decline rates
+        
+        expmod = nls(prod_rate ~ q_i*exp(-d*t), data = temp2, start = list(d = -0.008)) # fit exponential curve
+        dval = coef(expmod)[1]
+        
+        l_nls_exp[[i]] = data.table(non_fields[i], 
+                                    q_i = q_i, 
+                                    D = D_h, 
+                                    d = dval)
+        
+      } else {
+        i = i + 1
+      }
+      
+    } else {
+      i = i + 1
+    }
+    
+    rm(i, temp, temp2, total_prod, q_i, D_h, expmod, dval)
+
+    # ggplot(temp2, aes(t, prod_rate)) + geom_point()
+
+  }
+  
+  res_exp_fit = rbindlist(l_nls_exp)
+  
+# count fields that have no hyp+exp fit AND no exp fit -----
+  
+  last_fields = non_fields[!res_exp_fit, on = .(doc_field_code, start_year)]
   
