@@ -14,7 +14,7 @@
   save_dir        = 'outputs/decline-historic/data'
   peak_fy_fil     = 'field-year_peak-production_yearly.csv'
   prod_fy_fil     = 'production_field-year_yearly_entry.csv'
-  well_fy_fil     = 'production_api10_monthly_start_year.csv'
+  well_fy_fil     = 'production_api10_yearly_start_year.csv'
   
   
 # load libraries -------- 

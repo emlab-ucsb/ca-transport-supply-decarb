@@ -5,7 +5,7 @@
 # inputs ------
 
   data_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/decline-historic/'
-  prod_file       = 'data/production_api10_monthly_revised.csv' # meas-note: update to use "production_api10_monthly_start_year.csv"
+  prod_file       = 'data/production_api10_monthly_revised.csv' # meas-note: update to use "production_api10_yearly_start_year.csv"
   param_file      = 'parameters/fitted-parameters_field-vintage_yearly_entry.csv' # meas-note: update to use "fitted-parameters_field-start-year_yearly_entry.csv"
   peak_file       = 'data/field-vintage_peak-production_yearly_revised.csv' # meas-note: update to use "field-year_peak-production_yearly.csv"
   exit_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/'
