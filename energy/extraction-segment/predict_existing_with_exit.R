@@ -5,9 +5,9 @@
 # inputs ------
 
   data_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/decline-historic/'
-  prod_file       = 'data/production_api10_monthly_revised.csv'
-  param_file      = 'parameters/fitted-parameters_field-vintage_yearly_entry.csv'
-  peak_file       = 'data/field-vintage_peak-production_yearly_revised.csv'
+  prod_file       = 'data/production_api10_monthly_revised.csv' # meas-note: update to use "production_api10_monthly_start_year.csv"
+  param_file      = 'parameters/fitted-parameters_field-vintage_yearly_entry.csv' # meas-note: update to use "fitted-parameters_field-start-year_yearly_entry.csv"
+  peak_file       = 'data/field-vintage_peak-production_yearly_revised.csv' # meas-note: update to use "field-year_peak-production_yearly.csv"
   exit_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/'
   exit_file       = 'well_exit_volume_x_field_v1_revised.csv'
   setback_path    = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/'
@@ -58,7 +58,7 @@
   # op_wells = unique(dt_prod[, c('api_ten_digit', 'vintage', 'doc_fieldname', 'doc_field_code', 'year', 'oil_prod')])
   # op_wells = op_wells[year %in% c(2015:2019)]
   
-  op_wells = unique(dt_prod[, c('api_ten_digit', 'vintage', 'doc_fieldname', 'doc_field_code')])
+  op_wells = unique(dt_prod[, c('api_ten_digit', 'vintage', 'doc_fieldname', 'doc_field_code')]) # meas-note: probably have to change the 'vintage' to 'start_year'
   
   ## setback df with all wells 
   setback_all <- expand.grid(api_ten_digit = unique(op_wells$api_ten_digit),
@@ -73,7 +73,7 @@
     ## assume NA means not in setback (note that there are about 20 wells that are na)
     mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback)) %>%
     ## number of wells in each field vintage by setback scenario
-    group_by(setback_scenario, doc_field_code, doc_fieldname, vintage) %>%
+    group_by(setback_scenario, doc_field_code, doc_fieldname, vintage) %>% # meas-note: again, most instances of "vintage" will probably have to be replaced with "start_year"
     summarise(n_wells = n(),
               n_wells_in_setback = sum(within_setback)) %>%
     ungroup() %>%
@@ -120,7 +120,7 @@
     dt_pred = as.data.table(dt_pred)
     dt_pred[, start_year := as.numeric(ifelse(vintage == 'pre 1978',
                                    1977,
-                                   substr(vintage,1,4)))]
+                                   substr(vintage,1,4)))] # meas-note: probably won't have to do this anymore because the updated files use start year already
     
   # match peak production information
     # dt_pred = merge(dt_pred,
@@ -149,7 +149,7 @@
     
     y = fullrange[i]
     
-    dt_pred[is.na(b2), col := hypfunc(b1, y - start_year, peak_tot_prod, D)]
+    dt_pred[is.na(b2), col := hypfunc(b1, y - start_year, peak_tot_prod, D)] # meas-note: the updated parameters file only has b now (no b1 or b2 or anything), so you could probably comment out this line and replace mentions of b2 with b and d2 with d
     dt_pred[! is.na(b2), col :=  ifelse(y < 1978 + int_yr,
                                         hypfunc(b2, y - start_year, peak_tot_prod, D),
                                         expfunc(peak_tot_prod, d, y - start_year))  ]

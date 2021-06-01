@@ -10,8 +10,8 @@ run_extraction_model <- function(oil_px_selection) {
     scen_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
     entry_file      = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
     coef_file       = 'poisson_regression_coefficients_revised.csv'
-    param_file      = 'forecasted_decline_parameters_2020_2050.csv'
-    peak_file       = 'field-vintage_peak-production_yearly.csv'
+    param_file      = 'forecasted_decline_parameters_2020_2050.csv' # meas-note: update to use "forecasted_decline_parameters_2020_2050_revised.csv"
+    peak_file       = 'field-vintage_peak-production_yearly.csv' # meas-note: update to use "field-year_peak-production_yearly.csv"
     prod_file       = 'predicted-production_2020-2045_field_test.csv'
     prod_vintage_file = 'predicted-production_2020-2045_field_vintage_test.csv'
     # hist_file       = 'new_wells_pred_weighted_R.csv'  ## update this
@@ -77,7 +77,9 @@ run_extraction_model <- function(oil_px_selection) {
     prod_hist[, doc_field_code := sprintf("%03d", doc_field_code)]
   
   # get peak production median of last two vintages -----
-  
+    
+    # meas-note: so this next line calculates the median of the peak production (per well) of the last few vintages to apply to new well entries.
+    # meas-note: i would change to use the last few start-years (maybe 2000 onwards? or something like that) instead
     peak_prod_median = peak_dt[vintage %in% c("2008-2012", "2013-2019"), 
                                lapply(.SD, median, na.rm = TRUE), .SDcols = c("peak_tot_prod", "peak_avg_well_prod", "peak_well_prod_rate"),
                                by = .(doc_field_code)]
@@ -337,7 +339,7 @@ run_extraction_model <- function(oil_px_selection) {
         # calculate prediction of new wells into 2045
         
         new_wells_prod = merge(new_wells,
-                               decline_dt[t == year, .(doc_field_code, q_i, D, b1, b2, d, int_year)],
+                               decline_dt[t == year, .(doc_field_code, q_i, D, b1, b2, d, int_year)], # meas-note: change b1, b2, d --> b, d
                                by = 'doc_field_code',
                                all.x = T)
         param_other = unique(decline_dt[t == year & doc_fieldname == 'other', .(q_i, D, b1, b2, d, int_year)])
