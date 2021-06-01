@@ -12,7 +12,8 @@
   
 # outputs -------
   
-  save_dir        = 'outputs/decline-historic/parameters/'
+  save_path       = 'outputs/decline-historic/parameters/'
+  save_file       = 'fitted-parameters_field-start-year_yearly_entry.csv'
 
 # load libraries -------- 
   
@@ -166,6 +167,7 @@
   }
   
   res_mult_fit = rbindlist(l_nls_mult)
+  res_mult_fit[, type := 'hyperbolic and exponential coefs (curve-fitted)']
   
 # get field-start years that were unable to have hyperbolic + exponential fit ------
   
@@ -183,7 +185,8 @@
   for (i in 1:nrow(non_mult_fit)) {
     
     temp = non_mult_fit[i]
-    setnames(temp, 'start_year', 'missing_year')
+    temp[, missing_year := start_year]
+    # setnames(temp, 'start_year', 'missing_year')
     
     # get regression results for all start years in the same field 
     res = res_mult_fit[doc_field_code == temp[, doc_field_code]]
@@ -203,6 +206,9 @@
     # take the medians of the results
     stat = sel[, lapply(.SD, median, na.rm = T), .SDcols = c('q_i', 'D', 'b', 'd', 'int_yr')]
     
+    # remove missing year column
+    temp[, missing_year := NULL]
+    
     # save results 
     l_stat_mult[[i]] = data.table(temp, 
                                   q_i = stat[, q_i], 
@@ -217,20 +223,7 @@
   }
   
   res_stat_fit = rbindlist(l_stat_mult)
-  
-# get production for fields that do not have any curve fitting ------
-  
-  # fields_nonmatch_prod = prod_fv_year[doc_field_code %in% non_fields[, doc_field_code]]
-  # fields_nonmatch_prod[, year := start_year + year_no]
-  # fields_nonmatch_prod[, max_year := max(year_no, na.rm = T), by = .(doc_field_code, start_year)]
-  # fields_nonmatch_prod = fields_nonmatch_prod[tot_oil_prod > 0]
-  # fields_nonmatch_prod = fields_nonmatch_prod[year > 2010]
-  # 
-  # # View(prod_non_fields[year_no == max_year])
-  # # View(prod_fv_year[doc_field_code %in% non_fields[, doc_field_code]])
-  # 
-  # # prod_non_fields = non_fields[doc_field_code %in% unique(fields_nonmatch_prod[, doc_field_code])]
-  # prod_non_fields = non_fields[unique(fields_nonmatch_prod[, .(doc_field_code, start_year)]), on = .(doc_field_code, start_year), nomatch = 0]
+  res_stat_fit[, type := 'hyperbolic and exponential coefs (averaged)']
 
 # for remaining field-start years, perform exponential decline ------
   
@@ -275,8 +268,75 @@
   }
   
   res_exp_fit = rbindlist(l_nls_exp)
+  res_exp_fit[, type := 'exponential coef (curve-fitted)']
   
-# count fields that have no hyp+exp fit AND no exp fit -----
+# count fields that can be matched to averaged exponential fits -----
   
   last_fields = non_fields[!res_exp_fit, on = .(doc_field_code, start_year)]
+  last_fields = last_fields[doc_field_code %in% unique(res_exp_fit[, doc_field_code])]
+  
+# match fields that could not be fit to exponential curves -----
+  
+  l_stat_exp = list()
+  
+  for (i in 1:nrow(last_fields)) {
+    
+    temp = last_fields[i]
+    temp[, missing_year := start_year]
+    
+    # get regression results for all start years in the same field 
+    res = res_exp_fit[doc_field_code == temp[, doc_field_code]]
+    
+    # match field together 
+    res = res[temp[, .(doc_field_code, missing_year)], on = .(doc_field_code)]
+    
+    # calculate the difference between the years that do have curve fits and the missing year
+    res[, year_diff := abs(start_year - missing_year)]
+    
+    # sort res by year difference
+    setorder(res, year_diff)
+    
+    # select the top five year_diff (therefore the closest 5 start years to the missing year)
+    sel = res[1:5]
+    
+    # take the medians of the results
+    stat = sel[, lapply(.SD, median, na.rm = T), .SDcols = c('q_i', 'D', 'd')]
+    
+    # remove missing year column
+    temp[, missing_year := NULL]
+    
+    # save results 
+    l_stat_exp[[i]] = data.table(temp, 
+                                 q_i = stat[, q_i], 
+                                 D = stat[, D], 
+                                 d = stat[, d])
+    
+    rm(temp, res, sel, stat, i)
+    
+    
+  }
+  
+  res_stat_exp = rbindlist(l_stat_exp)
+  res_stat_exp[, type := 'exponential coef (averaged)']
+
+# final list of fields that don't have any coefficients -------
+  
+  final_fields = non_fields[!doc_field_code %in% unique(res_exp_fit[, doc_field_code])]
+  final_fields[, type := 'no coefs (no longer producing)']
+  
+# combine all results -------
+  
+  res_all = rbindlist(list(res_mult_fit, res_stat_fit, res_exp_fit, res_stat_exp, final_fields), use.names = T, fill = T)
+  setorder(res_all, doc_field_code, start_year)
+  
+# combine parameters for field-vintages with peak production and well info -----
+  
+  res_info = merge(res_all, peak_prod, by = c('doc_fieldname', 'doc_field_code', 'start_year', 'no_wells'))
+  
+  setcolorder(res_info, c('doc_fieldname', 'doc_field_code', 'start_year', 'no_wells', 'q_i', 'D', 'b', 'd', 'int_yr', 
+                          'peak_prod_year', 'peak_tot_prod', 'peak_avg_well_prod', 'peak_well_prod_rate', 'type'))
+
+# save to csv ------
+  
+  fwrite(res_info, file.path(emlab_path, save_path, save_file), row.names = F)
   
