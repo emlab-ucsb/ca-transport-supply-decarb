@@ -41,11 +41,20 @@
 # unique well-start dates ------
 
   init_prod[, start_year := as.numeric(substr(start_date, 1, 4))]
+  ## find unique start date for wells that "start" in two different fields, same date
+  ## remove entry with prod_bbl is NA or == 0
+  ## should leave one well with two entries
+  ## api-ten 0403702049 is the only one with two entries in init prod, two different fields
+  init_prod = init_prod[month_year == start_date & prod_bbl > 0 & !is.na(prod_bbl)]  
   init_prod = unique(init_prod[, c('api_ten_digit', 'start_date', 'start_year')])
 
-# remove Any Field -----
+# remove Any Field and fields that do not produce oil in historic period -----
+  
+  pos_fields = well_prod[, .(total_bbl = sum(OilorCondensateProduced, na.rm = T)), by = doc_field_code]
+  pos_fields = pos_fields[total_bbl > 0]
   
   well_prod = well_prod[!doc_field_code == '000']
+  well_prod = well_prod[doc_field_code %chin% pos_fields[, doc_field_code]]
 
 # add start year column -----
   
@@ -58,11 +67,18 @@
 # keep only fields in entry data -----
   
   well_prod3 = well_prod2[doc_field_code %in% unique(entry_df[, doc_field_code])]
+  ## 154 dropped
   
 # aggregate oil production to the monthly level -------  
   
-  well_prod3 = well_prod3[!is.na(OilorCondensateProduced), .(oil_prod = sum(OilorCondensateProduced, na.rm = T)), 
+  well_prod3 = well_prod3[!is.na(OilorCondensateProduced)]
+  well_prod3 = well_prod3[OilorCondensateProduced > 0]
+  
+  well_prod3 = well_prod3[, .(oil_prod = sum(OilorCondensateProduced, na.rm = T)), 
                           by = .(api_ten_digit, start_date, start_year, doc_field_code, doc_fieldname, ProductionReportDate, DaysProducing)]
+  
+  ## 0403702049 production gets duplicated, divide production by 2
+  well_prod3 = well_prod3[, oil_prod := fifelse(api_ten_digit == "0403702049", oil_prod / 2, oil_prod)]
 
 # add months to each API number -----
   
