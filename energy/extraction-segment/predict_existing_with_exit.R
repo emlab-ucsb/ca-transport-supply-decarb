@@ -59,9 +59,8 @@
   # op_wells = op_wells[year %in% c(2015:2019)]
   
   op_wells = unique(dt_prod[, c('api_ten_digit', 'start_year', 'doc_fieldname', 'doc_field_code')]) # meas-note: probably have to change the 'vintage' to 'start_year'
-  ## note: there well-field combos that produce zero oil in time horizon when using the line above
   ## note: there are wells with multiple entries (in more than one field)
-  ## example: 0401902363
+  ## example: 0402909443
   
   ## setback df with all wells 
   setback_all <- expand.grid(api_ten_digit = unique(op_wells$api_ten_digit),
