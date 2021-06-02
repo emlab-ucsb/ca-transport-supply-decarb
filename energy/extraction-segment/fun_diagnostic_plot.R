@@ -242,8 +242,9 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
           legend.position = 'bottom',
           )
 
-  
-  # extraction (state, old, new)
+  browser()
+ 
+   # extraction (state, old, new)
   extraction_fig = ggplot(state_all_long, 
                                   aes(x = year, y = production_bbls / 1e6, color = version)) + 
     geom_line(alpha = 0.7, size = 1) +
