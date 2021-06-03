@@ -48,7 +48,8 @@ run_extraction_model <- function(oil_px_selection) {
     
     # load forecasted production from existing (pre 2020) wells
     prod_existing_vintage = fread(file.path(model_path, 'predict-production', 'production_with_exit', prod_vintage_file), header = T, colClasses = c('doc_field_code' = 'character'))
-    setnames(prod_existing_vintage, "start_year", "vintage")
+    prod_existing_vintage[, vintage := as.character(start_year)]
+    
     
     # load historic modeled well entry
     # hist_modeled = fread(file.path(model_path, 'entry-model-results', hist_file), header = T)
