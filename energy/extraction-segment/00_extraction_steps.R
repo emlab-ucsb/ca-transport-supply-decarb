@@ -4,7 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'diagnostic'
     # choose from: reference, high, low, iea
-  run_type = "revised-corrections"
+  run_type = "revised-corrections-minus-setback"
     
 # outputs -------
   

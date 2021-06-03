@@ -74,11 +74,17 @@ load_scenarios_dt = function(oil_px_selection) {
   ghg_factors = ghg_factors[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
   
   # load setback coverage file
-  setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character')) 
-  setback_scens <- setback_scens[, c("doc_field_code", "setback_scenario", "rel_coverage")]
-  setnames(setback_scens, 'rel_coverage', 'area_coverage')
-  # setback_scens[, V1 := NULL]
-  # setnames(setback_scens, 'FieldCode', 'doc_field_code')
+  
+  # tracey: delete this when using updated setback file
+  setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('FieldCode' = 'character')) 
+  setnames(setback_scens, 'FieldCode', 'doc_field_code')
+  setback_scens <- setback_scens[, c('doc_field_code', 'setback_scenario', 'area_coverage')]
+  
+  ## tracey: turn this back on when using updated file
+  # setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character')) 
+  # setback_scens <- setback_scens[, c("doc_field_code", "setback_scenario", "rel_coverage")]
+  # setnames(setback_scens, 'rel_coverage', 'area_coverage')
+  
   
   # load production quota file
   prod_quota_scens = fread(file.path(scen_path, prod_quota_file), header = T)
