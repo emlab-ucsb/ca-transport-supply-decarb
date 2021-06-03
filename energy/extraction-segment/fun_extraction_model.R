@@ -661,7 +661,7 @@ run_extraction_model <- function(oil_px_selection) {
         # rl revert to this code to remove setback adjustment
         ## meas-check: confirm that updated code below is correct
         for (j in (t + 1):2045) {
-          new_wells_prod_new[is.na(b), col := expfunc(peak_production, d, y - start_year)]
+          new_wells_prod_new[is.na(b), col := expfunc(peak_production, d, j - t)]
           new_wells_prod_new[! is.na(b), col :=  fifelse(j < t + int_year,
                                                          hypfunc(b, j - t, peak_production, D),
                                                          expfunc(peak_production, d, j - t))  ]
