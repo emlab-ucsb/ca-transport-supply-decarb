@@ -291,6 +291,8 @@ run_extraction_model <- function(oil_px_selection) {
         t = pred_years[i]
         # print(t)
         
+        browser()
+        
         # set up variables for top 10 fields
         temp_top10 = dt_info_z[year == t & doc_field_code %in% top10_fields[, doc_field_code]]
         temp_top10 = temp_top10[dt_depl_z[year == t], on = .(doc_field_code, 

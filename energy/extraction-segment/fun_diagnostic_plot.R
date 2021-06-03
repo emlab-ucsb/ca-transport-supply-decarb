@@ -4,7 +4,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
   # baseline comparison output path
   # 
-  # base_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+  base_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
   # 
   ## cal epa report outputs
   
@@ -51,7 +51,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
            excise_tax_scenario == "no tax",
            prod_quota_scenario == "quota_20",
            setback_scenario %in% c("no_setback", "setback_2500ft")) %>%
-    mutate(scenario = ifelse(setback_scenario == "no_setback", "LC1", "LC2")) %>%
+    mutate(scenario = ifelse(setback_scenario == "no_setback", "LCE1", "LCE2")) %>%
     select(scenario, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
            prod_quota_scenario, excise_tax_scenario, year, production_bbl, type) %>%
     arrange(scenario) %>%
@@ -71,7 +71,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
     pivot_longer(new_prod_bbl:total_prod_bbl, names_to = "type", values_to = "production_bbls") %>%
     mutate(type = ifelse(type == "existing_prod_bbl", "existing",
                          ifelse(type == "total_prod_bbl", "total", "new"))) %>%
-    mutate(version = "calepa-report") %>%
+    mutate(version = ifelse(year <= 2019, "historic", "calepa-report")) %>%
     select(version, scenario_name:production_bbls) %>%
     rename(scen_name = scenario_name)
   
@@ -85,7 +85,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
            excise_tax_scenario == "no tax",
            prod_quota_scenario == "quota_20",
            setback_scenario %in% c("no_setback", "setback_2500ft")) %>%
-    mutate(scen_name = ifelse(setback_scenario == "no_setback", "LC1", "LC2")) %>%
+    mutate(scen_name = ifelse(setback_scenario == "no_setback", "LCE1", "LCE2")) %>%
     select(scen_name, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
            prod_quota_scenario, excise_tax_scenario, year, new_wells_pred) %>%
     arrange(scen_name, year) %>%
@@ -146,7 +146,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
            excise_tax_scenario == "no tax",
            prod_quota_scenario == "quota_20",
            setback_scenario %in% c("no_setback", "setback_2500ft")) %>%
-    mutate(scen_name = ifelse(setback_scenario == "no_setback", "LC1", "LC2")) %>%
+    mutate(scen_name = ifelse(setback_scenario == "no_setback", "LCE1", "LCE2")) %>%
     select(scen_name, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario,
            prod_quota_scenario, excise_tax_scenario, year, type, upstream_kgCO2e) %>%
     arrange(scen_name, year) %>%
@@ -160,6 +160,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   state_out = output_extraction[[3]]
 
   state_out[, version := paste0("adj-", run_type)]
+
   
   # read in baseline for comparison ------
   
@@ -177,8 +178,8 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   scen_lut <- unique(state_all[, c("oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario", 
                                    "setback_scenario", "prod_quota_scenario", "excise_tax_scenario")])
   
-  scen_lut[, scen_name := fifelse(setback_scenario == "setback_2500ft", "LC2",
-                                  fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LC1", "BAU"))]
+  scen_lut[, scen_name := fifelse(setback_scenario == "setback_2500ft", "LCE2",
+                                  fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LCE1", "BAU"))]
   
   state_all <- merge(state_all, scen_lut)
   
@@ -241,8 +242,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
           legend.text = element_text(size = 16),
           legend.position = 'bottom',
           )
-
-  browser()
+  
  
    # extraction (state, old, new)
   extraction_fig = ggplot(state_all_long, 
@@ -254,6 +254,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
     geom_line(data = report_out_prod, aes(x = year, y = production_bbls / 1e6, color = version)) +
     facet_grid(type ~ scen_name) +
     geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
+    scale_color_manual(values = c("#FF6E1B", "#FFD200", "#005581", "black")) +
     labs(title = 'State-level crude oil extraction',
          subtitle = 'million barrels', 
          x = 'Year',
@@ -271,8 +272,9 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
                aes(x = year, y = ghg_kgCO2e / 1e9, color = version), shape = 3) +
     geom_line(data = report_ghg_all, aes(x = year, y = ghg_kgCO2e / 1e9, color = version)) +
     facet_grid(type ~ scen_name) +
-    geom_line(data = hist_ghg, aes(x = year, y = co2e), color = "grey") +
+    geom_line(data = hist_ghg, aes(x = year, y = co2e), color = "black") +
     geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
+    scale_color_manual(values = c("#FF6E1B", "#FFD200", "#005581")) +
     labs(title = 'State-level emissions',
          subtitle = 'MtCO2e', 
          x = 'Year',
@@ -286,11 +288,12 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   new_wells_fig = ggplot(state_all_long %>% filter(type == "new"), 
                    aes(x = year, y = new_wells, color = version)) + 
     geom_line(alpha = 0.7, size = 1) +
+    facet_grid(~ scen_name) +
     geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
                aes(x = year, y = new_wells, color = version), shape = 3) +
-    geom_line(data = report_wells_out_all, aes(x = year, y = new_wells, color = version)) +
-    facet_grid(~ scen_name) +
+    geom_line(data = report_wells_out_all %>% mutate(version = ifelse(year <= 2019, "historic", "calepa-report")), aes(x = year, y = new_wells, color = version)) +
     geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
+    scale_color_manual(values = c("#FF6E1B", "#FFD200", "#005581", "black")) +
     labs(title = 'State-level new wells',
          subtitle = 'number of new wells', 
          x = 'Year',
