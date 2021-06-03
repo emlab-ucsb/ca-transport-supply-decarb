@@ -293,15 +293,13 @@ run_extraction_model <- function(oil_px_selection) {
         t = pred_years[i]
         # print(t)
         
-        browser()
-        
         ## set up variables for all fields
         new_wells = dt_info_z[year == t]
         new_wells = new_wells[dt_depl_z[year == t], on = .(doc_field_code,
                                                             oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
                                                             setback_scenario, prod_quota_scenario, excise_tax_scenario,
                                                             year), nomatch = 0]
-        new_wells = new_wells[coefs_dt, on = .(doc_field_code), nomatch = 0]
+        new_wells = new_wells[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
         
         # poisson regression for all fields
         new_wells[, m_new_wells_pred := fifelse(depl < 0.9999,
@@ -1025,10 +1023,10 @@ run_extraction_model <- function(oil_px_selection) {
     #                    prod_new)
     
     ## res selection
-    # res = lapply(1:nrow(scen_sel), func_yearly_production)
+    res = lapply(1:nrow(scen_sel), func_yearly_production)
     
     ## for diagnostic
-    res = lapply(2:2, func_yearly_production)
+    # res = lapply(2:2, func_yearly_production)
     
     output_list = do.call(Map, c(f = rbind, res))
     
