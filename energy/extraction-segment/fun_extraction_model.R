@@ -364,6 +364,8 @@ run_extraction_model <- function(oil_px_selection) {
         #                        decline_dt[t == year, .(doc_field_code, q_i, D, b1, b2, d, int_year)], # meas-note: change b1, b2, d --> b, d
         #                        by = 'doc_field_code',
         #                        all.x = T)
+        
+        
         new_wells_prod = merge(new_wells,
                                decline_dt[t == year, .(doc_field_code, q_i, D, b, d, int_year)], # meas-note: change b1, b2, d --> b, d
                                by = 'doc_field_code',
@@ -380,7 +382,7 @@ run_extraction_model <- function(oil_px_selection) {
         # new_wells_prod[is.na(int_year) & is.na(b1), int_year := param_other[, int_year]]
         new_wells_prod[is.na(b), b := param_other[, b]]
         new_wells_prod[is.na(d), d := param_other[, d]]
-        new_wells_prod[is.na(int_year) & is.na(b), int_year := param_other[, int_year]]
+        new_wells_prod[is.na(int_year), int_year := param_other[, int_year]]
         
         
         new_wells_prod = new_wells_prod[peak_prod_median[, .(doc_field_code, peak_avg_well_prod)], on = 'doc_field_code', nomatch = 0]
@@ -503,6 +505,7 @@ run_extraction_model <- function(oil_px_selection) {
           temp_prod_quota = rbind(temp_new_wells_prod, temp_prod_existing_vintage, use.names = T)
           
         }
+        
         
     ## join costs to production info; rank; implement quota
     ## ---------------------------------------------------------
@@ -743,7 +746,7 @@ run_extraction_model <- function(oil_px_selection) {
         if(t < max(pred_years)) {
           
           ## set up parameters for next year, e.g., calculate depletion of next year
-          ## --------------------------------------------
+          ## -------------------------------------------
           
           ## production from new wells
           prod_new = list_prod_new[[i]]
@@ -1023,10 +1026,10 @@ run_extraction_model <- function(oil_px_selection) {
     #                    prod_new)
     
     ## res selection
-    res = lapply(1:nrow(scen_sel), func_yearly_production)
+    # res = lapply(1:nrow(scen_sel), func_yearly_production)
     
     ## for diagnostic
-    # res = lapply(2:2, func_yearly_production)
+    res = lapply(2:2, func_yearly_production)
     
     output_list = do.call(Map, c(f = rbind, res))
     
