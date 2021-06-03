@@ -338,6 +338,7 @@ run_extraction_model <- function(oil_px_selection) {
         # list_pred_wells[[i]] = new_wells
         
         # calculate prediction of new wells into 2045
+        ## meas-check: check to make sure the updates below are correct. original code commented out.
         
         # new_wells_prod = merge(new_wells,
         #                        decline_dt[t == year, .(doc_field_code, q_i, D, b1, b2, d, int_year)], # meas-note: change b1, b2, d --> b, d
