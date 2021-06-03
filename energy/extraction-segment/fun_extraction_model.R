@@ -444,7 +444,7 @@ run_extraction_model <- function(oil_px_selection) {
         
         ## add vintage start column
         # temp_prod_existing_vintage[, vintage_start := fifelse(vintage == 'pre 1978', 1977, as.numeric(substr(vintage, 1, 4)))]
-        temp_prod_existing_vintage[, vintage_start := vintage]
+        temp_prod_existing_vintage[, vintage_start := as.numeric(vintage)]
         
         # set up dataframe with production in year t for field-vintages that start 2020 to t - 1
         ## -------------------------------------------------------------------------
