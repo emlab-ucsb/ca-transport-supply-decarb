@@ -87,6 +87,12 @@ run_extraction_model <- function(oil_px_selection) {
                                by = .(doc_field_code)]
   
   # from entry data, keep: field, new wells, depletion ------
+    
+    # get top ten and non-top ten fields ------
+
+    top10_fields = unique(entry_dt[top_field > 0, c('doc_field_code', 'top_field')])
+    other_fields = unique(entry_dt[top_field == 0, c('doc_field_code', 'top_field')])
+    
     setnames(entry_dt, 'n_new_wells', 'new_wells')
     setnames(entry_dt, 'm_cumsum_div_my_prod', 'depl')
     entry_dt_vars = entry_dt[, .(doc_field_code, doc_fieldname, year, brent, capex_imputed, opex_imputed, depl, new_wells)]
@@ -205,10 +211,6 @@ run_extraction_model <- function(oil_px_selection) {
     hypfunc = function(b,t,q_i,D_h) { q_i/((1 + b*D_h*t)^(1/b)) }
     expfunc = function(q_i,d,t) {   q_i*exp(-d*t) }
   
-  # # get top ten and non-top ten fields ------
-  # 
-  #   top10_fields = coefs_dt[!is.na(cons_hat)]
-  #   other_fields = coefs_dt[is.na(cons_hat)]
 
   # scenario combinations ----------
   
@@ -293,57 +295,39 @@ run_extraction_model <- function(oil_px_selection) {
         
         browser()
         
-        # set up variables for all fields
-        new_wells = dt_info_z[year == t]
-        new_wells = new_wells[dt_depl_z[year == t], on = .(doc_field_code, 
-                                                           oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                           setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-                                                           year), nomatch = 0]
-        new_wells = new_wells[coefs_dt, on = .(doc_field_code), nomatch = 0]
-        
-        # poisson regression for all fields
-        new_wells[, m_new_wells_pred := fifelse(depl < 0.9999, 
-                                                 exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl + cons_hat),
-                                                 0)]
-        new_wells[, wm_new_wells_pred := fifelse(depl < 0.9999, 
-                                                  exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl + cons_hat),
-                                                  0)]
-        
-        
-        
         # # set up variables for top 10 fields
-        # temp_top10 = dt_info_z[year == t & doc_field_code %in% top10_fields[, doc_field_code]]
-        # temp_top10 = temp_top10[dt_depl_z[year == t], on = .(doc_field_code, 
-        #                                                      oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-        #                                                      setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-        #                                                      year), nomatch = 0]
-        # temp_top10 = temp_top10[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
-        # 
-        # # poisson regression of top 10 fields
-        # temp_top10[, m_new_wells_pred := fifelse(depl < 0.9999, 
-        #                                         exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl + cons_hat),
-        #                                         0)]
-        # temp_top10[, wm_new_wells_pred := fifelse(depl < 0.9999, 
-        #                                          exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl + cons_hat),
-        #                                          0)]
-        # 
-        # # set up variables for all other fields
-        # temp_other = dt_info_z[year == t & doc_field_code %in% other_fields[, doc_field_code]]
-        # temp_other = temp_other[unique(dt_depl_z[year == t]), on = .(doc_field_code, 
-        #                                                              oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-        #                                                              setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-        #                                                              year), nomatch = 0]
-        # temp_other = temp_other[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
-        # 
-        # # fixed effects poisson regression of all other fields 
-        # temp_other[, m_yvar_poisson := exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl)]
-        # temp_other[, wm_yvar_poisson := exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl)]
-        # temp_other[, m_new_wells_pred := ifelse(depl < 0.9999, 
-        #                                         yvar_exp_alpha*m_yvar_poisson,
-        #                                         0)]
-        # temp_other[, wm_new_wells_pred := ifelse(depl < 0.9999, 
-        #                                          yvar_exp_alpha*wm_yvar_poisson,
-        #                                          0)]
+        temp_top10 = dt_info_z[year == t & doc_field_code %in% top10_fields[, doc_field_code]]
+        temp_top10 = temp_top10[dt_depl_z[year == t], on = .(doc_field_code,
+                                                             oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                                             setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                                             year), nomatch = 0]
+        temp_top10 = temp_top10[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
+
+        # poisson regression of top 10 fields
+        temp_top10[, m_new_wells_pred := fifelse(depl < 0.9999,
+                                                exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl + cons_hat),
+                                                0)]
+        temp_top10[, wm_new_wells_pred := fifelse(depl < 0.9999,
+                                                 exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl + cons_hat),
+                                                 0)]
+
+        # set up variables for all other fields
+        temp_other = dt_info_z[year == t & doc_field_code %in% other_fields[, doc_field_code]]
+        temp_other = temp_other[unique(dt_depl_z[year == t]), on = .(doc_field_code,
+                                                                     oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                                                     setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                                                     year), nomatch = 0]
+        temp_other = temp_other[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
+
+        # fixed effects poisson regression of all other fields
+        temp_other[, m_yvar_poisson := exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl)]
+        temp_other[, wm_yvar_poisson := exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl)]
+        temp_other[, m_new_wells_pred := ifelse(depl < 0.9999,
+                                                yvar_exp_alpha*m_yvar_poisson,
+                                                0)]
+        temp_other[, wm_new_wells_pred := ifelse(depl < 0.9999,
+                                                 yvar_exp_alpha*wm_yvar_poisson,
+                                                 0)]
         
         temp_other[, m_yvar_poisson := NULL]
         temp_other[, wm_yvar_poisson := NULL]
