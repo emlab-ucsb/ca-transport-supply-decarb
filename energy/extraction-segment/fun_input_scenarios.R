@@ -18,7 +18,8 @@ load_scenarios_dt = function(oil_px_selection) {
   ccs_ext_file      = 'ccs_extraction_scenarios.csv'
   ccs_ref_file      = 'ccs_refining_scenarios.csv'
   ghg_file          = 'ghg_emissions_x_field_2015_revised.csv'
-  setback_file      = 'setback_coverage_R.csv'
+  # setback_file      = 'setback_coverage_R.csv'
+  setback_file      = 'setback_coverage.csv'
   prod_quota_file   = 'prod_quota_scenarios.csv'
   excise_tax_file   = 'excise_tax_scenarios.csv'
   
