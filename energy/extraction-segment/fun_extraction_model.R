@@ -339,16 +339,28 @@ run_extraction_model <- function(oil_px_selection) {
         
         # calculate prediction of new wells into 2045
         
+        # new_wells_prod = merge(new_wells,
+        #                        decline_dt[t == year, .(doc_field_code, q_i, D, b1, b2, d, int_year)], # meas-note: change b1, b2, d --> b, d
+        #                        by = 'doc_field_code',
+        #                        all.x = T)
         new_wells_prod = merge(new_wells,
-                               decline_dt[t == year, .(doc_field_code, q_i, D, b1, b2, d, int_year)], # meas-note: change b1, b2, d --> b, d
+                               decline_dt[t == year, .(doc_field_code, q_i, D, b, d, int_year)], # meas-note: change b1, b2, d --> b, d
                                by = 'doc_field_code',
                                all.x = T)
-        param_other = unique(decline_dt[t == year & doc_fieldname == 'other', .(q_i, D, b1, b2, d, int_year)])
+        
+        # param_other = unique(decline_dt[t == year & doc_fieldname == 'other', .(q_i, D, b1, b2, d, int_year)])
+        param_other = unique(decline_dt[t == year & doc_fieldname == 'other', .(q_i, D, b, d, int_year)])
+        
         new_wells_prod[is.na(q_i), q_i := param_other[, q_i]]
         new_wells_prod[is.na(D), D := param_other[, D]]
-        new_wells_prod[is.na(b2) & is.na(b1), b2 := param_other[, b2]]
-        new_wells_prod[is.na(d) & is.na(b1), d := param_other[, d]]
-        new_wells_prod[is.na(int_year) & is.na(b1), int_year := param_other[, int_year]]
+        
+        # new_wells_prod[is.na(b2) & is.na(b1), b2 := param_other[, b2]]
+        # new_wells_prod[is.na(d) & is.na(b1), d := param_other[, d]]
+        # new_wells_prod[is.na(int_year) & is.na(b1), int_year := param_other[, int_year]]
+        new_wells_prod[is.na(b), b := param_other[, b]]
+        new_wells_prod[is.na(d), d := param_other[, d]]
+        new_wells_prod[is.na(int_year) & is.na(b), int_year := param_other[, int_year]]
+        
         
         new_wells_prod = new_wells_prod[peak_prod_median[, .(doc_field_code, peak_avg_well_prod)], on = 'doc_field_code', nomatch = 0]
         new_wells_prod[, peak_production := m_new_wells_pred * peak_avg_well_prod]
@@ -645,10 +657,11 @@ run_extraction_model <- function(oil_px_selection) {
         
         # for years following entrance, implement decline curves
         # rl revert to this code to remove setback adjustment
+        ## meas-check: confirm that updated code below is correct
         for (j in (t + 1):2045) {
-          new_wells_prod_new[is.na(b2), col := hypfunc(b1, j - t, peak_production, D)]
-          new_wells_prod_new[! is.na(b2), col :=  fifelse(j < t + int_year,
-                                                         hypfunc(b2, j - t, peak_production, D),
+          new_wells_prod_new[is.na(b), col := expfunc(peak_tot_prod, d, y - start_year)]
+          new_wells_prod_new[! is.na(b), col :=  fifelse(j < t + int_year,
+                                                         hypfunc(b, j - t, peak_production, D),
                                                          expfunc(peak_production, d, j - t))  ]
           setnames(new_wells_prod_new, 'col', as.character(j))
         }
