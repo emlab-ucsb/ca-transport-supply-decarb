@@ -31,7 +31,7 @@
     
 # rename FieldCode -> doc_field_code -----
   
-  setnames(field_prod, "FieldCode", "doc_field_code")
+  # setnames(field_prod, "FieldCode", "doc_field_code")
 
 # pad field codes with leading zeroes -----
   
