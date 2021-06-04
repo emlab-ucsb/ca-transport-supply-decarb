@@ -557,6 +557,8 @@ run_extraction_model <- function(oil_px_selection) {
         ## add column that indicates if cumulative production is greater than quota
         temp_prod_quota[, over_quota_ranks := fifelse(prod_cumsum > quota, 1, 0)]
         
+        browser()
+        
         ## create column with previous cumulative production
         ## create column of cumulative sum of over_quota_ranks to identify first field vintage to bust quota
         temp_prod_quota[, ':=' (last_prod = shift(prod_cumsum, n=1, fill = NA, type = "lag"),

@@ -11,8 +11,8 @@
   exit_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/'
   exit_file       = 'well_exit_volume_x_field_v1_revised.csv'
   setback_path    = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/'
-  # w_setback_file  = 'wells_in_setbacks_revised.csv'
-  w_setback_file  = 'wells_in_setbacks_test.csv'
+  w_setback_file  = 'wells_in_setbacks_revised.csv'
+
 
 # outputs ------
   
@@ -35,10 +35,6 @@
   peak_prod = fread(paste0(data_path, peak_file), header = T, colClasses = c('doc_field_code' = 'character'))
   
   well_setbacks = fread(paste0(setback_path, w_setback_file), header = T, colClasses = c('api_ten_digit' = 'character'))
-  
-  ## remove this when using corrected setbacks
-  well_setbacks[, api_ten_digit := paste0("0", api_ten_digit)]
-  setnames(well_setbacks, "in_setback", "within_setback")
   
 # # rename field code columns -----
 #   

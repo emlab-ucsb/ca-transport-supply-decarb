@@ -4,7 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'diagnostic'
     # choose from: reference, high, low, iea
-  run_type = "revised-corrections-minus-setback"
+  run_type = "revised-setbacks"
     
 # outputs -------
   
@@ -34,6 +34,7 @@
 # load libraries ------
 
   library(data.table)
+  library(tidyverse)
 
 # step 1: run extraction model and get outputs -------
   
