@@ -76,6 +76,7 @@ load_scenarios_dt = function(oil_px_selection) {
   setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
   setback_scens <- setback_scens[, c("doc_field_code", "setback_scenario", "rel_coverage")]
   setnames(setback_scens, 'rel_coverage', 'area_coverage')
+  setback_scens[, setback_scenario := fifelse(setback_scenario == "no_setback", setback_scenario, paste0(setback_scenario, "ft"))]
   
   
   # load production quota file

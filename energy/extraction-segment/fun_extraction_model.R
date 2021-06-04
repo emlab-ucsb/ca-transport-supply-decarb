@@ -49,6 +49,7 @@ run_extraction_model <- function(oil_px_selection) {
     # load forecasted production from existing (pre 2020) wells
     prod_existing_vintage = fread(file.path(model_path, 'predict-production', 'production_with_exit', prod_vintage_file), header = T, colClasses = c('doc_field_code' = 'character'))
     prod_existing_vintage[, vintage := as.character(start_year)]
+    prod_existing_vintage[, setback_scenario := fifelse(setback_scenario == "no_setback", setback_scenario, paste0(setback_scenario, "ft"))]
     
     
     # load historic modeled well entry
@@ -1030,7 +1031,7 @@ run_extraction_model <- function(oil_px_selection) {
     res = lapply(1:nrow(scen_sel), func_yearly_production)
     
     ## for diagnostic
-    # res = lapply(2:2, func_yearly_production)
+    # res = lapply(3:3, func_yearly_production)
     
     output_list = do.call(Map, c(f = rbind, res))
     
