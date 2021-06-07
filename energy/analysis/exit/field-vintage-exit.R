@@ -85,20 +85,22 @@ setorder(prod_dt, api_ten_digit, month_year)
 ## find final year of positive production by 
 prod_dt <- prod_dt %>%
   group_by(api_ten_digit) %>%
-  mutate(pos_year = ifelse(oil_prod > 0, year, 0))
+  mutate(pos_year = ifelse(oil_prod > 0, year, 0)) %>%
+  ungroup()
 
 prod_dt <- prod_dt %>%
   group_by(api_ten_digit) %>%
   mutate(
     last_pos_year = max(pos_year)
-  )  
+  )  %>%
+  ungroup()
 
 ## calculate relevant values
 well_exit_dt <- prod_dt %>%
   select(api_ten_digit, doc_field_code, doc_fieldname, last_pos_year)
 
 # Keep unique rows
-well_exit_dt <- distinct(well_exit_dt)
+well_exit_dt <- unique(well_exit_dt)
 
 # Exit year is first year with zero production
 well_exit_dt <- well_exit_dt %>%
