@@ -5,6 +5,7 @@
 library(tidyverse)
 library(data.table)
 library(lubridate)
+library(stringr)
 library(zoo)
 
 ## set directory
@@ -14,12 +15,33 @@ data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-pr
 output_dir <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/exit/"
 
 ## files
-prod_file       <- "well_prod_m_processed.csv"
-well_file    <- "AllWells_table/AllWells_20210427.csv"
+prod_file               <- "well_prod_m_processed.csv"
+well_file               <- "AllWells_table/AllWells_20210427.csv"
+well_start_file         <- "well_start_prod_api10_revised.csv"
+no_prod_file            <- "no_prod_wells_out.csv"
 
 ## read in files
 well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                      'doc_field_code' = 'character'))
+
+## for initial year production
+init_yr_prod <- fread(paste0(proj_dir, "outputs/stocks-flows/well_start_yr/", well_start_file), colClasses = c('api_ten_digit' = 'character',
+                                                                                                      'doc_field_code' = 'character',
+                                                                                                      'api_field' = 'character')) 
+
+init_start_yr <- init_yr_prod %>%
+  select(api_ten_digit, start_date) %>%
+  unique() %>%
+  mutate(start_year = year(start_date)) %>%
+  select(-start_date)
+
+no_prod_wells <- fread(paste0(output_dir, no_prod_file), colClasses = c('api_ten_digit' = 'character'))
+
+no_prod_5 <- no_prod_wells %>% filter(year_cut_off == 5) %>% select(api_ten_digit) %>% unique()
+no_prod_5_vec <- no_prod_5$api_ten_digit
+
+no_prod_10 <- no_prod_wells %>% filter(year_cut_off == 10) %>% select(api_ten_digit) %>% unique()
+no_prod_10_vec <- no_prod_10$api_ten_digit
 
 ## all wells
 # all_wells <- read_xlsx("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/All_wells_20200417.xlsx") %>%
@@ -58,16 +80,30 @@ setnames(well_prod2, c("OilorCondensateProduced"),
 
 
 ## filter for wells with positive production 
-prod_dt <- well_prod2[api_ten_digit %chin% pos_plugged_api_vec]
+prod_dt <- well_prod2[api_ten_digit %chin% pos_api_vec]
 
 prod_dt <- prod_dt[, lapply(.SD, sum, na.rm = T), .SDcols = c("oil_prod"), by = .(api_ten_digit, doc_field_code, doc_fieldname, month_year)]
 
 
 ##
-well_year_combos <- expand.grid(api_ten_digit = unique(prod_dt$api_ten_digit),
-                                month_year = unique(prod_dt$month_year)) 
+prod_dt[, api_doc_field_code := paste0(api_ten_digit, "-", doc_field_code)]
+
+well_year_combos <- expand.grid(api_doc_field_code = unique(prod_dt$api_doc_field_code),
+                                month_year = unique(prod_dt$month_year))
+
+well_year_combos <- well_year_combos %>%
+  mutate(api_ten_digit = substr(api_doc_field_code, 1, 10),
+         doc_field_code = str_sub(api_doc_field_code, - 3, - 1))  
+
+## field code - field name combos to join
+field_code <- unique(well_prod[, c('doc_field_code', 'doc_fieldname')])
+
+well_year_combos <- well_year_combos %>%
+  left_join(field_code)
 
 setDT(well_year_combos)
+
+prod_dt <- prod_dt[, c('api_ten_digit', 'doc_field_code', 'month_year', 'oil_prod')]
 
 prod_dt <- merge(well_year_combos, prod_dt, all = TRUE)
 
@@ -78,6 +114,8 @@ prod_dt[, `:=` (month = month(month_year),
                 year = year(month_year))]
 
 setorder(prod_dt, api_ten_digit, month_year)
+
+prod_dt[, api_doc_field_code := NULL]
 
 ## add vintage
 # wait on this, get annual no. of exits for now
@@ -95,12 +133,16 @@ prod_dt <- prod_dt %>%
   )  %>%
   ungroup()
 
+## add start year
+prod_dt <- prod_dt %>%
+  left_join(init_start_yr)
+
 ## calculate relevant values
 well_exit_dt <- prod_dt %>%
-  select(api_ten_digit, doc_field_code, doc_fieldname, last_pos_year)
+  select(api_ten_digit, doc_field_code, doc_fieldname, start_year, last_pos_year)
 
 # Keep unique rows
-well_exit_dt <- unique(well_exit_dt)
+well_exit_dt <- distinct(well_exit_dt)
 
 # Exit year is first year with zero production
 well_exit_dt <- well_exit_dt %>%
@@ -108,24 +150,48 @@ well_exit_dt <- well_exit_dt %>%
     exit_year = last_pos_year+1
   )
 
+## note: some wells have multiple entries
+View(well_exit_dt %>% group_by(api_ten_digit) %>% mutate(n = n()) %>% ungroup() %>% filter(n > 1))
+
+
+## start the function
+## -------------------------------------
+
+calc_exits <- function(scen) {
+
+  if (scen == 1) {
+    
+    filt_vec <- plugged_api_vec
+    
+  } else if(scen == 2) {
+    
+    filt_vec <- c(plugged_api_vec, no_prod_5_vec)
+    
+  } else {filt_vec  <- c(plugged_api_vec, no_prod_10_vec)}
+  
+  
 well_exit_dt <- well_exit_dt %>%
+  filter(api_ten_digit %in% filt_vec) %>%
   group_by(doc_field_code) %>%
   add_count(exit_year)
 
 field_exit_dt <- well_exit_dt %>%
-  select(doc_field_code, doc_fieldname, exit_year, n)
+  select(doc_field_code, doc_fieldname, start_year, exit_year, n)
 field_exit_dt <- distinct(field_exit_dt)
 
 field_year_combos <- expand.grid(doc_field_code = unique(field_exit_dt$doc_field_code),
+                                 start_year = unique(field_exit_dt$start_year),
                                  exit_year = unique(field_exit_dt$exit_year)) 
 
 field_exit_dt2 <- field_year_combos %>%
-  left_join(field_exit_dt, by=c("doc_field_code","exit_year"))
+  left_join(field_exit_dt, by=c("doc_field_code", "start_year", "exit_year"))
 
 field_exit_dt2 <- field_exit_dt2 %>%
-  select(doc_field_code, exit_year, n)
+  select(doc_field_code, start_year, exit_year, n)
 field_exit_dt2[is.na(field_exit_dt2)] <- 0
 field_exit_dt2 <- rename(field_exit_dt2, well_exits=n)
+
+}
 
 ## Save field-year-level well exit data
 write_csv(field_exit_dt2, path = paste0(output_dir, "well_exits.csv"))
