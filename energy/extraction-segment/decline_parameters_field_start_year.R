@@ -58,6 +58,7 @@
     
     temp = prod_fv_year[un_fy[i], on = c('doc_field_code', 'doc_fieldname', 'start_year'), nomatch = 0] # get production for specified field-start year
     temp2 = temp[peak_year_diff >= 0] # only keep years from peak year onwards
+    temp2 = temp2[tot_oil_prod > 0] # only keep production values of over 0
     # temp2 = temp2[!prod_rate %in% boxplot(temp2[, prod_rate])$out]
     # temp2 = temp2[prod_rate < boxplot(temp2[, prod_rate])$out] # remove outliers
 
@@ -233,6 +234,7 @@
     
     temp = prod_fv_year[non_fields[i], on = c('doc_field_code', 'doc_fieldname', 'start_year'), nomatch = 0] # get production for specified field-start year
     temp2 = temp[peak_year_diff >= 0] # only keep years from peak year onwards
+    temp2 = temp2[tot_oil_prod > 0] # only keep production values of over 0
     temp2 = temp2[!prod_rate %in% boxplot(temp2[, prod_rate])$out]
     
     total_prod = sum(temp2[, tot_oil_prod])
