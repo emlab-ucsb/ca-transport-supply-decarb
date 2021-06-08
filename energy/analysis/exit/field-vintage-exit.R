@@ -28,13 +28,14 @@ well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_di
 init_yr_prod <- fread(paste0(proj_dir, "outputs/stocks-flows/well_start_yr/", well_start_file), colClasses = c('api_ten_digit' = 'character',
                                                                                                       'doc_field_code' = 'character',
                                                                                                       'api_field' = 'character')) 
-
+## get start year for each well
 init_start_yr <- init_yr_prod %>%
   select(api_ten_digit, start_date) %>%
   unique() %>%
   mutate(start_year = year(start_date)) %>%
   select(-start_date)
 
+## read in file of wells with zero prodution after 5y or 10y
 no_prod_wells <- fread(paste0(output_dir, no_prod_file), colClasses = c('api_ten_digit' = 'character'))
 
 no_prod_5 <- no_prod_wells %>% filter(year_cut_off == 5) %>% select(api_ten_digit) %>% unique()
@@ -44,9 +45,6 @@ no_prod_10 <- no_prod_wells %>% filter(year_cut_off == 10) %>% select(api_ten_di
 no_prod_10_vec <- no_prod_10$api_ten_digit
 
 ## all wells
-# all_wells <- read_xlsx("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/All_wells_20200417.xlsx") %>%
-#   mutate(spud_date = convertToDate(SpudDate)) 
-
 all_wells <- fread(paste0(raw_dir, well_file))
 
 ## wells status
@@ -191,7 +189,20 @@ field_exit_dt2 <- field_exit_dt2 %>%
 field_exit_dt2[is.na(field_exit_dt2)] <- 0
 field_exit_dt2 <- rename(field_exit_dt2, well_exits=n)
 
+field_exit_dt3 <- field_exit_dt2 %>%
+  mutate(exit_scen = ifelse(scen == 1, "plugged_wells",
+                            ifelse(scen == 2, "plugged_and_5y", "plugged_and_10y")))
+
 }
 
+scen_vec <- c(1:3)
+
+field_exit_out <- purrr::map(as.list(scen_vec), calc_exits) %>%
+  bind_rows()
+
+
 ## Save field-year-level well exit data
-write_csv(field_exit_dt2, path = paste0(output_dir, "well_exits.csv"))
+
+
+
+write_csv(field_exit_out, file = paste0(output_dir, "well_exits.csv"))
