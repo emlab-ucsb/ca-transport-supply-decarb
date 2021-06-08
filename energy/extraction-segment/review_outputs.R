@@ -5,6 +5,7 @@
 ## libraries
 library(data.table)
 library(tidyverse)
+library(hrbrthemes)
 
 ## paths
 base_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
@@ -13,13 +14,13 @@ model_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-project
 
 ## files
 prod_quota_file = 'prod_quota_scenarios.csv'
-histprod_file   = 'crude_prod_x_field.csv'
-entry_df_file   = 'entry_df_final.csv'
+histprod_file   = 'crude_prod_x_field_revised.csv'
+entry_df_file   = 'entry_df_final_revised.csv'
 
 ## read in outputs
-vintage_base = fread(file.path(base_path, 'extraction_2021-04-07', 'baseline', 'diagnostic-vintage-level-results.csv'), header = T)
-field_base = fread(file.path(base_path, 'extraction_2021-04-07', 'baseline', 'diagnostic-field-level-results.csv'), header = T)
-state_base = fread(file.path(base_path, 'extraction_2021-04-07', 'baseline', 'diagnostic-state-level-results.csv'), header = T)
+vintage_base = fread(file.path(base_path, 'extraction_2021-06-04', 'revised-remove-plugged', 'diagnostic-vintage-level-results.csv'), header = T)
+field_base = fread(file.path(base_path, 'extraction_2021-06-04', 'revised-remove-plugged', 'diagnostic-field-level-results.csv'), header = T)
+state_base = fread(file.path(base_path, 'extraction_2021-06-04', 'revised-remove-plugged', 'diagnostic-state-level-results.csv'), header = T)
 
 # load production quota file
 prod_quota_scens = fread(file.path(scen_path, prod_quota_file), header = T)
@@ -34,19 +35,19 @@ entry_df <- fread(file.path(model_path, 'stocks-flows', entry_df_file), header =
 ## pad field codes
 vintage_base[, doc_field_code := sprintf("%03s", doc_field_code)]
 field_base[, doc_field_code := sprintf("%03s", doc_field_code)]
-prod_hist[, doc_field_code := sprintf("%03s", FieldCode)]
+prod_hist[, doc_field_code := sprintf("%03s", doc_field_code)]
 entry_df[, doc_field_code := sprintf("%03s", doc_field_code)]
 
 ## make sure quota is numeric
 prod_quota_scens[, quota := as.numeric(gsub(",", "", quota))]
 
 ## add scenario to state and field outputs
-state_base[, scenario := fifelse(setback_scenario == "setback_2500ft", "LC2",
-                                 fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LC1", "BAU"))]
+state_base[, scenario := fifelse(setback_scenario == "setback_2500ft", "LCE2",
+                                 fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LCE1", "BAU"))]
 
 ## field-level new wells
-field_base[, scenario := fifelse(setback_scenario == "setback_2500ft", "LC2",
-                                 fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LC1", "BAU"))]
+field_base[, scenario := fifelse(setback_scenario == "setback_2500ft", "LCE2",
+                                 fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LCE1", "BAU"))]
 
 ## state production compared to quota
 state_prod <- state_base[, c("oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
@@ -55,6 +56,10 @@ state_prod <- state_base[, c("oil_price_scenario", "innovation_scenario", "carbo
 state_prod <- merge(state_prod, prod_quota_scens)
 
 state_prod[, quota := fifelse(is.infinite(quota), 150000000, quota)]
+
+state_prod[, scenario := fifelse(setback_scenario == "setback_2500ft", "LCE2",
+                                 fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LCE1", "BAU"))]
+
 
 ## hitting the quota? yes
 ggplot(state_prod, aes(x = year, y = total_prod_bbl / 1e6)) +
@@ -92,7 +97,7 @@ theme_line =
 
 
 # save info file
-save_info_path = file.path(base_path, 'extraction_2021-04-07', 'baseline', 'field-outputs')
+save_info_path = file.path(base_path, 'extraction_2021-06-04', 'revised-remove-plugged', 'field-outputs') ## update this to go with run
 dir.create(save_info_path, showWarnings = FALSE)
 print(paste0("Saving field figures to ", save_info_path))
 
@@ -111,7 +116,7 @@ hist_new_wells <- hist_new_wells[doc_field_code %in% field_base[, doc_field_code
 
 ## add historic production
 
-prod_hist[, FieldCode := NULL]
+prod_hist[, doc_fieldname := NULL]
 
 prod_hist <- merge(hist_new_wells, prod_hist)
 
@@ -134,14 +139,11 @@ all_field <- rbind(prod_hist, field_base2)
 ## ---------------------------
 prod_hist_state <- prod_hist[, lapply(.SD, sum, na.rm = T), .SDcols = c("new_wells", "new_prod_bbl", "existing_prod_bbl", "total_prod_bbl"), by = .(scenario, year)]
 
-state_pred_wells <- state_base[, c("scenario", "year", "new_wells", "new_prod_bbl")]
+state_pred_wells <- state_base[, c("scenario", "year", "new_wells", "new_prod_bbl", "existing_prod_bbl", "total_prod_bbl")]
 
 ## bind
-state_new_wells <- rbind(hist_new_wells_state, state_pred_wells)
-state_new_wells[, scenario := factor(scenario, levels = c("historic", "BAU", "LC1", "LC2"))]
-
-## make df with 
-
+state_new_wells <- rbind(prod_hist_state, state_pred_wells)
+state_new_wells[, scenario := factor(scenario, levels = c("historic", "BAU", "LCE1", "LCE2"))]
 
 
 ## pal
@@ -170,7 +172,7 @@ embed_fonts(file.path(save_info_path, "0_state_nwells.pdf"),
 
 
 ## save state-level production fig
-state_nwells_prod_fig <- ggplot(state_new_wells %>% filter(year > 1977), aes(x = year, y = new_prod_bbl / 1e6, color = scenario, group = scenario)) +
+state_prod_fig <- ggplot(state_new_wells %>% filter(year > 1977), aes(x = year, y = new_prod_bbl / 1e6, color = scenario, group = scenario)) +
   geom_line(size = 1, alpha = 0.7) +
   labs(title = "State-level production from new wells",
        subtitle = "million bbls", 
@@ -182,7 +184,7 @@ state_nwells_prod_fig <- ggplot(state_new_wells %>% filter(year > 1977), aes(x =
   theme(legend.title = element_blank())
 
 # save figure ----
-ggsave(state_nwells_prod_fig,
+ggsave(state_prod_fig,
        filename = file.path(save_info_path, "0_state_nwells_prod.pdf"),
        width = 11,
        height = 8.5)
@@ -197,7 +199,7 @@ field_base2 <- field_base[, c("scenario", "doc_fieldname", "doc_field_code", "ye
 
 field_base2 <- rbind(hist_new_wells, field_base2)
 
-field_base2[, scenario := factor(scenario, levels = c("historic", "BAU", "LC1", "LC2"))]
+field_base2[, scenario := factor(scenario, levels = c("historic", "BAU", "LCE1", "LCE2"))]
 
 ## field names
 field_names <- unique(field_base2[, doc_fieldname])
