@@ -107,7 +107,8 @@ n_wells_field <- wells2 %>%
   ungroup() %>%
   left_join(field_area) %>%
   mutate(density = n / AREA_SQ_MI) %>%
-  mutate(prod_field = ifelse(doc_field_code %in% pos_fields$doc_field_code, 1, 0))
+  mutate(prod_field = ifelse(doc_field_code %in% pos_fields$doc_field_code, 1, 0)) %>%
+  filter(prod_field == 1)
   
 
   
