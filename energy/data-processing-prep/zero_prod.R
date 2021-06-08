@@ -128,37 +128,48 @@ zero_prod_hist <- ggplot(zero_prod_dt_filt2 %>% filter(remove_tail_all == 0), ae
 calc_zero_prod <- function(n_month_val) {
   
   ## filter for number of months
-  tmp_zero_prod <- zero_prod_dt_filt2[zero_prod_months >= n_month_val]
-
-  ## filter for wells that stop producing after x number of months
-  tmp_zero_prod[, n := .N, by = .(api_ten_digit)]
+  tmp_all <- zero_prod_dt_filt2[zero_prod_months >= n_month_val]
 
   ## prod stop
-  tmp_stop <- tmp_zero_prod[n == 1]
+  tmp_zero_prod <- tmp_all[, n := .N, by = .(api_ten_digit)]
   
-  tmp_n_stop_vec <- length(unique(tmp_stop[, api_ten_digit]))
+  ## those that stop after n months
+  tmp_stop_prod <- tmp_zero_prod[zero_prod_end == 1 & n == 1]
+  
+  tmp_n_stop_n <- length(unique(tmp_stop_prod[, api_ten_digit]))
+  
+  ## n pause and stop
+  tmp_break_stop <- tmp_zero_prod[zero_prod_end == 1 & n > 1]
+  
+  tmp_n_break_stop_n <- length(unique(tmp_break_stop[, api_ten_digit]))
   
   ## n plugged in stop 
-  tmp_stop_status <- tmp_stop[well_status == "Plugged", c(n = .N), by = .(well_status)]
+  tmp_stop_status <- tmp_stop_prod[well_status == "Plugged", c(n = .N), by = .(well_status)]
+  tmp_stop_break_status <- tmp_break_stop[well_status == "Plugged", c(n = .N), by = .(well_status)]
   
-  tmp_plugged_val <- as.numeric(tmp_stop_status[, V1])
+  plugged_df <- rbind(tmp_stop_status, tmp_stop_break_status)
   
-  ## break
-  tmp_break <- tmp_zero_prod[n > 1]
+  tmp_plugged_val <- as.numeric(sum( plugged_df[, V1]))
+  
+  ## break and then produce 
+  tmp_break <- tmp_zero_prod[zero_prod_end != 1]
+  tmp_break <- tmp_break[!(api_ten_digit %in% c(tmp_stop_prod[, api_ten_digit], tmp_break_stop[, api_ten_digit]))]
   
   tmp_n_break_vec <- length(unique(tmp_break[, api_ten_digit]))
   
   ## total wells in threshold
-  tmp_n_total <- length(unique(tmp_zero_prod[, api_ten_digit]))
+  tmp_all <- zero_prod_dt_filt2[zero_prod_months >= n_month_val]
+  tmp_n_total <- length(unique(tmp_all[, api_ten_digit]))
 
   ## make data table
   out_df <- data.table(zero_prod_length = n_month_val,
-                       n_stop = tmp_n_stop_vec,
+                       n_stop_only = tmp_n_stop_n,
+                       n_break_stop = tmp_n_break_stop_n, 
                        n_stop_plugged = tmp_plugged_val,
-                       rel_plugged = tmp_plugged_val / tmp_n_stop_vec,
-                       n_break = tmp_n_break_vec,
+                       rel_plugged = tmp_plugged_val / (tmp_n_stop_n + tmp_n_break_stop_n),
+                       n_break_only = tmp_n_break_vec,
                        n_stop_break = tmp_n_total,
-                       rel_stop = tmp_n_stop_vec / tmp_n_total)
+                       rel_stop = tmp_n_stop_n / tmp_n_total)
   
 }
 
@@ -168,4 +179,33 @@ zero_prod_out <- purrr::map(as.list(month_vec), calc_zero_prod) %>%
   bind_rows()
 
 fwrite(zero_prod_out, paste0(proj_dir, output_dir, 'zero_prod_breaks_stops.csv'), row.names = F)
+
+
+## function that filters for wells that are inactive for X years and never produce again
+
+filt_zero_prod <- function(n_month_val) {
+  
+  ## filter for number of months
+  tmp_zero_prod <- zero_prod_dt_filt2[zero_prod_months >= n_month_val]
+  
+  ## keep only those that stop production
+  tmp_zero_prod <- tmp_zero_prod[zero_prod_end == 1]
+  
+  ## make data table
+  out_df <- tmp_zero_prod %>% 
+    select(api_ten_digit, zero_prod_months, well_status) %>%
+    mutate(year_cut_off = n_month_val / 12)
+  
+}
+
+
+cat_vec <- c(5, 10) * 12
+
+no_prod_wells_out <- purrr::map(as.list(cat_vec), filt_zero_prod) %>%
+  bind_rows()
+
+fwrite(no_prod_wells_out, paste0(proj_dir, output_dir, 'no_prod_wells_out.csv'), row.names = F)
+
+
+
 
