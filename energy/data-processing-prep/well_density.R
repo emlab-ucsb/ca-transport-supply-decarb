@@ -110,7 +110,16 @@ n_wells_field <- wells2 %>%
   mutate(prod_field = ifelse(doc_field_code %in% pos_fields$doc_field_code, 1, 0)) %>%
   filter(prod_field == 1)
   
+density_fig <- ggplot(n_wells_field, aes(y = density, x = AREA_SQ_MI)) +
+  geom_point(alpha = 0.7) +
+  ylab("density (wells/sq mi)") +
+  xlab("field area (sq mi)") +
+  theme_bw()
 
+ggsave(density_fig, 
+       filename = file.path(proj_dir, 'model-development/density/density_fig.png'), 
+       width = 6, 
+       height = 7)
   
   
 
