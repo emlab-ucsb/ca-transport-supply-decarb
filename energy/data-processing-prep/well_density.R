@@ -114,6 +114,11 @@ density_fig <- ggplot(n_wells_field, aes(y = density, x = AREA_SQ_MI)) +
   geom_point(alpha = 0.7) +
   ylab("density (wells/sq mi)") +
   xlab("field area (sq mi)") +
+  xlim(0, 90) +
+  ylim(0, 1200) +
+  geom_text(label = n_wells_field$NAME, 
+            # nudge_x = 1, nudge_y = 1, 
+            check_overlap = T) +
   theme_bw()
 
 ggsave(density_fig, 
