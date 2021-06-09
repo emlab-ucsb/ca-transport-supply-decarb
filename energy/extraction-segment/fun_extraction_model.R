@@ -306,10 +306,10 @@ run_extraction_model <- function(oil_px_selection) {
         
         # poisson regression for all fields
         new_wells[, m_new_wells_pred := fifelse(depl < 0.9999,
-                                                 exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl + cons_hat),
+                                                 exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl) * fixed_effect,
                                                  0)]
         new_wells[, wm_new_wells_pred := fifelse(depl < 0.9999,
-                                                  exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl + cons_hat),
+                                                  exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl) * fixed_effect,
                                                   0)]
         
         
