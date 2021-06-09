@@ -293,8 +293,6 @@ run_extraction_model <- function(oil_px_selection) {
         
         t = pred_years[i]
         # print(t)
-        
-        browser()
       
         ## set up variables for all fields
         new_wells = dt_info_z[year == t]
@@ -1030,10 +1028,10 @@ run_extraction_model <- function(oil_px_selection) {
     #                    prod_new)
     
     ## res selection
-    # res = lapply(1:nrow(scen_sel), func_yearly_production)
+    res = lapply(1:nrow(scen_sel), func_yearly_production)
     
     ## for diagnostic
-    res = lapply(1:1, func_yearly_production)
+    # res = lapply(1:1, func_yearly_production)
     
     output_list = do.call(Map, c(f = rbind, res))
     
