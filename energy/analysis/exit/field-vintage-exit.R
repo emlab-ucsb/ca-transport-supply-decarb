@@ -191,7 +191,9 @@ field_exit_dt2 <- rename(field_exit_dt2, well_exits=n)
 
 field_exit_dt3 <- field_exit_dt2 %>%
   mutate(exit_scen = ifelse(scen == 1, "plugged_wells",
-                            ifelse(scen == 2, "plugged_and_5y", "plugged_and_10y")))
+                            ifelse(scen == 2, "plugged_and_5y",
+                                   ifelse(scen == 3, "plugged_and_10y",
+                                          ifelse(scen == 4, "5y", "10y")))))
 
 }
 
