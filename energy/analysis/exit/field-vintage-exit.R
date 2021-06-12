@@ -35,7 +35,7 @@ init_start_yr <- init_yr_prod %>%
   mutate(start_year = year(start_date)) %>%
   select(-start_date)
 
-## read in file of wells with zero prodution after 5y or 10y
+## read in file of wells with zero production after 5y or 10y
 no_prod_wells <- fread(paste0(output_dir, no_prod_file), colClasses = c('api_ten_digit' = 'character'))
 
 no_prod_5 <- no_prod_wells %>% filter(year_cut_off == 5) %>% select(api_ten_digit) %>% unique()
@@ -115,9 +115,6 @@ setorder(prod_dt, api_ten_digit, month_year)
 
 prod_dt[, api_doc_field_code := NULL]
 
-## add vintage
-# wait on this, get annual no. of exits for now
-
 ## find final year of positive production by 
 prod_dt <- prod_dt %>%
   group_by(api_ten_digit) %>%
@@ -165,9 +162,12 @@ calc_exits <- function(scen) {
     
     filt_vec <- c(plugged_api_vec, no_prod_5_vec)
     
-  } else {filt_vec  <- c(plugged_api_vec, no_prod_10_vec)}
+  } else if(scen == 3) {filt_vec  <- c(plugged_api_vec, no_prod_10_vec)
   
+  } else if(scen == 4) {filt_vec <- no_prod_5_vec
   
+  } else if(scen == 5) {filt_vec  <- no_prod_10_vec}
+
 well_exit_dt <- well_exit_dt %>%
   filter(api_ten_digit %in% filt_vec) %>%
   group_by(doc_field_code) %>%
@@ -195,7 +195,7 @@ field_exit_dt3 <- field_exit_dt2 %>%
 
 }
 
-scen_vec <- c(1:3)
+scen_vec <- c(1:5)
 
 field_exit_out <- purrr::map(as.list(scen_vec), calc_exits) %>%
   bind_rows()
