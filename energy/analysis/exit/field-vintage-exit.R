@@ -194,12 +194,12 @@ field_exit_dt2[is.na(field_exit_dt2)] <- 0
 field_exit_dt2 <- rename(field_exit_dt2, well_exits=n)
 
 field_exit_dt3 <- field_exit_dt2 %>%
-  mutate(exit_scen = ifelse(scen == 1, "plugged_wells",
-                            ifelse(scen == 2, "plugged_and_5y",
-                                   ifelse(scen == 3, "plugged_and_10y",
+  mutate(exit_scen = ifelse(scen == 1, "all_plug",
+                            ifelse(scen == 2, "5y_all_plug",
+                                   ifelse(scen == 3, "10y_all_plug",
                                           ifelse(scen == 4, "5y", 
                                                  ifelse(scen == 5, "10y",
-                                                        ifelse(scen == 6, "5y_no_plugged", "10y_no_plugged")))))))
+                                                        ifelse(scen == 6, "5y_no_plug", "10y_no_plug")))))))
 
 }
 
