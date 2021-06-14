@@ -166,7 +166,11 @@ calc_exits <- function(scen) {
   
   } else if(scen == 4) {filt_vec <- no_prod_5_vec
   
-  } else if(scen == 5) {filt_vec  <- no_prod_10_vec}
+  } else if(scen == 5) {filt_vec  <- no_prod_10_vec
+
+  } else if(scen == 6) {filt_vec <- setdiff(no_prod_5_vec, plugged_api_vec)
+
+  } else if(scen == 7) {filt_vec  <- setdiff(no_prod_10_vec, plugged_api_vec)}
 
 well_exit_dt <- well_exit_dt %>%
   filter(api_ten_digit %in% filt_vec) %>%
@@ -193,11 +197,13 @@ field_exit_dt3 <- field_exit_dt2 %>%
   mutate(exit_scen = ifelse(scen == 1, "plugged_wells",
                             ifelse(scen == 2, "plugged_and_5y",
                                    ifelse(scen == 3, "plugged_and_10y",
-                                          ifelse(scen == 4, "5y", "10y")))))
+                                          ifelse(scen == 4, "5y", 
+                                                 ifelse(scen == 5, "10y",
+                                                        ifelse(scen == 6, "5y_no_plugged", "10y_no_plugged")))))))
 
 }
 
-scen_vec <- c(1:5)
+scen_vec <- c(1:7)
 
 field_exit_out <- purrr::map(as.list(scen_vec), calc_exits) %>%
   bind_rows()
