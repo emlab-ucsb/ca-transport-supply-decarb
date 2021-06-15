@@ -104,6 +104,11 @@
   final_sel[(refining_scenario == 'R-BAU' & extraction_scenario == 'E-BAU' & tailpipe_scenario == 'T-BAU'), scenario_name := 'Business As Usual']
   final_sel[(refining_scenario == 'LCR2' & extraction_scenario == 'LCE2' & tailpipe_scenario == 'LCT1'), scenario_name := 'Low Carbon Scenarios']
   
+# save data to csvs ------
+  
+  fwrite(final_res, file.path(fig_path, 'executive_summary_study_1_and_2_ghg_all_scenarios.csv'), row.names = F)
+  fwrite(final_sel, file.path(fig_path, 'executive_summary_study_1_and_2_ghg_selected_scenarios.csv'), row.names = F)
+  
 # ------------------------- plots ------------------------- 
   
   # plot theme & palettes ------
