@@ -273,7 +273,8 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
                aes(x = year, y = ghg_kgCO2e / 1e9, color = version), shape = 3) +
     geom_line(data = report_ghg_all, aes(x = year, y = ghg_kgCO2e / 1e9, color = version)) +
     facet_grid(type ~ scen_name) +
-    geom_line(data = hist_ghg, aes(x = year, y = co2e), color = "black") +
+    geom_line(data = hist_ghg %>% filter(emissions_type == "mtco2e"), aes(x = year, y = co2e), color = "black") +
+    geom_line(data = hist_ghg %>% filter(emissions_type == "adj_mtco2e"), aes(x = year, y = co2e), color = "black", lty = "dotted") +
     geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
     scale_color_manual(values = c("#FF6E1B", "#FFD200", "#005581")) +
     labs(title = 'State-level emissions',
