@@ -10,8 +10,9 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
   report_out <- read.csv("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/production_state_1977-2045.csv")
   report_wells_out <- fread("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/well_entry_state_1977-2045.csv")
-  extract_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T)
-  hist_ghg <- fread('/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/historic_ghg_emissions_og.csv')
+  extract_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T,
+                             colClasses = ('doc_field_code' = 'character'))
+  hist_ghg <- fread('/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/historic_ghg_emissions_og_ng_adjusted.csv')
   
   ## assemble outputs from cal epa report
   ## -------------------------------------------
