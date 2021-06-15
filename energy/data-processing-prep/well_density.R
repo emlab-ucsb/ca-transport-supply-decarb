@@ -303,4 +303,13 @@ ggsave(density_fut_fig,
        height = 8)
 
 
+## check the two wells in Las Cienegas
+check_wells <- c("0403700381", "0403700328")
+
+mapview(wells_sp %>% filter(API %in% check_wells), cex = 0.5, color = "yellow") +
+  mapview(boundaries)
+
+
+
+
   
