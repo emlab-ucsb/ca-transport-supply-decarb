@@ -190,7 +190,8 @@ head(f)
 
 ## -------------------
 
-well_density_df <- as.data.frame(well_raster, xy = TRUE)
+well_density_df <- as.data.frame(well_raster, xy = TRUE) %>%
+  mutate(n_log = log10(layer))
 
 well_density_df1 <- well_density_df %>%
   mutate(ID = row_number())
@@ -212,12 +213,12 @@ wells_sp$cell_id <- extract_vec
 raster_fig <- 
 ggplot() +
   geom_sf(data = california, fill = NA, color = "grey50", size = 1) +
-  geom_raster(data = well_density_df %>% filter(!is.na(layer)), aes(x = x, y = y, fill = layer)) +
-  scale_fill_viridis_c(name = "# of wells", option = "plasma") 
+  geom_raster(data = well_density_df %>% filter(!is.na(layer)), aes(x = x, y = y, fill = n_log)) +
+  scale_fill_viridis_c(name = "# of wells (log10)", option = "plasma") 
   
 
 ggsave(raster_fig, 
-       filename = file.path(proj_dir, 'model-development/density/wells_per_km2.png'), 
+       filename = file.path(proj_dir, 'model-development/density/wells_per_km2_log.png'), 
        width = 11, 
        height = 10)
 
@@ -231,11 +232,42 @@ max_id <- well_density_df1 %>%
   dplyr::select(ID) %>%
   as.numeric()
 
+
 ## wells in dense area
 dense_wells <- wells_sp %>%
   filter(cell_id == max_id) %>%
   dplyr::select(API, FieldName, WellStatus, cell_id)
 
+
+## nearest neighbor
+## ------------------------
+
+## nearest point to each point
+find_n_asset <- function(well) {
+  
+  api_ten_digit <- well
+  
+  well_pt <- dense_wells %>% 
+    filter(API == api_ten_digit)
+  
+  nearest_tmp <- dense_wells %>%
+    filter(API != api_ten_digit) %>%
+    mutate(dist = st_distance(geometry, well_pt)) %>%
+    filter(dist == min(dist)) %>%
+    dplyr::select(API, dist) %>%
+    st_drop_geometry() %>%
+    mutate(api_ten_digit = api_ten_digit)
+  
+}
+
+## wells
+api_vec <- unique(dense_wells$API)
+
+## run the function to find nearest asset(s)
+nn_wells <- purrr::map(api_vec, find_n_asset) %>%
+  bind_rows()
+
+## plot
 mapview(dense_wells, cex = 0.5) 
 
 ## now look at well density by field for the three scenarios
