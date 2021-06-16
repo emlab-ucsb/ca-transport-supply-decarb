@@ -9,6 +9,7 @@ library(plotly)
 library(readxl)
 library(RColorBrewer)
 library(extrafont)
+library(data.table)
 
 ## deal with the fonts
 # font_import(pattern = "(?i)calibri") # load only calibri fonts
@@ -32,25 +33,30 @@ ghg_2008 <- read_csv(paste0(data_directory, "ghg_mrr/ghg_mrr_2008.csv"))
 inv_df <- read_csv(paste0(data_directory, "ghg_inventory_tool.csv"))
 
 
-ghg_sector_yr <- read_xlsx("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/2000_2017_ghg_inventory_trends_figures.xlsx", sheet = "Figure 3", range = "A5:T12")
+# ghg_sector_yr <- read_xlsx("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/2000_2017_ghg_inventory_trends_figures.xlsx", sheet = "Figure 3", range = "A5:T12")
 
-well_prod <- read_rds(paste0(data_directory, "well_prod_m.rds")) %>%
-  mutate(api_ten_digit = substr(APINumber, 1, 10))
+## well prod
+well_prod <- fread(paste0(data_directory, "well_prod_m_processed.csv"), colClasses =  c('doc_field_code' = 'character', 'api_ten_digit' = 'character')) 
 
+## zip codes
 zipcodes <- read_csv(paste0(data_directory, "zipcodes.csv"))
 
-fw_df <- read_csv(paste0(data_directory, "fuel_watch_data.csv")) ## fuel watch stock inputs, outputs, stores
+## fuel watch stock inputs, outputs, stores
+fw_df <- read_csv(paste0(data_directory, "fuel_watch_data.csv")) 
 
-refin_clusters <- read_csv(paste0(data_directory, "reg_refin_crude_receipts.csv")) ## refininery source
+## refinery source
+refin_clusters <- read_csv(paste0(data_directory, "reg_refin_crude_receipts.csv"))
 
+## process refining ghg
 proc_refin_ghg <- read_csv("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/intermediary/refin_match_a.csv")
 
-
+## bbls per  year
 bbls_yr <- well_prod %>%
   group_by(year) %>%
   summarise(sum_prod = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup()
 
+## refiniery site id
 site_id <- read_csv("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/refinery_loc_cap.csv") %>%
   select(refinery_name, site_id)
 
@@ -131,7 +137,7 @@ coal_df <- total_ghg_df %>%
   summarise(total_co2e = sum(total_co2e, na.rm = T)) %>%
   ungroup()
 
-cdf2<- expand.grid(report_yr = unique(coal_df$report_yr),
+cdf2 <- expand.grid(report_yr = unique(coal_df$report_yr),
                    NAICS_code = unique(coal_df$NAICS_code)) %>%
   full_join(coal_df)
 
