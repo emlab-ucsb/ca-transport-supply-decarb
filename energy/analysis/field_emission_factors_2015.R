@@ -10,7 +10,8 @@
   inj_file          = 'injection-by-well-type-per-field-per-year_1977-2018_revised.csv'
   emfactor_file     = 'field-level-emissions-results_processed_revised.csv'
   entry_file        = 'entry-input-df/final/entry_df_final_revised.csv'
-  prod_file         = 'crude_prod_x_field_revised.csv'
+  prod_file         = 'well_prod_m.rds'
+  field_file        = 'wells_19.csv'
 
 # outputs -----
   
@@ -38,12 +39,36 @@
     entry_df =  fread(file.path(entry_path, entry_file), header = T, colClasses = c('doc_field_code' = 'character'))
   
   # load field-level production
-    prod_dt = fread(file.path(entry_path, prod_file), header = T, colClasses = c('doc_field_code' = 'character'))
+    prod_dt = as.data.table(readRDS(file.path(data_path, prod_file)))
+    
+  # load field names
+    fields_dt = fread(file.path(data_path, field_file))
 
+# rename columns ------
+    
+  setnames(prod_dt, 'FieldCode', 'doc_field_code')
+  setnames(fields_dt, 'FieldCode', 'doc_field_code')
+  setnames(fields_dt, 'FieldName', 'doc_fieldname')
+    
+# pad field code with leading zeroes -----
+    
+  prod_dt[, doc_field_code := sprintf("%03s", doc_field_code)]
+  fields_dt[, doc_field_code := sprintf("%03s", doc_field_code)]
+    
+# get unique set of field codes from production data ------
+  
+  prod_fields = unique(prod_dt[, .(doc_field_code)])
+  prod_fields = prod_fields[unique(fields_dt[, .(doc_field_code, doc_fieldname)]), on = .(doc_field_code), nomatch = 0]
+  
+# get field-year level production ------
+  
+  agg_prod = prod_dt[, .(total_bbls = sum(OilorCondensateProduced, na.rm = T)), by = .(doc_field_code, year)]
+  agg_prod = agg_prod[unique(fields_dt[, .(doc_field_code, doc_fieldname)]), on = .(doc_field_code), nomatch = 0]
+  
 # get unique list of field codes and field names that are used in the entry df AND the production file -----
   
   un_fields = unique(rbindlist(list(entry_df[, .(doc_field_code, doc_fieldname)],
-                                    prod_dt[, .(doc_field_code, doc_fieldname)])))
+                                    prod_fields[, .(doc_field_code, doc_fieldname)])))
   
 # fix field names to match DOC naming conventions -----
   
@@ -99,7 +124,9 @@
   
 # calculate total GHG emissions based on 2015 production ------
   
-  all_fields_prod = all_fields[prod_dt[year == 2015], on = c('doc_field_code', 'doc_fieldname'), nomatch = 0]
+  all_fields_prod = merge(all_fields, agg_prod[year == 2015], by = c('doc_field_code', 'doc_fieldname'), all.x = T)
+  all_fields_prod[is.na(year), year := 2015]
+  all_fields_prod[is.na(total_bbls), total_bbls := 0]
   all_fields_prod[, upstream_kgCO2e := upstream_kgCO2e_bbl*total_bbls]
   all_fields_prod[, lifecycle_kgCO2e := lifecycle_kgCO2e_bbl*total_bbls]
   setcolorder(all_fields_prod, c('doc_field_code', 'doc_fieldname', 'year', 'total_bbls', 
