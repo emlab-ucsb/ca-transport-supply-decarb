@@ -41,6 +41,10 @@ setback_out <- fread(paste0(proj_dir, "outputs/setback/model-inputs/setback_cove
 
 well_setback_out <- fread(paste0(proj_dir, "outputs/setback/model-inputs/wells_in_setbacks_revised.csv"), colClasses = c('api_ten_digit' = 'character'))
 
+## predicted production
+pred_prod <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/production_with_exit/predicted-production_2020-2045_field_revised.csv',
+                   colClasses = c('doc_field_code' = 'character'))
+
 ## boundaries
 boundaries <- st_read(file.path(proj_dir, "data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp")) %>% st_transform(3488)
 
