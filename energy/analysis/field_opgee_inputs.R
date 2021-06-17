@@ -11,6 +11,8 @@
   
 # outputs -----------
   
+  save_path       = 'data/stocks-flows/processed'
+  save_file       = 'field_opgee_inputs_1977_2019.csv'
   
 # libraries ----------
   
@@ -107,3 +109,35 @@
   combined_info[, water_injection_ratio := ifelse(water_injection_bbl/water_produced_bbl > 1, water_injection_bbl/oil_produced_bbl, NA)]
   combined_info[, sor_bbl_bbl := ifelse(steam_injection_bwe > 0, steam_injection_bwe/oil_produced_bbl, NA)]
   
+# keep selected oil fields -------
+  
+  combined_sel = combined_info[dt_opgee, on = .(doc_fieldname), nomatch = 0]
+  
+# reorganize datatable ------
+  
+  combined_sel_keep = combined_sel[, .(doc_fieldname, year, daily_production_bopd, no_prod_wells, no_water_inj_wells, 
+                                       gor_scf_bbl, wor_bbl_bbl, water_injection_ratio, gas_flooding_injection_ratio,
+                                       sor_bbl_bbl, fraction_natural_gas_injected, fraction_prodced_water_reinjected)]
+  
+  all_vars = c('daily_production_bopd', 'no_prod_wells', 'no_water_inj_wells', 
+               'gor_scf_bbl', 'wor_bbl_bbl', 'water_injection_ratio', 'gas_flooding_injection_ratio',
+               'sor_bbl_bbl', 'fraction_natural_gas_injected', 'fraction_prodced_water_reinjected')
+  
+  l_inputs = list()
+  for (i in 1:length(all_vars)) {
+    
+    dt = dcast(combined_sel_keep, year ~ doc_fieldname, value.var = all_vars[i])
+    dt[, variable := paste0(i, '_', all_vars[i])]
+    setcolorder(dt, c(colnames(dt)[159], colnames(dt)[1:158]))
+    
+    l_inputs[[i]] = dt
+    
+    rm(dt)
+    
+  }
+  
+  dt_inputs = rbindlist(l_inputs)
+
+# save to csv ------
+  
+  fwrite(dt_inputs, file.path(emlab_path, save_path, save_file), row.names = F)
