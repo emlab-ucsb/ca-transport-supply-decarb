@@ -18,7 +18,7 @@
   dir.create(save_path, showWarnings = FALSE)
   
 # set binary switches
-  run_diagnostic_figs   = 1
+  run_diagnostic_figs   = 0
   
 # set seed
   set.seed(228)

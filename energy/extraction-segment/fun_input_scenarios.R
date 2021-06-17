@@ -132,6 +132,8 @@ load_scenarios_dt = function(oil_px_selection) {
   
   # keep diagnostics only (if that is input) ------
   
+  browser()
+  
   if (oil_px_selection == 'diagnostic') {
     
     scenarios_dt = scenarios_dt[(oil_price_scenario == 'iea oil price' & 
