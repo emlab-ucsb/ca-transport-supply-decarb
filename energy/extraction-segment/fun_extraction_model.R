@@ -245,6 +245,7 @@ run_extraction_model <- function(oil_px_selection) {
                                        prod_quota_scenario == 'quota_20')]
     }
     
+    
   # START OF LOOP -------
 
     # scen_sel = scen_combos[oil_price_scenario == fcase(oil_px_selection == 'reference', 'reference case',
