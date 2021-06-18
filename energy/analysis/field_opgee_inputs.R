@@ -107,7 +107,7 @@
                                                   ifelse(gas_air_injection_mcf/gas_produced_mcf > 1, (gas_air_injection_mcf*1e3)/oil_produced_bbl, NA))]
   combined_info[, fraction_prodced_water_reinjected := ifelse(water_injection_bbl/water_produced_bbl > 1, 1, water_injection_bbl/water_produced_bbl)]
   combined_info[, water_injection_ratio := ifelse(water_injection_bbl/water_produced_bbl > 1, water_injection_bbl/oil_produced_bbl, NA)]
-  combined_info[, sor_bbl_bbl := ifelse(steam_injection_bwe > 0, steam_injection_bwe/oil_produced_bbl, NA)]
+  combined_info[, sor_bbl_bbl := ifelse(steam_injection_bwe > 0, steam_injection_bwe/oil_produced_bbl, 0)]
   
 # keep selected oil fields -------
   
