@@ -2,7 +2,7 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  oil_price_selection   = 'diagnostic' ## diagnostic, benchmark
+  oil_price_selection   = 'benchmark' ## diagnostic, benchmark
     # choose from: reference, high, low, iea
   run_type = "revised-new-entry-model"
     
