@@ -19,6 +19,7 @@
   
 # set binary switches
   run_diagnostic_figs   = 0
+  run_benchmark_figs    = 1
   
 # set seed
   set.seed(228)
@@ -34,13 +35,14 @@
 # load libraries ------
 
   library(data.table)
+  library(hrbrthemes)
   library(tidyverse)
 
 # step 1: run extraction model and get outputs -------
   
   output_extraction = run_extraction_model(oil_price_selection)
   
-# step 2: if relevant, run diagnostic plots
+# step 2: if relevant, run diagnostic plots/ benchmark plots
   
   # source function to predict extraction
   source(here::here('energy', 'extraction-segment', 'fun_diagnostic_plot.R'))
@@ -56,6 +58,20 @@
   }
   
   
+  source(here::here('energy', 'extraction-segment', 'fun_benchmark.R'))
+  
+  if (run_benchmark_figs == 1) {
+    
+    library(stringr)  
+    library(hrbrthemes)
+    library(extrafont)
+    library(cowplot)
+    
+    benchmark_outputs(oil_price_selection, output_extraction)
+    
+  }
+  
+    
 # step 3: process outputs ------
   
 # output_processed = process_extraction_outputs(oil_price_selection, output_extraction)
