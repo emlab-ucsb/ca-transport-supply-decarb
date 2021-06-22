@@ -115,7 +115,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                          ifelse(scenario == 'CCS cost scenarios', ccs_scenario,
                                                 ifelse(scenario == 'setback scenarios', setback_scenario,
                                                        ifelse(scenario == 'quota scenarios', prod_quota_scenario, excise_tax_scenario)))))))
-  browser()
+
 
   # plot theme --------------------
   
