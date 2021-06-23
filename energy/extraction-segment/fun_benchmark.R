@@ -224,6 +224,31 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   scen_plot <- cowplot::plot_grid(out, legend, ncol = 1, rel_heights = c(1, .1))
   
   ## title
+  
+  if(scen_choice == 4) {
+    
+    title <- ggdraw() + 
+      draw_label(
+        paste0(name, ': carbon price = ceiling'),
+        fontface = 'bold',
+        x = 0,
+        hjust = 0
+      ) +
+      theme(
+        # add margin on the left of the drawing canvas,
+        # so title is aligned with left edge of first plot
+        plot.margin = margin(0, 0, 0, 7)
+      )
+    
+    final_out <- plot_grid(
+      title, scen_plot,
+      ncol = 1,
+      # rel_heights values control vertical title margins
+      rel_heights = c(0.1, 1)
+    )  
+    
+  } else {
+  
   title <- ggdraw() + 
     draw_label(
       name,
@@ -243,6 +268,8 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     # rel_heights values control vertical title margins
     rel_heights = c(0.1, 1)
   )
+  
+    }
   
   }
   

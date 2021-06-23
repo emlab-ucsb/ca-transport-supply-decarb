@@ -181,7 +181,7 @@ load_scenarios_dt = function(oil_px_selection) {
                                      prod_quota_scenario == 'no quota') |
                                   (oil_price_scenario == 'iea oil price' & 
                                      innovation_scenario == 'low innovation' & 
-                                     carbon_price_scenario == 'price floor' & 
+                                     carbon_price_scenario == 'price ceiling' & 
                                      # ccs_scenario == 'medium CCS cost' & ## all CCS
                                      excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'no_setback' &
