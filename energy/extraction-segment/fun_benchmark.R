@@ -73,7 +73,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   
   ccs_cost_scens <- scen_combos[(oil_price_scenario == 'iea oil price' & 
                                     innovation_scenario == 'low innovation' & 
-                                    carbon_price_scenario == 'price floor' & 
+                                    carbon_price_scenario == 'price ceiling' & 
                                     excise_tax_scenario == 'no tax' &
                                     setback_scenario == 'no_setback' &
                                     prod_quota_scenario == 'no quota')]
@@ -146,6 +146,13 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   
   scen_options <- unique(scenarios_df$scenario)
   
+  scenarios_df$option <- factor(scenarios_df$option, levels = c('low oil price', 'iea oil price', 'reference case', 'high oil price', 
+                                                                'low innovation', 'high innovation', 'price floor', 'central SCC', 'price ceiling',
+                                                                'low CCS cost', 'medium CCS cost', 'high CCS cost', 'no_setback', 'setback_1000ft',
+                                                                'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_10', 'quota_20', 'quota_40',
+                                                                'quota_00', 'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
+  
+
   
   plot_scen <- function(scen_choice) {
   
