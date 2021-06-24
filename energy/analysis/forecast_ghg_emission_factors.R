@@ -75,7 +75,7 @@
     fig_line_sor = ggplot(dt_res[field_name %in% fields_sor & year < 2019], aes(x = year, y = upstream_kgCO2e_bbl, group = field_name, color = field_name)) + 
       geom_line() +
       # geom_smooth(method = lm, se = FALSE) +
-      labs(title = 'Linearly regressed emission factors for fields that use steam injection',
+      labs(title = 'Emission factors for fields that use steam injection (2000-2018)',
            subtitle = 'Upstream emission factor (kg CO2e/bbl)',
            x = NULL,
            y = NULL,
@@ -143,7 +143,7 @@
     fig_line_top10 = ggplot(dt_res[field_name %in% fields_top10[, field_name] & year < 2019], aes(x = year, y = upstream_kgCO2e_bbl, group = field_name, color = field_name)) + 
       geom_line() +
       # geom_smooth(method = lm, se = FALSE) +
-      labs(title = 'Linearly regressed emission factors for top 10 producing fields',
+      labs(title = 'Emission factors for top 10 producing fields (2000-2018)',
            subtitle = 'Upstream emission factor (kg CO2e/bbl)',
            x = NULL,
            y = NULL,
