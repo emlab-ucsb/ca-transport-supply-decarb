@@ -6,9 +6,11 @@ library(tidyverse)
 library(data.table)
 library(sf)
 library(maps)
+library(cowplot)
 
 ## path
 proj_dir <- "/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/"
+save_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/extraction_2021-06-22/revised-new-entry-model/benchmark-figs'
 
 ## files
 prod_file    <- "well_prod_m_processed.csv"
@@ -25,11 +27,18 @@ boundaries <- st_read(file.path(proj_dir, "data/GIS/raw/field-boundaries/DOGGR_A
 
 ## counties boundaries
 county_boundaries <- st_read(file.path(proj_dir, "data/GIS/raw/CA_Counties/CA_Counties_TIGER2016.shp")) %>% st_transform(ca_crs) %>%
-  dplyr::select(county_name = NAME)
+  dplyr::select(adj_county_name = NAME)
 
 ## monthly well production
 well_prod <- fread(paste0(proj_dir, "data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                                                'doc_field_code' = 'character'))
+
+## county
+county_lut <- well_prod %>%
+  dplyr::select(doc_field_code, county_name) %>%
+  unique() %>%
+  mutate(adj_county_name = str_remove(county_name, " Offshore"))
+
 ## get 2020 and 2045 field-level production - BAU
 pred_prod <- field_outputs %>%
   filter(year %in% c(2020, 2045) &
@@ -52,7 +61,8 @@ pred_prod <- field_outputs %>%
 ## 2019 prod county
 prod_x_county <- well_prod %>%
   filter(year == 2019) %>%
-  group_by(doc_field_code, doc_fieldname, county_name) %>%
+  left_join(county_lut) %>%
+  group_by(doc_field_code, doc_fieldname, adj_county_name) %>%
   summarise(prod = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
   filter(prod > 0) %>%
@@ -60,7 +70,7 @@ prod_x_county <- well_prod %>%
   mutate(field_total = sum(prod, na.rm = T)) %>%
   ungroup() %>%
   mutate(rel_prod = prod / field_total) %>%
-  dplyr::select(doc_field_code, county_name, rel_prod)
+  dplyr::select(doc_field_code, adj_county_name, rel_prod)
 
 ## get 2019 field-level production, join to pred prod
 prod_comp <- well_prod %>%
@@ -90,10 +100,6 @@ prod_comp3 <- prod_comp2 %>%
 boundary_geom <- boundaries %>%
   dplyr::select(doc_field_code = FIELD_CODE)
 
-## county
-county_lut <- well_prod %>%
-  dplyr::select(doc_field_code, county_name) %>%
-  unique()
 
 prod_comp_map <- prod_comp3 %>%
   left_join(boundary_geom) %>%
@@ -111,23 +117,24 @@ california <- st_make_valid(california)
 ca_cropped <- st_crop(california, xmin = -123, xmax = -117,
                       ymin = 33, ymax = 38)
 
-ggplot() +
-  geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
-  geom_sf(data = prod_comp_map, mapping = aes(geometry = geometry, fill = prod), lwd = 0, show.legend = TRUE) +
-  facet_wrap( ~ year, ncol = 3) +
-  scale_fill_viridis_c(option = "plasma",
-                       name = 'production (bbls)') + 
-  theme_bw() +
-  theme(legend.position = "bottom")
+# ggplot() +
+#   geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
+#   geom_sf(data = prod_comp_map, mapping = aes(geometry = geometry, fill = prod), lwd = 0, show.legend = TRUE) +
+#   facet_wrap( ~ year, ncol = 3) +
+#   scale_fill_viridis_c(option = "plasma",
+#                        name = 'production (bbls)') + 
+#   theme_bw() +
+#   theme(legend.position = "bottom")
   
 ## county-level
 ## ---------------------------------------
 
 county_prod <- well_prod %>%
   filter(year == 2019) %>%
-  group_by(year, county_name) %>%
+  left_join(county_lut) %>%
+  group_by(year, adj_county_name) %>%
   summarise(county_prod = sum(OilorCondensateProduced, na.rm = T)) %>%
-  ungroup()
+  ungroup() 
 
 ## 
 pred_prod_county <- field_outputs %>%
@@ -144,7 +151,7 @@ pred_prod_county <- field_outputs %>%
   ungroup() %>%
   left_join(prod_x_county) %>%
   mutate(county_prod = prod * rel_prod) %>%
-  group_by(year, county_name) %>%
+  group_by(year, adj_county_name) %>%
   summarise(county_prod = sum(prod, na.rm = T)) %>%
   ungroup()
 
@@ -161,7 +168,7 @@ all_county_prod <- rbind(pred_prod_county, county_prod) %>%
 
 ## plot
 all_county_prod_df <- all_county_prod %>%
-  dplyr::select(county_name, diff_2020_2019, rel_2020_2019) %>%
+  dplyr::select(adj_county_name, diff_2020_2019, rel_2020_2019) %>%
   pivot_longer(diff_2020_2019:rel_2020_2019, names_to = 'metric', values_to = 'values') %>%
   mutate(metric = ifelse(metric == 'diff_2020_2019', 'difference (bbls)', '% difference'),
          adj_val = ifelse(metric == 'difference (bbls)', values / 1e6, values * 100)) %>%
@@ -174,16 +181,46 @@ comp_2019_2020_bbls <- ggplot() +
                         high = "blue") +
   labs(title = 'Change in production: 2020 vs 2019',
        fill = 'million bbls') +
+  geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)'), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
   theme_bw() +
   theme(legend.position = "bottom") 
+
+ggsave(comp_2019_2020_bbls, 
+       filename = file.path(save_path, 'delta_county_prod_2019_2020.pdf'), 
+       width = 6, 
+       height = 8)
  
+# comp_2019_2020_perc <- ggplot() +
+#   geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
+#   geom_sf(data = all_county_prod_df %>% filter(metric != 'difference (bbls)'), mapping = aes(geometry = geometry, fill = adj_val), lwd = 0.25, show.legend = TRUE) +
+#   scale_fill_gradient2(midpoint = 0, low = "red", mid = "white",
+#                        high = "blue") +
+#   labs(title = 'Change in production: 2020 vs 2019',
+#        fill = '% change') +
+#   theme_bw() +
+#   theme(legend.position = "bottom") 
+
 comp_2019_2020_perc <- ggplot() +
   geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
-  geom_sf(data = all_county_prod_df %>% filter(metric != 'difference (bbls)'), mapping = aes(geometry = geometry, fill = adj_val), lwd = 0.25, show.legend = TRUE) +
+  geom_sf(data = all_county_prod_df %>% filter(metric != 'difference (bbls)'), mapping = aes(geometry = geometry, fill = asinh(adj_val)), lwd = 0.25, show.legend = TRUE) +
   scale_fill_gradient2(midpoint = 0, low = "red", mid = "white",
                        high = "blue") +
   labs(title = 'Change in production: 2020 vs 2019',
-       fill = '% change') +
+       fill = '% change (asinh)') +
+  geom_sf_text(data = all_county_prod_df %>% filter(metric != 'difference (bbls)'), aes(geometry = geometry, label = paste0(adj_county_name, '\n', round(adj_val), '%')), colour = "black", size = 2) +
   theme_bw() +
   theme(legend.position = "bottom") 
+
+ggsave(comp_2019_2020_perc, 
+       filename = file.path(save_path, 'delta_county_perc_prod_2019_2020.pdf'), 
+       width = 6, 
+       height = 8)
+
+fig_2019_2020_comp <- plot_grid(comp_2019_2020_bbls, comp_2019_2020_perc, nrow = 1)
+
+ggsave(fig_2019_2020_comp, 
+       filename = file.path(save_path, 'comparison_2019_2020_production.pdf'), 
+       width = 12, 
+       height = 8)
+
 
