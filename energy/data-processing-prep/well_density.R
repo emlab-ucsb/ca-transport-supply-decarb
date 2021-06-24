@@ -12,6 +12,7 @@ library(rgdal)
 library(rasterVis)
 library(RColorBrewer)
 library(viridis)
+library(fasterize)
 
 # comment out and add your own machine's file path
 proj_dir <- "/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/"
@@ -168,7 +169,7 @@ st_crs(california) == st_crs(wells_sp)
 r <- raster(california, ca_crs, res = 1000)
 
 ## rasterize
-r_ca <- rasterize(california, r)
+r_ca <- fasterize(california, r)
 
 wells_sp_density <- wells_sp %>%
   filter(WellStatus != "Abeyance")
@@ -180,6 +181,26 @@ well_raster <- rasterize(wells_sp_density %>% dplyr::select(geometry), r, fun='c
 plot(r_ca)
 # plot(boundaries, col = "grey", add = TRUE)
 plot(well_raster, add = TRUE)
+
+## try again with belridge south, smaller size
+## ----------------------------------------------
+
+belridge <- boundaries %>%
+  filter(FIELD_CODE == '052')
+
+st_crs(belridge) == st_crs(wells_sp)
+
+r_bs <- raster(belridge, ca_crs, res = 10)
+
+raster_bs <- rasterize(belridge, r_bs)
+
+bs_sp_density <- wells_sp %>%
+  filter(WellStatus != "Abeyance",
+         FieldName == "Belridge, South")
+
+# well_raster <- rasterize(wells_sp_density %>% dplyr::select(geometry), r, fun='count', background=0)
+bs_well_raster <- rasterize(bs_sp_density %>% dplyr::select(geometry), r_bs, fun='count')
+
 
 ## frequency
 ## ------------------
