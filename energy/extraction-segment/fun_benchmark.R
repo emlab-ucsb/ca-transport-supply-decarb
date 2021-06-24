@@ -8,6 +8,15 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   
   field_out = output_extraction[[2]]
   
+  extract_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T,
+                             colClasses = ('doc_field_code' = 'character'))
+  
+
+  
+  browser()
+  
+  
+  
   ## all scenario combinations
   scen_combos <- unique(state_out[, c('oil_price_scenario', 'innovation_scenario', "carbon_price_scenario", "ccs_scenario", 
                                       "setback_scenario", "prod_quota_scenario", "excise_tax_scenario")])
@@ -114,9 +123,52 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                   ifelse(scenario == 'carbon price scenarios', carbon_price_scenario,
                                          ifelse(scenario == 'CCS cost scenarios', ccs_scenario,
                                                 ifelse(scenario == 'setback scenarios', setback_scenario,
-                                                       ifelse(scenario == 'quota scenarios', prod_quota_scenario, excise_tax_scenario)))))))
+                                                       ifelse(scenario == 'quota scenarios', prod_quota_scenario, excise_tax_scenario))))))) %>%
+    mutate(version = "revised")
 
-
+## repeat for calepa outputs
+## --------------------------------
+  
+  ## all scenarios, cal epa
+  report_df <- rbind(oil_px_scens, innovation_scens, carbon_px_scens, ccs_cost_scens, setback_scens, quota_scens, tax_scens) %>%
+    select(scenario, oil_price_scenario:excise_tax_scenario) %>%
+    left_join(extract_field_out) %>%
+    filter(year >= 2020) %>%
+    mutate(oil_price_scenario = as.character(oil_price_scenario),
+           ccs_scenario = as.character(ccs_scenario)) %>%
+    group_by(scenario, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year, well_type) %>%
+    summarise(new_wells = sum(as.numeric(n_wells), na.rm = T),
+              production_bbl = sum(as.numeric(production_bbl), na.rm = T),
+              ghg_kgCO2e = sum(as.numeric(upstream_kgCO2e), na.rm = T)) %>%
+    ungroup() 
+    
+  report_df2 <- report_df %>%
+    group_by(scenario, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year) %>%
+    summarise(production_bbl = sum(production_bbl, na.rm = T),
+              ghg_kgCO2e = sum(ghg_kgCO2e, na.rm = T),
+              new_wells = sum(new_wells, na.rm = T)) %>%
+    ungroup() %>%
+    mutate(well_type = 'total') %>%
+    rbind(report_df) %>%
+    rename(type = well_type,
+           production_bbls = production_bbl) %>%
+    mutate(ghg_MtCO2e = ghg_kgCO2e / 1e9) %>%
+    mutate(mean_emis_factor = ghg_kgCO2e / production_bbls) %>%
+    mutate(option = ifelse(scenario == 'oil price scenarios', oil_price_scenario,
+                           ifelse(scenario == 'innovation scenarios', innovation_scenario,
+                                  ifelse(scenario == 'carbon price scenarios', carbon_price_scenario,
+                                         ifelse(scenario == 'CCS cost scenarios', ccs_scenario,
+                                                ifelse(scenario == 'setback scenarios', setback_scenario,
+                                                       ifelse(scenario == 'quota scenarios', prod_quota_scenario, excise_tax_scenario))))))) %>%
+    select(scenario, oil_price_scenario:excise_tax_scenario, year, type, production_bbls, new_wells, ghg_kgCO2e, ghg_MtCO2e, mean_emis_factor, option) %>%
+    mutate(version = "calepa",
+           year = as.integer(year)) 
+  
+  
+  ## all
+  all_scenarios_df <- rbind(report_df2, scenarios_df)
+  
+  
   # plot theme --------------------
   
   theme_line =  
@@ -144,9 +196,11 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
           legend.position = 'bottom',
     )
   
-  scen_options <- unique(scenarios_df$scenario)
+  scen_options <- c("oil price scenarios", "innovation scenarios", "carbon price scenarios", "CCS cost scenarios", 
+                    "setback scenarios", "quota scenarios", "tax scenarios")
   
-  scenarios_df$option <- factor(scenarios_df$option, levels = c('low oil price', 'iea oil price', 'reference case', 'high oil price', 
+  
+  all_scenarios_df$option <- factor(all_scenarios_df$option, levels = c('low oil price', 'iea oil price', 'reference case', 'high oil price', 
                                                                 'low innovation', 'high innovation', 'price floor', 'central SCC', 'price ceiling',
                                                                 'low CCS cost', 'medium CCS cost', 'high CCS cost', 'no_setback', 'setback_1000ft',
                                                                 'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_40', 'quota_20', 'quota_10', 'quota_00', 
@@ -165,9 +219,10 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     else {name <- scen_options[7]}
     
   # new well entry
-  new_wells_fig = ggplot(scenarios_df %>% filter(scenario == name,
+  new_wells_fig = ggplot(all_scenarios_df %>% filter(scenario == name,
                                                  type == 'total'), 
-                         aes(x = year, y = new_wells, color = option)) + 
+                         aes(x = year, y = new_wells, color = option, lty = version)) + 
+    scale_linetype_manual(values = c('calepa' = 'dotted', 'revised' = 'solid')) +
     geom_line(alpha = 0.7, size = 1) +
     labs(title = 'State-level new wells',
          # subtitle = 'number of new wells', 
@@ -179,9 +234,10 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     theme_line 
   
   # oil production
-  oil_prod_fig = ggplot(scenarios_df %>% filter(scenario == name,
+  oil_prod_fig = ggplot(all_scenarios_df %>% filter(scenario == name,
                                                 type == 'total'), 
-                         aes(x = year, y = production_bbls / 1e6, color = option)) + 
+                         aes(x = year, y = production_bbls / 1e6, color = option, lty = version)) + 
+    scale_linetype_manual(values = c('calepa' = 'dotted', 'revised' = 'solid')) +
     geom_line(alpha = 0.7, size = 1) +
     labs(title = 'State-level oil production',
          # subtitle = 'million barrels', 
@@ -193,9 +249,10 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     theme_line
   
   # ghg
-  ghg_fig = ggplot(scenarios_df %>% filter(scenario == name,
+  ghg_fig = ggplot(all_scenarios_df %>% filter(scenario == name,
                                           type == 'total'), 
-                        aes(x = year, y = ghg_MtCO2e, color = option)) + 
+                        aes(x = year, y = ghg_MtCO2e, color = option, lty = version)) +
+    scale_linetype_manual(values = c('calepa' = 'dotted', 'revised' = 'solid')) +
     geom_line(alpha = 0.7, size = 1) +
     labs(title = 'State-level GHG emissions',
          # subtitle = 'MtCO2e', 
@@ -207,9 +264,10 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     theme_line
   
   # mean ghg emissions
-  mean_ghg_fig = ggplot(scenarios_df %>% filter(scenario == name,
+  mean_ghg_fig = ggplot(all_scenarios_df %>% filter(scenario == name,
                                            type == 'total'), 
-                   aes(x = year, y = mean_emis_factor, color = option)) + 
+                   aes(x = year, y = mean_emis_factor, color = option, lty = version)) + 
+    scale_linetype_manual(values = c('calepa' = 'dotted', 'revised' = 'solid')) +
     geom_line(alpha = 0.7, size = 1) +
     labs(title = 'Average GHG emissions factor',
          # subtitle = 'kgCO2e per barrel', 
