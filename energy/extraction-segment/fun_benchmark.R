@@ -149,8 +149,8 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   scenarios_df$option <- factor(scenarios_df$option, levels = c('low oil price', 'iea oil price', 'reference case', 'high oil price', 
                                                                 'low innovation', 'high innovation', 'price floor', 'central SCC', 'price ceiling',
                                                                 'low CCS cost', 'medium CCS cost', 'high CCS cost', 'no_setback', 'setback_1000ft',
-                                                                'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_10', 'quota_20', 'quota_40',
-                                                                'quota_00', 'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
+                                                                'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_40', 'quota_20', 'quota_10', 'quota_00', 
+                                                                'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
   
 
   
