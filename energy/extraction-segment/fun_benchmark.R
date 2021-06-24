@@ -10,10 +10,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   
   extract_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T,
                              colClasses = ('doc_field_code' = 'character'))
-  
 
-  
-  browser()
   
   
   
