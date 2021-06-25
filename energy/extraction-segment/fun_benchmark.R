@@ -330,7 +330,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   all_county_prod_df <- all_county_prod %>%
     pivot_longer(diff_2045_2019:rel_2045_2019, names_to = 'metric', values_to = 'values') %>%
     mutate(metric = ifelse(metric == 'diff_2045_2019', 'difference (bbls)', '% difference'),
-           adj_val = ifelse(metric == 'difference (bbls)', values / 1e6, values * 100))  %>%
+           adj_val = ifelse(metric == 'difference (bbls)', values / 1e6, values * 100)) %>%
     left_join(county_boundaries) 
   
   
@@ -387,8 +387,10 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     save_info_path_sp = file.path(save_info_path, "spatial-figs")
     dir.create(save_info_path_sp, showWarnings = FALSE)
     
+    save_name <- gsub(" ", "_", name)
+    
     ## save figures
-    comp_fname = paste0('change_prod_county_', name, '.pdf')
+    comp_fname = paste0('change_prod_county_', save_name, '.pdf')
     ggsave(fig_comp, 
            filename = file.path(save_info_path_sp, 'spatial-figs', comp_fname), 
            width = 20, 
