@@ -333,6 +333,12 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
            adj_val = ifelse(metric == 'difference (bbls)', values / 1e6, values * 100)) %>%
     left_join(county_boundaries) 
   
+  all_county_prod_df$option <- factor(all_county_prod_df$option, levels = c('low oil price', 'iea oil price', 'reference case', 'high oil price', 
+                                                                        'low innovation', 'high innovation', 'price floor', 'central SCC', 'price ceiling',
+                                                                        'low CCS cost', 'medium CCS cost', 'high CCS cost', 'no_setback', 'setback_1000ft',
+                                                                        'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_40', 'quota_20', 'quota_10', 'quota_00', 
+                                                                        'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
+  
   
   plot_scen <- function(scen_choice) {
   
@@ -343,62 +349,6 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     else if(scen_choice == 5) {name <- scen_options[5]}
     else if(scen_choice == 6) {name <- scen_options[6]}
     else {name <- scen_options[7]}
-    
-  
-    ##############################################
-    ## save spatial fis
-    ###############################################
-    
-    ## spatial fig - bbls
-    comp_bbls <- ggplot() +
-      geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
-      geom_sf(data = all_county_prod_df %>% filter(metric == 'difference (bbls)',
-                                                   scenario == name), mapping = aes(geometry = geometry, fill = adj_val), lwd = 0.25, show.legend = TRUE) +
-      scale_fill_gradient2(midpoint = 0, low = "red", mid = "white",
-                           high = "blue") +
-      labs(title = name,
-           fill = 'million bbls',
-           x = NULL,
-           y = NULL) +
-      facet_wrap(~option, ncol = 1) +
-      geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-      theme_bw() +
-      theme(legend.position = "bottom") 
-    
-    
-    ## spacial fig perc
-    comp_perc <- ggplot() +
-      geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
-      geom_sf(data = all_county_prod_df %>% filter(metric != 'difference (bbls)', scenario == name), mapping = aes(geometry = geometry, fill = adj_val), lwd = 0.25, show.legend = TRUE) +
-      scale_fill_gradient2(midpoint = 0, low = "red", mid = "white",
-                           high = "blue") +
-      facet_wrap(~option, ncol = 1) +
-      labs(title = name,
-           fill = '% change',
-           x = NULL,
-           y = NULL) +
-      geom_sf_text(data = all_county_prod_df %>% filter(metric != 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n', round(adj_val), '%')), colour = "black", size = 2) +
-      theme_bw() +
-      theme(legend.position = "bottom") 
-    
-    fig_comp <- plot_grid(comp_bbls, comp_perc, ncol = 2)
-    
-    
-    save_info_path_sp = file.path(save_info_path, "spatial-figs")
-    dir.create(save_info_path_sp, showWarnings = FALSE)
-    
-    save_name <- gsub(" ", "_", name)
-    
-    ## save figures
-    comp_fname = paste0('change_prod_county_', save_name, '.pdf')
-    ggsave(fig_comp, 
-           filename = file.path(save_info_path_sp, 'spatial-figs', comp_fname), 
-           width = 20, 
-           height = 30)
-    
-    embed_fonts(file.path(save_info_path_sp, comp_fname),
-                outfile = file.path(save_info_path_sp, 'spatial-figs', comp_fname))
-    print(paste0('Saved sp benchmark figure to ', comp_fname))  
     
   
   ### the benchmark figs
@@ -561,6 +511,83 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
               outfile = file.path(save_info_path, policy_fname))
   print(paste0('Saved diagnostic figures to ', policy_fname))
 
-
+  
+  ##############################################
+  ## save spatial fis
+  ###############################################
+  
+  plot_sp_figs <- function(scen_choice) {
+    
+    if(scen_choice == 1) {name <- scen_options[1]} 
+    else if(scen_choice == 2) {name <- scen_options[2]}
+    else if(scen_choice == 3) {name <- scen_options[3]}
+    else if(scen_choice == 4) {name <- scen_options[4]}
+    else if(scen_choice == 5) {name <- scen_options[5]}
+    else if(scen_choice == 6) {name <- scen_options[6]}
+    else {name <- scen_options[7]}
+  
+  
+    ## spatial fig - bbls
+    comp_bbls <- ggplot() +
+      geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
+      geom_sf(data = all_county_prod_df %>% filter(metric == 'difference (bbls)',
+                                                   scenario == name), mapping = aes(geometry = geometry, fill = adj_val), lwd = 0.25, show.legend = TRUE) +
+      scale_fill_gradient2(midpoint = 0, low = "red", mid = "white",
+                           high = "blue") +
+      labs(title = name,
+           fill = 'million bbls',
+           x = NULL,
+           y = NULL) +
+      facet_wrap(~option, ncol = 1) +
+      geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
+      theme_bw() +
+      theme(legend.position = "bottom") 
+    
+    
+    ## spacial fig perc
+    comp_perc <- ggplot() +
+      geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
+      geom_sf(data = all_county_prod_df %>% filter(metric != 'difference (bbls)', scenario == name), mapping = aes(geometry = geometry, fill = adj_val), lwd = 0.25, show.legend = TRUE) +
+      scale_fill_gradient2(midpoint = 0, low = "red", mid = "white",
+                           high = "blue") +
+      facet_wrap(~option, ncol = 1) +
+      labs(title = name,
+           fill = '% change',
+           x = NULL,
+           y = NULL) +
+      geom_sf_text(data = all_county_prod_df %>% filter(metric != 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n', round(adj_val), '%')), colour = "black", size = 2) +
+      theme_bw() +
+      theme(legend.position = "bottom") 
+    
+    fig_comp <- plot_grid(comp_bbls, comp_perc, ncol = 2)
+    
+    
+    save_info_path_sp = file.path(save_info_path, "spatial-figs")
+    dir.create(save_info_path_sp, showWarnings = FALSE)
+    
+    save_name <- gsub(" ", "_", name)
+    
+    ## save figures
+    comp_fname = paste0('change_prod_county_', save_name, '.pdf')
+    ggsave(fig_comp, 
+           filename = file.path(save_info_path_sp, 'spatial-figs', comp_fname), 
+           width = 20, 
+           height = 30)
+    
+    embed_fonts(file.path(save_info_path_sp, comp_fname),
+                outfile = file.path(save_info_path_sp, 'spatial-figs', comp_fname))
+    print(paste0('Saved sp benchmark figure to ', comp_fname))  
+    
+  }
+  
+  sp1 <- plot_scen(1)
+  sp2 <- plot_scen(2)
+  sp3 <- plot_scen(3)
+  sp4 <- plot_scen(4)
+  sp5 <- plot_scen(5)
+  sp6 <- plot_scen(6)
+  sp7 <- plot_scen(7)
+  
+  
   
 } 
