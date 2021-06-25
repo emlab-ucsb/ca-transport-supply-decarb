@@ -580,13 +580,13 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     
   }
   
-  sp1 <- plot_scen(1)
-  sp2 <- plot_scen(2)
-  sp3 <- plot_scen(3)
-  sp4 <- plot_scen(4)
-  sp5 <- plot_scen(5)
-  sp6 <- plot_scen(6)
-  sp7 <- plot_scen(7)
+  sp1 <- plot_sp_figs(1)
+  sp2 <- plot_sp_figs(2)
+  sp3 <- plot_sp_figs(3)
+  sp4 <- plot_sp_figs(4)
+  sp5 <- plot_sp_figs(5)
+  sp6 <- plot_sp_figs(6)
+  sp7 <- plot_sp_figs(7)
   
   
   
