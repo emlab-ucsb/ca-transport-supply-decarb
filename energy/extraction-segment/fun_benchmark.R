@@ -265,6 +265,12 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
           legend.position = 'bottom',
     )
   
+  
+  # save info file
+  save_info_path = file.path(save_path, run_type, "benchmark-figs")
+  dir.create(save_info_path, showWarnings = FALSE)
+  print(paste0("Creating benchmark figures to save in ", save_info_path))
+  
   scen_options <- c("oil price scenarios", "innovation scenarios", "carbon price scenarios", "CCS cost scenarios", 
                     "setback scenarios", "quota scenarios", "tax scenarios")
   
@@ -377,15 +383,19 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     
     fig_comp <- plot_grid(comp_bbls, comp_perc, ncol = 2)
     
+    
+    save_info_path_sp = file.path(save_info_path, "spatial-figs")
+    dir.create(save_info_path_sp, showWarnings = FALSE)
+    
     ## save figures
     comp_fname = paste0('change_prod_county_', name, '.pdf')
     ggsave(fig_comp, 
-           filename = file.path(save_info_path, 'spatial-figs', comp_fname), 
+           filename = file.path(save_info_path_sp, 'spatial-figs', comp_fname), 
            width = 20, 
            height = 30)
     
-    embed_fonts(file.path(save_info_path, comp_fname),
-                outfile = file.path(save_info_path, 'spatial-figs', comp_fname))
+    embed_fonts(file.path(save_info_path_sp, comp_fname),
+                outfile = file.path(save_info_path_sp, 'spatial-figs', comp_fname))
     print(paste0('Saved sp benchmark figure to ', comp_fname))  
     
   
@@ -526,11 +536,6 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   policy_plot <- plot_grid(p5, p6, p7, ncol = 1)
   
   # save figures  -----
-  
-  # save info file
-  save_info_path = file.path(save_path, run_type, "benchmark-figs")
-  dir.create(save_info_path, showWarnings = FALSE)
-  print(paste0("Saving benchmark figures to ", save_info_path))
   
   # save figures ----
   macro_fname = paste0(oil_price_selection, '_macro_fig.pdf')
