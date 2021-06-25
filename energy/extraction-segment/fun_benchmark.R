@@ -38,6 +38,9 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   ## monthly well production
   well_prod <- fread(paste0(proj_dir, "data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                                                  'doc_field_code' = 'character'))
+  
+  
+  
   ## county
   county_lut <- well_prod %>%
     dplyr::select(doc_field_code, county_name) %>%
@@ -57,13 +60,19 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     mutate(rel_prod = prod / field_total) %>%
     dplyr::select(doc_field_code, adj_county_name, rel_prod)
   
-  ## county prod
-  county_prod <- well_prod %>%
+  ## county prod for 2019
+  county_prod_2019 <- well_prod %>%
     filter(year == 2019) %>%
-    left_join(county_lut) %>%
+    group_by(doc_field_code, year) %>%
+    summarise(prod = sum(OilorCondensateProduced, na.rm = T)) %>%
+    ungroup() %>%
+    left_join(prod_x_county) %>%
+    mutate(county_prod = prod * rel_prod) %>%
     group_by(year, adj_county_name) %>%
-    summarise(county_prod = sum(OilorCondensateProduced, na.rm = T)) %>%
+    summarise(county_prod = sum(county_prod, na.rm = T)) %>%
     ungroup() 
+  
+  sum(county_prod_2019$county_prod)
   
   
   ## all scenario combinations
@@ -271,35 +280,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   ## change in production 2019 vs 2045 by county
   pred_prod_county <- rbind(oil_px_scens, innovation_scens, carbon_px_scens, ccs_cost_scens, setback_scens, quota_scens, tax_scens) %>%
     select(scenario, oil_price_scenario:excise_tax_scenario) %>%
-    left_join(field_out) %>%
-    filter(year == 2045) %>%
-    group_by(scenario, year, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code, doc_fieldname) %>%
-    summarise(prod = sum(total_prod_bbl, na.rm = T)) %>%
-    ungroup() %>%
-    left_join(prod_x_county) %>%
-    mutate(county_prod = prod * rel_prod) %>%
-    group_by(scenario, year, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, adj_county_name) %>%
-    summarise(county_prod = sum(county_prod, na.rm = T)) %>%
-    ungroup()
-  
-  ## all county
-  all_county_prod <- rbind(oil_px_scens, innovation_scens, carbon_px_scens, ccs_cost_scens, setback_scens, quota_scens, tax_scens) %>%
-    select(scenario, oil_price_scenario:excise_tax_scenario) %>%
-    mutate(year = 2019) %>%
-    full_join(county_prod) %>%
-    rbind(pred_prod_county) %>%
-    mutate(year = paste0('x', year)) %>%
-    pivot_wider(names_from = year, values_from = county_prod) %>%
-    mutate(diff_2045_2019 = x2045 - x2019,
-           rel_2045_2019 = diff_2045_2019 / x2019)
-  left_join(county_boundaries)
-  
-  ## plot
-  all_county_prod_df <- all_county_prod %>%
-    pivot_longer(diff_2045_2019:rel_2045_2019, names_to = 'metric', values_to = 'values') %>%
-    mutate(metric = ifelse(metric == 'diff_2045_2019', 'difference (bbls)', '% difference'),
-           adj_val = ifelse(metric == 'difference (bbls)', values / 1e6, values * 100)) %>%
-    mutate(innovation_scenario = as.character(innovation_scenario),
+    mutate(ccs_scenario = as.character(ccs_scenario),
            oil_price_scenario = as.character(oil_price_scenario)) %>%
     mutate(option = ifelse(scenario == 'oil price scenarios', oil_price_scenario,
                            ifelse(scenario == 'innovation scenarios', innovation_scenario,
@@ -307,6 +288,43 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                          ifelse(scenario == 'CCS cost scenarios', ccs_scenario,
                                                 ifelse(scenario == 'setback scenarios', setback_scenario,
                                                        ifelse(scenario == 'quota scenarios', prod_quota_scenario, excise_tax_scenario))))))) %>%
+    left_join(field_out) %>%
+    filter(year == 2045) %>%
+    left_join(prod_x_county) %>%
+    mutate(county_prod = total_prod_bbl * rel_prod) %>%
+    group_by(scenario, year, option, adj_county_name) %>%
+    summarise(county_prod = sum(county_prod, na.rm = T)) %>%
+    ungroup()
+    
+  
+  ## all county
+  all_county_prod <- rbind(oil_px_scens, innovation_scens, carbon_px_scens, ccs_cost_scens, setback_scens, quota_scens, tax_scens) %>%
+    select(scenario, oil_price_scenario:excise_tax_scenario) %>%
+    mutate(year = 2019) %>%
+    mutate(ccs_scenario = as.character(ccs_scenario),
+           oil_price_scenario = as.character(oil_price_scenario)) %>%
+    mutate(option = ifelse(scenario == 'oil price scenarios', oil_price_scenario,
+                           ifelse(scenario == 'innovation scenarios', innovation_scenario,
+                                  ifelse(scenario == 'carbon price scenarios', carbon_price_scenario,
+                                         ifelse(scenario == 'CCS cost scenarios', ccs_scenario,
+                                                ifelse(scenario == 'setback scenarios', setback_scenario,
+                                                       ifelse(scenario == 'quota scenarios', prod_quota_scenario, excise_tax_scenario))))))) %>%
+    dplyr::select(scenario, option, year) %>%
+    left_join(county_prod_2019) %>%
+    rbind(pred_prod_county) %>%
+    mutate(year = paste0('x', year)) %>%
+    pivot_wider(names_from = year, values_from = county_prod) %>%
+    mutate(x2019 = ifelse(is.na(x2019), 0, x2019),
+           x2045 = ifelse(is.na(x2045), 0, x2045)) %>%
+    mutate(diff_2045_2019 = x2045 - x2019,
+           rel_2045_2019 = diff_2045_2019 / x2019) %>%
+    filter(!is.na(rel_2045_2019)) 
+  
+  ## plot
+  all_county_prod_df <- all_county_prod %>%
+    pivot_longer(diff_2045_2019:rel_2045_2019, names_to = 'metric', values_to = 'values') %>%
+    mutate(metric = ifelse(metric == 'diff_2045_2019', 'difference (bbls)', '% difference'),
+           adj_val = ifelse(metric == 'difference (bbls)', values / 1e6, values * 100))  %>%
     left_join(county_boundaries) 
   
   
@@ -322,10 +340,9 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     
   
     ##############################################
-    ## now do spatial figs
+    ## save spatial fis
     ###############################################
     
-  
     ## spatial fig - bbls
     comp_bbls <- ggplot() +
       geom_sf(data = california, mapping = aes(fill = NULL), show.legend = FALSE) +
@@ -363,15 +380,18 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     ## save figures
     comp_fname = paste0('change_prod_county_', name, '.pdf')
     ggsave(fig_comp, 
-           filename = file.path(save_info_path, comp_fname), 
+           filename = file.path(save_info_path, 'spatial-figs', comp_fname), 
            width = 20, 
            height = 30)
     
     embed_fonts(file.path(save_info_path, comp_fname),
-                outfile = file.path(save_info_path, comp_fname))
+                outfile = file.path(save_info_path, 'spatial-figs', comp_fname))
     print(paste0('Saved sp benchmark figure to ', comp_fname))  
     
-    
+  
+  ### the benchmark figs
+  ### ------------------------------------------------------
+      
   # new well entry
   new_wells_fig = ggplot(all_scenarios_df %>% filter(scenario == name,
                                                  type == 'total'), 
