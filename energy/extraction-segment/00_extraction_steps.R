@@ -37,6 +37,9 @@
   library(data.table)
   library(hrbrthemes)
   library(tidyverse)
+  library(sf)
+  library(maps)
+  library(cowplot)
 
 # step 1: run extraction model and get outputs -------
   
