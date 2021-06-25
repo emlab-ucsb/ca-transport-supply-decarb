@@ -198,7 +198,7 @@ comp_2019_2020_bbls <- ggplot() +
   theme(legend.position = "bottom") 
 
 ggsave(comp_2019_2020_bbls, 
-       filename = file.path(save_path, 'delta_county_prod_2019_2020.pdf'), 
+       filename = file.path(save_path, 'spatial-figs/delta_county_prod_2019_2020.pdf'), 
        width = 6, 
        height = 8)
  
@@ -219,14 +219,14 @@ comp_2019_2020_perc <- ggplot() +
   theme(legend.position = "bottom") 
 
 ggsave(comp_2019_2020_perc, 
-       filename = file.path(save_path, 'delta_county_perc_prod_2019_2020.pdf'), 
+       filename = file.path(save_path, 'spatial-figs/delta_county_perc_prod_2019_2020.pdf'), 
        width = 6, 
        height = 8)
 
 fig_2019_2020_comp <- plot_grid(comp_2019_2020_bbls, comp_2019_2020_perc, nrow = 1)
 
 ggsave(fig_2019_2020_comp, 
-       filename = file.path(save_path, 'comparison_2019_2020_production.pdf'), 
+       filename = file.path(save_path, 'spatial-figs/comparison_2019_2020_production.pdf'), 
        width = 12, 
        height = 8)
 
