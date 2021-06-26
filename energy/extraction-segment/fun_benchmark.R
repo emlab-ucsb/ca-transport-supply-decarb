@@ -534,14 +534,15 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                                    scenario == name), mapping = aes(geometry = geometry, fill = adj_val), lwd = 0.25, show.legend = TRUE) +
       scale_fill_gradient2(midpoint = 0, low = "red", mid = "white",
                            high = "blue") +
-      labs(title = name,
+      labs(title = paste0(name, ' - 2045 vs. 2019'),
            fill = 'million bbls',
            x = NULL,
            y = NULL) +
       facet_wrap(~option, ncol = 1) +
       geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
       theme_bw() +
-      theme(legend.position = "bottom") 
+      theme(legend.position = "bottom",
+            axis.ticks = element_blank()) 
     
     
     ## spacial fig perc
@@ -551,13 +552,14 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
       scale_fill_gradient2(midpoint = 0, low = "red", mid = "white",
                            high = "blue") +
       facet_wrap(~option, ncol = 1) +
-      labs(title = name,
+      labs(title = paste0(name, ' - 2045 vs. 2019'),
            fill = '% change',
            x = NULL,
            y = NULL) +
       geom_sf_text(data = all_county_prod_df %>% filter(metric != 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n', round(adj_val), '%')), colour = "black", size = 2) +
       theme_bw() +
-      theme(legend.position = "bottom") 
+      theme(legend.position = "bottom",
+            axis.ticks = element_blank()) 
     
     fig_comp <- plot_grid(comp_bbls, comp_perc, ncol = 2)
     
@@ -570,15 +572,16 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
     ## save figures
     comp_fname = paste0('change_prod_county_', save_name, '.pdf')
     ggsave(fig_comp, 
-           filename = file.path(save_info_path_sp, 'spatial-figs', comp_fname), 
+           filename = file.path(save_info_path_sp, comp_fname), 
            width = 20, 
            height = 30)
     
     embed_fonts(file.path(save_info_path_sp, comp_fname),
-                outfile = file.path(save_info_path_sp, 'spatial-figs', comp_fname))
+                outfile = file.path(save_info_path_sp, comp_fname))
     print(paste0('Saved sp benchmark figure to ', comp_fname))  
     
   }
+  
   
   sp1 <- plot_sp_figs(1)
   sp2 <- plot_sp_figs(2)

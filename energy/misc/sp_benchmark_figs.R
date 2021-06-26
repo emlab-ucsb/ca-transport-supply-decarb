@@ -11,7 +11,12 @@ library(scales)
 
 ## path
 proj_dir <- "/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/"
-save_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/extraction_2021-06-24/revised-new-entry-model/benchmark-figs'
+
+## output folder
+output_folder <- 'outputs/predict-production/extraction_2021-06-25/revised-new-entry-model/'
+
+## save path
+save_path <- paste0(proj_dir, output_folder, 'benchmark-figs/')
 
 ## files
 prod_file    <- "well_prod_m_processed.csv"
@@ -21,7 +26,7 @@ prod_file    <- "well_prod_m_processed.csv"
 ca_crs <- 3488
 
 ## read in outputs from most recent run
-field_outputs <- fread(paste0(proj_dir, "outputs/predict-production/extraction_2021-06-24/revised-new-entry-model/benchmark-field-level-results.csv"), colClasses = c('doc_field_code' = 'character'))
+field_outputs <- fread(paste0(proj_dir, output_folder, "benchmark-field-level-results.csv"), colClasses = c('doc_field_code' = 'character'))
 
 ## boundaries
 boundaries <- st_read(file.path(proj_dir, "data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp")) %>% st_transform(ca_crs)
@@ -197,10 +202,10 @@ comp_2019_2020_bbls <- ggplot() +
   theme_bw() +
   theme(legend.position = "bottom") 
 
-ggsave(comp_2019_2020_bbls, 
-       filename = file.path(save_path, 'spatial-figs/delta_county_prod_2019_2020.pdf'), 
-       width = 6, 
-       height = 8)
+# ggsave(comp_2019_2020_bbls, 
+#        filename = file.path(save_path, 'spatial-figs/delta_county_prod_2019_2020.pdf'), 
+#        width = 6, 
+#        height = 8)
  
 ## perc
 
@@ -218,10 +223,10 @@ comp_2019_2020_perc <- ggplot() +
   theme_bw() +
   theme(legend.position = "bottom") 
 
-ggsave(comp_2019_2020_perc, 
-       filename = file.path(save_path, 'spatial-figs/delta_county_perc_prod_2019_2020.pdf'), 
-       width = 6, 
-       height = 8)
+# ggsave(comp_2019_2020_perc, 
+#        filename = file.path(save_path, 'spatial-figs/delta_county_perc_prod_2019_2020.pdf'), 
+#        width = 6, 
+#        height = 8)
 
 fig_2019_2020_comp <- plot_grid(comp_2019_2020_bbls, comp_2019_2020_perc, nrow = 1)
 
@@ -231,6 +236,6 @@ ggsave(fig_2019_2020_comp,
        height = 8)
 
 ## which fiels are driving large changes?
-field_county_df <- prod_comp3 %>%
-  left_join(county_lut)
+# field_county_df <- prod_comp3 %>%
+#   left_join(county_lut)
 
