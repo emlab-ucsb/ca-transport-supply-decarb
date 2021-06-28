@@ -13,7 +13,6 @@
   setback_path    = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/'
   w_setback_file  = 'wells_in_setbacks_revised.csv'
 
-
 # outputs ------
   
   save_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/production_with_exit/'
@@ -102,7 +101,7 @@
   
   
   fwrite(n_well_df, paste0(save_path, 'n_well_setback_revised.csv'))
-
+  
   ## original objv
   # op_wells_agg = op_wells[, .(annual_bbl_recent = sum(as.numeric(oil_prod), na.rm = T),
   #                             op_no_wells = uniqueN(api_ten_digit, na.rm = T)),  by = .(doc_field_code, doc_fieldname, vintage)]
@@ -148,6 +147,9 @@
     # dt_pred[, fv_final_year_prod := mean_final_yr_prod_adj * no_wells]
     dt_pred[, fv_final_year_prod := mean_final_yr_prod_adj * adj_no_wells]
 
+  # track no. of wells that exit from each field in each year - RL
+    dt_pred$exit_year <- 0
+      
 # loop to calculate production at each year -----
     
   for (i in seq_along(fullrange) ) {
@@ -159,12 +161,27 @@
     dt_pred[! is.na(b), col :=  ifelse(y < 1978 + int_yr,
                                         hypfunc(b, y - start_year, peak_tot_prod, D),
                                         expfunc(peak_tot_prod, d, y - start_year))  ]
+    
+    # Track no. wells that exit
+    dt_pred[, exit_year := ifelse(exit_year==0, ifelse(col < fv_final_year_prod,
+                                                  y,
+                                                  exit_year),
+                                  exit_year)
+                            ]
     dt_pred[, col := ifelse(col < fv_final_year_prod,
                             0,
                             col)]
     colnames(dt_pred)[ncol(dt_pred)] = y
-    
   }
+
+# extract well exits - RL
+    well_exits <- dt_pred[, c('doc_field_code', 'doc_fieldname', 'start_year', 'setback_scenario', 'no_wells', 'adj_no_wells', 'exit_year')]
+    well_exits[, no_exits := ifelse(exit_year==0, 0, adj_no_wells)]
+    
+    well_exits1 <- well_exits[, .(no_exits_field = sum(no_exits)),  by = .(setback_scenario, doc_field_code, doc_fieldname, exit_year)]
+    fwrite(well_exits1, paste0(save_path, 'well_exits_under_rule.csv'))
+
+    dt_pred <- dt_pred [, exit_year:=NULL]        
     
 # convert to long ------
   
