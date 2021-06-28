@@ -16,6 +16,7 @@
 # outputs ------
   
   save_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/production_with_exit/'
+  save_exit_path  = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/exit/'
   
 # load libraries -------- 
   
@@ -179,7 +180,7 @@
     well_exits[, no_exits := ifelse(exit_year==0, 0, adj_no_wells)]
     
     well_exits1 <- well_exits[, .(no_exits_field = sum(no_exits)),  by = .(setback_scenario, doc_field_code, doc_fieldname, exit_year)]
-    fwrite(well_exits1, paste0(save_path, 'well_exits_under_rule.csv'))
+    fwrite(well_exits1, paste0(save_exit_path, 'well_exits_under_rule.csv'))
 
     dt_pred <- dt_pred [, exit_year:=NULL]        
     
