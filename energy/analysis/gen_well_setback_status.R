@@ -154,7 +154,7 @@ View(wells_within_df_all %>%
        summarise(n = n()) %>%
        ungroup())
 
-## mske sure that the number of wells within larger buffers are increasing
+## make sure that the number of wells within larger buffers are increasing
 wells_within_df_all %>%
        group_by(setback_scenario) %>%
        summarise(wells_within = sum(within_setback)) 
