@@ -313,9 +313,35 @@ View(field_boundaries2 %>%
        summarise(n = n()) %>%
        ungroup())
 
+## add number of wells to each field
+n_wells <- sf::st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/allwells_gis/Wells_All.shp")) %>% 
+  st_drop_geometry() %>%
+  filter(!WellStatus %in% c("Abeyance")) %>%
+  group_by(FieldName) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  rename(NAME = FieldName)
+
+
+## get ready to rename
+anti_join(n_wells %>% dplyr::select(NAME) %>% unique(), field_boundaries2 %>% dplyr::select(NAME) %>% unique())
+anti_join(field_boundaries2 %>% dplyr::select(NAME) %>% unique(), n_wells %>% dplyr::select(NAME) %>% unique())
+
+
+## group by field, count
+n_wells2 <- n_wells %>%
+  mutate(NAME = ifelse(NAME == "Goleta", "Goleta (ABD)",
+                       ifelse(NAME == "Jerry Slough (ABD)", "Jerry Slough",
+                              ifelse(NAME == "Newgate", "Newgate (ABD)", NAME))))
+  
+
+field_boundaries3 <- field_boundaries2 %>%
+  left_join(n_wells2) %>%
+  rename(n_wells = n)
+
 # save output
 
-write_csv(field_boundaries2, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage_R.csv"))
+write_csv(field_boundaries3, file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage_R.csv"))
 
 
 ## save maps for examining
