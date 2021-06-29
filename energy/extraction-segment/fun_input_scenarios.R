@@ -77,7 +77,8 @@ load_scenarios_dt = function(oil_px_selection) {
   
   # load setback coverage file
   setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
-  setback_scens <- setback_scens[, c("doc_field_code", "setback_scenario", "rel_coverage")]
+  setback_scens[, scen_area_m2 := orig_area_m2 *  (1 - rel_coverage)]
+  setback_scens <- setback_scens[, c("doc_field_code", "setback_scenario", "orig_area_m2", "scen_area_m2", "rel_coverage")]
   setnames(setback_scens, 'rel_coverage', 'area_coverage')
   setback_scens[, setback_scenario := fifelse(setback_scenario == "no_setback", setback_scenario, paste0(setback_scenario, "ft"))]
   
@@ -215,7 +216,7 @@ load_scenarios_dt = function(oil_px_selection) {
   setcolorder(scenarios_dt, c('year', 'doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                               'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'oil_price_usd_per_bbl', 'innovation_multiplier', 
                               'carbon_price_usd_per_kg', 'ccs_price_usd_per_kg',
-                              'area_coverage', 'quota', 'tax', 'm_opex_imputed', 'm_capex_imputed', 'wm_opex_imputed', 
+                              'orig_area_m2', 'scen_area_m2', 'area_coverage', 'quota', 'tax', 'm_opex_imputed', 'm_capex_imputed', 'wm_opex_imputed', 
                               'wm_capex_imputed', 'resource', 'upstream_kgCO2e_bbl'))
   
   return(scenarios_dt)

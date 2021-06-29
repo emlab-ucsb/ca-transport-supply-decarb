@@ -293,7 +293,9 @@ run_extraction_model <- function(oil_px_selection) {
       for (i in seq_along(pred_years)) {
         
         t = pred_years[i]
+        
         # print(t)
+        browser()
       
         ## set up variables for all fields
         new_wells = dt_info_z[year == t]
