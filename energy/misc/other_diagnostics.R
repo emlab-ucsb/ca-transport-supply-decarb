@@ -31,6 +31,13 @@ entry_dt = fread(file.path(outputs_path, entry_file), header = T, colClasses = c
 well_prod <- fread(paste0(proj_dir, "data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                                                'doc_field_code' = 'character'))
 
+## county
+county_lut <- well_prod %>%
+  dplyr::select(doc_field_code, county_name) %>%
+  unique() %>%
+  mutate(adj_county_name = str_remove(county_name, " Offshore"))
+
+
 ## for 2020 produciton
 ## read in outputs from most recent run
 field_outputs <- fread(paste0(proj_dir, "outputs/predict-production/extraction_2021-06-24/revised-new-entry-model/benchmark-field-level-results.csv"), colClasses = c('doc_field_code' = 'character'))
@@ -76,7 +83,8 @@ opex <- entry_dt %>%
 opex_emis_factors <- left_join(opex, ghg_factors) %>%
   full_join(pred_all_bau) %>%
   mutate(cumulative_prod = ifelse(is.na(cumulative_prod), 0, cumulative_prod)) %>%
-  filter(cumulative_prod > 0)
+  filter(cumulative_prod > 0) %>%
+  left_join(county_lut)
 
 # opex_subset <- opex_emis_factors %>%
 #   filter(opex_imputed <= 50) %>%
@@ -90,12 +98,12 @@ opex_emis_factors <- left_join(opex, ghg_factors) %>%
 ## ggplot
 
 opex_fig <- 
-ggplot(opex_emis_factors, aes(x = opex_imputed, y = upstream_kgCO2e_bbl, size =  cumulative_prod / 1e6, color = cumulative_prod / 1e6)) +
-  geom_point() +
+ggplot(opex_emis_factors, aes(x = opex_imputed, y = upstream_kgCO2e_bbl, size =  cumulative_prod / 1e6, color = adj_county_name)) +
+  geom_point(alpha = 0.5) +
   labs(x = '2019 opex imputed',
        y = 'kgCO2e per bbl',
        size = 'cumulative modeled production (mbbls)',
-       color = 'cumulative modeled production (mbbls)',
+       color = NULL,
        title = '2019 GHG emission factor x 2019 opex value',
        subtitle = 'method = lm; fit weighted by cumulative modeled production') +
   geom_smooth(method = 'lm', mapping = aes(weight = cumulative_prod), 
