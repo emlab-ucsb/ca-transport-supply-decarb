@@ -29,20 +29,22 @@ init_yr_prod <- fread(paste0(proj_dir, "outputs/stocks-flows/well_start_yr/", we
                                                                                                       'doc_field_code' = 'character',
                                                                                                       'api_field' = 'character')) 
 ## get start year for each well
-init_start_yr <- init_yr_prod %>%
-  select(api_ten_digit, start_date) %>%
-  unique() %>%
-  mutate(start_year = year(start_date)) %>%
-  select(-start_date)
+# init_start_yr <- init_yr_prod %>%
+#   select(api_ten_digit, start_date) %>%
+#   unique() %>%
+#   mutate(start_year = year(start_date)) %>%
+#   select(-start_date)
 
 ## read in file of wells with zero production after 5y or 10y
-no_prod_wells <- fread(paste0(output_dir, no_prod_file), colClasses = c('api_ten_digit' = 'character'))
+no_prod_wells <- fread(paste0(output_dir, no_prod_file), colClasses = c('api_ten_digit' = 'character',
+                                                                        'api_field_code' = 'character',
+                                                                        'doc_field_code' = 'character'))
 
-no_prod_5 <- no_prod_wells %>% filter(year_cut_off == 5) %>% select(api_ten_digit) %>% unique()
-no_prod_5_vec <- no_prod_5$api_ten_digit
+no_prod_5 <- no_prod_wells %>% filter(year_cut_off == 5) %>% select(api_field_code) %>% unique()
+no_prod_5_vec <- no_prod_5$api_field_code
 
-no_prod_10 <- no_prod_wells %>% filter(year_cut_off == 10) %>% select(api_ten_digit) %>% unique()
-no_prod_10_vec <- no_prod_10$api_ten_digit
+no_prod_10 <- no_prod_wells %>% filter(year_cut_off == 10) %>% select(api_field_code) %>% unique()
+no_prod_10_vec <- no_prod_10$api_field_code
 
 ## all wells
 all_wells <- fread(paste0(raw_dir, well_file))
@@ -53,14 +55,17 @@ status <- all_wells %>%
   select(api_ten_digit, well_status = WellStatus)
 
 ## find wells that produce at some point over time period
-pos_well_api_prod <- well_prod %>%
-  group_by(api_ten_digit) %>%
+pos_api_field_prod <- well_prod %>%
+  mutate(api_field_code = paste0(api_ten_digit, "-", doc_field_code)) %>%
+  group_by(api_field_code, api_ten_digit, doc_field_code) %>%
   summarise(oil_total = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
   mutate(pos_pro = ifelse(oil_total > 0, 1, 0)) %>%
   filter(pos_pro == 1)
 
-pos_api_vec <- pos_well_api_prod$api_ten_digit
+pos_api_field_vec <- pos_api_field_prod$api_field_code
+
+pos_api_vec <- unique(pos_api_field_prod$api_ten_digit)
 
 ## wells that are now plugged
 plugged_api <- status %>%
@@ -76,22 +81,23 @@ well_prod2 <- well_prod[, .(api_ten_digit, doc_field_code, doc_fieldname, month_
 setnames(well_prod2, c("OilorCondensateProduced"),
          c("oil_prod"))
 
+well_prod2[, api_field_code := paste0(api_ten_digit, "-", doc_field_code)]
+
 
 ## filter for wells with positive production 
-prod_dt <- well_prod2[api_ten_digit %chin% pos_api_vec]
+prod_dt <- well_prod2[api_field_code %chin% pos_api_field_vec]
 
-prod_dt <- prod_dt[, lapply(.SD, sum, na.rm = T), .SDcols = c("oil_prod"), by = .(api_ten_digit, doc_field_code, doc_fieldname, month_year)]
+prod_dt <- prod_dt[, lapply(.SD, sum, na.rm = T), .SDcols = c("oil_prod"), by = .(api_field_code, api_ten_digit, doc_field_code, doc_fieldname, month_year)]
 
 
 ##
-prod_dt[, api_doc_field_code := paste0(api_ten_digit, "-", doc_field_code)]
 
-well_year_combos <- expand.grid(api_doc_field_code = unique(prod_dt$api_doc_field_code),
+well_year_combos <- expand.grid(api_field_code = unique(prod_dt$api_field_code),
                                 month_year = unique(prod_dt$month_year))
 
 well_year_combos <- well_year_combos %>%
-  mutate(api_ten_digit = substr(api_doc_field_code, 1, 10),
-         doc_field_code = str_sub(api_doc_field_code, - 3, - 1))  
+  mutate(api_ten_digit = substr(api_field_code, 1, 10),
+         doc_field_code = str_sub(api_field_code, - 3, - 1))  
 
 ## field code - field name combos to join
 field_code <- unique(well_prod[, c('doc_field_code', 'doc_fieldname')])
@@ -101,7 +107,7 @@ well_year_combos <- well_year_combos %>%
 
 setDT(well_year_combos)
 
-prod_dt <- prod_dt[, c('api_ten_digit', 'doc_field_code', 'month_year', 'oil_prod')]
+prod_dt <- prod_dt[, c('api_field_code', 'api_ten_digit', 'doc_field_code', 'month_year', 'oil_prod')]
 
 prod_dt <- merge(well_year_combos, prod_dt, all = TRUE)
 
@@ -111,30 +117,27 @@ prod_dt[is.na(prod_dt)] <- 0
 prod_dt[, `:=` (month = month(month_year),
                 year = year(month_year))]
 
-setorder(prod_dt, api_ten_digit, month_year)
+setorder(prod_dt, api_field_code, month_year)
 
-prod_dt[, api_doc_field_code := NULL]
 
 ## find final year of positive production by 
 prod_dt <- prod_dt %>%
-  group_by(api_ten_digit) %>%
-  mutate(pos_year = ifelse(oil_prod > 0, year, 0)) %>%
-  ungroup()
+  # group_by(api_field_code, api_ten_digit, doc_field_code, doc_fieldname) %>%
+  mutate(pos_year = ifelse(oil_prod > 0, year, NA)) 
+# %>%  ungroup()
 
+## find first and last year of production
 prod_dt <- prod_dt %>%
-  group_by(api_ten_digit) %>%
+  group_by(api_field_code) %>%
   mutate(
-    last_pos_year = max(pos_year)
+    start_year = min(pos_year, na.rm = T),
+    last_pos_year = max(pos_year, na.rm = T)
   )  %>%
   ungroup()
 
-## add start year
-prod_dt <- prod_dt %>%
-  left_join(init_start_yr)
-
 ## calculate relevant values
 well_exit_dt <- prod_dt %>%
-  select(api_ten_digit, doc_field_code, doc_fieldname, start_year, last_pos_year)
+  select(api_field_code, api_ten_digit, doc_field_code, doc_fieldname, start_year, last_pos_year)
 
 # Keep unique rows
 well_exit_dt <- distinct(well_exit_dt)
@@ -142,10 +145,10 @@ well_exit_dt <- distinct(well_exit_dt)
 # Exit year is first year with zero production
 well_exit_dt <- well_exit_dt %>%
   mutate(
-    exit_year = last_pos_year+1
+    exit_year = last_pos_year + 1
   )
 
-## note: some wells have multiple entries
+## note: some wells have multiple entries; now distinguishable by api-ten-digit + field code
 View(well_exit_dt %>% group_by(api_ten_digit) %>% mutate(n = n()) %>% ungroup() %>% filter(n > 1))
 
 
@@ -156,26 +159,69 @@ calc_exits <- function(scen) {
 
   if (scen == 1) {
     
-    filt_vec <- plugged_api_vec
+    api_field_filt_vec <- unique(well_exit_dt$api_field_code)
+    
+    api_filt_vec <- plugged_api_vec
     
   } else if(scen == 2) {
     
-    filt_vec <- c(plugged_api_vec, no_prod_5_vec)
+    api_field_filt_vec <- no_prod_5_vec
     
-  } else if(scen == 3) {filt_vec  <- c(plugged_api_vec, no_prod_10_vec)
+    api_filt_vec <- plugged_api_vec
+    
+  } else if(scen == 3) {
+    
+    api_field_filt_vec <- no_prod_10_vec
+    
+    api_filt_vec <- plugged_api_vec
   
-  } else if(scen == 4) {filt_vec <- no_prod_5_vec
+  } else if(scen == 4) {
+    
+    api_field_filt_vec <- no_prod_5_vec
+    
+    api_filt_vec <- unique(well_exit_dt$api_ten_digit)
+
   
-  } else if(scen == 5) {filt_vec  <- no_prod_10_vec
+  } else if(scen == 5) {
+    
+    api_field_filt_vec <- no_prod_10_vec
+    
+    api_filt_vec <- unique(well_exit_dt$api_ten_digit)
 
-  } else if(scen == 6) {filt_vec <- setdiff(no_prod_5_vec, plugged_api_vec)
+  } else if(scen == 6) {
+    
+    api_field_filt_vec <- no_prod_wells %>%
+      filter(well_status != "Plugged",
+             year_cut_off == 5) %>%
+      select(api_field_code) %>%
+      as.vector()
+    
+    api_filt_vec <- no_prod_wells %>%
+      filter(well_status != "Plugged",
+             year_cut_off == 5) %>%
+      select(api_ten_digit) %>%
+      as.vector()
 
-  } else if(scen == 7) {filt_vec  <- setdiff(no_prod_10_vec, plugged_api_vec)}
+  } else if(scen == 7) {
+    
+    api_field_filt_vec <- no_prod_wells %>%
+      filter(well_status != "Plugged",
+             year_cut_off == 10) %>%
+      select(api_field_code) %>%
+      as.vector()
+    
+    api_filt_vec <- no_prod_wells %>%
+      filter(well_status != "Plugged",
+             year_cut_off == 10) %>%
+      select(api_ten_digit) %>%
+      as.vector()
+    }
 
 well_exit_dt <- well_exit_dt %>%
-  filter(api_ten_digit %in% filt_vec) %>%
+  filter(api_ten_digit %in% api_filt_vec & api_field_code %in% api_field_filt_vec) %>%
   group_by(doc_field_code) %>%
-  add_count(exit_year)
+  add_count(exit_year) %>%
+  
 
 field_exit_dt <- well_exit_dt %>%
   select(doc_field_code, doc_fieldname, start_year, exit_year, n)
