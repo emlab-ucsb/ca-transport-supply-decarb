@@ -221,6 +221,7 @@ well_exit_dt <- well_exit_dt %>%
   filter(api_ten_digit %in% api_filt_vec & api_field_code %in% api_field_filt_vec) %>%
   group_by(doc_field_code) %>%
   add_count(exit_year) %>%
+  ungroup()
   
 
 field_exit_dt <- well_exit_dt %>%
