@@ -156,106 +156,86 @@ View(well_exit_dt %>% group_by(api_ten_digit) %>% mutate(n = n()) %>% ungroup() 
 ## -------------------------------------
 
 calc_exits <- function(scen) {
-
+  
   if (scen == 1) {
     
-    api_field_filt_vec <- unique(well_exit_dt$api_field_code)
-    
-    api_filt_vec <- plugged_api_vec
+    ## all plugged wells
+    well_exit_dt_filt <- well_exit_dt %>%
+      filter(api_ten_digit %in% plugged_api_vec) 
     
   } else if(scen == 2) {
     
-    api_field_filt_vec <- no_prod_5_vec
-    
-    api_filt_vec <- plugged_api_vec
+    ## all plugged wells + idle >= 5y
+    well_exit_dt_filt <- well_exit_dt %>%
+      filter(api_ten_digit %in% plugged_api_vec | api_field_code %in% no_prod_5_vec) 
     
   } else if(scen == 3) {
     
-    api_field_filt_vec <- no_prod_10_vec
+    ## all plugged wells + idle >= 10y
+    well_exit_dt_filt <- well_exit_dt %>%
+      filter(api_ten_digit %in% plugged_api_vec | api_field_code %in% no_prod_10_vec) 
     
-    api_filt_vec <- plugged_api_vec
-  
   } else if(scen == 4) {
     
-    api_field_filt_vec <- no_prod_5_vec
+    ## idle >= 5y
+    well_exit_dt_filt <- well_exit_dt %>%
+      filter(api_field_code %in% no_prod_5_vec) 
     
-    api_filt_vec <- unique(well_exit_dt$api_ten_digit)
-
-  
+    
   } else if(scen == 5) {
     
-    api_field_filt_vec <- no_prod_10_vec
+    ## idle >= 10y
+    well_exit_dt_filt <- well_exit_dt %>%
+      filter(api_field_code %in% no_prod_10_vec)
     
-    api_filt_vec <- unique(well_exit_dt$api_ten_digit)
-
+    
   } else if(scen == 6) {
     
-    api_field_filt <- no_prod_wells %>%
-      filter(well_status != "Plugged",
-             year_cut_off == 5) %>%
-      select(api_field_code) %>%
-      as.vector()
+    ## idle >= 5y, no plugged wells
+    well_exit_dt_filt <- well_exit_dt %>%
+      filter(!api_ten_digit %in% plugged_api_vec & api_field_code %in% no_prod_5_vec)
     
-    api_field_filt_vec <- api_field_filt[, api_field_code]
     
-    api_filt <- no_prod_wells %>%
-      filter(well_status != "Plugged",
-             year_cut_off == 5) %>%
-      select(api_ten_digit) %>%
-      as.vector()
-    
-    api_filt_vec <- api_filt[, api_ten_digit]
-
   } else if(scen == 7) {
     
-    api_field_filt <- no_prod_wells %>%
-      filter(well_status != "Plugged",
-             year_cut_off == 10) %>%
-      select(api_field_code) %>%
-      as.vector()
+    ## idle >= 10y, no plugged wells
+    well_exit_dt_filt <- well_exit_dt %>%
+      filter(!api_ten_digit %in% plugged_api_vec & api_field_code %in% no_prod_10_vec)
     
-    api_field_filt_vec <- api_field_filt[, api_field_code]
     
-    api_filt <- no_prod_wells %>%
-      filter(well_status != "Plugged",
-             year_cut_off == 10) %>%
-      select(api_ten_digit) %>%
-      as.vector()
-    
-    api_filt_vec <- api_filt[, api_ten_digit]
-    }
-
-well_exit_dt_filt <- well_exit_dt %>%
-  filter(api_ten_digit %in% api_filt_vec, api_field_code %in% api_field_filt_vec) 
+  }
   
-field_exit_dt <- well_exit_dt_filt %>%
-  group_by(doc_field_code, doc_fieldname, start_year, exit_year) %>%
-  summarise(n = n()) %>% 
-  ungroup()
-
-field_year_combos <- expand.grid(doc_field_code = unique(field_exit_dt$doc_field_code),
-                                 start_year = unique(field_exit_dt$start_year),
-                                 exit_year = unique(field_exit_dt$exit_year)) 
-
-field_exit_dt2 <- field_year_combos %>%
-  left_join(field_exit_dt, by=c("doc_field_code", "start_year", "exit_year")) %>%
-  arrange(doc_field_code, start_year) %>%
-  fill(doc_fieldname) %>%
-  mutate(doc_fieldname = ifelse(doc_field_code == "000", "Any Field", doc_fieldname))
-
-field_exit_dt2 <- field_exit_dt2 %>%
-  select(doc_field_code, start_year, exit_year, n)
-field_exit_dt2[is.na(field_exit_dt2)] <- 0
-field_exit_dt2 <- rename(field_exit_dt2, well_exits=n)
-
-field_exit_dt3 <- field_exit_dt2 %>%
-  mutate(exit_scen = ifelse(scen == 1, "all_plug",
-                            ifelse(scen == 2, "5y_all_plug",
-                                   ifelse(scen == 3, "10y_all_plug",
-                                          ifelse(scen == 4, "5y", 
-                                                 ifelse(scen == 5, "10y",
-                                                        ifelse(scen == 6, "5y_no_plug", "10y_no_plug")))))))
-
+  # well_exit_dt_filt <- well_exit_dt %>%
+  #   filter(api_ten_digit %in% api_filt_vec, api_field_code %in% api_field_filt_vec) 
+  
+  field_exit_dt <- well_exit_dt_filt %>%
+    group_by(doc_field_code, doc_fieldname, start_year, exit_year) %>%
+    summarise(n = n()) %>% 
+    ungroup()
+  
+  field_year_combos <- expand.grid(doc_field_code = unique(field_exit_dt$doc_field_code),
+                                   start_year = unique(field_exit_dt$start_year),
+                                   exit_year = unique(field_exit_dt$exit_year)) 
+  
+  field_exit_dt2 <- field_year_combos %>%
+    left_join(field_exit_dt, by=c("doc_field_code", "start_year", "exit_year")) %>%
+    arrange(doc_field_code, start_year) %>%
+    fill(doc_fieldname) %>%
+    mutate(doc_fieldname = ifelse(doc_field_code == "000", "Any Field", doc_fieldname))
+  
+  field_exit_dt2 <- field_exit_dt2 %>%
+    select(doc_field_code, start_year, exit_year, n)
+  field_exit_dt2[is.na(field_exit_dt2)] <- 0
+  field_exit_dt2 <- rename(field_exit_dt2, well_exits=n)
+  
+  field_exit_dt3 <- field_exit_dt2 %>%
+    mutate(exit_scen = ifelse(scen == 1, "all_plug",
+                              ifelse(scen == 2, "5y_all_plug",
+                                     ifelse(scen == 3, "10y_all_plug",
+                                            ifelse(scen == 4, "5y", 
+                                                   ifelse(scen == 5, "10y",
+                                                          ifelse(scen == 6, "5y_no_plug", "10y_no_plug")))))))
+  
 }
 
 scen_vec <- c(1:7)
