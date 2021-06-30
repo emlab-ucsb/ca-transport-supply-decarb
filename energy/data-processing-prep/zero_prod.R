@@ -114,6 +114,8 @@ zero_prod_dt[, c("gas_prod", "water_prod", "cumul_zero_prod", "max_of_grp", "cum
 
 zero_prod_dt[is.na(zero_prod_dt)] <- 0
 
+## remove zero production break before first poroduction period
+## newer wells will not have been "idle" befor that; older wells, maybe
 zero_prod_dt_filt <- zero_prod_dt[zero_prod_start != 1]
 
 setDT(status)
