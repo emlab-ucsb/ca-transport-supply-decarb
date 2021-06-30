@@ -217,23 +217,23 @@ calc_exits <- function(scen) {
       as.vector()
     }
 
-well_exit_dt <- well_exit_dt %>%
-  filter(api_ten_digit %in% api_filt_vec & api_field_code %in% api_field_filt_vec) %>%
-  group_by(doc_field_code) %>%
-  add_count(exit_year) %>%
-  ungroup()
+well_exit_dt_filt <- well_exit_dt %>%
+  filter(api_ten_digit %in% api_filt_vec & api_field_code %in% api_field_filt_vec) 
   
-
-field_exit_dt <- well_exit_dt %>%
-  select(doc_field_code, doc_fieldname, start_year, exit_year, n)
-field_exit_dt <- distinct(field_exit_dt)
+field_exit_dt <- well_exit_dt_filt %>%
+  group_by(doc_field_code, doc_fieldname, start_year, exit_year) %>%
+  summarise(n = n()) %>% 
+  ungroup()
 
 field_year_combos <- expand.grid(doc_field_code = unique(field_exit_dt$doc_field_code),
                                  start_year = unique(field_exit_dt$start_year),
                                  exit_year = unique(field_exit_dt$exit_year)) 
 
 field_exit_dt2 <- field_year_combos %>%
-  left_join(field_exit_dt, by=c("doc_field_code", "start_year", "exit_year"))
+  left_join(field_exit_dt, by=c("doc_field_code", "start_year", "exit_year")) %>%
+  arrange(doc_field_code, start_year) %>%
+  fill(doc_fieldname) %>%
+  mutate(doc_fieldname = ifelse(doc_field_code == "000", "Any Field", doc_fieldname))
 
 field_exit_dt2 <- field_exit_dt2 %>%
   select(doc_field_code, start_year, exit_year, n)
