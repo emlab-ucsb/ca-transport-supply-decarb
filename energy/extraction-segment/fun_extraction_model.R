@@ -196,6 +196,10 @@ run_extraction_model <- function(oil_px_selection) {
                                                            upstream_kgCO2e_bbl_inno_adj * ccs_ghg_scalar,
                                                            upstream_kgCO2e_bbl_inno_adj)]
   
+      
+    ## set up number of wells
+      dt_info[, n_wells_t := n_wells]
+      
       # dt_info[is.na(m_opex_imputed_adj), m_opex_imputed_adj := m_opex_imputed]
       # dt_info[is.na(wm_opex_imputed_adj), wm_opex_imputed_adj := wm_opex_imputed]
   
@@ -295,7 +299,6 @@ run_extraction_model <- function(oil_px_selection) {
         t = pred_years[i]
         
         # print(t)
-        browser()
       
         ## set up variables for all fields
         new_wells = dt_info_z[year == t]
@@ -395,6 +398,9 @@ run_extraction_model <- function(oil_px_selection) {
         ## adjust production for setback scenario
         new_wells_prod[, peak_production := peak_production * (1 - area_coverage)]
         
+        # ## calculate well density
+        # new_wells_prod[, m_wells_km2 := (n_wells_t + m_new_wells_pred) / (scen_area_m2 / 1e6)]
+        # new_wells_prod[, wm_density_t_wkm2 := (n_wells_t + wm_new_wells_pred) / (scen_area_m2 / 1e6)]
 
         ## implement production quota before calculating prod from new wells
         ## rank existing and new wells in each field by costs
@@ -457,6 +463,8 @@ run_extraction_model <- function(oil_px_selection) {
                                            allow.cartesian = T)
         ## add number of wells column, == 1
         temp_prod_existing_vintage[, num_wells := 1]
+        # temp_prod_existing_vintage[, num_wells := n_wells]
+        # temp_prod_existing_vintage[, n_wells := NULL]
         
         ## select, reorder columns
         temp_prod_existing_vintage = temp_prod_existing_vintage[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
@@ -509,7 +517,6 @@ run_extraction_model <- function(oil_px_selection) {
           temp_prod_quota = rbind(temp_new_wells_prod, temp_prod_existing_vintage, use.names = T)
           
         }
-        
         
     ## join costs to production info; rank; implement quota
     ## ---------------------------------------------------------
@@ -564,7 +571,7 @@ run_extraction_model <- function(oil_px_selection) {
         
         ## create column with previous cumulative production
         ## create column of cumulative sum of over_quota_ranks to identify first field vintage to bust quota
-        temp_prod_quota[, ':=' (last_prod = shift(prod_cumsum, n=1, fill = NA, type = "lag"),
+        temp_prod_quota[, ':=' (last_prod = shift(prod_cumsum, n = 1, fill = NA, type = "lag"),
                                 sum_over = cumsum(over_quota_ranks)), by = .(oil_price_scenario, innovation_scenario, 
                                                                              carbon_price_scenario, ccs_scenario, 
                                                                              setback_scenario, prod_quota_scenario, excise_tax_scenario)]
@@ -613,6 +620,7 @@ run_extraction_model <- function(oil_px_selection) {
                                 upstream_kgCO2e_inno_ccs_adj = upstream_kgCO2e_bbl_inno_ccs_adj * adj_prod_limited,
                                 upstream_kgCO2e_inno_adj = upstream_kgCO2e_bbl_inno_adj * adj_prod_limited,
                                 upstream_kgCO2e = upstream_kgCO2e_bbl * adj_prod_limited)]
+        
         
         ## select and rename columns
         temp_prod_quota = temp_prod_quota[, .(year, doc_field_code, doc_fieldname, vintage, 
@@ -666,6 +674,9 @@ run_extraction_model <- function(oil_px_selection) {
         setnames(new_wells_prod_new, c('production_bbl', 'n_wells'), c('peak_production', 'm_new_wells_pred'))
         ## filter new field vintages that have positive production 
         new_wells_prod_new = new_wells_prod_new[peak_production > 0]
+        
+        
+        # browser()
         
         ## remove objects
         rm(dt_info_rank, temp_dt_info_rank, existing_vintage_prod_t, dtt_long, temp_new_wells_prod, 
