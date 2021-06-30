@@ -104,10 +104,10 @@ prod_dt[, cumul_prod := cumsum(pos_prod), api_field_code]
 
 prod_dt[, cumul_prod_next := shift(cumul_prod, type = "lead"), api_field_code]
 
-## use this to remove zero production before first production date in historic data set
+## use this mark removal of zero production before first production date in historic data set
 prod_dt[, zero_prod_start := fifelse(max_of_grp2 > 0 & cumul_prod_next == 1, 1, 0)]
 
-## smaller df
+## smaller df, filter for rows with the "breaks"
 zero_prod_dt <- prod_dt[max_of_grp2 > 0]
 
 zero_prod_dt[, c("gas_prod", "water_prod", "cumul_zero_prod", "max_of_grp", "cumul_prod", "cumul_prod_next") := NULL]
@@ -122,7 +122,7 @@ zero_prod_dt_filt[, api_ten_digit := substr(api_field_code, 1, 10)]
 
 zero_prod_dt_filt2 <- setDT(left_join(zero_prod_dt_filt, status, by = "api_ten_digit"))
 
-## remove tail of dataset.... 
+## mark the tail of dataset.... use this for tracking for now
 zero_prod_dt_filt2[, remove_tail_all := fifelse(zero_prod_end == 1, 1, 0)]
 
 # zero_prod_dt_filt2[, remove_tail_threeyr := fifelse(zero_prod_end == 1 & max_of_grp2 > 36, 1, 0)]

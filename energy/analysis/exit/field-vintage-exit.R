@@ -17,23 +17,11 @@ output_dir <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projec
 ## files
 prod_file               <- "well_prod_m_processed.csv"
 well_file               <- "AllWells_table/AllWells_20210427.csv"
-well_start_file         <- "well_start_prod_api10_revised.csv"
 no_prod_file            <- "no_prod_wells_out.csv"
 
 ## read in files
 well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                      'doc_field_code' = 'character'))
-
-# ## for initial year production
-# init_yr_prod <- fread(paste0(proj_dir, "outputs/stocks-flows/well_start_yr/", well_start_file), colClasses = c('api_ten_digit' = 'character',
-#                                                                                                       'doc_field_code' = 'character',
-#                                                                                                       'api_field' = 'character')) 
-## get start year for each well
-# init_start_yr <- init_yr_prod %>%
-#   select(api_ten_digit, start_date) %>%
-#   unique() %>%
-#   mutate(start_year = year(start_date)) %>%
-#   select(-start_date)
 
 ## read in file of wells with zero production after 5y or 10y
 no_prod_wells <- fread(paste0(output_dir, no_prod_file), colClasses = c('api_ten_digit' = 'character',
