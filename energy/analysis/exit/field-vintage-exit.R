@@ -190,35 +190,43 @@ calc_exits <- function(scen) {
 
   } else if(scen == 6) {
     
-    api_field_filt_vec <- no_prod_wells %>%
+    api_field_filt <- no_prod_wells %>%
       filter(well_status != "Plugged",
              year_cut_off == 5) %>%
       select(api_field_code) %>%
       as.vector()
     
-    api_filt_vec <- no_prod_wells %>%
+    api_field_filt_vec <- api_field_filt[, api_field_code]
+    
+    api_filt <- no_prod_wells %>%
       filter(well_status != "Plugged",
              year_cut_off == 5) %>%
       select(api_ten_digit) %>%
       as.vector()
+    
+    api_filt_vec <- api_filt[, api_ten_digit]
 
   } else if(scen == 7) {
     
-    api_field_filt_vec <- no_prod_wells %>%
+    api_field_filt <- no_prod_wells %>%
       filter(well_status != "Plugged",
              year_cut_off == 10) %>%
       select(api_field_code) %>%
       as.vector()
     
-    api_filt_vec <- no_prod_wells %>%
+    api_field_filt_vec <- api_field_filt[, api_field_code]
+    
+    api_filt <- no_prod_wells %>%
       filter(well_status != "Plugged",
              year_cut_off == 10) %>%
       select(api_ten_digit) %>%
       as.vector()
+    
+    api_filt_vec <- api_filt[, api_ten_digit]
     }
 
 well_exit_dt_filt <- well_exit_dt %>%
-  filter(api_ten_digit %in% api_filt_vec & api_field_code %in% api_field_filt_vec) 
+  filter(api_ten_digit %in% api_filt_vec, api_field_code %in% api_field_filt_vec) 
   
 field_exit_dt <- well_exit_dt_filt %>%
   group_by(doc_field_code, doc_fieldname, start_year, exit_year) %>%
@@ -257,7 +265,13 @@ field_exit_out <- purrr::map(as.list(scen_vec), calc_exits) %>%
 
 
 ## Save field-year-level well exit data
-
-
-
 write_csv(field_exit_out, file = paste0(output_dir, "well_exits.csv"))
+
+field_out_summary <- field_exit_out %>%
+  group_by(exit_scen, doc_field_code) %>%
+  summarise(n_exits = sum(well_exits)) %>%
+  ungroup()
+
+
+
+
