@@ -43,6 +43,32 @@
   
   fields_top10[, field_name := fifelse(doc_fieldname == 'Belridge  South', 'Belridge, South', doc_fieldname)]
   
+# get mean emission factors of fields that use steam ------
+  
+  emfac_steam = dt_res[field_name %in% fields_sor & year < 2019]
+  mean_steam = emfac_steam[, .(upstream_kgCO2e_bbl = mean(upstream_kgCO2e_bbl, na.rm = T)), by = .(year)]
+  
+# get mean emission factos of fields that do not use steam ------
+  
+  emfac_nonsteam = dt_res[!field_name %in% fields_sor & year < 2019]
+  mean_nonsteam = emfac_nonsteam[, .(upstream_kgCO2e_bbl = mean(upstream_kgCO2e_bbl, na.rm = T)), by = .(year)]
+  
+# linearly regress emission factors for steam fields --------
+  
+  pred_steam = data.table(year = seq(2019, 2045, 1))
+  lm_steam = lm(upstream_kgCO2e_bbl ~ year, mean_steam)
+  pred_steam[, upstream_kgCO2e_bbl := predict(lm_steam, pred_steam)]
+  pred_steam[, perc_change := (upstream_kgCO2e_bbl - shift(upstream_kgCO2e_bbl, type = 'lag'))/shift(upstream_kgCO2e_bbl, type = 'lag')]
+  
+# linearly regress emission factors for non-steam fields --------
+  
+  pred_nonsteam = data.table(year = seq(2019, 2045, 1))
+  lm_nonsteam = lm(upstream_kgCO2e_bbl ~ year, mean_nonsteam)
+  pred_nonsteam[, upstream_kgCO2e_bbl := predict(lm_nonsteam, pred_steam)]
+  pred_nonsteam[, perc_change := (upstream_kgCO2e_bbl - shift(upstream_kgCO2e_bbl, type = 'lag'))/shift(upstream_kgCO2e_bbl, type = 'lag')]
+  
+  
+  
 # ------------------------------- plot ---------------------------
   
   # theme ---------
