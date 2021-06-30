@@ -240,6 +240,23 @@ field_out_summary <- field_exit_out %>%
   summarise(n_exits = sum(well_exits)) %>%
   ungroup()
 
+### wilmington
+test <- well_exit_dt %>%
+  filter(api_field_code %in% no_prod_10_vec) %>%
+  group_by(doc_field_code, doc_fieldname, exit_year) %>%
+  summarise(n = n()) %>%
+  ungroup() 
 
+test2 <- test %>%
+  filter(!doc_field_code %in% c("000", "848", "154")) %>%
+  group_by(exit_year) %>%
+  summarise(sum = sum(n)) %>%
+  ungroup()
+  
 
+ggplot(test2, aes(x = exit_year, y = sum)) +
+  geom_line() +
+  labs(title = "California",
+       y = "exits",
+       x = NULL)
 
