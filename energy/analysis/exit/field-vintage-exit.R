@@ -24,10 +24,10 @@ no_prod_file            <- "no_prod_wells_out.csv"
 well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                      'doc_field_code' = 'character'))
 
-## for initial year production
-init_yr_prod <- fread(paste0(proj_dir, "outputs/stocks-flows/well_start_yr/", well_start_file), colClasses = c('api_ten_digit' = 'character',
-                                                                                                      'doc_field_code' = 'character',
-                                                                                                      'api_field' = 'character')) 
+# ## for initial year production
+# init_yr_prod <- fread(paste0(proj_dir, "outputs/stocks-flows/well_start_yr/", well_start_file), colClasses = c('api_ten_digit' = 'character',
+#                                                                                                       'doc_field_code' = 'character',
+#                                                                                                       'api_field' = 'character')) 
 ## get start year for each well
 # init_start_yr <- init_yr_prod %>%
 #   select(api_ten_digit, start_date) %>%
