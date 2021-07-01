@@ -17,7 +17,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   ## assemble outputs from cal epa report
   ## -------------------------------------------
   
-  # browser()
+  browser()
   
   ## bau
   report_out_bau <- report_out %>%
