@@ -24,15 +24,13 @@ well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_di
                                                                      'doc_field_code' = 'character'))
 
 ## read in file of wells with zero production after 5y or 10y
-no_prod_wells <- fread(paste0(output_dir, no_prod_file), colClasses = c('api_ten_digit' = 'character',
-                                                                        'api_field_code' = 'character',
-                                                                        'doc_field_code' = 'character'))
+no_prod_wells <- fread(paste0(output_dir, no_prod_file), colClasses = c('api_ten_digit' = 'character'))
 
-no_prod_5 <- no_prod_wells %>% filter(year_cut_off == 5) %>% select(api_field_code) %>% unique()
-no_prod_5_vec <- no_prod_5$api_field_code
+no_prod_5 <- no_prod_wells %>% filter(year_cut_off == 5) %>% select(api_ten_digit) %>% unique()
+no_prod_5_vec <- no_prod_5$api_ten_digit
 
-no_prod_10 <- no_prod_wells %>% filter(year_cut_off == 10) %>% select(api_field_code) %>% unique()
-no_prod_10_vec <- no_prod_10$api_field_code
+no_prod_10 <- no_prod_wells %>% filter(year_cut_off == 10) %>% select(api_ten_digit) %>% unique()
+no_prod_10_vec <- no_prod_10$api_ten_digit
 
 ## all wells
 all_wells <- fread(paste0(raw_dir, well_file))
@@ -43,17 +41,15 @@ status <- all_wells %>%
   select(api_ten_digit, well_status = WellStatus)
 
 ## find wells that produce at some point over time period
-pos_api_field_prod <- well_prod %>%
-  mutate(api_field_code = paste0(api_ten_digit, "-", doc_field_code)) %>%
-  group_by(api_field_code, api_ten_digit, doc_field_code) %>%
+pos_api_prod <- well_prod %>%
+  # mutate(api_field_code = paste0(api_ten_digit, "-", doc_field_code)) %>%
+  group_by(api_ten_digit, doc_field_code) %>%
   summarise(oil_total = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
   mutate(pos_pro = ifelse(oil_total > 0, 1, 0)) %>%
   filter(pos_pro == 1)
 
-pos_api_field_vec <- pos_api_field_prod$api_field_code
-
-pos_api_vec <- unique(pos_api_field_prod$api_ten_digit)
+pos_api_vec <- unique(pos_api_prod$api_ten_digit)
 
 ## wells that are now plugged
 plugged_api <- status %>%
@@ -69,11 +65,12 @@ well_prod2 <- well_prod[, .(api_ten_digit, doc_field_code, doc_fieldname, month_
 setnames(well_prod2, c("OilorCondensateProduced"),
          c("oil_prod"))
 
+## add api_field_code so that we can determine the last field of production
 well_prod2[, api_field_code := paste0(api_ten_digit, "-", doc_field_code)]
 
 
 ## filter for wells with positive production 
-prod_dt <- well_prod2[api_field_code %chin% pos_api_field_vec]
+prod_dt <- well_prod2[api_ten_digit %chin% pos_api_vec]
 
 prod_dt <- prod_dt[, lapply(.SD, sum, na.rm = T), .SDcols = c("oil_prod"), by = .(api_field_code, api_ten_digit, doc_field_code, doc_fieldname, month_year)]
 
@@ -116,19 +113,23 @@ prod_dt <- prod_dt %>%
 
 ## find first and last year of production
 prod_dt <- prod_dt %>%
-  group_by(api_field_code) %>%
+  filter(oil_prod > 0) %>%
+  group_by(api_ten_digit) %>%
   mutate(
     start_year = min(pos_year, na.rm = T),
-    last_pos_year = max(pos_year, na.rm = T)
+    last_pos_year = max(pos_year, na.rm = T),
+    last_prod_field = ifelse(oil_prod > 0 & month_year == max(month_year), doc_field_code, NA)
   )  %>%
-  ungroup()
+  ungroup() 
 
 ## calculate relevant values
 well_exit_dt <- prod_dt %>%
-  select(api_field_code, api_ten_digit, doc_field_code, doc_fieldname, start_year, last_pos_year)
+  select(api_field_code, api_ten_digit, doc_field_code, doc_fieldname, start_year, last_pos_year, last_prod_field) %>%
+  filter(!is.na(last_prod_field))
 
 # Keep unique rows
 well_exit_dt <- distinct(well_exit_dt)
+
 
 # Exit year is first year with zero production
 well_exit_dt <- well_exit_dt %>%
@@ -138,7 +139,7 @@ well_exit_dt <- well_exit_dt %>%
 
 ## note: some wells have multiple entries; now distinguishable by api-ten-digit + field code
 View(well_exit_dt %>% group_by(api_ten_digit) %>% mutate(n = n()) %>% ungroup() %>% filter(n > 1))
-
+## note: these are not plugged, and they don't idle for 5 or 10 years
 
 ## start the function
 ## -------------------------------------
@@ -155,40 +156,40 @@ calc_exits <- function(scen) {
     
     ## all plugged wells + idle >= 5y
     well_exit_dt_filt <- well_exit_dt %>%
-      filter(api_ten_digit %in% plugged_api_vec | api_field_code %in% no_prod_5_vec) 
+      filter(api_ten_digit %in% c(plugged_api_vec, no_prod_5_vec)) 
     
   } else if(scen == 3) {
     
     ## all plugged wells + idle >= 10y
     well_exit_dt_filt <- well_exit_dt %>%
-      filter(api_ten_digit %in% plugged_api_vec | api_field_code %in% no_prod_10_vec) 
+      filter(api_ten_digit %in% c(plugged_api_vec,  no_prod_10_vec)) 
     
   } else if(scen == 4) {
     
     ## idle >= 5y
     well_exit_dt_filt <- well_exit_dt %>%
-      filter(api_field_code %in% no_prod_5_vec) 
+      filter(api_ten_digit %in% no_prod_5_vec) 
     
     
   } else if(scen == 5) {
     
     ## idle >= 10y
     well_exit_dt_filt <- well_exit_dt %>%
-      filter(api_field_code %in% no_prod_10_vec)
+      filter(api_ten_digit %in% no_prod_10_vec)
     
     
   } else if(scen == 6) {
     
     ## idle >= 5y, no plugged wells
     well_exit_dt_filt <- well_exit_dt %>%
-      filter(!api_ten_digit %in% plugged_api_vec & api_field_code %in% no_prod_5_vec)
+      filter(!api_ten_digit %in% plugged_api_vec & api_ten_digit %in% no_prod_5_vec)
     
     
   } else if(scen == 7) {
     
     ## idle >= 10y, no plugged wells
     well_exit_dt_filt <- well_exit_dt %>%
-      filter(!api_ten_digit %in% plugged_api_vec & api_field_code %in% no_prod_10_vec)
+      filter(!api_ten_digit %in% plugged_api_vec & api_ten_digit %in% no_prod_10_vec)
     
     
   }
@@ -242,7 +243,7 @@ field_out_summary <- field_exit_out %>%
 
 ### wilmington
 test <- well_exit_dt %>%
-  filter(api_field_code %in% no_prod_10_vec) %>%
+  filter(api_ten_digit %in% no_prod_10_vec) %>%
   group_by(doc_field_code, doc_fieldname, exit_year) %>%
   summarise(n = n()) %>%
   ungroup() 
@@ -259,4 +260,7 @@ ggplot(test2, aes(x = exit_year, y = sum)) +
   labs(title = "California",
        y = "exits",
        x = NULL)
+
+ggplot(test %>% filter(doc_fieldname == "Wilmington"), aes(x = exit_year, y = n)) +
+  geom_line() 
 
