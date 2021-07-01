@@ -188,7 +188,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   state_base = fread(file.path(base_path, 'extraction_2021-07-01', 'revised-add-density', 'diagnostic-state-level-results.csv'), header = T)
   
   # add column for base case
-  state_base[, version := "new entry model"]
+  state_base[, version := "density tracking"]
   
   # bind data
   state_all <- rbind(state_base, state_out)
