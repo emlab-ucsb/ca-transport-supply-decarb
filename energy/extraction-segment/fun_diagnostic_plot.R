@@ -164,14 +164,31 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   state_out = output_extraction[[3]]
 
   state_out[, version := paste0("adj-", run_type)]
+  
+  field_out = output_extraction[[2]]
+  
+  pos_field_dt = field_out[, .(prod = sum(total_prod_bbl, na.rm = T)), by = .(doc_field_code, oil_price_scenario,
+                                                                              innovation_scenario, carbon_price_scenario,
+                                                                              ccs_scenario, setback_scenario, prod_quota_scenario,
+                                                                              excise_tax_scenario)]
 
+  density_out = output_extraction[[4]]
+  
+  density_out = merge(density_out, pos_field_dt,
+                      by = c('doc_field_code', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                             'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario'),
+                      all = T)
+  
+  density_out[, prod := fifelse(is.na(prod), 0, prod)]
+  density_out = density_out[prod > 0]
+  
   
   # read in baseline for comparison ------
   
-  state_base = fread(file.path(base_path, 'extraction_2021-04-07', 'baseline', 'diagnostic-state-level-results.csv'), header = T)
+  state_base = fread(file.path(base_path, 'extraction_2021-06-08', 'revised-new-entry-model', 'diagnostic-state-level-results.csv'), header = T)
   
   # add column for base case
-  state_base[, version := "base"]
+  state_base[, version := "new entry model"]
   
   # bind data
   state_all <- rbind(state_base, state_out)
@@ -192,8 +209,6 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
                 "setback_scenario", "prod_quota_scenario", "excise_tax_scenario", "year", "new_wells", 
                 "existing_prod_bbl", "new_prod_bbl", "total_prod_bbl", "existing_ghg_kgCO2e", "new_ghg_kgCO2e", 
                 "total_ghg_kgCO2e"))
-  
-  browser()
   
   ## melt production
   state_all_prod <- state_all[, c("version", "scen_name", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario", 
@@ -223,6 +238,11 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   ## merge
   state_all_long <- merge(state_all_prod, state_all_ghg)
   
+  ## density outputs
+  ## ----------------------------------------
+  
+  density_out[, scen_name := fifelse(setback_scenario == "setback_2500ft", "LCE2",
+                                     fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LCE1", "BAU"))]
   
   
   # plot theme --------------------
@@ -259,7 +279,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
     facet_grid(type ~ scen_name) +
     geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
               aes(x = year, y = production_bbls / 1e6, color = version), shape = 3) +
-    geom_line(data = report_out_prod, aes(x = year, y = production_bbls / 1e6, color = version)) +
+    geom_line(data = report_out_prod, aes(x = year, y = production_bbls / 1e6, color = version), alpha = 0.7, size = 1) +
     facet_grid(type ~ scen_name) +
     geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
     scale_color_manual(values = c("#FF6E1B", "#FFD200", "#005581", "black")) +
@@ -278,10 +298,10 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
     geom_line(alpha = 0.7, size = 1) +
     geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
                aes(x = year, y = ghg_kgCO2e / 1e9, color = version), shape = 3) +
-    geom_line(data = report_ghg_all, aes(x = year, y = ghg_kgCO2e / 1e9, color = version)) +
+    geom_line(data = report_ghg_all, aes(x = as.integer(year), y = ghg_kgCO2e / 1e9, color = version), alpha = 0.7, size = 1) +
     facet_grid(type ~ scen_name) +
-    geom_line(data = hist_ghg %>% filter(emissions_type == "mtco2e"), aes(x = year, y = co2e), color = "black") +
-    geom_line(data = hist_ghg %>% filter(emissions_type == "adj_mtco2e"), aes(x = year, y = co2e), color = "black", lty = "dotted") +
+    geom_line(data = hist_ghg %>% filter(emissions_type == "mtco2e"), aes(x = year, y = mtco2e), color = "black", alpha = 0.7, size = 1) +
+    geom_line(data = hist_ghg %>% filter(emissions_type == "adj_mtco2e"), aes(x = year, y = mtco2e), color = "black", lty = "dotted", alpha = 0.7, size = 1) +
     geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
     scale_color_manual(values = c("#FF6E1B", "#FFD200", "#005581")) +
     labs(title = 'State-level emissions',
@@ -300,7 +320,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
     facet_grid(~ scen_name) +
     geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
                aes(x = year, y = new_wells, color = version), shape = 3) +
-    geom_line(data = report_wells_out_all %>% mutate(version = ifelse(year <= 2019, "historic", "calepa-report")), aes(x = year, y = new_wells, color = version)) +
+    geom_line(data = report_wells_out_all %>% mutate(version = ifelse(year <= 2019, "historic", "calepa-report")), aes(x = year, y = new_wells, color = version), alpha = 0.7, size = 1) +
     geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
     scale_color_manual(values = c("#FF6E1B", "#FFD200", "#005581", "black")) +
     labs(title = 'State-level new wells',
@@ -310,6 +330,25 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
          color = '') +
     # scale_color_gradient(low = "#f7fbff", high = "#08306b") +
     theme_line
+  
+  library(scales)
+  
+  # density fig
+  density_fig = ggplot(density_out, 
+                         aes(x = year, y = wells_km2, group = doc_field_code)) + 
+    geom_line(alpha = 0.7, size = 1) +
+    facet_wrap(~ scen_name, scales = "free_y") +
+    scale_y_continuous(labels = comma) +
+    labs(title = 'Density',
+         subtitle = 'wells per km2', 
+         x = 'Year',
+         y = NULL,
+         color = '') +
+    # scale_color_gradient(low = "#f7fbff", high = "#08306b") +
+    theme_line
+  
+  
+  
   
   # save figures  -----
   
@@ -351,6 +390,15 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
               outfile = file.path(save_info_path, new_wells_fname))
   print(paste0('Saved diagnostic figures to ', new_wells_fname))
   
+  density_fname = paste0(oil_price_selection, '_density_fig.pdf')
+  ggsave(density_fig, 
+         filename = file.path(save_info_path, density_fname), 
+         width = 23, 
+         height = 7)
+  
+  embed_fonts(file.path(save_info_path, density_fname),
+              outfile = file.path(save_info_path, density_fname))
+  print(paste0('Saved diagnostic figures to ', density_fname))
   
   
 } 

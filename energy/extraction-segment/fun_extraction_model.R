@@ -879,38 +879,39 @@ run_extraction_model <- function(oil_px_selection) {
                                             setback_scenario, prod_quota_scenario, excise_tax_scenario, ccs_adoption)]
           setnames(ccs_prev, 'ccs_adoption', 'adoption_prev')
           
-         
-          
-          ## prev cumulative wells and well density
-          ## --------------------------------------------
-          cumul_wells_prev = dt_info_z[year == t, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                   setback_scenario, prod_quota_scenario, excise_tax_scenario, cumulative_wells, wells_km2)]
-          setnames(cumul_wells_prev, c('cumulative_wells', 'wells_km2'), c('cumul_wells_prev', "wells_km2_prev"))
-          
-          
           ## merge with info next year dt
           info_next_year = merge(info_next_year, ccs_prev, 
                                  by = c('doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                                         'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario'))
           
-          info_next_year = merge(info_next_year, cumul_wells_prev,
-                                 by = c('doc_field_code', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                                        'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario'))
+
           
+          ## update well density for year t
+          ## --------------------------------------------
           
+          cumul_wells_end = cumulative_wells_dt[year == t]
+          setnames(cumul_wells_end, c('cumulative_wells', 'wells_km2'), c('cumul_wells_end', "wells_km2_end"))
+          
+          ## first update dt_info_z
+          dt_info_z = merge(dt_info_z, cumul_wells_end,
+                            by = c('doc_field_code', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                                   'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'year'),
+                            all = T)
+          
+          dt_info_z = dt_info_z[, cumulative_wells := fifelse(is.na(cumul_wells_end), cumulative_wells, cumul_wells_end)]
+          dt_info_z = dt_info_z[, wells_km2 := fifelse(is.na(wells_km2_end), wells_km2, wells_km2_end)]
+          
+          dt_info_z = dt_info_z[, c('cumul_wells_end', 'wells_km2_end') := NULL]
+      
           ## add updated cumulative wells and density
-          density_t <- cumulative_wells_dt %>% 
-            mutate(year = year + 1)
+          density_start_next = dt_info_z[year == t, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                                      setback_scenario, prod_quota_scenario, excise_tax_scenario, cumulative_wells, wells_km2)]
           
-          info_next_year = merge(info_next_year, density_t,
+          info_next_year = merge(info_next_year, density_start_next,
                                  by = c('doc_field_code', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                                        'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'year'),
+                                        'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario'),
                                  all = T)
-          
-          info_next_year = info_next_year[, cumulative_wells := fifelse(is.na(cumulative_wells), cumul_wells_prev, cumulative_wells)]
-          info_next_year = info_next_year[, wells_km2 := fifelse(is.na(wells_km2), wells_km2_prev, wells_km2)]
-          
-          info_next_year = info_next_year[, c('wells_km2_prev', 'cumul_wells_prev') := NULL]
+    
           
           # adjust ghg emissions factor by innovation scenario
           info_next_year[, upstream_kgCO2e_bbl_inno_adj := upstream_kgCO2e_bbl * innovation_multiplier]
@@ -969,7 +970,7 @@ run_extraction_model <- function(oil_px_selection) {
         }  
         
         rm(t,j,new_wells,param_other,new_wells_prod, new_wells_prod_new, new_wells_prod_long,
-           prod_new,prod_old,prod_next_year,depl_prev,trr_prev,depl_next_year,info_next_year,dtt,zero_prod_quota_new, cumulative_wells_dt)
+           prod_new,prod_old,prod_next_year,depl_prev,trr_prev,depl_next_year,info_next_year,dtt,zero_prod_quota_new, cumulative_wells_dt, density_start_next)
         
       }
       
@@ -1064,13 +1065,29 @@ run_extraction_model <- function(oil_px_selection) {
       ## add density
     
       density_dt = dt_info_z[, c('doc_field_code', 'year', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                                 'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'cumulative_wells',
-                                 'wells_km2')]
+                                 'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'n_wells_start',
+                                 'orig_area_m2', 'scen_area_m2',  'cumulative_wells', 'wells_km2')]
       
-      field_all = merge(field_all, density_dt,
+      density_dt = merge(density_dt, field_all,
+                         by = c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                                'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                                'doc_field_code', 'year'),
+                         all = T)
+      
+      density_dt = density_dt[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario,
+                                  ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, n_wells_start,
+                                  orig_area_m2, scen_area_m2, year, new_wells, cumulative_wells, wells_km2)]
+      
+      density_dt_merg = density_dt[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario,
+                                       ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                       year, cumulative_wells, wells_km2)]
+      
+      field_all = merge(field_all, density_dt_merg,
                         by = c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                                'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
                                'doc_field_code', 'year'))
+      
+      
       
 
       cols = c('new_wells', 'existing_prod_bbl', 'new_prod_bbl', 'total_prod_bbl', 
@@ -1086,7 +1103,7 @@ run_extraction_model <- function(oil_px_selection) {
                          state_all,
                          density_dt)
       
-      rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, dt_info_z)
+      rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, dt_info_z, density_dt_merg)
 
       return(output_scen)
       
