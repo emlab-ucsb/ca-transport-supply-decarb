@@ -17,6 +17,8 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   ## assemble outputs from cal epa report
   ## -------------------------------------------
   
+  # browser()
+  
   ## bau
   report_out_bau <- report_out %>%
     filter(oil_price_scenario == "iea oil price",
@@ -115,6 +117,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   ghg_state <- extract_field_out %>%
     group_by(year, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
              setback_scenario, prod_quota_scenario, excise_tax_scenario, well_type) %>%
+    mutate(upstream_kgCO2e = as.numeric(upstream_kgCO2e)) %>%
     summarise(upstream_kgCO2e = sum(upstream_kgCO2e,  na.rm = T)) %>%
     ungroup() %>%
     pivot_wider(names_from = well_type, values_from = upstream_kgCO2e) %>%
@@ -190,6 +193,8 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
                 "existing_prod_bbl", "new_prod_bbl", "total_prod_bbl", "existing_ghg_kgCO2e", "new_ghg_kgCO2e", 
                 "total_ghg_kgCO2e"))
   
+  browser()
+  
   ## melt production
   state_all_prod <- state_all[, c("version", "scen_name", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario", 
                                   "setback_scenario", "prod_quota_scenario", "excise_tax_scenario", "year", 
@@ -217,6 +222,8 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
   ## merge
   state_all_long <- merge(state_all_prod, state_all_ghg)
+  
+  
   
   # plot theme --------------------
   
