@@ -185,7 +185,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
   # read in baseline for comparison ------
   
-  state_base = fread(file.path(base_path, 'extraction_2021-06-08', 'revised-new-entry-model', 'diagnostic-state-level-results.csv'), header = T)
+  state_base = fread(file.path(base_path, 'extraction_2021-07-01', 'revised-add-density', 'diagnostic-state-level-results.csv'), header = T)
   
   # add column for base case
   state_base[, version := "new entry model"]
