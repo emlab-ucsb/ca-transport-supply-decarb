@@ -17,7 +17,7 @@ load_scenarios_dt = function(oil_px_selection) {
   carbon_file       = 'carbon_prices_revised.csv'
   ccs_ext_file      = 'ccs_extraction_scenarios.csv'
   ccs_ref_file      = 'ccs_refining_scenarios.csv'
-  ghg_file          = 'ghg_emissions_x_field_2015_revised.csv'
+  ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
   setback_file      = 'setback_coverage_R.csv'
   prod_quota_file   = 'prod_quota_scenarios.csv'
   excise_tax_file   = 'excise_tax_scenarios.csv'
@@ -73,7 +73,7 @@ load_scenarios_dt = function(oil_px_selection) {
   resource_data = resource_data[, c('doc_field_code', 'resource')]
   
   ghg_factors = fread(file.path(outputs_path, 'stocks-flows', ghg_file), header = T)
-  ghg_factors = ghg_factors[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
+  # ghg_factors = ghg_factors[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
   
   # load setback coverage file
   setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
@@ -113,7 +113,7 @@ load_scenarios_dt = function(oil_px_selection) {
   # create datatable of forecasted input variables -----
   
   vars_dt = merge(price_data[year >= 2020], resource_data, by = c('doc_field_code'))
-  vars_dt = merge(vars_dt, ghg_factors, by = c('doc_field_code'))
+  vars_dt = merge(vars_dt, ghg_factors[year >= 2020], by = c('doc_field_code', 'year'))
   setcolorder(vars_dt, c('doc_field_code', 'doc_fieldname', 'year', 
                          'm_opex_imputed', 'm_capex_imputed', 'wm_opex_imputed', 'wm_capex_imputed', 'resource', 
                          'upstream_kgCO2e_bbl'))
