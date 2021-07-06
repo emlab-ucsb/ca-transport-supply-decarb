@@ -69,12 +69,19 @@
   
   ## join with setback policies
   op_wells = left_join(op_wells, setback_all)
-
+  
+  ## Las Cienegas, change two wells to in setback under the three setback distances
+  ## c("0403700381", "0403700328")
+  
+  recode_well_vec <- c("0403700381", "0403700328")
+  
   op_wells_agg <- op_wells %>%
     ## join with setback info
     left_join(well_setbacks) %>%
     ## assume NA means not in setback (note that there are about 20 wells that are na)
     mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback)) %>%
+    ## recode las cienegas wells that appear to have incorrect gps info
+    mutate(within_setback = ifelse(api_ten_digit %in% recode_well_vec & setback_scenario != 'no_setback', 1, within_setback)) %>%
     ## filter out plugged wells
     filter(well_status != "Plugged") %>%
     ## number of wells in each field vintage by setback scenario
