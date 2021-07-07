@@ -197,7 +197,8 @@ run_extraction_model <- function(oil_px_selection) {
                                                            upstream_kgCO2e_bbl_inno_adj * ccs_ghg_scalar,
                                                            upstream_kgCO2e_bbl_inno_adj)]
 
-      dt_info[, cumulative_wells := n_wells_start]
+    ## add cumulative wells and density   
+      dt_info[, cumulative_wells := n_wells_setback]
       dt_info[, wells_km2 := cumulative_wells / (scen_area_m2 / 1e6)]
       
       # dt_info[is.na(m_opex_imputed_adj), m_opex_imputed_adj := m_opex_imputed]
@@ -1066,7 +1067,7 @@ run_extraction_model <- function(oil_px_selection) {
     
       density_dt = dt_info_z[, c('doc_field_code', 'year', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                                  'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'n_wells_start',
-                                 'orig_area_m2', 'scen_area_m2',  'cumulative_wells', 'wells_km2')]
+                                 'orig_area_m2', 'n_wells_setback', 'scen_area_m2',  'cumulative_wells', 'wells_km2')]
       
       density_dt = merge(density_dt, field_all,
                          by = c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
@@ -1076,7 +1077,7 @@ run_extraction_model <- function(oil_px_selection) {
       
       density_dt = density_dt[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                   ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, n_wells_start,
-                                  orig_area_m2, scen_area_m2, year, new_wells, cumulative_wells, wells_km2)]
+                                  orig_area_m2, n_wells_setback, scen_area_m2, year, new_wells, cumulative_wells, wells_km2)]
       
       density_dt_merg = density_dt[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                        ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
