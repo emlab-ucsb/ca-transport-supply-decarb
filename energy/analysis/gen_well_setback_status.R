@@ -148,6 +148,18 @@ wells_within_df_all <- wells %>%
   dplyr::select(api_ten_digit, well_status, setback_scenario, buffer_dist_ft, within_setback) %>%
   arrange(api_ten_digit)
 
+## reclassify two wells in las cienegas
+## Las Cienegas, change two wells to in setback under the three setback distances
+## c("0403700381", "0403700328")
+
+recode_well_vec <- c("0403700381", "0403700328")
+
+wells_within_df_all <- wells_within_df_all %>%
+  ## recode las cienegas wells that appear to have incorrect gps info
+  mutate(within_setback = ifelse(api_ten_digit %in% recode_well_vec & setback_scenario != 'no_setback', 1, within_setback)) 
+
+
+
 ## check to make sure four for each well
 View(wells_within_df_all %>%
        group_by(api_ten_digit) %>%

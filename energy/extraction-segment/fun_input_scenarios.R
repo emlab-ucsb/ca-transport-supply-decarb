@@ -21,6 +21,7 @@ load_scenarios_dt = function(oil_px_selection) {
   setback_file      = 'setback_coverage_R.csv'
   prod_quota_file   = 'prod_quota_scenarios.csv'
   excise_tax_file   = 'excise_tax_scenarios.csv'
+  n_wells_file      = 'n_wells_area.csv'
   
 
   # load packages -----
@@ -75,12 +76,24 @@ load_scenarios_dt = function(oil_px_selection) {
   ghg_factors = fread(file.path(outputs_path, 'stocks-flows', ghg_file), header = T)
   # ghg_factors = ghg_factors[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
   
-  # load setback coverage file
+  # load n wells in setbacks and setback coverage file
+  n_wells_setbacks = fread(file.path(outputs_path, 'predict-production', 'production_with_exit', n_wells_file), header = T, colClasses = c('doc_field_code' = 'character'))
+  
   setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
   setback_scens[, scen_area_m2 := orig_area_m2 *  (1 - rel_coverage)]
-  setback_scens <- setback_scens[, c("doc_field_code", "setback_scenario", "orig_area_m2", "scen_area_m2", "rel_coverage", "n_wells")]
-  setnames(setback_scens, "n_wells", "n_wells_start")
+  setback_scens <- setback_scens[, c("doc_field_code", "setback_scenario", "orig_area_m2", "scen_area_m2", "rel_coverage")]
   setnames(setback_scens, 'rel_coverage', 'area_coverage')
+
+  setback_scens = merge(setback_scens, n_wells_setbacks,
+                     by = c('doc_field_code', 'setback_scenario'),
+                     all = T)
+  
+  setback_scens[, doc_fieldname := NULL]
+  setback_scens[, n_wells_in_setback := NULL]
+  
+  setnames(setback_scens, 'n_wells', 'n_wells_start')
+  setnames(setback_scens, 'adj_no_wells', 'n_wells_setback')
+  
   setback_scens[, setback_scenario := fifelse(setback_scenario == "no_setback", setback_scenario, paste0(setback_scenario, "ft"))]
   
   
@@ -217,7 +230,7 @@ load_scenarios_dt = function(oil_px_selection) {
   
   setcolorder(scenarios_dt, c('year', 'doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                               'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'oil_price_usd_per_bbl', 'innovation_multiplier', 
-                              'carbon_price_usd_per_kg', 'ccs_price_usd_per_kg', 'scen_area_m2', 'area_coverage', 'n_wells_start', 'quota', 'tax', 'm_opex_imputed', 'm_capex_imputed', 'wm_opex_imputed', 
+                              'carbon_price_usd_per_kg', 'ccs_price_usd_per_kg', 'orig_area_m2', 'scen_area_m2', 'area_coverage', 'n_wells_start', 'n_wells_setback', 'quota', 'tax', 'm_opex_imputed', 'm_capex_imputed', 'wm_opex_imputed', 
                               'wm_capex_imputed', 'resource', 'upstream_kgCO2e_bbl'))
   
   return(scenarios_dt)
