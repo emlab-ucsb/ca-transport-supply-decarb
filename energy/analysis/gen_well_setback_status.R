@@ -47,6 +47,11 @@ wells <- sf::st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/
   dplyr::select(API, WellStatus) %>%
   unique()
 
+wells2 <- sf::st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/allwells_gis/Wells_All.shp")) %>% 
+  st_transform(ca_crs) %>%
+  dplyr::select(API, WellStatus, FieldName) %>%
+  unique()
+
 boundaries <- st_read(file.path(home, "emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/DOGGR_Admin_Boundaries_Master.shp")) %>% st_transform(3488)
 
 ## monthly well production
@@ -366,11 +371,21 @@ coverage_map <-
   mapview(field_coverage_df_1000, layer.name = "1000ft coverage", col.regions = "green", legend = FALSE) +
   mapview(field_coverage_df_2500, layer.name = "2500ft coverage", col.regions = "purple", legend = FALSE) +
   mapview(field_coverage_df_5280, layer.name = "5280ft coverage", col.regions = "orange", legend = FALSE) +
-  mapview(wells, layer.name = "Wells", label = 'WellStatus', cex = 0.3, alpha = 0, legend = FALSE)
+  mapview(wells2, layer.name = "Wells", label = 'WellStatus', cex = 0.3, alpha = 0, legend = FALSE)
   
 # save output
 mapshot(coverage_map, url = paste0(home, "/emlab/projects/current-projects/calepa-cn/outputs/setback/review/coverage_map.html"), selfcontained = F)
 
+
+
+  mapview(field_boundaries %>% filter(doc_field_code %in% c('660')), layer.name = "Field boundary", label = 'doc_field_code', col.regions = "yellow", legend = FALSE) +
+  mapview(buff1000, layer.name = "1000ft", col.regions = "blue", legend = FALSE) +
+  mapview(buff2500, layer.name = "2500ft", col.regions = "grey", legend = FALSE) +
+  mapview(buff5280, layer.name = "5280ft", col.regions = "red", legend = FALSE) +
+  mapview(field_coverage_df_1000, layer.name = "1000ft coverage", col.regions = "green", legend = FALSE) +
+  mapview(field_coverage_df_2500, layer.name = "2500ft coverage", col.regions = "purple", legend = FALSE) +
+  mapview(field_coverage_df_5280, layer.name = "5280ft coverage", col.regions = "orange", legend = FALSE) +
+  mapview(wells2 %>% filter(FieldName == "Sansinena"), layer.name = "Wells", label = 'WellStatus', cex = 0.3, alpha = 0, legend = FALSE)
 
 # # read in original output
 # orig_coverage <- read_csv(file.path(home, "emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/setback_coverage.csv")) %>%
@@ -386,3 +401,14 @@ mapshot(coverage_map, url = paste0(home, "/emlab/projects/current-projects/calep
 #          diff < -0.01 | diff > 0.01)
 
 
+## do test with doc field 660
+  mapview(field_boundaries %>% filter(doc_field_code == '660'), layer.name = "Field boundary", label = 'doc_field_code', col.regions = "yellow", legend = FALSE) +
+    mapview(buff2500, layer.name = "2500ft", col.regions = "grey", legend = FALSE) +
+    mapview(buff5280, layer.name = "5280ft", col.regions = "red", legend = FALSE)
+
+
+test <- field_boundaries %>% 
+  filter(doc_field_code == '660') %>%
+  st_intersection(buff2500) %>%
+  mutate(setback_area = st_area(geometry),
+         diff = orig_area_m2 - setback_area)

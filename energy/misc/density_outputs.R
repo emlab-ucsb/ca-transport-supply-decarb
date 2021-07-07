@@ -5,9 +5,9 @@ library(tidyverse)
 base_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
 
 
-density_out = fread(file.path(base_path, 'extraction_2021-07-06', 'revised-reclassify-wells', 'diagnostic-density-results.csv'), header = T, colClasses = c('doc_field_code' = 'character'))
+density_out = fread(file.path(base_path, 'extraction_2021-07-07', 'revised-density-calc', 'diagnostic-density-results.csv'), header = T, colClasses = c('doc_field_code' = 'character'))
 
-field_out = fread(file.path(base_path, 'extraction_2021-07-06', 'revised-reclassify-wells', 'diagnostic-field-level-results.csv'), header = T, colClasses = c('doc_field_code' = 'character'))
+field_out = fread(file.path(base_path, 'extraction_2021-07-07', 'revised-density-calc', 'diagnostic-field-level-results.csv'), header = T, colClasses = c('doc_field_code' = 'character'))
 
 pos_field_dt = field_out[, .(prod = sum(total_prod_bbl, na.rm = T)), by = .(doc_field_code, oil_price_scenario,
                                                                             innovation_scenario, carbon_price_scenario,
