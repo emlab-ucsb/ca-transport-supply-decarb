@@ -77,7 +77,7 @@ load_scenarios_dt = function(oil_px_selection) {
   # ghg_factors = ghg_factors[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
   
   # load n wells in setbacks and setback coverage file
-  n_wells_setbacks = fread(file.path(outputs_path, 'predict-production', 'production_with_exit', n_wells_file), header = T, colClasses = c('doc_field_code' = 'character'))
+  n_wells_setbacks = fread(file.path(outputs_path, 'predict-production', 'existing_production', n_wells_file), header = T, colClasses = c('doc_field_code' = 'character'))
   
   setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
   setback_scens[, scen_area_m2 := orig_area_m2 *  (1 - rel_coverage)]
