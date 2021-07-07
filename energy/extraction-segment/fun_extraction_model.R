@@ -12,8 +12,8 @@ run_extraction_model <- function(oil_px_selection) {
     coef_file       = 'poisson_regression_coefficients_revised.csv'
     param_file      = 'forecasted_decline_parameters_2020_2050_revised.csv' # meas-note: update to use "forecasted_decline_parameters_2020_2050_revised.csv"
     peak_file       = 'field-year_peak-production_yearly.csv' # meas-note: update to use "field-year_peak-production_yearly.csv"
-    prod_file       = 'predicted-production_2020-2045_field_revised.csv'
-    prod_vintage_file = 'predicted-production_2020-2045_field_start_year.csv' 
+    # prod_file       = 'predicted-production_2020-2045_field_revised.csv'
+    prod_vintage_file = 'pred-prod-no-exit_2020-2045_field_start_year_revised.csv' 
     # hist_file       = 'new_wells_pred_weighted_R.csv'  ## update this
     histprod_file   = 'crude_prod_x_field_revised.csv'
   
@@ -45,6 +45,8 @@ run_extraction_model <- function(oil_px_selection) {
     
     # load peak production for each field
     peak_dt = fread(file.path(model_path, 'decline-historic', 'data', peak_file), header = T, colClasses = c('doc_field_code' = 'character'))
+    
+    browser()
     
     # load forecasted production from existing (pre 2020) wells
     prod_existing_vintage = fread(file.path(model_path, 'predict-production', 'production_with_exit', prod_vintage_file), header = T, colClasses = c('doc_field_code' = 'character'))
