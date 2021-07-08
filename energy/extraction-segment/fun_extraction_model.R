@@ -901,6 +901,13 @@ run_extraction_model <- function(oil_px_selection) {
           ## store it
           exit_save = copy(exit_model_dt)
           exit_save[, year := t]
+          exit_save = merge(dt_info_z[, .(doc_field_code, doc_fieldname, oil_price_scenario,
+                                          innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                          setback_scenario, prod_quota_scenario, excise_tax_scenario)],
+                            exit_save,
+                            by = "doc_field_code",
+                            all.x = T)
+        
           list_exits[[i]] = exit_save
           
           ## join well exit to exit_dt_t
@@ -1096,6 +1103,8 @@ run_extraction_model <- function(oil_px_selection) {
                                                  doc_fieldname, vintage, vintage_start, year, ccs_adopted, production_bbl, 
                                                  zero_prod_quota, n_wells, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
       
+      exit_dt = rbindlist(list_exits)
+      
       # browser()
       
       rm(list_pred_prod, list_prod_existing, list_prod_new)
@@ -1194,9 +1203,10 @@ run_extraction_model <- function(oil_px_selection) {
       output_scen = list(vintage_all,
                          field_all,
                          state_all,
-                         density_dt)
+                         density_dt,
+                         exit_dt)
       
-      rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, dt_info_z, density_dt_merg)
+      rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, dt_info_z, density_dt_merg, density_dt, exit_dt)
 
       return(output_scen)
       
