@@ -47,7 +47,6 @@ run_extraction_model <- function(oil_px_selection) {
     # load peak production for each field
     peak_dt = fread(file.path(model_path, 'decline-historic', 'data', peak_file), header = T, colClasses = c('doc_field_code' = 'character'))
     
-    browser()
     
     # exit file
     exit_coefs = fread(file.path(model_path, 'exit', exit_file), header = T, colClasses = c('doc_field_code' = 'character'))
@@ -283,6 +282,8 @@ run_extraction_model <- function(oil_px_selection) {
       
       ## add column with original year (for diagnostic purposes)
       prod_existing_vintage_z[, orig_year := year]
+      ## add column to track if vintage exits
+      prod_existing_vintage_z[, no_wells_after_exit := adj_no_wells]
       prod_existing_vintage_z[, doc_fieldname := NULL]
       
       ## create lists and dt for storage
@@ -445,6 +446,8 @@ run_extraction_model <- function(oil_px_selection) {
         
         # set up dataframe with production in year t for existing field-vintages 
         ## ---------------------------------------------------------
+        
+        browser()
         
         ## filter dt_info_z for year t since actual quota number, ccs adoption, and ghg emissions intensity change year to year
         temp_prod_existing_vintage = dt_info_z[year == t, . (doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario, 
