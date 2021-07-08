@@ -232,6 +232,17 @@ scen_vec <- c(1:7)
 field_exit_out <- purrr::map(as.list(scen_vec), calc_exits) %>%
   bind_rows()
 
+## make sure all fields are included
+exit_combos <- expand.grid(doc_field_code = unique(prod_dt$doc_field_code),
+                           start_year = unique(field_exit_out$start_year),
+                           exit_year = unique(field_exit_out$exit_year),
+                           exit_scen = unique(field_exit_out$exit_scen))
+
+field_exit_out <- left_join(exit_combos, field_exit_out) %>%
+  mutate(well_exits = ifelse(is.na(well_exits), 0, well_exits)) %>%
+  filter(exit_year >= start_year)
+
+
 
 ## Save field-year-level well exit data
 write_csv(field_exit_out, file = paste0(output_dir, "well_exits.csv"))
