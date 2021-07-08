@@ -13,9 +13,10 @@ run_extraction_model <- function(oil_px_selection) {
     param_file      = 'forecasted_decline_parameters_2020_2050_revised.csv' # meas-note: update to use "forecasted_decline_parameters_2020_2050_revised.csv"
     peak_file       = 'field-year_peak-production_yearly.csv' # meas-note: update to use "field-year_peak-production_yearly.csv"
     # prod_file       = 'predicted-production_2020-2045_field_revised.csv'
-    prod_vintage_file = 'pred-prod-no-exit_2020-2045_field_start_year_revised.csv' 
+    prod_vintage_file = 'pred_prod_no_exit_2020-2045_field_start_year_revised.csv' 
     # hist_file       = 'new_wells_pred_weighted_R.csv'  ## update this
     histprod_file   = 'crude_prod_x_field_revised.csv'
+    exit_file       = 'exit_regression_coefficients.csv'
   
   # source from other scripts -----
     
@@ -48,8 +49,14 @@ run_extraction_model <- function(oil_px_selection) {
     
     browser()
     
+    # exit file
+    exit_coefs = fread(file.path(model_path, 'exit', exit_file), header = T, colClasses = c('doc_field_code' = 'character'))
+    exit_coefs[, doc_field_code := sprintf("%03s", doc_field_code)]
+    exit_coefs[, doc_fieldname := NULL]
+    
+    
     # load forecasted production from existing (pre 2020) wells
-    prod_existing_vintage = fread(file.path(model_path, 'predict-production', 'production_with_exit', prod_vintage_file), header = T, colClasses = c('doc_field_code' = 'character'))
+    prod_existing_vintage = fread(file.path(model_path, 'predict-production', 'existing_production', prod_vintage_file), header = T, colClasses = c('doc_field_code' = 'character'))
     prod_existing_vintage[, vintage := as.character(start_year)]
     prod_existing_vintage[, setback_scenario := fifelse(setback_scenario == "no_setback", setback_scenario, paste0(setback_scenario, "ft"))]
     
@@ -71,16 +78,8 @@ run_extraction_model <- function(oil_px_selection) {
   #   setnames(peak_dt, "FieldName", "doc_fieldname")
   
   # pad field codes with leading zeroes -----
-  
-    # entry_dt[, doc_field_code := sprintf("%03d", doc_field_code)]
-    # # scenarios_dt[, doc_field_code := sprintf("%03d", doc_field_code)]
     coefs_dt[, doc_field_code := sprintf("%03s", doc_field_code)]
-    # decline_dt[, doc_field_code := sprintf("%03d", doc_field_code)]
-    # peak_dt[, doc_field_code := sprintf("%03d", doc_field_code)]
-    # prod_existing_vintage[, doc_field_code := sprintf("%03d", doc_field_code)]
-    # # hist_modeled[, doc_field_code := sprintf("%03d", doc_field_code)]
-    # prod_hist[, doc_field_code := sprintf("%03d", doc_field_code)]
-  
+
   # get peak production median of last two vintages -----
     
     # meas-note: so this next line calculates the median of the peak production (per well) of the last few vintages to apply to new well entries.
@@ -90,12 +89,6 @@ run_extraction_model <- function(oil_px_selection) {
                                by = .(doc_field_code)]
   
   # from entry data, keep: field, new wells, depletion ------
-    
-    # # get top ten and non-top ten fields ------
-    # 
-    # top10_fields = unique(entry_dt[top_field > 0, c('doc_field_code', 'top_field')])
-    # other_fields = unique(entry_dt[top_field == 0, c('doc_field_code', 'top_field')])
-    
     
     setnames(entry_dt, 'n_new_wells', 'new_wells')
     setnames(entry_dt, 'm_cumsum_div_my_prod', 'depl')
