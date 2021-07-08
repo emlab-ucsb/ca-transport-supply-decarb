@@ -53,7 +53,6 @@ run_extraction_model <- function(oil_px_selection) {
     exit_coefs[, doc_field_code := sprintf("%03s", doc_field_code)]
     exit_coefs[, doc_fieldname := NULL]
     
-    
     # load forecasted production from existing (pre 2020) wells
     prod_existing_vintage = fread(file.path(model_path, 'predict-production', 'existing_production', prod_vintage_file), header = T, colClasses = c('doc_field_code' = 'character'))
     prod_existing_vintage[, vintage := as.character(start_year)]
@@ -873,7 +872,7 @@ run_extraction_model <- function(oil_px_selection) {
           setnames(prod_new_exit_t, c("vintage_start", "m_new_wells_pred"), c("start_year", "adj_no_wells"))
           
           exit_dt_t = rbind(prod_existing_exit_t, prod_new_exit_t)
-          exit_dt_t = exit_dt_t[order(doc_field_code, start_year, year)]
+          exit_dt_t = exit_dt_t[order(doc_field_code, start_year)]
           
           ## run exit model (inputs include oil price, opex, depletion x field)
           calc_num_well_exits <- function(alpha, bhat, p_oil, op_hat, opex_val, dhat, depl_val) {
