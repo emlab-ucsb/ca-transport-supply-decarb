@@ -29,6 +29,14 @@ run_extraction_model <- function(oil_px_selection) {
     # source function to create matrix of scenarios and forecasted variables
       source(here::here('energy', 'extraction-segment', 'fun_input_scenarios.R'))
     
+    ## function
+    calc_num_well_exits <- function(fe_val, bhat, p_oil, op_hat, opex_val, dhat, depl_val) {
+      
+      n_well_exit = exp(bhat * p_oil + op_hat * opex_val + dhat * depl_val) * fe_val 
+      
+    }
+    
+    
   # load data -----
     
     # load entry data
@@ -300,17 +308,10 @@ run_extraction_model <- function(oil_px_selection) {
         
         # print(t)
       
+        # if(i == 2){browser()}
         
         ## apply exit model: update prod_existing_vintage_z and prod_new_vintage_z to account for exits
         ## --------------------------------------------------------------------------------
-        
-        
-        ## run exit model (inputs include oil price, opex, depletion x field)
-        calc_num_well_exits <- function(fe_val, bhat, p_oil, op_hat, opex_val, dhat, depl_val) {
-          
-          n_well_exit = exp(bhat * p_oil + op_hat * opex_val + dhat * depl_val) * fe_val 
-          
-        }
         
         ## first do exiting wells
         prod_existing_exit_t = prod_existing_vintage_z[year == t, .(doc_field_code, vintage, start_year, adj_no_wells, no_wells_after_exit)]
@@ -346,17 +347,16 @@ run_extraction_model <- function(oil_px_selection) {
                                                            opex_val = m_opex_imputed, 
                                                            dhat = depl_hat, 
                                                            depl_val = depl)]
-        
         ## store it
         exit_save = copy(exit_model_dt)
         exit_save[, year := t]
-        exit_save = merge(dt_info_z[, .(doc_field_code, doc_fieldname, oil_price_scenario,
+        exit_save = merge(dt_info_z[year == t, .(doc_field_code, doc_fieldname, oil_price_scenario,
                                         innovation_scenario, carbon_price_scenario, ccs_scenario,
                                         setback_scenario, prod_quota_scenario, excise_tax_scenario)],
                           exit_save,
                           by = "doc_field_code",
                           all.x = T)
-        
+
         list_exits[[i]] = exit_save
         
         ## join well exit to exit_dt_t
@@ -744,8 +744,6 @@ run_extraction_model <- function(oil_px_selection) {
         ## filter out vintages that start in year t (predicted) but produce 0 due to quota
         temp_prod_quota = temp_prod_quota[!(vintage_start == t & zero_prod_quota == 1)]
         
-        ## turn on for quota binding year
-        # browser() 
 
         ## store new well production (all vintages) for time t
         list_prod_new[[i]] = temp_prod_quota[vintage == "new"]
@@ -1118,8 +1116,18 @@ run_extraction_model <- function(oil_px_selection) {
                                                  zero_prod_quota, n_wells, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
       
       exit_dt = rbindlist(list_exits)
+      # 
+      # ## join with prod_existing_vintage_z, prod_new_vintage_z
+      # 
+      # exit_out = merge(prod_new_vintage_z[, .(doc_field_code, year, orig_year, vintage, vintage_start, m_new_wells_pred,  
+      #                                         prod_per_well_bbl, no_wells_after_exit, production_bbl)],
+      #                  exit_dt[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario,
+      #                              ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year, n_well_exit)],
+      #                  by = c('doc_field_code', 'year'),
+      #                  all.x = T,
+      #                  allow.cartesian = T)
       
-      # browser()
+    
       
       rm(list_pred_prod, list_prod_existing, list_prod_new)
       
@@ -1291,6 +1299,12 @@ run_extraction_model <- function(oil_px_selection) {
     density_fname = paste0(oil_price_selection, '-density-results.csv')
     fwrite(output_list[[4]], file.path(save_processed_path, density_fname), row.names = F)
     print(paste0('Density results to ', density_fname))
+    
+    # save exit results ------
+    
+    exit_fname = paste0(oil_price_selection, '-exit-results.csv')
+    fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
+    print(paste0('Exit results to ', exit_fname))
     
     rm(solve_b, solve_mean_b, ghg_all)
     
