@@ -40,7 +40,7 @@ dt_field_exits <- dt_vintage_exit[, .(n_exits_field = sum(n_exits)),  by = .(doc
 
 ## Save field-year-level well exit data
 
-write_csv(dt_field_exits, file = paste0(save_directory, "well_exits_under_rule.csv"))
+write.csv(dt_field_exits, file = paste0(save_directory, "well_exits_under_rule.csv"))
 
 
 
