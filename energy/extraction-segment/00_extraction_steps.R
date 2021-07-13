@@ -4,7 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'diagnostic' ## diagnostic, benchmark
     # choose from: reference, high, low, iea
-  run_type = "revised-incorporate-exit"
+  run_type = "revised-incorporate-exit-v2"
     
 # outputs -------
   

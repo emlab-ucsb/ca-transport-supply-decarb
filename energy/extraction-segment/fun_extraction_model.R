@@ -289,7 +289,8 @@ run_extraction_model <- function(oil_px_selection) {
       
       ## add column with original year (for diagnostic purposes)
       prod_existing_vintage_z[, orig_year := year]
-      prod_existing_vintage_z[, prod_per_well_bbl := production_bbl / adj_no_wells]
+      prod_existing_vintage_z[, prod_per_well_bbl := fifelse(adj_no_wells > 0, production_bbl / adj_no_wells, 0)]
+
       ## add column to track if vintage exits
       prod_existing_vintage_z[, no_wells_after_exit := adj_no_wells]
       prod_existing_vintage_z[, doc_fieldname := NULL]
@@ -307,14 +308,13 @@ run_extraction_model <- function(oil_px_selection) {
         t = pred_years[i]
         
         # print(t)
-      
-        # if(i == 2){browser()}
         
         ## apply exit model: update prod_existing_vintage_z and prod_new_vintage_z to account for exits
         ## --------------------------------------------------------------------------------
         
         ## first do exiting wells
         prod_existing_exit_t = prod_existing_vintage_z[year == t, .(doc_field_code, vintage, start_year, adj_no_wells, no_wells_after_exit)]
+        
         
         ## if i > 1, add new wells to the df 
         if(i > 1) {
@@ -369,8 +369,9 @@ run_extraction_model <- function(oil_px_selection) {
                                             fifelse(n_well_exit < cumul_wells & start_year == min(start_year), n_well_exit, 0)), by = doc_field_code]
         exit_dt_t[, cumul_exit := cumsum(modify_wells), by = doc_field_code]
         exit_dt_t[, prev_modify_wells := shift(modify_wells, n = 1, type = 'lag'), by = doc_field_code]
-        exit_dt_t[, modify_wells := fifelse(modify_wells == 0 & cumul_exit < n_well_exit & prev_modify_wells > 0, n_well_exit - cumul_exit,
+        exit_dt_t[, modify_wells := fifelse(!is.na(prev_modify_wells) & modify_wells == 0 & cumul_exit < n_well_exit & prev_modify_wells > 0, n_well_exit - cumul_exit,
                                             modify_wells)]
+        exit_dt_t[, modify_wells := fifelse(modify_wells > no_wells_after_exit, no_wells_after_exit, modify_wells)]
         ## modify number of wells and production for future years
         exit_dt_t[, no_wells_after_exit_t := no_wells_after_exit - modify_wells]
         
@@ -1116,20 +1117,30 @@ run_extraction_model <- function(oil_px_selection) {
                                                  zero_prod_quota, n_wells, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
       
       exit_dt = rbindlist(list_exits)
-      # 
-      # ## join with prod_existing_vintage_z, prod_new_vintage_z
-      # 
-      # exit_out = merge(prod_new_vintage_z[, .(doc_field_code, year, orig_year, vintage, vintage_start, m_new_wells_pred,  
-      #                                         prod_per_well_bbl, no_wells_after_exit, production_bbl)],
-      #                  exit_dt[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-      #                              ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year, n_well_exit)],
-      #                  by = c('doc_field_code', 'year'),
-      #                  all.x = T,
-      #                  allow.cartesian = T)
       
-    
+      ## join with prod_existing_vintage_z, prod_new_vintage_z
+
+      exit_out = merge(prod_new_vintage_z[, .(doc_field_code, year, orig_year, vintage, vintage_start, m_new_wells_pred,
+                                              prod_per_well_bbl, no_wells_after_exit, production_bbl)],
+                       exit_dt[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario,
+                                   ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year, n_well_exit)],
+                       by = c('doc_field_code', 'year'),
+                       all.x = T)
       
-      rm(list_pred_prod, list_prod_existing, list_prod_new)
+      setnames(exit_out, c('vintage_start', 'm_new_wells_pred'), c('start_year', 'adj_no_wells'))
+      
+      exit_out_existing = merge(prod_existing_vintage_z[, .(doc_field_code, year, orig_year, vintage, start_year, adj_no_wells,
+                                                            prod_per_well_bbl, no_wells_after_exit, production_bbl)],
+                                exit_dt[, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario,
+                                            ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year, n_well_exit)],
+                                by = c('doc_field_code', 'year'),
+                                all.x = T)
+      
+      exit_out = rbind(exit_out, exit_out_existing)
+      exit_out = exit_out[order(doc_field_code, start_year)]
+      
+      
+      rm(list_pred_prod, list_prod_existing, list_prod_new, exit_out_existing, prod_existing_vintage_z, prod_new_vintage_z, list_exits)
       
       
       
@@ -1226,9 +1237,9 @@ run_extraction_model <- function(oil_px_selection) {
                          field_all,
                          state_all,
                          density_dt,
-                         exit_dt)
+                         exit_out)
       
-      rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, dt_info_z, density_dt_merg, density_dt, exit_dt)
+      rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, dt_info_z, density_dt_merg, density_dt, exit_out)
 
       return(output_scen)
       
@@ -1244,9 +1255,9 @@ run_extraction_model <- function(oil_px_selection) {
     
     ## res selection
     res = lapply(1:nrow(scen_sel), func_yearly_production)
-    
+
     ## for diagnostic
-    # res = lapply(1:1, func_yearly_production)
+    # res = lapply(3:3, func_yearly_production)
     
     output_list = do.call(Map, c(f = rbind, res))
     
