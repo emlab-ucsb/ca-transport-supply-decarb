@@ -58,7 +58,7 @@
 
 # years to predict -----
   
-  pred_years = data.table(start_year = c(seq(2019, 2050, 1)))
+  pred_years = data.table(start_year = c(seq(2019, 2045, 1)))
   
 # remove outliers outside of 1st and 99th percentile ------
   
@@ -90,9 +90,15 @@
   pred_clean[is.na(int_year), int_year := med_int_year]
   pred_clean[, med_int_year := NULL]
   
+# remove fields that have negative parameters -------
+  
+  fields_bad = unique(pred_clean[(q_i < 0) | (D < 0) | (b < 0) | (d < 0), .(doc_field_code, doc_fieldname)])
+  
+  pred_clean_2 = pred_clean[!fields_bad, on = .(doc_field_code, doc_fieldname)]
+  
 # check which fields are missing -------
   
-  missing_fields = un_fields[!pred_clean, on = .(doc_field_code, doc_fieldname)]
+  missing_fields = un_fields[!pred_clean_2, on = .(doc_field_code, doc_fieldname)]
   
 # take median of parameters across vintages -------
   
@@ -112,6 +118,13 @@
                                    int_year = predict(lm(median_int ~ start_year),  pred_years))]
   pred_vintage[, start_year := pred_years[, start_year]]
   
+# calculate percentage change in median forecasted parameters --------
+  
+  # setkey(pred_vintage, start_year)
+  # pred_vintage[, perc_q_i := (q_i - shift(q_i, type = 'lag'))/shift(q_i, type = 'lag')]
+  # pred_vintage[, perc_D := D - shift(D, type = 'lag')]
+  # pred_vintage[, perc_b := b - shift(b, type = 'lag')]
+  
 # use median parameter regression for all missing fields -------
   
   l_fill_in = list()
@@ -129,7 +142,7 @@
   
 # combine predicted and filled in fields ------
   
-  pred_all = rbindlist(list(pred_clean, dt_fill_in), use.names = T, fill = T)
+  pred_all = rbindlist(list(pred_clean_2, dt_fill_in), use.names = T, fill = T)
   setkey(pred_all, doc_field_code)
   
 # remove 2019 predictions -----
