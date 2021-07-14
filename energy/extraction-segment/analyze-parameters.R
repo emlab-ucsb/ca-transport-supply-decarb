@@ -15,7 +15,7 @@
 # outputs -------
   
   save_path       = "outputs/decline-historic/parameters"
-  save_file       = "forecasted_decline_parameters_2020_2050_revised.csv"
+  save_file       = "forecasted_decline_parameters_2020_2045.csv"
 
 # load libraries -------- 
 
