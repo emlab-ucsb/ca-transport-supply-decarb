@@ -9,6 +9,7 @@
   # yr_fil        = "fitted-parameters_field-vintage_yearly_entry_modeled_only.csv"
   yr_file         = "outputs/decline-historic/parameters/fitted-parameters_field-start-year_yearly_entry.csv"
   prod_file       = "outputs/stocks-flows/crude_prod_x_field_revised.csv"
+  entry_file      = 'outputs/stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
   plot_path       = "outputs/decline-historic/figures/"
   
 # outputs -------
@@ -39,6 +40,8 @@
   prod_2019 = fread(file.path(emlab_path, prod_file), header = T)
   prod_2019 = prod_2019[year == 2019]
   
+  df_entry = fread(file.path(emlab_path, entry_file), header = T)
+  
 # rename field code columns -----
   
   # setnames(para_year, 'FieldCode', 'doc_field_code')
@@ -53,6 +56,11 @@
   
   para_year[, doc_field_code := sprintf("%03d", doc_field_code)]
   prod_2019[, doc_field_code := sprintf("%03d", doc_field_code)]
+  df_entry[, doc_field_code := sprintf("%03d", doc_field_code)]
+  
+# get unique number of fields in entry model -----
+  
+  un_fields = unique(df_entry[, .(doc_field_code, doc_fieldname)])
   
 # get final b value ------
   
@@ -91,56 +99,123 @@
   para_clean = para_year[b > quantile(b, 0.01, na.rm = T) & b < quantile(b, 0.99, na.rm = T)]
   para_clean = para_clean[d > quantile(d, 0.01, na.rm = T) & d < quantile(d, 0.99, na.rm = T)]
   
-# regress parameters for top 10 fields ------
-
-  para_top10 = para_clean[doc_field_code %in% top10_fields]
-  para_top10 = para_top10[!is.na(b)]
-
-  pred_top10 = para_top10[, .(q_i = predict(lm(q_i ~ start_year),  pred_years),
+# regress parameters for all fields (that data exist for) -------
+  
+  pred_clean = para_clean[, .(q_i = predict(lm(q_i ~ start_year),  pred_years),
                               D = predict(lm(D ~ start_year),  pred_years),
                               b = predict(lm(b ~ start_year),  pred_years),
                               d = predict(lm(d ~ start_year),  pred_years),
                               int_year = predict(lm(int_yr ~ start_year), pred_years)), by = .(doc_field_code, doc_fieldname)]
-  pred_top10[, start_year := rep(pred_years[, start_year], uniqueN(pred_top10[, doc_field_code]))]
+  pred_clean[, start_year := rep(pred_years[, start_year], uniqueN(pred_clean[, doc_field_code]))]
   
-  # top_fields_2019[!doc_field_code %in% pred_top10[, doc_field_code]]
-
+# for negative values of predicted intercept years, replace with median -------
+  
+  rank_years_pred = pred_clean[int_year > 0, .SD[start_year %in% tail(sort(unique(start_year)), 5)], by = .(doc_field_code, doc_fieldname)]
+  median_int_yr_pred = rank_years_pred[, .(med_int_year = median(int_year, na.rm = T)), by = .(doc_field_code, doc_fieldname)]
+  
+  rank_years_hist = para_clean[, .SD[start_year %in% tail(sort(unique(start_year)), 5)], by = .(doc_field_code, doc_fieldname)]
+  median_int_yr_hist = rank_years_hist[, .(med_int_year = median(int_yr, na.rm = T)), by = .(doc_field_code, doc_fieldname)]
+  
+  pred_clean = merge(pred_clean, median_int_yr_pred, by = c('doc_field_code', 'doc_fieldname'), all.x = TRUE)
+  pred_clean[int_year < 0, int_year := med_int_year]
+  pred_clean[, med_int_year := NULL]
+  
+  pred_clean = merge(pred_clean, median_int_yr_hist, by = c('doc_field_code', 'doc_fieldname'), all.x = TRUE)
+  pred_clean[is.na(int_year), int_year := med_int_year]
+  pred_clean[, med_int_year := NULL]
+  
+# check which fields are missing -------
+  
+  missing_fields = un_fields[!pred_clean, on = .(doc_field_code, doc_fieldname)]
   
 # take median of parameters across vintages -------
-
-  median_params = para_clean[!doc_field_code %in% pred_top10[, doc_field_code], .(median_q_i = median(q_i, na.rm = T),
-                                                                                  median_D = median(D, na.rm = T),
-                                                                                  median_b = median(b, na.rm = T),
-                                                                                  median_d = median(d, na.rm = T),
-                                                                                  median_int = median(int_yr, na.rm = T)), by = .(start_year)]
+  
+  median_params = para_clean[, .(median_q_i = median(q_i, na.rm = T),
+                                 median_D = median(D, na.rm = T),
+                                 median_b = median(b, na.rm = T),
+                                 median_d = median(d, na.rm = T),
+                                 median_int = median(int_yr, na.rm = T)), by = .(start_year)]
   setorder(median_params, "start_year")
   
 # regress median parameters for all other fields ------
   
-  pred_other = median_params[, .(q_i = predict(lm(median_q_i ~ start_year),  pred_years),
-                                 D = predict(lm(median_D ~ start_year),  pred_years),
-                                 b = predict(lm(median_b ~ start_year),  pred_years),
-                                 d = predict(lm(median_d ~ start_year),  pred_years),
-                                 int_year = predict(lm(median_int ~ start_year),  pred_years))]
-  pred_other[, start_year := pred_years[, start_year]]
+  pred_vintage = median_params[, .(q_i = predict(lm(median_q_i ~ start_year),  pred_years),
+                                   D = predict(lm(median_D ~ start_year),  pred_years),
+                                   b = predict(lm(median_b ~ start_year),  pred_years),
+                                   d = predict(lm(median_d ~ start_year),  pred_years),
+                                   int_year = predict(lm(median_int ~ start_year),  pred_years))]
+  pred_vintage[, start_year := pred_years[, start_year]]
   
-# for negative values of predicted intercept years, replace with median of 1990-20
+# use median parameter regression for all missing fields -------
   
-  pred_other[int_year < 0, int_year := median(median_params[start_year %in% 1990:2010, median_int])]
+  l_fill_in = list()
+  for (i in 1:nrow(missing_fields)){
+    
+    temp = copy(pred_vintage)
+    temp[, doc_field_code := missing_fields[i, doc_field_code]]
+    temp[, doc_fieldname := missing_fields[i, doc_fieldname]]
+    
+    l_fill_in[[i]] = temp
+    
+  }
   
-# add columns for "other" fields (all non-top 10 fields) -------
+  dt_fill_in = rbindlist(l_fill_in)
   
-  pred_other[, doc_field_code := 'XYZ']
-  pred_other[, doc_fieldname := 'other']
+# combine predicted and filled in fields ------
   
-# combine top 10 and non top 10 results together -----
+  pred_all = rbindlist(list(pred_clean, dt_fill_in), use.names = T, fill = T)
+  setkey(pred_all, doc_field_code)
   
-  pred_all = rbindlist(list(pred_top10, pred_other), use.names = T, fill = T)
-  setcolorder(pred_all, c('doc_field_code', 'doc_fieldname', 'start_year', 'q_i', 'D', 'b', 'd', 'int_year'))
-  setnames(pred_all, 'start_year', 'year')
+# # regress parameters for top 10 fields ------
+# 
+#   para_top10 = para_clean[doc_field_code %in% top10_fields]
+#   para_top10 = para_top10[!is.na(b)]
+# 
+#   pred_top10 = para_top10[, .(q_i = predict(lm(q_i ~ start_year),  pred_years),
+#                               D = predict(lm(D ~ start_year),  pred_years),
+#                               b = predict(lm(b ~ start_year),  pred_years),
+#                               d = predict(lm(d ~ start_year),  pred_years),
+#                               int_year = predict(lm(int_yr ~ start_year), pred_years)), by = .(doc_field_code, doc_fieldname)]
+#   pred_top10[, start_year := rep(pred_years[, start_year], uniqueN(pred_top10[, doc_field_code]))]
+#   
+#   # top_fields_2019[!doc_field_code %in% pred_top10[, doc_field_code]]
+# 
+#   
+# # take median of parameters across vintages -------
+# 
+#   median_params = para_clean[!doc_field_code %in% pred_top10[, doc_field_code], .(median_q_i = median(q_i, na.rm = T),
+#                                                                                   median_D = median(D, na.rm = T),
+#                                                                                   median_b = median(b, na.rm = T),
+#                                                                                   median_d = median(d, na.rm = T),
+#                                                                                   median_int = median(int_yr, na.rm = T)), by = .(start_year)]
+#   setorder(median_params, "start_year")
+#   
+# # regress median parameters for all other fields ------
+#   
+#   pred_other = median_params[, .(q_i = predict(lm(median_q_i ~ start_year),  pred_years),
+#                                  D = predict(lm(median_D ~ start_year),  pred_years),
+#                                  b = predict(lm(median_b ~ start_year),  pred_years),
+#                                  d = predict(lm(median_d ~ start_year),  pred_years),
+#                                  int_year = predict(lm(median_int ~ start_year),  pred_years))]
+#   pred_other[, start_year := pred_years[, start_year]]
+#   
+# # for negative values of predicted intercept years, replace with median of 1990-20
+#   
+#   pred_other[int_year < 0, int_year := median(median_params[start_year %in% 1990:2010, median_int])]
+#   
+# # add columns for "other" fields (all non-top 10 fields) -------
+#   
+#   pred_other[, doc_field_code := 'XYZ']
+#   pred_other[, doc_fieldname := 'other']
+#   
+# # combine top 10 and non top 10 results together -----
+#   
+#   pred_all = rbindlist(list(pred_top10, pred_other), use.names = T, fill = T)
   
 # remove 2019 predictions -----
   
+  setcolorder(pred_all, c('doc_field_code', 'doc_fieldname', 'start_year', 'q_i', 'D', 'b', 'd', 'int_year'))
+  setnames(pred_all, 'start_year', 'year')
   pred_all = pred_all[year > 2019]
   
 # add end year of vintage ----
