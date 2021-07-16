@@ -188,7 +188,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   state_base = fread(file.path(base_path, 'extraction_2021-07-07', 'revised-density-calc', 'diagnostic-state-level-results.csv'), header = T)
   
   # add column for base case
-  state_base[, version := "revised reclassify wells"]
+  state_base[, version := "pre-exit-model-or-decline-update"]
   
   # bind data
   state_all <- rbind(state_base, state_out)
