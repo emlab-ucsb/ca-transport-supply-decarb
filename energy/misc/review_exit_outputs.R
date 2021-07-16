@@ -268,24 +268,6 @@ exit_new_existing2 <- exit_new_existing %>%
   filter(n_exits_new > 0 & new_wells_lag > 0 & diff == 0)
 
 
-# new wells
-new_wells_fig = ggplot(state_all_long %>% filter(type == "new"), 
-                       aes(x = year, y = new_wells, color = version)) + 
-  geom_line(alpha = 0.7, size = 1) +
-  facet_grid(~ scen_name) +
-  geom_point(data = state_all_long %>% filter(version == paste0("adj-", run_type), year %in% seq(2020, 2045, by = 5)),
-             aes(x = year, y = new_wells, color = version), shape = 3) +
-  geom_line(data = report_wells_out_all %>% mutate(version = ifelse(year <= 2019, "historic", "calepa-report")), aes(x = year, y = new_wells, color = version), alpha = 0.7, size = 1) +
-  geom_vline(xintercept = 2019, color = "darkgrey", size = 0.3, lty = "dashed") +
-  scale_color_manual(values = c("#FF6E1B", "#FFD200", "#005581", "black")) +
-  labs(title = 'State-level new wells',
-       subtitle = 'number of new wells', 
-       x = 'Year',
-       y = NULL,
-       color = '') +
-  # scale_color_gradient(low = "#f7fbff", high = "#08306b") +
-  theme_line
-
 
 
 

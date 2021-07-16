@@ -6,6 +6,8 @@
 library(data.table)
 library(tidyverse)
 library(scales)
+library(extrafont)
+library(hrbrthemes)
 
 ## paths
 outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
@@ -38,23 +40,66 @@ comp_19_20 = merge(comp_19_20, comp_20,
                    all.x = T)
 
 comp_19_20[, bbls_2020 := fifelse(is.na(bbls_2020), 0, bbls_2020)]
+comp_19_20[, diff := bbls_2020 - bbls_2019]
 
 comp_19_20 <- comp_19_20 %>%
   pivot_longer(bbls_2019:bbls_2020, names_to = "year", values_to = "bbls") %>%
   mutate(year = ifelse(year == "bbls_2019", 2019, 2020),
-         year = as.integer(year))
+         year = as.integer(year)) %>%
+  group_by(doc_field_code, doc_fieldname) %>%
+  mutate(max_bbl = max(bbls)) %>%
+  ungroup() %>%
+  mutate(facet_grp = ifelse(max_bbl <= 386028, "subset-1", "subset-2")) %>%
+  filter(!doc_field_code %in% c("000", "848", "154")) 
 
 
-## make plot
-year_comp <- ggplot(comp_19_20, aes(x = year, y = bbls, group = doc_fieldname)) +
-  geom_line() +
+## make plots
+## ----------------
+year_comp <- ggplot(comp_19_20, aes(x = year, y = bbls, group = doc_fieldname, color = diff / 1e6)) +
+  geom_line(alpha = 0.9) +
   labs(x = NULL,
-      y = "barrels") +
-  geom_point(data = comp_19_20, aes(x = year, y = bbls, group = doc_fieldname)) +
-  geom_text(data = comp_19_20 %>% filter(year == 2020), aes(x = year, label = doc_fieldname)) +
+       y = "barrels",
+       color = "Difference\n(million)") +
+  facet_wrap(~facet_grp, scales = "free_y") +
+  geom_point(data = comp_19_20, aes(x = year, y = bbls, group = doc_fieldname, color = diff / 1e6)) +
+  geom_text(data = comp_19_20 %>% filter(year == 2020), aes(x = year, label = doc_fieldname), nudge_x = 0.1, hjust = 0) +
   scale_y_continuous(labels = comma) + 
-  scale_x_continuous(breaks=c(2019, 2020)) +
-  theme_bw()
+  scale_color_gradient2(low = muted("red"),
+                        mid = "white",
+                        high = muted("blue"),
+                        midpoint = 0) +
+  # xlim(2019, 2021) + 
+  scale_x_continuous(limits = c(2019, 2021), breaks=c(2019, 2020, 2021)) +
+  theme_bw() 
+
+ggsave(year_comp,
+       filename = file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020.pdf"),
+       width = 8,
+       height = 8)
+
+embed_fonts(file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020.pdf"),
+            outfile = file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020.pdf"))  
+
+## bars
+year_comp_bars <- ggplot(comp_19_20 %>% select(doc_field_code, doc_fieldname, diff) %>% unique(), aes(y = reorder(doc_fieldname, diff) , x = diff/ 1e6)) +
+  geom_bar(stat = "identity") +
+  labs(x = "difference (million bbls)",
+       y = NULL) +
+  scale_x_continuous(labels = comma) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 4))
+
+ggsave(year_comp_bars,
+       filename = file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020_bars.pdf"),
+       width = 8,
+       height = 8)
+
+embed_fonts(file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020_bars.pdf"),
+            outfile = file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020_bars.pdf"))  
+
+
+
+
 
 ## cumulative
 hist_20 = prod_hist[year >= 2015, .(cumul_hist = sum(total_bbls)), by = .(doc_field_code, doc_fieldname)]
