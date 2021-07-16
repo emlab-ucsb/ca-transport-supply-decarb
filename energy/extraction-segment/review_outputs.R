@@ -18,9 +18,9 @@ histprod_file   = 'crude_prod_x_field_revised.csv'
 entry_df_file   = 'entry_df_final_revised.csv'
 
 ## read in outputs
-vintage_base = fread(file.path(base_path, 'extraction_2021-06-04', 'revised-remove-plugged', 'diagnostic-vintage-level-results.csv'), header = T)
-field_base = fread(file.path(base_path, 'extraction_2021-06-04', 'revised-remove-plugged', 'diagnostic-field-level-results.csv'), header = T)
-state_base = fread(file.path(base_path, 'extraction_2021-06-04', 'revised-remove-plugged', 'diagnostic-state-level-results.csv'), header = T)
+vintage_base = fread(file.path(base_path, 'extraction_2021-07-12', 'revised-incorporate-exit-v2', 'diagnostic-vintage-level-results.csv'), header = T)
+field_base = fread(file.path(base_path, 'extraction_2021-07-12', 'revised-incorporate-exit-v2', 'diagnostic-field-level-results.csv'), header = T)
+state_base = fread(file.path(base_path, 'extraction_2021-07-12', 'revised-incorporate-exit-v2', 'diagnostic-state-level-results.csv'), header = T)
 
 # load production quota file
 prod_quota_scens = fread(file.path(scen_path, prod_quota_file), header = T)
