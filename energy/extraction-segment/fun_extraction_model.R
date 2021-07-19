@@ -29,7 +29,7 @@ run_extraction_model <- function(oil_px_selection) {
     # source function to create matrix of scenarios and forecasted variables
       source(here::here('energy', 'extraction-segment', 'fun_input_scenarios.R'))
     
-    ## function
+    ## exit function
     calc_num_well_exits <- function(fe_val, bhat, p_oil, op_hat, opex_val, dhat, depl_val) {
       
       n_well_exit = exp(bhat * p_oil + op_hat * opex_val + dhat * depl_val) * fe_val 
@@ -309,10 +309,42 @@ run_extraction_model <- function(oil_px_selection) {
         
         # print(t)
         
-        ## apply exit model: update prod_existing_vintage_z and prod_new_vintage_z to account for exits
+        ## first: predict new wells ----------------------------------------------------------------------
+        new_wells = dt_info_z[year == t]
+        new_wells = new_wells[dt_depl_z[year == t], on = .(doc_field_code,
+                                                            oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                                            setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                                            year), nomatch = 0]
+        new_wells = new_wells[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
+        
+        # poisson regression for all fields
+        new_wells[, m_new_wells_pred := fifelse(depl < 0.9999,
+                                                 exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl) * fixed_effect,
+                                                 0)]
+        # new_wells[, wm_new_wells_pred := fifelse(depl < 0.9999,
+        #                                           exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl) * fixed_effect,
+        #                                           0)]
+        
+        setorder(new_wells, 'doc_field_code')
+        
+        # round number of wells to integer
+        # new_wells[, m_new_wells_pred_round := round(m_new_wells_pred, 0)]
+        # new_wells[, wm_new_wells_pred_round := round(wm_new_wells_pred, 0)]
+        
+        ## store the new wells and associated information for year t
+        # list_pred_wells[[i]] = new_wells
+        
+        ## apply exit model: update prod_existing_vintage_z and prod_new_vintage_z to account for exits --------------------------
         ## --------------------------------------------------------------------------------
         
-        ## first do exiting wells
+        ## newly predicted in t
+        new_wells_exit_t <- new_wells[, c("doc_field_code", "year", "m_new_wells_pred")]
+        new_wells_exit_t[, no_wells_after_exit := m_new_wells_pred]
+        new_wells_exit_t[, vintage := "new"]
+        setnames(new_wells_exit_t, c("year", "m_new_wells_pred"), c("start_year", "adj_no_wells"))
+        setcolorder(new_wells_exit_t, c("doc_field_code", "vintage", "start_year", "adj_no_wells", "no_wells_after_exit"))
+        
+        ## existing
         prod_existing_exit_t = prod_existing_vintage_z[year == t, .(doc_field_code, vintage, start_year, adj_no_wells, no_wells_after_exit)]
         
         
@@ -322,14 +354,14 @@ run_extraction_model <- function(oil_px_selection) {
           prod_new_exit_t = prod_new_vintage_z[year == t, .(doc_field_code, vintage, vintage_start, m_new_wells_pred, no_wells_after_exit)]
           setnames(prod_new_exit_t, c("vintage_start", "m_new_wells_pred"), c("start_year", "adj_no_wells"))
           
-          exit_dt_t = rbind(prod_existing_exit_t, prod_new_exit_t)
+          exit_dt_t = rbind(prod_existing_exit_t, prod_new_exit_t, new_wells_exit_t)
           
           
-        } else { exit_dt_t = copy(prod_existing_exit_t)}
+        } else { exit_dt_t = rbind(prod_existing_exit_t, new_wells_exit_t)}
         
         ## create df of exit params
         exit_dt_t = exit_dt_t[order(doc_field_code, start_year)]
-
+        
         exit_model_dt = dt_info_z[year == t, .(doc_field_code, oil_price_usd_per_bbl, m_opex_imputed)]
         
         exit_model_dt = merge(exit_model_dt, dt_depl_z[year == t, .(doc_field_code, depl)],
@@ -351,12 +383,12 @@ run_extraction_model <- function(oil_px_selection) {
         exit_save = copy(exit_model_dt)
         exit_save[, year := t]
         exit_save = merge(dt_info_z[year == t, .(doc_field_code, doc_fieldname, oil_price_scenario,
-                                        innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                        setback_scenario, prod_quota_scenario, excise_tax_scenario)],
+                                                 innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                                 setback_scenario, prod_quota_scenario, excise_tax_scenario)],
                           exit_save,
                           by = "doc_field_code",
                           all.x = T)
-
+        
         list_exits[[i]] = exit_save
         
         ## join well exit to exit_dt_t
@@ -367,7 +399,11 @@ run_extraction_model <- function(oil_px_selection) {
         ## for each field, identify oldest vintage that still has wells
         exit_dt_t[, pos_wells := ifelse(no_wells_after_exit > 0, 1, 0)]
         exit_dt_t[, pos_wells := cumsum(pos_wells), by = .(doc_field_code)]
+        
+        ## cumulative sum of wells
         exit_dt_t[, cumul_wells := cumsum(no_wells_after_exit), by = doc_field_code]
+        
+        ## determine which vintages get modified by exits
         exit_dt_t[, modify_wells := fifelse(n_well_exit >= cumul_wells, no_wells_after_exit,
                                             fifelse(n_well_exit < cumul_wells & pos_wells == 1, n_well_exit, 0)), by = doc_field_code]
         exit_dt_t[, cumul_exit := cumsum(modify_wells), by = doc_field_code]
@@ -381,6 +417,18 @@ run_extraction_model <- function(oil_px_selection) {
         
         ## modify number of wells and production for future years
         exit_dt_t[, no_wells_after_exit_t := no_wells_after_exit - modify_wells]
+        
+        
+        ## modify newly predicted entry in time t
+        exit_dt_new_t = exit_dt_t[start_year == t, .(doc_field_code, no_wells_after_exit_t)]
+        
+        new_wells = merge(new_wells, exit_dt_new_t,
+                          by = "doc_field_code",
+                          all.x = T)
+        
+        new_wells[, m_new_wells_pred := no_wells_after_exit_t]
+        new_wells[, no_wells_after_exit_t := NULL]
+        
         
         ## modify prod_existing_vintage_z
         exit_dt_existing = exit_dt_t[vintage != "new", .(doc_field_code, vintage, start_year, no_wells_after_exit_t)]
@@ -396,86 +444,24 @@ run_extraction_model <- function(oil_px_selection) {
         
         ## if i > 1, modify prod_existing_vintage_z
         if(i > 1) {
-        
-        exit_dt_new = exit_dt_t[vintage == "new", .(doc_field_code, vintage, start_year, no_wells_after_exit_t)]
-        setnames(exit_dt_new, "start_year", "vintage_start")
-        
-        prod_new_vintage_z = merge(prod_new_vintage_z, exit_dt_new,
-                                   by = c("doc_field_code", "vintage", "vintage_start"),
-                                   all.x = T)
-        
-        prod_new_vintage_z[, no_wells_after_exit := fifelse(orig_year >= t, no_wells_after_exit_t, no_wells_after_exit)]
-        prod_new_vintage_z[, production_bbl := no_wells_after_exit * prod_per_well_bbl]
-        
-        prod_new_vintage_z[, no_wells_after_exit_t := NULL]
-        
+          
+          exit_dt_new = exit_dt_t[vintage == "new" & start_year < t, .(doc_field_code, vintage, start_year, no_wells_after_exit_t)]
+          setnames(exit_dt_new, "start_year", "vintage_start")
+          
+          prod_new_vintage_z = merge(prod_new_vintage_z, exit_dt_new,
+                                     by = c("doc_field_code", "vintage", "vintage_start"),
+                                     all.x = T)
+          
+          prod_new_vintage_z[, no_wells_after_exit := fifelse(orig_year >= t, no_wells_after_exit_t, no_wells_after_exit)]
+          prod_new_vintage_z[, production_bbl := no_wells_after_exit * prod_per_well_bbl]
+          
+          prod_new_vintage_z[, no_wells_after_exit_t := NULL]
+          
         }
         
         
-        ## predict new wells ----------------------------------------------------------------------
-        ## set up variables for all fields
-        new_wells = dt_info_z[year == t]
-        new_wells = new_wells[dt_depl_z[year == t], on = .(doc_field_code,
-                                                            oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                                            setback_scenario, prod_quota_scenario, excise_tax_scenario,
-                                                            year), nomatch = 0]
-        new_wells = new_wells[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
-        
-        # poisson regression for all fields
-        new_wells[, m_new_wells_pred := fifelse(depl < 0.9999,
-                                                 exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl) * fixed_effect,
-                                                 0)]
-        new_wells[, wm_new_wells_pred := fifelse(depl < 0.9999,
-                                                  exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl) * fixed_effect,
-                                                  0)]
-        
-        
-        # # # set up variables for top 10 fields
-        # temp_top10 = dt_info_z[year == t & doc_field_code %in% top10_fields[, doc_field_code]]
-        # temp_top10 = temp_top10[dt_depl_z[year == t], on = .(doc_field_code,
-        #                                                      oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-        #                                                      setback_scenario, prod_quota_scenario, excise_tax_scenario,
-        #                                                      year), nomatch = 0]
-        # temp_top10 = temp_top10[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
-        # 
-        # # poisson regression of top 10 fields
-        # temp_top10[, m_new_wells_pred := fifelse(depl < 0.9999,
-        #                                         exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl + cons_hat),
-        #                                         0)]
-        # temp_top10[, wm_new_wells_pred := fifelse(depl < 0.9999,
-        #                                          exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl + cons_hat),
-        #                                          0)]
-        # 
-        # # set up variables for all other fields
-        # temp_other = dt_info_z[year == t & doc_field_code %in% other_fields[, doc_field_code]]
-        # temp_other = temp_other[unique(dt_depl_z[year == t]), on = .(doc_field_code,
-        #                                                              oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-        #                                                              setback_scenario, prod_quota_scenario, excise_tax_scenario,
-        #                                                              year), nomatch = 0]
-        # temp_other = temp_other[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
-        # 
-        # # fixed effects poisson regression of all other fields
-        # temp_other[, m_yvar_poisson := exp(brent_hat*oil_price_usd_per_bbl + capex_hat*m_capex_imputed + opex_hat*m_opex_imputed_adj + depl_hat*depl)]
-        # temp_other[, wm_yvar_poisson := exp(brent_hat*oil_price_usd_per_bbl + capex_hat*wm_capex_imputed + opex_hat*wm_opex_imputed_adj + depl_hat*depl)]
-        # temp_other[, m_new_wells_pred := ifelse(depl < 0.9999,
-        #                                         yvar_exp_alpha*m_yvar_poisson,
-        #                                         0)]
-        # temp_other[, wm_new_wells_pred := ifelse(depl < 0.9999,
-        #                                          yvar_exp_alpha*wm_yvar_poisson,
-        #                                          0)]
-        # 
-        # temp_other[, m_yvar_poisson := NULL]
-        # temp_other[, wm_yvar_poisson := NULL]
-        # 
-        # new_wells = rbindlist(list(temp_top10, temp_other), use.names = T)
-        setorder(new_wells, 'doc_field_code')
-        
-        # round number of wells to integer
-        # new_wells[, m_new_wells_pred_round := round(m_new_wells_pred, 0)]
-        # new_wells[, wm_new_wells_pred_round := round(wm_new_wells_pred, 0)]
-        
-        ## store the new wells and associated information for year t
-        # list_pred_wells[[i]] = new_wells
+        ## determine production from new wells (after exits) -------------------------------------------
+        ## --------------------------------------------------------------------------------------------
         
         # calculate prediction of new wells into 2045
         ## meas-check: check to make sure the updates below are correct. original code commented out.
@@ -514,7 +500,7 @@ run_extraction_model <- function(oil_px_selection) {
         ## recalculate density with new wells 
         # new_wells_prod[, density_check := cumulative_wells + m_new_wells_pred / (scen_area_m2 / 1e6)]
 
-        ## implement production quota before calculating prod from new wells
+        ## implement production quota before calculating prod from new wells ---------------------------------------------
         ## rank existing and new wells in each field by costs
         
         ## select cost info for year t
@@ -1089,7 +1075,7 @@ run_extraction_model <- function(oil_px_selection) {
         
         rm(t,j,new_wells,param_other,new_wells_prod, new_wells_prod_new, new_wells_prod_long,
            prod_new,prod_old,prod_next_year,depl_prev,trr_prev,depl_next_year,info_next_year,dtt,zero_prod_quota_new, cumulative_wells_dt, density_start_next,
-           prod_existing_exit_t, prod_new_exit_t, exit_dt_t, exit_model_dt, exit_save, exit_dt_existing, exit_dt_new)
+           prod_existing_exit_t, prod_new_exit_t, exit_dt_t, exit_model_dt, exit_save, exit_dt_existing, exit_dt_new, new_wells_exit_t, exit_dt_new_t)
         
       }
       
