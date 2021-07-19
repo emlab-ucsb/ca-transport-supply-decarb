@@ -80,6 +80,31 @@ ggsave(year_comp,
 embed_fonts(file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020.pdf"),
             outfile = file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020.pdf"))  
 
+
+## scatter plot
+comp_wide <- comp_19_20 %>%
+  select(doc_field_code, doc_fieldname, facet_grp, year, bbls) %>%
+  mutate(year = paste0("x", year)) %>%
+  pivot_wider(names_from = year, values_from = bbls)
+
+
+year_comp_scatter <- ggplot(comp_wide, aes(x = x2019 / 1e6, y = x2020 / 1e6)) +
+  geom_point(alpha = 0.9) +
+  labs(x = "2019 production (million bbls)",
+       y = "2020 projected production (million bbls)") +
+  facet_wrap(~facet_grp, scales = "free") +
+  # geom_text(data = comp_wide, aes(x = x2019, label = doc_fieldname), nudge_x = 0.1, hjust = 0) +
+  theme_bw()
+
+ggsave(year_comp_scatter,
+       filename = file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020_scatter.pdf"),
+       width = 8,
+       height = 7)
+
+embed_fonts(file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020_scatter.pdf"),
+            outfile = file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020_scatter.pdf"))  
+
+
 ## bars
 year_comp_bars <- ggplot(comp_19_20 %>% select(doc_field_code, doc_fieldname, diff) %>% unique(), aes(y = reorder(doc_fieldname, diff) , x = diff/ 1e6)) +
   geom_bar(stat = "identity") +
