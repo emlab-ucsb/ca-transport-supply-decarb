@@ -11,7 +11,7 @@ library(ggrepel)
 
 ## set paths and file names
 model_out_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/'
-run_folder          = 'extraction_2021-07-15/revised-edit-exit-model/'
+run_folder          = 'extraction_2021-07-19/revised-exit-after-entryl/'
 exit_fname          = 'diagnostic-exit-results.csv'
 field_fname         = "diagnostic-field-level-results.csv"
 save_exit_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/exit/'
@@ -137,7 +137,7 @@ exit_new <- exit_out %>%
 
 
 ## new wells and well exits
-field_entry_exit <- merge(exit_all2[, c('scen_name', 'doc_field_code', 'doc_fieldname', 'year', 'n_exits')], new_wells,
+field_entry_exit <- merge(exit_all[, c('scen_name', 'doc_field_code', 'doc_fieldname', 'year', 'n_exits')], new_wells,
                           by = c("scen_name", "doc_field_code", "doc_fieldname", "year"))
 
 
