@@ -45,7 +45,6 @@ run_extraction_model <- function(oil_px_selection) {
     # load matrix of scenarios and forecasted variables
     scenarios_dt = load_scenarios_dt(oil_px_selection)
     
-    browser()
     
     # load coefficients from poisson regression of historic data
     coefs_dt = fread(file.path(model_path, 'entry-model-results', coef_file), header = T, colClasses = c('doc_field_code' = 'character'))
