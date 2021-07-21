@@ -308,7 +308,7 @@ run_extraction_model <- function(oil_px_selection) {
         
         t = pred_years[i]
         
-        print(t)
+        # print(t)
         
         ## first: predict new wells ----------------------------------------------------------------------
         new_wells = dt_info_z[year == t]
