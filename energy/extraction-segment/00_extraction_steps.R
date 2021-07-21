@@ -4,7 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'diagnostic' ## diagnostic, benchmark
     # choose from: reference, high, low, iea
-  run_type = "revised-exit-after-entry"
+  run_type = "revised-update-oil-price"
     
 # outputs -------
   
@@ -18,7 +18,7 @@
   dir.create(save_path, showWarnings = FALSE)
   
 # set binary switches
-  run_diagnostic_figs   = 1
+  run_diagnostic_figs   = 0
   run_benchmark_figs    = 0
   
 # set seed

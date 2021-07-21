@@ -185,10 +185,10 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
   # read in baseline for comparison ------
   
-  state_base = fread(file.path(base_path, 'extraction_2021-07-15', 'revised-edit-exit-model', 'diagnostic-state-level-results.csv'), header = T)
+  state_base = fread(file.path(base_path, 'extraction_2021-07-19', 'revised-exit-after-entryl', 'diagnostic-state-level-results.csv'), header = T)
   
   # add column for base case
-  state_base[, version := "exit-first"]
+  state_base[, version := "exit-after-entry"]
   
   # bind data
   state_all <- rbind(state_base, state_out)

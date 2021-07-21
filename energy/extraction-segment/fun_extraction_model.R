@@ -45,6 +45,8 @@ run_extraction_model <- function(oil_px_selection) {
     # load matrix of scenarios and forecasted variables
     scenarios_dt = load_scenarios_dt(oil_px_selection)
     
+    browser()
+    
     # load coefficients from poisson regression of historic data
     coefs_dt = fread(file.path(model_path, 'entry-model-results', coef_file), header = T, colClasses = c('doc_field_code' = 'character'))
     coefs_dt = unique(coefs_dt)
@@ -228,21 +230,21 @@ run_extraction_model <- function(oil_px_selection) {
     
     if (oil_px_selection == 'diagnostic') {
 
-      scen_sel = scen_sel[(oil_price_scenario == 'iea oil price' &
+      scen_sel = scen_sel[(oil_price_scenario == 'reference case' &
                                      innovation_scenario == 'low innovation' &
                                      carbon_price_scenario == 'price floor' &
                                      ccs_scenario == 'medium CCS cost' &
                                      excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'no_setback' &
                                      prod_quota_scenario == 'no quota') |
-                                    (oil_price_scenario == 'iea oil price' &
+                                    (oil_price_scenario == 'reference case' &
                                        innovation_scenario == 'low innovation' &
                                        carbon_price_scenario == 'price floor' &
                                        ccs_scenario == 'medium CCS cost' &
                                        excise_tax_scenario == 'no tax' &
                                        setback_scenario == 'no_setback' &
                                        prod_quota_scenario == 'quota_20') |
-                                    (oil_price_scenario == 'iea oil price' &
+                                    (oil_price_scenario == 'reference case' &
                                        innovation_scenario == 'low innovation' &
                                        carbon_price_scenario == 'price floor' &
                                        ccs_scenario == 'medium CCS cost' &
@@ -307,7 +309,7 @@ run_extraction_model <- function(oil_px_selection) {
         
         t = pred_years[i]
         
-        # print(t)
+        print(t)
         
         ## first: predict new wells ----------------------------------------------------------------------
         new_wells = dt_info_z[year == t]
