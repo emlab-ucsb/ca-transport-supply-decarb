@@ -496,10 +496,14 @@ run_extraction_model <- function(oil_px_selection) {
         
         
         new_wells_prod = new_wells_prod[peak_prod_median[, .(doc_field_code, peak_avg_well_prod)], on = 'doc_field_code', nomatch = 0]
-        new_wells_prod[, peak_production := m_new_wells_pred * peak_avg_well_prod]
         
         ## adjust number of wells for setback scenario
         new_wells_prod[, m_new_wells_pred := m_new_wells_pred * (1 - area_coverage)]
+        
+        ## calculate peak production
+        new_wells_prod[, peak_production := m_new_wells_pred * peak_avg_well_prod]
+        
+        
         
         ## recalculate density with new wells 
         # new_wells_prod[, density_check := cumulative_wells + m_new_wells_pred / (scen_area_m2 / 1e6)]

@@ -12,6 +12,7 @@ library(ggrepel)
 ## set paths and file names
 model_out_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/'
 run_folder          = 'extraction_2021-07-19/revised-exit-after-entryl/'
+px_change_folder    = 'extraction_2021-07-21/revised-update-oil-price/'
 exit_fname          = 'diagnostic-exit-results.csv'
 field_fname         = "diagnostic-field-level-results.csv"
 save_exit_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/exit/'
@@ -268,7 +269,24 @@ exit_new_existing2 <- exit_new_existing %>%
   filter(n_exits_new > 0 & new_wells_lag > 0 & diff == 0)
 
 
+## compare number of exits for before new prices and after
+## -------------------------------------------------------------
 
+## read in outputs for 
+exit_out_px <- fread(file.path(model_out_path, px_change_folder, exit_fname), header = T, colClasses = c('doc_field_code' = 'character'))
 
+exit_out_px <- exit_out_px[setback_scenario %in% c("no_setback", "setback_1000ft", "setback_2500ft")]
+
+exit_out_px[, scen_name := fifelse(setback_scenario == "setback_2500ft", "LCE2",
+                                fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LCE1", "BAU"))]
+
+exit_out_px <- unique(exit_out_px[, c('scen_name', 'doc_fieldname', 'doc_field_code', 'orig_year', 'start_year', 'production_bbl')])
+setnames(exit_out_px, "production_bbl", "production_bbl_new_px")
+
+exit_out_old_px <- unique(exit_out[, c('scen_name', 'doc_fieldname', 'doc_field_code', 'orig_year', 'start_year', 'production_bbl')])
+setnames(exit_out_old_px, "production_bbl", "production_bbl_old_px")
+
+exit_comp <- merge(exit_out_old_px, exit_out_px)
+exit_comp[, diff := production_bbl_new_px - production_bbl_old_px]
 
   

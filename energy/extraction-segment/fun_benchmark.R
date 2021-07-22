@@ -40,7 +40,6 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                                                                                  'doc_field_code' = 'character'))
   
   
-  
   ## county
   county_lut <- well_prod %>%
     dplyr::select(doc_field_code, county_name) %>%
@@ -122,7 +121,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                             prod_quota_scenario == 'no quota')] 
   oil_px_scens[, scenario := 'oil price scenarios']
   
-  innovation_scens <- scen_combos[(oil_price_scenario == 'iea oil price' & 
+  innovation_scens <- scen_combos[(oil_price_scenario == 'reference case' & 
                                      carbon_price_scenario == 'price floor' & 
                                      ccs_scenario == 'medium CCS cost' &
                                      excise_tax_scenario == 'no tax' &
@@ -130,7 +129,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                      prod_quota_scenario == 'no quota')]
   innovation_scens[, scenario := 'innovation scenarios']
   
-  carbon_px_scens <- scen_combos[(oil_price_scenario == 'iea oil price' & 
+  carbon_px_scens <- scen_combos[(oil_price_scenario == 'reference case' & 
                                      innovation_scenario == 'low innovation' & 
                                      ccs_scenario == 'medium CCS cost' &
                                      excise_tax_scenario == 'no tax' &
@@ -138,7 +137,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                      prod_quota_scenario == 'no quota')]
   carbon_px_scens[, scenario := 'carbon price scenarios']
   
-  ccs_cost_scens <- scen_combos[(oil_price_scenario == 'iea oil price' & 
+  ccs_cost_scens <- scen_combos[(oil_price_scenario == 'reference case' & 
                                     innovation_scenario == 'low innovation' & 
                                     carbon_price_scenario == 'price ceiling' & 
                                     excise_tax_scenario == 'no tax' &
@@ -146,7 +145,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                     prod_quota_scenario == 'no quota')]
   ccs_cost_scens[, scenario := 'CCS cost scenarios']
   
-  tax_scens <- scen_combos[(oil_price_scenario == 'iea oil price' & 
+  tax_scens <- scen_combos[(oil_price_scenario == 'reference case' & 
                                  innovation_scenario == 'low innovation' & 
                                  carbon_price_scenario == 'price floor' & 
                                  ccs_scenario == 'medium CCS cost' & 
@@ -154,7 +153,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                  prod_quota_scenario == 'no quota')]
   tax_scens[, scenario := 'tax scenarios']
   
-  setback_scens <- scen_combos[(oil_price_scenario == 'iea oil price' & 
+  setback_scens <- scen_combos[(oil_price_scenario == 'reference case' & 
                               innovation_scenario == 'low innovation' & 
                               carbon_price_scenario == 'price floor' & 
                               ccs_scenario == 'medium CCS cost' & 
@@ -162,7 +161,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                               prod_quota_scenario == 'no quota')]
   setback_scens[, scenario := 'setback scenarios']
   
-  quota_scens <- scen_combos[(oil_price_scenario == 'iea oil price' & 
+  quota_scens <- scen_combos[(oil_price_scenario == 'reference case' & 
                                   innovation_scenario == 'low innovation' & 
                                   carbon_price_scenario == 'price floor' & 
                                   ccs_scenario == 'medium CCS cost' & 
@@ -275,10 +274,11 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                     "setback scenarios", "quota scenarios", "tax scenarios")
   
   
-  all_scenarios_df$option <- factor(all_scenarios_df$option, levels = c('low oil price', 'iea oil price', 'reference case', 'high oil price', 
+  all_scenarios_df$option <- factor(all_scenarios_df$option, levels = c('low oil price', 'reference case', 'high oil price', 
                                                                 'low innovation', 'high innovation', 'price floor', 'central SCC', 'price ceiling',
-                                                                'low CCS cost', 'medium CCS cost', 'high CCS cost', 'no_setback', 'setback_1000ft',
-                                                                'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_40', 'quota_20', 'quota_10', 'quota_00', 
+                                                                'low CCS cost', 'medium CCS cost', 'high CCS cost', 'low CCS cost - 45Q', 'medium CCS cost - 45Q', 
+                                                                'high CCS cost - 45Q', 'low CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'high CCS cost - 45Q - LCFS', 
+                                                                'no_setback', 'setback_1000ft', 'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_40', 'quota_20', 'quota_10', 'quota_00', 
                                                                 'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
   
 
@@ -333,9 +333,10 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
            adj_val = ifelse(metric == 'difference (bbls)', values / 1e6, values * 100)) %>%
     left_join(county_boundaries) 
   
-  all_county_prod_df$option <- factor(all_county_prod_df$option, levels = c('low oil price', 'iea oil price', 'reference case', 'high oil price', 
+  all_county_prod_df$option <- factor(all_county_prod_df$option, levels = c('low oil price', 'reference case', 'high oil price', 
                                                                         'low innovation', 'high innovation', 'price floor', 'central SCC', 'price ceiling',
-                                                                        'low CCS cost', 'medium CCS cost', 'high CCS cost', 'no_setback', 'setback_1000ft',
+                                                                        'low CCS cost', 'medium CCS cost', 'high CCS cost', 'low CCS cost - 45Q', 'medium CCS cost - 45Q', 
+                                                                        'high CCS cost - 45Q', 'low CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'high CCS cost - 45Q - LCFS',  'no_setback', 'setback_1000ft',
                                                                         'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_40', 'quota_20', 'quota_10', 'quota_00', 
                                                                         'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
   
