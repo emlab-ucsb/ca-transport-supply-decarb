@@ -11,7 +11,7 @@ library(hrbrthemes)
 
 ## paths
 outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
-projection_path   = 'predict-production/extraction_2021-07-15/revised-edit-exit-model'
+projection_path   = 'predict-production/extraction_2021-07-22/revised-ccs-correct-new-setback'
 
 ## files
 histprod_file   = 'stocks-flows/crude_prod_x_field_revised.csv'
@@ -90,6 +90,7 @@ comp_wide <- comp_19_20 %>%
 
 year_comp_scatter <- ggplot(comp_wide, aes(x = x2019 / 1e6, y = x2020 / 1e6)) +
   geom_point(alpha = 0.9) +
+  geom_abline(slope = 1, intercept = 0) +
   labs(x = "2019 production (million bbls)",
        y = "2020 projected production (million bbls)") +
   facet_wrap(~facet_grp, scales = "free") +
@@ -98,7 +99,7 @@ year_comp_scatter <- ggplot(comp_wide, aes(x = x2019 / 1e6, y = x2020 / 1e6)) +
 
 ggsave(year_comp_scatter,
        filename = file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020_scatter.pdf"),
-       width = 8,
+       width = 9,
        height = 7)
 
 embed_fonts(file.path(outputs_path, projection_path, "diagnostic-figs/comparison_2019_2020_scatter.pdf"),
