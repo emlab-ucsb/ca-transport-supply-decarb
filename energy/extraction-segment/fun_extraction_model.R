@@ -6,17 +6,18 @@ run_extraction_model <- function(oil_px_selection) {
     print(paste("Starting extraction model at ", start_time))
   
   # inputs -----
-    model_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
-    scen_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
-    entry_file      = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
-    coef_file       = 'poisson_regression_coefficients_revised.csv'
-    param_file      = 'forecasted_decline_parameters_2020_2045.csv' 
-    peak_file       = 'field-year_peak-production_yearly.csv' 
+    model_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
+    scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
+    entry_file        = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
+    coef_file         = 'poisson_regression_coefficients_revised.csv'
+    param_file        = 'forecasted_decline_parameters_2020_2045.csv' 
+    peak_file         = 'field-year_peak-production_yearly.csv' 
     # prod_file       = 'predicted-production_2020-2045_field_revised.csv'
     prod_vintage_file = 'pred_prod_no_exit_2020-2045_field_start_year_revised.csv' 
     # hist_file       = 'new_wells_pred_weighted_R.csv'  ## update this
-    histprod_file   = 'crude_prod_x_field_revised.csv'
-    exit_file       = 'exit_regression_coefficients.csv'
+    histprod_file     = 'crude_prod_x_field_revised.csv'
+    exit_file         = 'exit_regression_coefficients.csv'
+    ccs_capture_rate  = 0.61
   
   # source from other scripts -----
     
@@ -104,7 +105,7 @@ run_extraction_model <- function(oil_px_selection) {
   
   # ccs emissions scalar ---------
   
-    ccs_ghg_scalar <- 1 - 0.875
+    ccs_ghg_scalar <- 1 - ccs_capture_rate
   
   # calculate depletion in 2020 -----
   
@@ -180,12 +181,14 @@ run_extraction_model <- function(oil_px_selection) {
       dt_info[, ccs_adj_usd_per_mt := total_cost/upstream_mtCO2e]
       dt_info[, ccs_adj_usd_per_kg := total_cost/upstream_kgCO2e]
       dt_info[is.na(ccs_adj_usd_per_kg), ccs_adj_usd_per_kg := ccs_price_usd_per_kg] # if no a value (zero emissions), use non-field adjusted ccs price
-      dt_info[, ccs_adoption := ccs_adj_usd_per_kg - carbon_price_usd_per_kg]
+      # dt_info[, ccs_adoption := ccs_adj_usd_per_kg - carbon_price_usd_per_kg]
+      dt_info[, ccs_adoption := ((ccs_capture_rate)*ccs_adj_usd_per_kg + ((1 - ccs_capture_rate)*carbon_price_usd_per_kg)) - (carbon_price_usd_per_kg)]
+      dt_info[steam_field == 'no', ccs_adoption := 1] # if not a steam field, make ccs_adoption a positive value so ccs will not be adopted
       dt_info[, m_opex_imputed_adj := fifelse(ccs_adoption < 0,
-                                             m_opex_imputed_adj + (ccs_adj_usd_per_kg * upstream_kgCO2e_bbl_inno_adj),
+                                              m_opex_imputed_adj + ((ccs_capture_rate)*upstream_kgCO2e_bbl_inno_adj*ccs_adj_usd_per_kg + (1 - ccs_capture_rate)*carbon_price_usd_per_kg*upstream_kgCO2e_bbl_inno_adj),
                                              m_opex_imputed_adj + (carbon_price_usd_per_kg * upstream_kgCO2e_bbl_inno_adj))]
       dt_info[, wm_opex_imputed_adj := fifelse(ccs_adoption < 0,
-                                              wm_opex_imputed_adj + (ccs_adj_usd_per_kg * upstream_kgCO2e_bbl_inno_adj),
+                                               wm_opex_imputed_adj + ((ccs_capture_rate)*upstream_kgCO2e_bbl_inno_adj*ccs_adj_usd_per_kg + (1 - ccs_capture_rate)*carbon_price_usd_per_kg*upstream_kgCO2e_bbl_inno_adj),
                                               wm_opex_imputed_adj + (carbon_price_usd_per_kg * upstream_kgCO2e_bbl_inno_adj))]
     
     ## track ccs adoption
@@ -1040,14 +1043,18 @@ run_extraction_model <- function(oil_px_selection) {
           info_next_year[, ccs_adj_usd_per_mt := total_cost / upstream_mtCO2e]
           info_next_year[, ccs_adj_usd_per_kg := total_cost / upstream_kgCO2e]
           info_next_year[is.na(ccs_adj_usd_per_kg), ccs_adj_usd_per_kg := ccs_price_usd_per_kg]
+          # info_next_year[, ccs_adoption := fifelse(adoption_prev > 0,
+          #                                         ccs_adj_usd_per_kg - carbon_price_usd_per_kg,
+          #                                         adoption_prev)]
           info_next_year[, ccs_adoption := fifelse(adoption_prev > 0,
-                                                  ccs_adj_usd_per_kg - carbon_price_usd_per_kg,
-                                                  adoption_prev)]
+                                                   ((ccs_capture_rate)*ccs_adj_usd_per_kg + ((1 - ccs_capture_rate)*carbon_price_usd_per_kg)) - (carbon_price_usd_per_kg),
+                                                   adoption_prev)]
+          info_next_year[steam_field == 'no', ccs_adoption := 1] # if not a steam field, make ccs_adoption a positive value so ccs will not be adopted
           info_next_year[, m_opex_imputed_adj := fifelse(ccs_adoption < 0,
-                                                        m_opex_imputed_adj + (ccs_adj_usd_per_kg * upstream_kgCO2e_bbl_inno_adj),
+                                                        m_opex_imputed_adj + ((ccs_capture_rate)*upstream_kgCO2e_bbl_inno_adj*ccs_adj_usd_per_kg + (1 - ccs_capture_rate)*carbon_price_usd_per_kg*upstream_kgCO2e_bbl_inno_adj),
                                                         m_opex_imputed_adj + (carbon_price_usd_per_kg * upstream_kgCO2e_bbl_inno_adj))]
           info_next_year[, wm_opex_imputed_adj := fifelse(ccs_adoption < 0,
-                                                         wm_opex_imputed_adj + (ccs_adj_usd_per_kg * upstream_kgCO2e_bbl_inno_adj),
+                                                         wm_opex_imputed_adj + ((ccs_capture_rate)*upstream_kgCO2e_bbl_inno_adj*ccs_adj_usd_per_kg + (1 - ccs_capture_rate)*carbon_price_usd_per_kg*upstream_kgCO2e_bbl_inno_adj),
                                                          wm_opex_imputed_adj + (carbon_price_usd_per_kg * upstream_kgCO2e_bbl_inno_adj))]
           # info_next_year[is.na(m_opex_imputed_adj), m_opex_imputed_adj := m_opex_imputed]
           # info_next_year[is.na(wm_opex_imputed_adj), wm_opex_imputed_adj := wm_opex_imputed]
