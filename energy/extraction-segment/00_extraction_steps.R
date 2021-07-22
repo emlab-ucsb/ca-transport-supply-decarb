@@ -2,9 +2,9 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  oil_price_selection   = 'benchmark' ## diagnostic, benchmark
+  oil_price_selection   = 'diagnostic' ## diagnostic, benchmark
     # choose from: reference, high, low, iea
-  run_type = "revised-ccs"
+  run_type = "revised-ccs-correct-new-setback"
     
 # outputs -------
   
@@ -18,8 +18,8 @@
   dir.create(save_path, showWarnings = FALSE)
   
 # set binary switches
-  run_diagnostic_figs   = 0
-  run_benchmark_figs    = 1
+  run_diagnostic_figs   = 1
+  run_benchmark_figs    = 0
   
 # set seed
   set.seed(228)
