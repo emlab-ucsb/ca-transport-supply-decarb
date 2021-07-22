@@ -21,6 +21,7 @@ load_scenarios_dt = function(oil_px_selection) {
   setback_file      = 'setback_coverage_R.csv'
   prod_quota_file   = 'prod_quota_scenarios.csv'
   excise_tax_file   = 'excise_tax_scenarios.csv'
+  incentive_file    = 'CCS_LCFS_45Q.xlsx'
   n_wells_file      = 'n_wells_area.csv'
   
 
@@ -115,7 +116,10 @@ load_scenarios_dt = function(oil_px_selection) {
   # # load range of excise tax values
   # range_excise_tax_scens = fread(file.path(scen_path, range_excise_tax_file), header = T)
   # range_excise_tax_scens = range_excise_tax_scens[, units := NULL]
-  # 
+  
+  # load ccs incentives file 
+  incentives_scens = setDT(read.xlsx(file.path(data_path, incentive_file), sheet = 'scenarios', cols = c(1:3)))
+  
   # pad field codes with leading zeroes ------
   
   price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
@@ -131,19 +135,34 @@ load_scenarios_dt = function(oil_px_selection) {
                          'm_opex_imputed', 'm_capex_imputed', 'wm_opex_imputed', 'wm_capex_imputed', 'resource', 
                          'upstream_kgCO2e_bbl'))
   
+  # create adjusted ccs costs ------
   
-  ## list through each oil price scenario ------
+  ccs_scens_adj = ccs_scens[incentives_scens, on = .(year), allow.cartesian = T, nomatch = 0]
+  ccs_scens_adj[, ccs_scenario_adj := fcase(incentive_scenario == 'no incentives', paste0(ccs_scenario),
+                                            incentive_scenario == '45Q only', paste0(ccs_scenario, ' - 45Q'),
+                                            incentive_scenario == '45Q + LCFS', paste0(ccs_scenario, ' - 45Q - LCFS'))]
+  
+  # adjust ccs price with incentives
+  ccs_scens_adj[, ccs_price_usd_per_kg_adj := ccs_price_usd_per_kg - (incentive_price/1e3)]
+  ccs_scens_adj[, ccs_price_usd_per_kg_adj := fifelse(ccs_price_usd_per_kg_adj < 0, 0, ccs_price_usd_per_kg_adj)]
+  
+  # select columns 
+  ccs_scens_adj = ccs_scens_adj[, .(year, ccs_scenario_adj, ccs_price_usd_per_kg_adj)]
+  setnames(ccs_scens_adj, c('ccs_scenario_adj', 'ccs_price_usd_per_kg_adj'), c('ccs_scenario', 'ccs_price_usd_per_kg'))
+  
+  ## list through all scenarios ------
   
   scenarios_dt = vars_dt[oilpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[innovation_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[carbonpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
-  scenarios_dt = scenarios_dt[ccs_scens, on = .(year), allow.cartesian = T, nomatch = 0]
+  scenarios_dt = scenarios_dt[ccs_scens_adj, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[setback_scens, on = .(doc_field_code), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[prod_quota_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[excise_tax_scens, on = .(year), allow.cartesian = T, nomatch = 0]
-  
+
   scenarios_dt[, tax := tax_rate * oil_price_usd_per_bbl]
   scenarios_dt[, tax_rate:=NULL]
+  
   
   # keep diagnostics only (if that is input) ------
   
@@ -205,7 +224,7 @@ load_scenarios_dt = function(oil_px_selection) {
                                     innovation_scenario == 'low innovation' & 
                                     carbon_price_scenario == 'price floor' & 
                                     ccs_scenario == 'medium CCS cost' & 
-                                    # excise_tax_scenario == 'no tax' & ## all tax
+                                   # excise_tax_scenario == 'no tax' & ## all tax
                                     setback_scenario == 'no_setback' &
                                     prod_quota_scenario == 'no quota')  |
                                   (oil_price_scenario == 'reference case' & 
@@ -230,8 +249,9 @@ load_scenarios_dt = function(oil_px_selection) {
   
   setcolorder(scenarios_dt, c('year', 'doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                               'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'oil_price_usd_per_bbl', 'innovation_multiplier', 
-                              'carbon_price_usd_per_kg', 'ccs_price_usd_per_kg', 'orig_area_m2', 'scen_area_m2', 'area_coverage', 'n_wells_start', 'n_wells_setback', 'quota', 'tax', 'm_opex_imputed', 'm_capex_imputed', 'wm_opex_imputed', 
-                              'wm_capex_imputed', 'resource', 'upstream_kgCO2e_bbl'))
+                              'carbon_price_usd_per_kg', 'ccs_price_usd_per_kg', 'orig_area_m2', 'scen_area_m2', 'area_coverage', 'n_wells_start', 'n_wells_setback', 
+                              'quota', 'tax', 'm_opex_imputed', 'm_capex_imputed', 'wm_opex_imputed', 
+                              'wm_capex_imputed', 'resource',  'steam_field', 'upstream_kgCO2e_bbl'))
   
   return(scenarios_dt)
 }
