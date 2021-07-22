@@ -208,10 +208,14 @@
   }
   
   final_pred_all = rbindlist(l_fin_pred, use.names = T)
+  
+# add tag for steam field ------
+  
+  final_pred_all[, steam_field := fifelse(type == 'steam', 'yes', 'no')]
 
 # save select columns -------
   
-  final_pred_all_sel = final_pred_all[, .(doc_field_code, doc_fieldname, year, upstream_kgCO2e_bbl)]
+  final_pred_all_sel = final_pred_all[, .(doc_field_code, doc_fieldname, year, steam_field, upstream_kgCO2e_bbl)]
   
 # export file to csv ------
   
