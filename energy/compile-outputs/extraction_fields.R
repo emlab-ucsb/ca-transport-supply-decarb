@@ -30,3 +30,8 @@ pos_field <- field_out %>%
   ungroup() %>%
   filter(sum_prod > 0)
 
+field_out_zero <- field_out %>%
+  filter(!doc_field_code %in% pos_field$doc_field_code)
+
+
+

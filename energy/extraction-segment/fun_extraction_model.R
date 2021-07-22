@@ -1181,9 +1181,11 @@ run_extraction_model <- function(oil_px_selection) {
                                'doc_field_code', 'doc_fieldname', 'ccs_adopted', 'year'),
                         all = T)
       
+      field_all[is.na(existing_prod_bbl), new_prod_bbl := 0]
       field_all[is.na(new_prod_bbl), new_prod_bbl := 0]
       field_all[, total_prod_bbl := existing_prod_bbl + new_prod_bbl]
       
+      field_all[is.na(existing_ghg_kgCO2e), new_ghg_kgCO2e := 0]
       field_all[is.na(new_ghg_kgCO2e), new_ghg_kgCO2e := 0]
       field_all[, total_ghg_kgCO2e := existing_ghg_kgCO2e + new_ghg_kgCO2e]
       
