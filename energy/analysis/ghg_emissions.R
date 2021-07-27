@@ -131,21 +131,21 @@ sf_ghg_df <- total_ghg_df %>%
          cat = ifelse(NAICS_code %in% oil_vec, "Petroleum Extraction", "Petroleum Refineries"),
          diff = adj_total_co2e -  total_co2e)
 
-coal_df <- total_ghg_df %>%
-  filter(NAICS_code %in% c(oil_vec, 324199)) %>%
-  group_by(report_yr, NAICS_code) %>%
-  summarise(total_co2e = sum(total_co2e, na.rm = T)) %>%
-  ungroup()
+# coal_df <- total_ghg_df %>%
+#   filter(NAICS_code %in% c(oil_vec, 324199)) %>%
+#   group_by(report_yr, NAICS_code) %>%
+#   summarise(total_co2e = sum(total_co2e, na.rm = T)) %>%
+#   ungroup()
 
-cdf2 <- expand.grid(report_yr = unique(coal_df$report_yr),
-                   NAICS_code = unique(coal_df$NAICS_code)) %>%
-  full_join(coal_df)
+# cdf2 <- expand.grid(report_yr = unique(coal_df$report_yr),
+#                    NAICS_code = unique(coal_df$NAICS_code)) %>%
+#   full_join(coal_df)
 
-ggplot(cdf2, aes(x = report_yr, y = total_co2e / 1e6, group = NAICS_code, fill = as.factor(NAICS_code))) +
-  geom_area() +
-  scale_x_continuous(breaks=c(2008, 2010, 2012, 2014, 2016, 2018))
+# ggplot(cdf2, aes(x = report_yr, y = total_co2e / 1e6, group = NAICS_code, fill = as.factor(NAICS_code))) +
+#   geom_area() +
+#   scale_x_continuous(breaks=c(2008, 2010, 2012, 2014, 2016, 2018))
 
-
+## quick plot
 ggplot(sf_ghg_df, aes(x = report_yr, y = adj_total_co2e / 1e6, group = ARB_ID, color = as.factor(NAICS_code))) +
   geom_line(size = 0.75, alpha = 0.5) +
   facet_wrap(~cat, scales = "free_y") +
@@ -550,7 +550,9 @@ ghg_oil_fig <- ggplot(ghge_oil_df, aes(x = year, y = co2e, fill = sub_sector_lev
 ggsave(filename =  paste0(save_directory2, "figures/synthesis-report-figures/drafts/stocks-flows/ghg_oil_fig.png"), ghg_oil_fig, width = 14, height = 8, units = "in", dpi = 300)
 
 
-## MRR
+## MRR -----------------------------
+## --------------------------
+
 mrr_oil_df <- sf_ghg_df %>%
   filter(cat == "Petroleum Extraction") %>%
   rename(year = report_yr) %>%
@@ -692,7 +694,7 @@ perc_facil_og_2018 <- mrr_oil_df_facil3 %>%
 
 
 
-## focus on refineries
+## refineries ---------------------------------
 ## ------------------------------------------
 
 ghge_ref_df <- inv_df %>%
@@ -720,7 +722,8 @@ ghg_ref_fig <- ggplot(ghge_ref_df, aes(x = year, y = co2e, fill = sub_sector_lev
 
 # ggsave(filename =  paste0(save_directory2, "figures/synthesis-report-figures/drafts/stocks-flows/ghg_ref_fig.png"), ghg_ref_fig, width = 12, height = 8, units = "in", dpi = 300)
 
-## mrr
+## mrr refineries ----------------------------------------
+## -------------------------------------------------------
 
 mrr_ref_df <- sf_ghg_df %>%
   filter(cat == "Petroleum Refineries") %>%
