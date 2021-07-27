@@ -85,14 +85,17 @@ embed_fonts(file.path(outputs_path, projection_path, "diagnostic-figs/comparison
 comp_wide <- comp_19_20 %>%
   select(doc_field_code, doc_fieldname, facet_grp, year, bbls) %>%
   mutate(year = paste0("x", year)) %>%
-  pivot_wider(names_from = year, values_from = bbls)
+  pivot_wider(names_from = year, values_from = bbls) %>%
+  mutate(zero = ifelse(x2019 == 0 & x2020 > 0, "2019 = 0",
+                       ifelse(x2020 == 0 & x2019 > 0, "2020 = 0", "NA")))
 
 
-year_comp_scatter <- ggplot(comp_wide, aes(x = x2019 / 1e6, y = x2020 / 1e6)) +
-  geom_point(alpha = 0.9) +
+year_comp_scatter <- ggplot(comp_wide, aes(x = x2019 / 1e6, y = x2020 / 1e6, color = zero)) +
+  geom_point(alpha = 0.75) +
   geom_abline(slope = 1, intercept = 0) +
   labs(x = "2019 production (million bbls)",
-       y = "2020 projected production (million bbls)") +
+       y = "2020 projected production (million bbls)",
+       color = NULL) +
   facet_wrap(~facet_grp, scales = "free") +
   # geom_text(data = comp_wide, aes(x = x2019, label = doc_fieldname), nudge_x = 0.1, hjust = 0) +
   theme_bw()
