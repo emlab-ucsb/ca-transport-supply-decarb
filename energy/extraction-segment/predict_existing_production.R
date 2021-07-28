@@ -67,7 +67,7 @@ op_wells_agg <- op_wells %>%
   ## assume NA means not in setback (note that there are about 20 wells that are na)
   mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback)) %>%
   ## filter out plugged wells
-  filter(well_status != "Plugged") %>%
+  # filter(well_status != "Plugged") %>%
   ## number of wells in each field vintage by setback scenario
   group_by(setback_scenario, doc_field_code, doc_fieldname, start_year) %>% # meas-note: again, most instances of "vintage" will probably have to be replaced with "start_year"
   summarise(n_wells = n(),
