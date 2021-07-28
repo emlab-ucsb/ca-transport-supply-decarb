@@ -4,18 +4,22 @@
 
 # inputs --------
 
-  proj_path     = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
-  fw_file       = 'fuel_watch_data.csv'
-  ghg_file      = 'refinery_ghg_emissions.csv'
-  cap_file      = 'refinery_loc_cap.csv'
+  proj_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
+  fw_file         = 'fuel_watch_data.csv'
+  ghg_file        = 'refinery_ghg_emissions.csv'
+  cap_file        = 'refinery_loc_cap.csv'
+  hydrogen_file   = 'hydrogen_facilities_list.xlsx'
 
 # outputs --------
   
   save_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
+  save_cluster  = 'refinery_ghg_factor_x_cluster_revised.csv'
+  save_indiv    = 'refinery_ghg_factor_x_indiv_refinery_revised.csv'
   
 # load packages ------
   
   library(data.table)
+  library(openxlsx)
 
 # import data -------
   
@@ -24,10 +28,18 @@
   
   # import ghg emissions data
     ghg_dt = fread(file.path(proj_path, 'outputs/stocks-flows', ghg_file), header = T)
-    
+  
+  # import mrr data
+    l_files = list.files(file.path(proj_path, 'data/stocks-flows/processed/ghg_mrr'), pattern = '.csv')
+    l_mrr = lapply(file.path(proj_path, 'data/stocks-flows/processed/ghg_mrr', l_files), fread)
+    mrr_dt = rbindlist(l_mrr, fill = TRUE, use.names = TRUE)
+  
   # import refinery capacity data
     cap_dt = fread(file.path(proj_path, 'data/stocks-flows/processed', cap_file), header = T)
     setnames(cap_dt, 'cluster', 'region')
+    
+  # read in list of hydrogen facilities
+    hydrogen_dt = as.data.table(read.xlsx(file.path(proj_path, 'data/stocks-flows/raw', hydrogen_file)))
     
 # get crude oil consumption and aggregate to the region level ------
     
@@ -35,11 +47,43 @@
   cons_region = cons_region[, .(thous_barrels = sum(thous_barrels, na.rm = T)), by = .(year, region)]
   cons_region[, region_barrels := thous_barrels*1e3]
   
-# match refinery emissions to region and aggregate by region ------  
+# remove non-transportation referines ------
   
-  ghg_region = cap_dt[ghg_dt, on = 'site_id', nomatch = 0]
-  ghg_region = ghg_region[, .(region_co2e_tonnes = sum(adj_total_co2e, na.rm = T),
-                              region_co2e_megatonnes = sum(adj_total_Mt_co2e, na.rm = T)),
+  cap_dt = cap_dt[! refinery_name %in% c('Greka Energy, Santa Maria Refinery', 'Lunday Thagard, South Gate Refinery', 'Valero Wilmington Asphalt Refinery')]
+  
+# only keep hydrogen facilities with refineries -----
+  
+  hyd_ref = hydrogen_dt[!is.na(co_located_refinery_name)]
+  
+# extract hydrogen facilities from mrr data ------
+  
+  hyd_ghg = mrr_dt[hyd_ref[, .(ARB_ID, co_located_refinery_name)], on = .(ARB_ID), nomatch = 0]
+  
+# match extracted hydrogen emissions with refinery location information -------
+  
+  hyd_ghg_loc = hyd_ghg[cap_dt, on = .(co_located_refinery_name = refinery_name), nomatch = 0]
+  
+# add column for adjusted co2 for hydrogen facilities -----
+  
+  hyd_ghg_loc[, adj_total_co2e := fifelse(report_yr >= 2011, co2e_nb_ch4_n2o + co2_bf, total_co2e)]
+  hyd_ghg_loc[, adj_total_Mt_co2e := adj_total_co2e / 1e6]
+
+# match refinery emissions to region ------  
+  
+  ref_loc = cap_dt[ghg_dt, on = .(site_id), nomatch = 0]
+
+# combine hydrogen emissions and refinery emissions ------
+  
+  setnames(ref_loc, 'facility_name_adj', 'facility_name')
+  setnames(hyd_ghg_loc, 'report_yr', 'year')
+  
+  combined_ghg = rbind(hyd_ghg_loc[, .(facility_name, site_id, region, year, adj_total_co2e, adj_total_Mt_co2e)],
+                       ref_loc[, .(facility_name, site_id, region, year, adj_total_co2e, adj_total_Mt_co2e)])
+  
+# aggregate emissions by region -------
+  
+  ghg_region = combined_ghg[, .(region_co2e_tonnes = sum(adj_total_co2e, na.rm = T),
+                                region_co2e_megatonnes = sum(adj_total_Mt_co2e, na.rm = T)),
                           by = .(year, region)]
   ghg_region[, region_co2e_kg := region_co2e_tonnes*1e3]
   
@@ -90,6 +134,6 @@
   
 # export to csv ------
   
-  fwrite(emfac_region, file.path(save_path, 'refinery_ghg_factor_x_cluster.csv'), row.names = F)
-  fwrite(emfac_ref, file.path(save_path, 'refinery_ghg_factor_x_indiv_refinery.csv'), row.names = F)
+  fwrite(emfac_region, file.path(save_path, save_cluster), row.names = F)
+  fwrite(emfac_ref, file.path(save_path, save_indiv), row.names = F)
   
