@@ -4,7 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'diagnostic' ## diagnostic, benchmark
     # choose from: reference, high, low, iea
-  run_type = "revised-ccs-correct-new-setback"
+  run_type = "include-plugged-wells"
     
 # outputs -------
   
@@ -19,7 +19,7 @@
   
 # set binary switches
   run_diagnostic_figs   = 1
-  run_benchmark_figs    = 0
+  run_benchmark_figs    = 1
   
 # set seed
   set.seed(228)
