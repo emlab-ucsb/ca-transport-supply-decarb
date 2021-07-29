@@ -142,20 +142,28 @@ load_scenarios_dt = function(oil_px_selection) {
                                             incentive_scenario == '45Q only', paste0(ccs_scenario, ' - 45Q'),
                                             incentive_scenario == '45Q + LCFS', paste0(ccs_scenario, ' - 45Q - LCFS'))]
   
+  
   # adjust ccs price with incentives
   ccs_scens_adj[, ccs_price_usd_per_kg_adj := ccs_price_usd_per_kg - (incentive_price/1e3)]
-  ccs_scens_adj[, ccs_price_usd_per_kg_adj := fifelse(ccs_price_usd_per_kg_adj < 0, 0, ccs_price_usd_per_kg_adj)]
+  
+  # create constrained version 
+  ccs_scens_neg = ccs_scens_adj[ccs_scenario_adj %in% unique(ccs_scens_adj[ccs_price_usd_per_kg_adj < 0, ccs_scenario_adj])]
+  ccs_scens_neg[, ccs_scenario_adj := paste0(ccs_scenario_adj, ' (constrained)') ]
+  ccs_scens_neg[, ccs_price_usd_per_kg_adj := fifelse(ccs_price_usd_per_kg_adj < 0, 0, ccs_price_usd_per_kg_adj)]
+  
+  # combine ccs scenarios
+  ccs_scens_all = rbind(ccs_scens_adj, ccs_scens_neg)
   
   # select columns 
-  ccs_scens_adj = ccs_scens_adj[, .(year, ccs_scenario_adj, ccs_price_usd_per_kg_adj)]
-  setnames(ccs_scens_adj, c('ccs_scenario_adj', 'ccs_price_usd_per_kg_adj'), c('ccs_scenario', 'ccs_price_usd_per_kg'))
+  ccs_scens_all = ccs_scens_all[, .(year, ccs_scenario_adj, ccs_price_usd_per_kg_adj)]
+  setnames(ccs_scens_all, c('ccs_scenario_adj', 'ccs_price_usd_per_kg_adj'), c('ccs_scenario', 'ccs_price_usd_per_kg'))
   
   ## list through all scenarios ------
   
   scenarios_dt = vars_dt[oilpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[innovation_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[carbonpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
-  scenarios_dt = scenarios_dt[ccs_scens_adj, on = .(year), allow.cartesian = T, nomatch = 0]
+  scenarios_dt = scenarios_dt[ccs_scens_all, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[setback_scens, on = .(doc_field_code), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[prod_quota_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[excise_tax_scens, on = .(year), allow.cartesian = T, nomatch = 0]
