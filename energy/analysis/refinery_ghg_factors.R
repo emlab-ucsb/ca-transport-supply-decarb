@@ -7,7 +7,7 @@
   proj_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
   fw_file         = 'fuel_watch_data.csv'
   ghg_file        = 'refinery_ghg_emissions.csv'
-  cap_file        = 'refinery_loc_cap.csv'
+  cap_file        = 'refinery_loc_cap_manual.csv'
   hydrogen_file   = 'hydrogen_facilities_list.xlsx'
 
 # outputs --------
@@ -40,6 +40,10 @@
     
   # read in list of hydrogen facilities
     hydrogen_dt = as.data.table(read.xlsx(file.path(proj_path, 'data/stocks-flows/raw', hydrogen_file)))
+    
+# for santa maria refinery, manually add a site ID of 342b -----
+    
+  ghg_dt[refinery_name == 'Phillips 66, Santa Maria Refinery', site_id := 3422]
     
 # get crude oil consumption and aggregate to the region level ------
     
