@@ -31,7 +31,7 @@
   a               = 4
   drop_in_perc    = 1
   kern_perc       = 0.9375
-  ccs_eff         = 0.58
+  ccs_eff         = 0.474
   
 # outputs ---------
 
