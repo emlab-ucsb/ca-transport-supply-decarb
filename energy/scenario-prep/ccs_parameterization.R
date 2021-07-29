@@ -6,7 +6,7 @@
 
   emdata_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
   fprod_file    = 'crude_prod_x_field_revised.csv'
-  emfac_file    = 'ghg_emissions_x_field_2015_revised.csv'
+  emfac_file    = 'ghg_emissions_x_field_2018-2045.csv'
   ref_file      = 'refinery_ghg_emissions.csv'
   
 # selections -------
@@ -24,7 +24,7 @@
   
   # load field-level emissions factors
     field_emfac = fread(file.path(emdata_path, emfac_file), header = T)
-    field_emfac = field_emfac[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
+    # field_emfac = field_emfac[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
     
   # load refinery-level emissions
     ref_ghg = fread(file.path(emdata_path, ref_file), header = T)
@@ -49,7 +49,7 @@
   
 # combine field production with field emissions factor -----
   
-  field_ghg = field_prod[field_emfac, on = 'doc_field_code']
+  field_ghg = field_prod[field_emfac, on = .(doc_field_code, doc_fieldname, year)]
   setcolorder(field_ghg, c('doc_field_code', 'doc_fieldname', 'year', 'total_bbls', 'upstream_kgCO2e_bbl'))
   
 # calculate field-level extraction emissions ------
