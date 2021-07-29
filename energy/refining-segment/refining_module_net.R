@@ -12,11 +12,11 @@
   fw_file         = 'fuel_watch_data.csv'
   ei_file         = 'fuel-energy-intensities.csv'
   cec_file        = 'California Transportion Fuel Consumption - Summary 2020-06-01 GDS_rename.xlsx'
-  refcap_file     = 'refinery_loc_cap.csv'
+  refcap_file     = 'refinery_loc_cap_manual.csv'
   renref_file     = 'renewable_refinery_capacity.xlsx'
   altair_file     = 'altair_refinery_capacity.xlsx'
   scen_file       = 'input_variables_scenarios_refining.csv'
-  ghg_file        = 'refinery_ghg_factor_x_indiv_refinery.csv'
+  ghg_file        = 'refinery_ghg_factor_x_indiv_refinery_revised.csv'
   dac_file        = 'refinery_weighted_unweighted_population_fixed.csv'
   ei_crude        = 5.698               # mmbtu/bbl; source: https://www.eia.gov/totalenergy/data/monthly/pdf/sec12_3.pdf
   ei_gasoline     = 5.052               # mmbtu/bbl; source: https://www.eia.gov/totalenergy/data/monthly/pdf/sec12_4.pdf
@@ -35,7 +35,7 @@
   
 # outputs ---------
 
-  save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/refining_20210112/net_exports'
+  save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/refining_2021-07-29'
   output_path = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/model-development/scenario-plot/refinery-outputs'
   dir.create(file.path(save_path, 'scenarios'), showWarnings = FALSE)
   dir.create(file.path(save_path, 'scenarios_crude'), showWarnings = FALSE)
@@ -113,7 +113,7 @@
 # source items ------
   
   # source ccs emissions mean b calculation script
-    source(here::here('scripts', 'model', 'ghg-emissions', 'ccs_parameterization.R'))
+    source(here::here('energy', 'scenario-prep', 'ccs_parameterization.R'))
 
 # plot theme & palettes ------
   
@@ -281,7 +281,7 @@
     region_fuel_ratio[fuel == 'crude_bbl', fuel := 'crude']
     region_fuel_ratio[, years_used := '2015-2019']
     
-    fwrite(region_fuel_ratio, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products_region_proportion.csv'), row.names = F)
+    # fwrite(region_fuel_ratio, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products_region_proportion.csv'), row.names = F)
     
     region_fuel_ratio[, years_used := NULL]
 
@@ -409,9 +409,9 @@
     refinery_capacity_ratio[, capacity_ratio_within_region := capacity_ratio]
     refinery_capacity_ratio[, capacity_ratio_within_state := barrels_per_year/sum(barrels_per_year)]
     
-    fwrite(refinery_capacity_ratio[, .(site_id, refinery_name, location, region, barrels_per_day, barrels_per_year,
-                                       capacity_ratio_within_region, capacity_ratio_within_state)], 
-           file.path(proj_path, 'outputs/stocks-flows/refinery_capacity_ratios.csv'), row.names = F)
+    # fwrite(refinery_capacity_ratio[, .(site_id, refinery_name, location, region, barrels_per_day, barrels_per_year,
+    #                                    capacity_ratio_within_region, capacity_ratio_within_state)], 
+    #        file.path(proj_path, 'outputs/stocks-flows/refinery_capacity_ratios.csv'), row.names = F)
     
     
   # use heat content balance to get historical relationship between crude and refined products -------
@@ -435,7 +435,7 @@
     setcolorder(crude_refined_region_csv, c('region', 'crude_bbl', 'gasoline_bbl', 'diesel_bbl', 'jet_bbl', 
                                             'ei_crude_mmbtu_bbl', 'ei_gasoline_mmbtu_bbl', 'ei_diesel_mmbtu_bbl', 'ei_jet_mmbtu_bbl', 'coef'))
     
-    fwrite(crude_refined_region_csv, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products__energy_intensities_and_coefficients.csv'), row.names = F)
+    # fwrite(crude_refined_region_csv, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products__energy_intensities_and_coefficients.csv'), row.names = F)
     
     crude_refined_tot = crude_refined_week[, lapply(.SD, sum, na.rm = T), 
                                               .SDcols = c('crude_bbl', 'gasoline', 'diesel', 'jet', 'residual')]
@@ -772,11 +772,16 @@
             if (i == 1) {
               crude_cap = copy(dt_refcap)
               ren_cap = copy(dt_renref)[0,] # empty data table with same columns 
+              # if year >= 2023, remove Santa Maria 
             } else {
               crude_cap = temp_crude_cap_year[[i-1]][demand_scenario == dem_scens[j] & refining_scenario == ref_scens[k]]
               ren_cap = temp_renew_cap_year[[i-1]][demand_scenario == dem_scens[j] & refining_scenario == ref_scens[k]]
             }
-
+          
+            if (i >= 4) {
+              crude_cap = crude_cap[!refinery_name == 'Phillips 66, Santa Maria Refinery']
+            }
+          
           # get refineries planned to retire in year t
             planned_ren_ref = dt_renref[installation_year == t]
               if (i > 1) {
@@ -795,7 +800,7 @@
             crude_cap_conv[!is.na(retired_capacity_bpd), barrels_per_day := barrels_per_day - retired_capacity_bpd]
             crude_cap_conv = crude_cap_conv[barrels_per_day > 0]
             crude_cap_conv[, c('installation_year', 'installation_capacity_bpd', 'retired_capacity_bpd') := NULL]
-
+            
           # calculate crude refining capacity and renewable refining capacity under planned retirements
             crude_cap_reg = crude_cap_conv[, .(barrels_per_day = sum(barrels_per_day)), by = region]
             crude_cap_reg[, barrels_per_year := barrels_per_day * 365]
