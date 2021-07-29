@@ -8,7 +8,7 @@ library(data.table)
 ## paths
 calepa_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/"
 extract_path <- paste0(calepa_path, "outputs/predict-production/scenarios_20_all_scens/")
-sselection_path <- paste0(calepa_path, "model-development/scenario-plot/")
+sselection_path <- paste0(calepa_path, "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn")
 # scen_figs <- paste0(calepa_path, "model-development/scenario-plot/")
 # scen_path <- paste0(calepa_path, "project-materials/scenario-inputs/") 
 

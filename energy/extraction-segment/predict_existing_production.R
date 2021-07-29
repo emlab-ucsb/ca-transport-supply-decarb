@@ -36,8 +36,62 @@ well_setbacks = fread(paste0(setback_path, w_setback_file), header = T, colClass
 dt_prod[, year := as.numeric(substr(ProductionReportDate,1,4))]
 
 op_wells = unique(dt_prod[, c('api_ten_digit', 'start_year', 'doc_fieldname', 'doc_field_code')]) # meas-note: probably have to change the 'vintage' to 'start_year'
+
+## how many entries per well?
+View(op_wells[, .N, by = api_ten_digit][N > 1])
 ## note: there are wells with multiple entries (in more than one field)
-## example: 0402909443
+
+## predict production with all existing wells -------------------------------
+## --------------------------------------------------------------------------
+
+# functions ------ 
+
+hypfunc = function(b,t,q_i,D_h) { q_i/((1 + b*D_h*t)^(1/b)) }
+expfunc = function(q_i,d,t) {   q_i*exp(-d*t) }
+
+# set years -------
+
+fullrange = seq(2020, 2045,1)
+
+# match parameters ------
+
+# merge op_wells with the decline params
+# dt_pred = merge(op_wells, decline_params, by = c('doc_field_code', 'doc_fieldname', 'start_year'), all.x = T)
+# 
+# setDT(dt_pred)
+# 
+# dt_pred = dt_pred[, c('doc_field_code', 'doc_fieldname', 'start_year', 'setback_scenario', 'no_wells', 'adj_no_wells',
+#                       'q_i', 'D', 'b', 'd', 'int_yr', 'peak_prod_year', 'peak_tot_prod', 'peak_avg_well_prod', 'peak_well_prod_rate', 'type')]
+
+dt_pred = copy(decline_params)
+
+
+# loop to calculate production at each year -----
+
+for (i in seq_along(fullrange) ) {
+  
+  y = fullrange[i]
+  
+  # dt_pred[is.na(b2), col := hypfunc(b1, y - start_year, peak_tot_prod, D)] # meas-note: the updated parameters file only has b now (no b1 or b2 or anything), so you could probably comment out this line and replace mentions of b2 with b and d2 with d
+  dt_pred[is.na(b), col := expfunc(peak_tot_prod, d, y - start_year)] 
+  dt_pred[! is.na(b), col :=  ifelse(y < 1978 + int_yr,
+                                     hypfunc(b, y - start_year, peak_tot_prod, D),
+                                     expfunc(peak_tot_prod, d, y - start_year))]
+  
+  colnames(dt_pred)[ncol(dt_pred)] = y
+}
+
+# convert to long ------
+
+dt_pred_long = melt(dt_pred, id.vars = c('doc_fieldname', 'doc_field_code', 'start_year', 'no_wells', 'q_i', 'D', 'b', 'd', 'int_yr'),
+                    measure.vars = as.character(fullrange), variable.name = 'year', value.name = 'production_bbl')
+
+setorderv(dt_pred_long, c('doc_field_code', 'year', 'start_year'))
+
+dt_pred_long[, c('q_i', 'D', 'b', 'd', 'int_yr') := NULL]
+
+## now incorporate setbacks and plugged wells
+## ---------------------------------------------
 
 ## setback df with all wells 
 setback_all <- expand.grid(api_ten_digit = unique(op_wells$api_ten_digit),
@@ -65,66 +119,38 @@ op_wells_agg <- op_wells %>%
   ## join with setback info
   left_join(well_setbacks) %>%
   ## assume NA means not in setback (note that there are about 20 wells that are na)
-  mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback)) %>%
-  ## filter out plugged wells
-  # filter(well_status != "Plugged") %>%
-  ## number of wells in each field vintage by setback scenario
-  group_by(setback_scenario, doc_field_code, doc_fieldname, start_year) %>% # meas-note: again, most instances of "vintage" will probably have to be replaced with "start_year"
-  summarise(n_wells = n(),
-            n_wells_in_setback = sum(within_setback)) %>%
-  ungroup() %>%
-  mutate(adj_no_wells = n_wells - n_wells_in_setback) %>%
-  dplyr::select(-n_wells, -n_wells_in_setback)
+  mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback),
+         active_well = ifelse(well_status == "Plugged", 0, 1),
+         productive_well = ifelse(within_setback == 0 & active_well == 1, 1, 0)) %>%
+  group_by(setback_scenario, doc_field_code, doc_fieldname, start_year) %>% 
+  ## calculate total number of wells, active wells (- plugged), active wells post setback (- plugged)
+  summarise(n_wells_total = n(),
+            n_active_wells = sum(active_well),
+            n_active_post_setback = sum(productive_well)) %>%
+  ungroup()
 
-# functions ------ 
+## clean for joining  
+op_wells_agg2 <- op_wells_agg %>%
+  select(-n_active_wells) %>%
+  rename(adj_no_wells = n_active_post_setback)
 
-hypfunc = function(b,t,q_i,D_h) { q_i/((1 + b*D_h*t)^(1/b)) }
-expfunc = function(q_i,d,t) {   q_i*exp(-d*t) }
+## join with dt_pred_long, adjust production to account for setbacks and plugged wells
+dt_pred_long_adj <- merge(op_wells_agg2, dt_pred_long, by = c('doc_field_code', 'doc_fieldname', 'start_year'), all.x = T)
 
-# set years -------
+setcolorder(dt_pred_long_adj, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", "n_wells_total", "adj_no_wells", "year", "production_bbl"))
 
-fullrange = seq(2020, 2045,1)
+dt_pred_long_adj <- dt_pred_long_adj[, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", "adj_no_wells", "year", "production_bbl")]
 
-# match parameters ------
+## calculate prod per bbl
+setDT(dt_pred_long_adj)
+dt_pred_long_adj[, prod_per_bbl := production_bbl / no_wells]
+dt_pred_long_adj[, production_bbl := prod_per_bbl * adj_no_wells]
 
-# merge op_wells with the decline params
-dt_pred = merge(op_wells_agg, decline_params, by = c('doc_field_code', 'doc_fieldname', 'start_year'), all.x = T)
+dt_pred_long_adj <- dt_pred_long_adj[, c('doc_field_code', 'doc_fieldname', 'setback_scenario', 'start_year', 'no_wells', 'adj_no_wells', 'year', 'production_bbl')]
 
-setDT(dt_pred)
-
-dt_pred = dt_pred[, c('doc_field_code', 'doc_fieldname', 'start_year', 'setback_scenario', 'no_wells', 'adj_no_wells',
-                      'q_i', 'D', 'b', 'd', 'int_yr', 'peak_prod_year', 'peak_tot_prod', 'peak_avg_well_prod', 'peak_well_prod_rate', 'type')]
-
-## multiply by adj_no_wells (incorporates setbacks)
-dt_pred[, peak_tot_prod := peak_avg_well_prod * adj_no_wells]
-
-
-# loop to calculate production at each year -----
-
-for (i in seq_along(fullrange) ) {
-  
-  y = fullrange[i]
-  
-  # dt_pred[is.na(b2), col := hypfunc(b1, y - start_year, peak_tot_prod, D)] # meas-note: the updated parameters file only has b now (no b1 or b2 or anything), so you could probably comment out this line and replace mentions of b2 with b and d2 with d
-  dt_pred[is.na(b), col := expfunc(peak_tot_prod, d, y - start_year)] 
-  dt_pred[! is.na(b), col :=  ifelse(y < 1978 + int_yr,
-                                     hypfunc(b, y - start_year, peak_tot_prod, D),
-                                     expfunc(peak_tot_prod, d, y - start_year))]
-  
-  colnames(dt_pred)[ncol(dt_pred)] = y
-}
-
-# convert to long ------
-
-dt_pred_long = melt(dt_pred, id.vars = c('doc_field_code', 'doc_fieldname', 'start_year', 'setback_scenario', 'adj_no_wells', 'q_i', 'D', 'b', 'd', 'int_yr'),
-                    measure.vars = as.character(fullrange), variable.name = 'year', value.name = 'production_bbl')
-
-setorderv(dt_pred_long, c('setback_scenario', 'doc_field_code', 'year', 'start_year'))
-
-dt_pred_long[, c('q_i', 'D', 'b', 'd', 'int_yr') := NULL]
 
 ## save production without exit
-fwrite(dt_pred_long, paste0(save_path, 'pred_prod_no_exit_2020-2045_field_start_year_revised.csv'))
+fwrite(dt_pred_long_adj, paste0(save_path, 'pred_prod_no_exit_2020-2045_field_start_year_revised.csv'))
 
 # aggregate predicted production -----
 
