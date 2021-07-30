@@ -20,6 +20,7 @@
 # set binary switches
   run_diagnostic_figs   = 1
   run_benchmark_figs    = 0
+  processes_out         = 1
   
 # set seed
   set.seed(228)
@@ -76,7 +77,16 @@
   
     
 # step 3: process outputs ------
+
+  if (processes_out == 1) {
+    
+    library(data.table)  
+    library(tidyverse)
+    library(openxlsx)
+    
+    # output_processed = process_extraction_outputs(output_extraction)
+    
+  }  
   
-# output_processed = process_extraction_outputs(oil_price_selection, output_extraction)
   
 # step 4: plot outputs -------
