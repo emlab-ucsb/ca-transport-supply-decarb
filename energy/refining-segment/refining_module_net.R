@@ -25,19 +25,19 @@
 
 # selection ------  
 
-  ref_threshold   = 0.6
-  ren_threshold   = 0.9
-  pred_years      = 2020:2045
-  a               = 4
-  drop_in_perc    = 1
-  kern_perc       = 0.9375
-  ccs_eff         = 0.474
+  ref_threshold     = 0.6
+  ren_threshold     = 0.9
+  pred_years        = 2020:2045
+  a                 = 4
+  drop_in_perc      = 1
+  kern_perc         = 0.9375
+  ccs_capture_rate  = 0.474
   
 # outputs ---------
 
   save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
   cur_date    = Sys.Date()
-  run_name    = 'add-new-scenarios'
+  run_name    = 'update-ccs-decision'
   save_path   = file.path(save_path, paste0('refining_', cur_date))
   dir.create(save_path)
   save_path   = file.path(save_path, run_name)
@@ -2247,7 +2247,8 @@
       ref_cons_prod_scens[, ccs_adj_usd_per_mt := total_cost/total_mtCO2e_adj]
       ref_cons_prod_scens[, ccs_adj_usd_per_kg := total_cost/total_kgCO2e_adj]
       ref_cons_prod_scens[is.na(ccs_adj_usd_per_kg), ccs_adj_usd_per_kg := ccs_price_usd_per_kg]
-      ref_cons_prod_scens[, ccs_adoption := ccs_adj_usd_per_kg - carbon_price_usd_per_kg]
+      # ref_cons_prod_scens[, ccs_adoption := ccs_adj_usd_per_kg - carbon_price_usd_per_kg]
+      ref_cons_prod_scens[, ccs_adoption := ((ccs_capture_rate)*ccs_adj_usd_per_kg + ((1 - ccs_capture_rate)*carbon_price_usd_per_kg)) - (carbon_price_usd_per_kg)]
       ref_cons_prod_scens[, ccs_adopted := ifelse(ccs_adoption < 0, 1, 0)]
       
     # get ccs adoption of previous row
@@ -2260,8 +2261,8 @@
     # if ccs previously adopted, adopted for subsequent year
       ref_cons_prod_scens[prev_ccs == 1 & ccs_adopted == 0, ccs_adopted := 1]
     
-    # if ccs adopted, set ghg emissions = 0
-      ref_cons_prod_scens[, total_kgCO2e_adj := ifelse(ccs_adopted == 1, total_kgCO2e_adj * (1 - ccs_eff), total_kgCO2e_adj)]
+    # if ccs adopted, set ghg emissions 
+      ref_cons_prod_scens[, total_kgCO2e_adj := ifelse(ccs_adopted == 1, total_kgCO2e_adj * (1 - ccs_capture_rate), total_kgCO2e_adj)]
       
     # reorder factor levels
       ref_cons_prod_scens[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
@@ -2477,7 +2478,7 @@
       
     # calculate emissions
       
-      indiv_ghg[, co2e_kg := ifelse(ccs_adopted == 1, consumption_bbl * region_kgco2e_bbl_adj * (1 - ccs_eff), consumption_bbl * region_kgco2e_bbl_adj)]
+      indiv_ghg[, co2e_kg := ifelse(ccs_adopted == 1, consumption_bbl * region_kgco2e_bbl_adj * (1 - ccs_capture_rate), consumption_bbl * region_kgco2e_bbl_adj)]
       
     # assign clusters
       
