@@ -161,11 +161,59 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
 
   # create objects for list items -------
   
+  browser()
+  
   state_out = output_extraction[[3]]
+  
+  state_out = state_out[(oil_price_scenario == 'reference case' &
+                           innovation_scenario == 'low innovation' &
+                           carbon_price_scenario == 'price floor' &
+                           ccs_scenario == 'medium CCS cost' &
+                           excise_tax_scenario == 'no tax' &
+                           setback_scenario == 'no_setback' &
+                           prod_quota_scenario == 'no quota') |
+                          (oil_price_scenario == 'reference case' &
+                             innovation_scenario == 'low innovation' &
+                             carbon_price_scenario == 'price floor' &
+                             ccs_scenario == 'medium CCS cost' &
+                             excise_tax_scenario == 'no tax' &
+                             setback_scenario == 'no_setback' &
+                             prod_quota_scenario == 'quota_20') |
+                          (oil_price_scenario == 'reference case' &
+                             innovation_scenario == 'low innovation' &
+                             carbon_price_scenario == 'price floor' &
+                             ccs_scenario == 'medium CCS cost' &
+                             excise_tax_scenario == 'no tax' &
+                             setback_scenario == 'setback_2500ft' &
+                             prod_quota_scenario == 'quota_20')]
+  
+  
 
   state_out[, version := paste0("adj-", run_type)]
   
   field_out = output_extraction[[2]]
+  
+  field_out = field_out[(oil_price_scenario == 'reference case' &
+                           innovation_scenario == 'low innovation' &
+                           carbon_price_scenario == 'price floor' &
+                           ccs_scenario == 'medium CCS cost' &
+                           excise_tax_scenario == 'no tax' &
+                           setback_scenario == 'no_setback' &
+                           prod_quota_scenario == 'no quota') |
+                          (oil_price_scenario == 'reference case' &
+                             innovation_scenario == 'low innovation' &
+                             carbon_price_scenario == 'price floor' &
+                             ccs_scenario == 'medium CCS cost' &
+                             excise_tax_scenario == 'no tax' &
+                             setback_scenario == 'no_setback' &
+                             prod_quota_scenario == 'quota_20') |
+                          (oil_price_scenario == 'reference case' &
+                             innovation_scenario == 'low innovation' &
+                             carbon_price_scenario == 'price floor' &
+                             ccs_scenario == 'medium CCS cost' &
+                             excise_tax_scenario == 'no tax' &
+                             setback_scenario == 'setback_2500ft' &
+                             prod_quota_scenario == 'quota_20')]
   
   pos_field_dt = field_out[, .(prod = sum(total_prod_bbl, na.rm = T)), by = .(doc_field_code, oil_price_scenario,
                                                                               innovation_scenario, carbon_price_scenario,

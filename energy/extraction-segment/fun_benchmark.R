@@ -10,51 +10,8 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   
   state_out = output_extraction[[3]]
   
-  state_out = state_out[(oil_price_scenario == 'reference case' &
-                        innovation_scenario == 'low innovation' &
-                        carbon_price_scenario == 'price floor' &
-                        ccs_scenario == 'medium CCS cost' &
-                        excise_tax_scenario == 'no tax' &
-                        setback_scenario == 'no_setback' &
-                        prod_quota_scenario == 'no quota') |
-                         (oil_price_scenario == 'reference case' &
-                         innovation_scenario == 'low innovation' &
-                         carbon_price_scenario == 'price floor' &
-                         ccs_scenario == 'medium CCS cost' &
-                         excise_tax_scenario == 'no tax' &
-                         setback_scenario == 'no_setback' &
-                         prod_quota_scenario == 'quota_20') |
-                         (oil_price_scenario == 'reference case' &
-                         innovation_scenario == 'low innovation' &
-                         carbon_price_scenario == 'price floor' &
-                         ccs_scenario == 'medium CCS cost' &
-                         excise_tax_scenario == 'no tax' &
-                         setback_scenario == 'setback_2500ft' &
-                         prod_quota_scenario == 'quota_20')]
-  
   field_out = output_extraction[[2]]
-  
-  field_out = field_out[(oil_price_scenario == 'reference case' &
-               innovation_scenario == 'low innovation' &
-               carbon_price_scenario == 'price floor' &
-               ccs_scenario == 'medium CCS cost' &
-               excise_tax_scenario == 'no tax' &
-               setback_scenario == 'no_setback' &
-               prod_quota_scenario == 'no quota') |
-              (oil_price_scenario == 'reference case' &
-                 innovation_scenario == 'low innovation' &
-                 carbon_price_scenario == 'price floor' &
-                 ccs_scenario == 'medium CCS cost' &
-                 excise_tax_scenario == 'no tax' &
-                 setback_scenario == 'no_setback' &
-                 prod_quota_scenario == 'quota_20') |
-              (oil_price_scenario == 'reference case' &
-                 innovation_scenario == 'low innovation' &
-                 carbon_price_scenario == 'price floor' &
-                 ccs_scenario == 'medium CCS cost' &
-                 excise_tax_scenario == 'no tax' &
-                 setback_scenario == 'setback_2500ft' &
-                 prod_quota_scenario == 'quota_20')]
+
   
   ## read in files
   extract_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T,
