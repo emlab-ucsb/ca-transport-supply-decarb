@@ -4,11 +4,15 @@
 ## Compile extraction outputs (site and county, include 2019)
 
 process_extraction_outputs <- function(output_extraction) {
+
+## create a folder to store outputs
+compiled_save_path  = file.path('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/', paste0('extraction_', cur_date))
+dir.create(compiled_save_path, showWarnings = FALSE)  
   
+    
 ## paths
 main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
 data_path  <-'data/stocks-flows/processed'
-save_path <- "academic-out/extraction"
 
 
 ## files
@@ -45,6 +49,11 @@ county_lut <- well_prod %>%
   dplyr::select(doc_field_code, county_name) %>%
   unique() %>%
   mutate(adj_county_name = str_remove(county_name, " Offshore"))
+
+## field name look up 
+fname_lut <- well_prod %>%
+  dplyr::select(doc_field_code, doc_fieldname) %>%
+  unique()
 
 ## get relative county production (most recent year of nonzero production available for each field)
 prod_x_county <- well_prod %>%
@@ -86,18 +95,25 @@ init_prod <- merge(init_prod, ghg_factors_2019,
 init_prod[, total_ghg_kgCO2e := total_prod_bbl * upstream_kgCO2e_bbl]
 
 
-init_prod <- init_prod[, .(doc_field_code, year, doc_fieldname, total_prod_bbl, total_ghg_kgCO2e)]
+init_prod <- init_prod[, .(doc_field_code, year, total_prod_bbl, total_ghg_kgCO2e)]
 
-## add 2019 oil price
+## remove fields that do not ever produce oil and do not show up in results, as well as "Any Field)
+init_prod <- init_prod[!doc_field_code %in% c("302", "502", "000")]
 
+init_prod_bbls_only <- init_prod[, .(doc_field_code, year, total_prod_bbl)]
 
-## filter out fields 000, 848 old wilmington, 154...
+## check fields in 2019 vs outputs
+## ------------------------------------------------------
+anti_join(init_prod %>% select(doc_fieldname), field_out %>% select(doc_fieldname) %>% unique())
 
+check_projection <- anti_join(field_out %>% select(doc_fieldname) %>% unique(), init_prod %>% select(doc_fieldname))
 
+View(field_out[doc_fieldname %chin% check_projection[, doc_fieldname] & total_prod_bbl > 0])
+## English Colony (ABD) has existing well production; Pacoima (ABD) has new well production
 
 ## prepare projection outputs
 site_out <- field_out[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                          setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code, doc_fieldname,
+                          setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code,
                           year, total_prod_bbl)]
 
 ## create out with all scenario, field, and year combinations
@@ -105,17 +121,100 @@ full_site_df <- expand.grid(oil_price_scenario = unique(site_out$oil_price_scena
                             innovation_scenario = unique(site_out$innovation_scenario),
                             carbon_price_scenario = unique(site_out$carbon_price_scenario),
                             ccs_scenario = unique(site_out$ccs_scenario),
+                            setback_scenario = unique(site_out$setback_scenario),
                             prod_quota_scenario = unique(site_out$prod_quota_scenario),
                             excise_tax_scenario = unique(site_out$excise_tax_scenario),
-                            doc_field_code = unique(c(site_out$doc_field_code, init_prod$doc_field_code)),
+                            doc_field_code = unique(c(site_out$doc_field_code, init_prod_bbls_only$doc_field_code)),
                             year = seq(2019, 2045, 1))
 
 setDT(full_site_df)
 
-full_site_df <- merge(full_site_df, init_prod,
-                      by = c("doc_field_code", "year"),
-                      all.x = T)
+full_site_df_2019 <- full_site_df[year == 2019]
 
+full_site_df_2019 <- merge(full_site_df_2019, fname_lut,
+                           by = c("doc_field_code"),
+                           all.x = T)
+
+full_site_df_2019 <- merge(full_site_df_2019, init_prod_bbls_only,
+                           by = c("doc_field_code", "year"),
+                           all.x = T)
+
+full_site_df_2019[,':=' (total_prod_bbl = fifelse(is.na(total_prod_bbl), 0, total_prod_bbl))]
+
+## now do projection
+
+full_site_df_proj <- full_site_df[year > 2019]
+
+full_site_df_proj <- merge(full_site_df_proj, fname_lut,
+                           by = c("doc_field_code"),
+                           all.x = T)
+
+full_site_df_proj <- merge(full_site_df_proj, site_out,
+                           by = c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                                  'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'doc_field_code',
+                                  'year'),
+                           all.x = T)
+
+full_site_df_proj[,':=' (total_prod_bbl = fifelse(is.na(total_prod_bbl), 0, total_prod_bbl))]
+
+## bind 2019 to projected
+full_site_out <- rbind(full_site_df_2019, full_site_df_proj)
+
+setcolorder(full_site_out, c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                             'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'doc_field_code', 'doc_fieldname',
+                             'year', 'total_prod_bbl'))
+
+## which fields have zero production?
+zero_prod <- full_site_out[, .(prod = sum(total_prod_bbl)), by = .(doc_field_code, doc_fieldname)]
+zero_prod <- zero_prod[prod == 0]
+
+prod_list <- full_site_out[, .(prod = sum(total_prod_bbl)), by = .(doc_field_code, doc_fieldname)]
+prod_list <- prod_list[prod > 0]
+prod_list <- prod_list[, c('doc_field_code', 'doc_fieldname')]
+
+# save results ------
+
+pos_field_fname = paste0('fields_positive_prod.csv')
+fwrite(prod_list, file.path(compiled_save_path, pos_field_fname), row.names = F)
+print(paste0('Fields with positive production saved to ', pos_field_fname))
+
+## filter full site out for fields with > 0 production
+full_site_out <- full_site_out[doc_field_code %in% prod_list[, doc_field_code]]
+
+## add oil prices (including 2019... 2021 real dollars)
+
+
+## save site level output for health and labor
+
+
+
+## now do county-level
+## ---------------------------------------------------------
+
+county_out <- merge(full_site_out, prod_x_county,
+                    by = c("doc_field_code"),
+                    all.x = T,
+                    allow.cartesian = T)
+
+setcolorder(county_out, c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                          'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                          'year', 'doc_field_code', 'doc_fieldname', 'total_prod_bbl', 'adj_county_name', 'rel_prod'))
+
+## summarise at the county level
+county_out <- county_out[, c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                             'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                             'year', 'doc_field_code', 'doc_fieldname', 'total_prod_bbl', 'adj_county_name', 'rel_prod')]
+
+county_out[, county_prod_bbl := total_prod_bbl * rel_prod]
+
+county_out <- county_out[, .(total_county_bbl = sum(county_prod_bbl)), by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario,
+                                                                           ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                                                           year, adj_county_name)]
+
+## add oil price
+
+
+## save outputs
 
 
 

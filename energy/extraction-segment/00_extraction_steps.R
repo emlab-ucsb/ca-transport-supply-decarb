@@ -76,7 +76,7 @@
   }
   
     
-# step 3: process outputs ------
+# step 3: process outputs for health and labor ------
   source(here::here('energy', 'compile-outputs', 'compile_extraction_outputs.R'))
   
   if (processes_out == 1) {
