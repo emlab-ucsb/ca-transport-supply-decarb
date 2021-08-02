@@ -2,7 +2,7 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  oil_price_selection   = 'benchmark' ## diagnostic, benchmark
+  oil_price_selection   = 'diagnostic' ## diagnostic, benchmark
     # choose from: reference, high, low, iea
   run_type = "update-exiting-prod-estimate"
     
@@ -18,7 +18,7 @@
   dir.create(save_path, showWarnings = FALSE)
   
 # set binary switches
-  run_diagnostic_figs   = 1
+  run_diagnostic_figs   = 0
   run_benchmark_figs    = 0
   processes_out         = 1
   
@@ -77,14 +77,15 @@
   
     
 # step 3: process outputs ------
-
+  source(here::here('energy', 'compile-outputs', 'compile_extraction_outputs.R'))
+  
   if (processes_out == 1) {
     
     library(data.table)  
     library(tidyverse)
     library(openxlsx)
     
-    # output_processed = process_extraction_outputs(output_extraction)
+    output_processed = process_extraction_outputs(output_extraction)
     
   }  
   

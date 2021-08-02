@@ -160,8 +160,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
 
   # create objects for list items -------
-  
-  browser()
+
   
   state_out = output_extraction[[3]]
   
@@ -234,6 +233,28 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   # read in baseline for comparison ------
   
   state_base = fread(file.path(base_path, 'extraction_2021-07-29', 'update-ccs-parameterization', 'diagnostic-state-level-results.csv'), header = T)
+  
+  state_base = state_base[(oil_price_scenario == 'reference case' &
+                innovation_scenario == 'low innovation' &
+                carbon_price_scenario == 'price floor' &
+                ccs_scenario == 'medium CCS cost' &
+                excise_tax_scenario == 'no tax' &
+                setback_scenario == 'no_setback' &
+                prod_quota_scenario == 'no quota') |
+              (oil_price_scenario == 'reference case' &
+                 innovation_scenario == 'low innovation' &
+                 carbon_price_scenario == 'price floor' &
+                 ccs_scenario == 'medium CCS cost' &
+                 excise_tax_scenario == 'no tax' &
+                 setback_scenario == 'no_setback' &
+                 prod_quota_scenario == 'quota_20') |
+              (oil_price_scenario == 'reference case' &
+                 innovation_scenario == 'low innovation' &
+                 carbon_price_scenario == 'price floor' &
+                 ccs_scenario == 'medium CCS cost' &
+                 excise_tax_scenario == 'no tax' &
+                 setback_scenario == 'setback_2500ft' &
+                 prod_quota_scenario == 'quota_20')]
   
   # add column for base case
   state_base[, version := "updated-ccs-incl-plugged"]
