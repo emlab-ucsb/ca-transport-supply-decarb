@@ -33,6 +33,13 @@
     
   # entry df
     entry_df = fread(file.path(emlab_dir, entry_fil), header = T, colClasses = c('doc_field_code' = 'character'))
+    
+  # well status
+    wells <- sf::st_read(file.path(emlab_dir, "data/GIS/raw/allwells_gis/Wells_All.shp")) %>% 
+      dplyr::select(API, WellStatus) %>%
+      unique() %>%
+      as_tibble() %>%
+      dplyr::select(api_ten_digit = API, well_status = WellStatus)
   
 # get field code + field name matches -----
 
@@ -138,9 +145,61 @@
   
   prod_fv_year_2 = prod_fv_year[peak_fv_year[,-'no_wells'], on = c('doc_fieldname', 'doc_field_code', 'start_year')]
   prod_fv_year_2[, peak_year_diff := as.numeric(year_no) - as.numeric(peak_prod_year)]
+
+# calculate the percentage of production from plugged wells in peak year for each field vintage
+  peak_prod_plugged <- unique(well_prod3[, .(api_ten_digit, start_year, doc_field_code)])
   
+  peak_prod_plugged <- merge(peak_prod_plugged, peak_fv_year,
+                             by = c("doc_field_code", "start_year"),
+                             all.x = T)
+  
+  peak_prod_plugged <- peak_prod_plugged[, .(api_ten_digit, doc_field_code, doc_fieldname, start_year, peak_prod_year, peak_tot_prod)]
+  
+  peak_prod_plugged[, year_no := peak_prod_year]
+  
+  
+  ## annual well production
+  annual_well_prod <- well_prod3[, .(prod_bbls = sum(oil_prod, na.rm = T)), by = .(api_ten_digit, doc_field_code, start_year, year_no)]
+  
+  ## merge
+  peak_prod_plugged <- merge(peak_prod_plugged, annual_well_prod,
+                             by = c("api_ten_digit", "doc_field_code", "start_year", "year_no"),
+                             all.x = T)
+  
+  ## check that sums are the same 
+  peak_prod_plugged[, peak_tot_prod_2 := sum(prod_bbls, na.rm = T), by = .(doc_field_code, doc_fieldname, start_year, year_no)]
+  View(peak_prod_plugged %>% mutate(diff = peak_tot_prod - peak_tot_prod_2) %>% filter(diff > 0))
+  ## they are, remove peak_tot_prod_2
+  peak_prod_plugged[, peak_tot_prod_2 := NULL]
+  
+  ## add status
+  peak_prod_plugged <- merge(peak_prod_plugged, wells,
+                             by = "api_ten_digit",
+                             all.x = T)
+  ## replace NA values
+  peak_prod_plugged[, ":=" (prod_bbls = fifelse(is.na(prod_bbls), 0, prod_bbls),
+                            well_status = fifelse(is.na(well_status), "Active", well_status))]
+  
+  peak_prod_plugged[, plugged_status := fifelse(well_status == "Plugged", "Plugged", "Other")]
+  
+  ## calculate percentage of prod from plugged wells for each field vintage
+  peak_prod_plugged_perc <- peak_prod_plugged[, .(prod_bbls = sum(prod_bbls),
+                                                  peak_tot_prod = unique(peak_tot_prod)), by = .(doc_field_code, doc_fieldname, start_year, plugged_status)]
+  
+  peak_prod_plugged_perc[, rel_prod := prod_bbls / peak_tot_prod]
+
+  plugged_fig <- ggplot(peak_prod_plugged_perc %>% filter(plugged_status == "Plugged"), aes(x = rel_prod)) +
+    geom_histogram(binwidth = 0.01) +
+    labs(y = "count",
+         x = "relative peak production (plugged wells)")
+  
+  peak_prod_adj_val <- peak_prod_plugged_perc[plugged_status == "Other", .(doc_field_code, doc_fieldname, start_year, rel_prod)]
+  setnames(peak_prod_adj_val, "rel_prod", "non_plug_rel_prod")
+    
 # save outputs ------
   
   fwrite(peak_fv_year, file.path(emlab_dir, save_dir, peak_fy_fil))
   fwrite(prod_fv_year_2, file.path(emlab_dir, save_dir, prod_fy_fil))
   fwrite(well_prod3, file.path(emlab_dir, save_dir, well_fy_fil))
+  fwrite(peak_prod_adj_val, file.path(emlab_dir, save_dir, "adj_val_field-year_pred_prod.csv"))
+  
