@@ -20,6 +20,9 @@ prod_file  <- "well_prod_m_processed.csv"
 oil_price_file <- 'oil_price_projections_revised.xlsx'
 ghg_file <- 'ghg_emissions_x_field_2018-2045.csv'
 
+## state outputs
+state_out = output_extraction[[3]]
+
 ## field outputs
 field_out = output_extraction[[2]]
 
@@ -37,7 +40,7 @@ oilpx_scens = melt(oilpx_scens, measure.vars = c('reference_case', 'high_oil_pri
                    variable.name = 'oil_price_scenario', value.name = 'oil_price_usd_per_bbl')
 oilpx_scens[, oil_price_scenario := gsub('_', ' ', oil_price_scenario)]
 oilpx_scens[, oil_price_scenario := factor(oil_price_scenario, levels = c('reference case', 'high oil price', 'low oil price'))]
-oilpx_scens <- oilpx_scens[year > 2019]
+oilpx_scens <- oilpx_scens[year >= 2019]
 setorderv(oilpx_scens, c('oil_price_scenario', 'year'))
 
 
@@ -69,6 +72,7 @@ prod_x_county <- well_prod %>%
   filter(rel_prod > 0) %>%
   group_by(doc_field_code) %>%
   filter(year == max(year)) %>%
+  ungroup() %>%
   select(doc_field_code, adj_county_name, rel_prod)
 
 ## how many fields with positive prod?
@@ -104,11 +108,11 @@ init_prod_bbls_only <- init_prod[, .(doc_field_code, year, total_prod_bbl)]
 
 ## check fields in 2019 vs outputs
 ## ------------------------------------------------------
-anti_join(init_prod %>% select(doc_fieldname), field_out %>% select(doc_fieldname) %>% unique())
+anti_join(init_prod %>% select(doc_field_code), field_out %>% select(doc_field_code) %>% unique())
 
-check_projection <- anti_join(field_out %>% select(doc_fieldname) %>% unique(), init_prod %>% select(doc_fieldname))
+check_projection <- anti_join(field_out %>% select(doc_field_code) %>% unique(), init_prod %>% select(doc_field_code))
 
-View(field_out[doc_fieldname %chin% check_projection[, doc_fieldname] & total_prod_bbl > 0])
+View(field_out[doc_field_code %chin% check_projection[, doc_field_code] & total_prod_bbl > 0])
 ## English Colony (ABD) has existing well production; Pacoima (ABD) has new well production
 
 ## prepare projection outputs
@@ -117,17 +121,26 @@ site_out <- field_out[, .(oil_price_scenario, innovation_scenario, carbon_price_
                           year, total_prod_bbl)]
 
 ## create out with all scenario, field, and year combinations
-full_site_df <- expand.grid(oil_price_scenario = unique(site_out$oil_price_scenario),
-                            innovation_scenario = unique(site_out$innovation_scenario),
-                            carbon_price_scenario = unique(site_out$carbon_price_scenario),
-                            ccs_scenario = unique(site_out$ccs_scenario),
-                            setback_scenario = unique(site_out$setback_scenario),
-                            prod_quota_scenario = unique(site_out$prod_quota_scenario),
-                            excise_tax_scenario = unique(site_out$excise_tax_scenario),
+all_scens <- unique(state_out[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                  setback_scenario, prod_quota_scenario, excise_tax_scenario)])
+
+all_scens[, scen_id := .I]
+setcolorder(all_scens, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
+                         "setback_scenario", "prod_quota_scenario", "excise_tax_scenario"))
+
+full_site_df <- expand.grid(scen_id = unique(all_scens$scen_id),
                             doc_field_code = unique(c(site_out$doc_field_code, init_prod_bbls_only$doc_field_code)),
                             year = seq(2019, 2045, 1))
 
 setDT(full_site_df)
+
+## add scenario information using id
+full_site_df <- merge(full_site_df, all_scens,
+                      by = c("scen_id"),
+                      all.x = T)
+
+setcolorder(full_site_df, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
+                            "setback_scenario", "prod_quota_scenario", "excise_tax_scenario", "doc_field_code", "year"))
 
 full_site_df_2019 <- full_site_df[year == 2019]
 
@@ -160,7 +173,7 @@ full_site_df_proj[,':=' (total_prod_bbl = fifelse(is.na(total_prod_bbl), 0, tota
 ## bind 2019 to projected
 full_site_out <- rbind(full_site_df_2019, full_site_df_proj)
 
-setcolorder(full_site_out, c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                              'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'doc_field_code', 'doc_fieldname',
                              'year', 'total_prod_bbl'))
 
@@ -182,6 +195,16 @@ print(paste0('Fields with positive production saved to ', pos_field_fname))
 full_site_out <- full_site_out[doc_field_code %in% prod_list[, doc_field_code]]
 
 ## add oil prices (including 2019... 2021 real dollars)
+full_site_out <- merge(full_site_out, oilpx_scens,
+                       by = c("oil_price_scenario", "year"),
+                       all.x = T)
+
+full_site_out[, revenue := total_prod_bbl * oil_price_usd_per_bbl]
+
+setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                             'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'doc_field_code', 'doc_fieldname',
+                             'year', 'total_prod_bbl', 'oil_price_usd_per_bbl', 'revenue'))
+
 
 
 ## save site level output for health and labor
@@ -196,23 +219,43 @@ county_out <- merge(full_site_out, prod_x_county,
                     all.x = T,
                     allow.cartesian = T)
 
-setcolorder(county_out, c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+setcolorder(county_out, c('scen_id', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                           'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
                           'year', 'doc_field_code', 'doc_fieldname', 'total_prod_bbl', 'adj_county_name', 'rel_prod'))
 
 ## summarise at the county level
-county_out <- county_out[, c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+county_out <- county_out[, c('scen_id', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                              'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
                              'year', 'doc_field_code', 'doc_fieldname', 'total_prod_bbl', 'adj_county_name', 'rel_prod')]
 
 county_out[, county_prod_bbl := total_prod_bbl * rel_prod]
 
-county_out <- county_out[, .(total_county_bbl = sum(county_prod_bbl)), by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario,
+county_out <- county_out[, .(total_county_bbl = sum(county_prod_bbl)), by = .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                                                            ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
                                                                            year, adj_county_name)]
 
 ## add oil price
+county_out <- merge(county_out, oilpx_scens,
+                    by = c("oil_price_scenario", "year"),
+                    all.x = T)
 
+county_out[, revenue := total_county_bbl * oil_price_usd_per_bbl]
+
+setcolorder(county_out, c('scen_id', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                          'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                          'year', 'adj_county_name', 'total_county_bbl', 'oil_price_usd_per_bbl', 'revenue'))
+
+# ## test
+# test <- county_out[, .(prod = sum(total_county_bbl)), by = .(oil_price_scenario, innovation_scenario,
+#                                                              carbon_price_scenario, ccs_scenario,
+#                                                              setback_scenario, prod_quota_scenario,
+#                                                              excise_tax_scenario, year)]
+# 
+# test[, scen := fifelse(setback_scenario == "setback_2500ft" & prod_quota_scenario == "quota_20", "LCE2",
+#                        fifelse(prod_quota_scenario == "quota_20" & setback_scenario == "no_setback", "LCE1", "BAU"))]
+# 
+# ggplot(test, aes(y = prod / 1e6, x = year, group = scen, color = scen)) +
+#   geom_line()
 
 ## save outputs
 
