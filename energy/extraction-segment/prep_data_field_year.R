@@ -167,10 +167,10 @@
                              all.x = T)
   
   ## check that sums are the same 
-  peak_prod_plugged[, peak_tot_prod_2 := sum(prod_bbls, na.rm = T), by = .(doc_field_code, doc_fieldname, start_year, year_no)]
-  View(peak_prod_plugged %>% mutate(diff = peak_tot_prod - peak_tot_prod_2) %>% filter(diff > 0))
-  ## they are, remove peak_tot_prod_2
-  peak_prod_plugged[, peak_tot_prod_2 := NULL]
+  # peak_prod_plugged[, peak_tot_prod_2 := sum(prod_bbls, na.rm = T), by = .(doc_field_code, doc_fieldname, start_year, year_no)]
+  # View(peak_prod_plugged %>% mutate(diff = peak_tot_prod - peak_tot_prod_2) %>% filter(diff > 0))
+  # ## they are, remove peak_tot_prod_2
+  # peak_prod_plugged[, peak_tot_prod_2 := NULL]
   
   ## add status
   peak_prod_plugged <- merge(peak_prod_plugged, wells,
@@ -188,12 +188,31 @@
   
   peak_prod_plugged_perc[, rel_prod := prod_bbls / peak_tot_prod]
 
+  ## make version with zeros
+  peak_prod_plugged_perc <- peak_prod_plugged_perc[, .(doc_field_code, start_year, plugged_status, rel_prod)]
+  peak_prod_plugged_perc[, id := paste(doc_field_code, start_year, sep = "-")]
+  
+  ## all ids and statuses
+  status_df <- expand.grid(id = unique(peak_prod_plugged_perc$id),
+                           plugged_status = unique(peak_prod_plugged_perc$plugged_status))
+  
+  setDT(status_df)
+  
+  peak_prod_plugged_perc_all <- merge(status_df, peak_prod_plugged_perc,
+                                      by = c("id", "plugged_status"),
+                                      all.x = T)
+  
+  peak_prod_plugged_perc_all[, ":=" (doc_field_code = substr(id, 1, 3),
+                                     start_year = stringr::str_sub(id, -4, -1),
+                                     rel_prod = fifelse(is.na(rel_prod), 0, rel_prod))]
+  
   plugged_fig <- ggplot(peak_prod_plugged_perc %>% filter(plugged_status == "Plugged"), aes(x = rel_prod)) +
     geom_histogram(binwidth = 0.01) +
     labs(y = "count",
          x = "relative peak production (plugged wells)")
+
   
-  peak_prod_adj_val <- peak_prod_plugged_perc[plugged_status == "Other", .(doc_field_code, doc_fieldname, start_year, rel_prod)]
+  peak_prod_adj_val <- peak_prod_plugged_perc_all[plugged_status == "Other", .(doc_field_code, start_year, rel_prod)]
   setnames(peak_prod_adj_val, "rel_prod", "non_plug_rel_prod")
     
 # save outputs ------
