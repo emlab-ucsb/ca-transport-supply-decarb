@@ -8,8 +8,10 @@ data_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-pr
 prod_file       = 'data/production_api10_yearly_start_year.csv' # meas-note: update to use "production_api10_yearly_start_year.csv"
 param_file      = 'parameters/fitted-parameters_field-start-year_yearly_entry.csv' # meas-note: update to use "fitted-parameters_field-start-year_yearly_entry.csv"
 peak_file       = 'data/field-year_peak-production_yearly.csv' # meas-note: update to use "field-year_peak-production_yearly.csv"
+prod_adj_file   = 'data/adj_val_field-year_pred_prod.csv'
 setback_path    = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/setback/model-inputs/'
 w_setback_file  = 'wells_in_setbacks_revised.csv'
+
 
 # outputs ------
 
@@ -24,6 +26,8 @@ library(tidyverse)
 
 dt_prod = fread(paste0(data_path, prod_file), header = T, colClasses = c('api_ten_digit' = 'character',
                                                                          'doc_field_code' = 'character'))
+
+pred_adj_vals = fread(paste0(data_path, prod_adj_file), header = T, colClasses = c("doc_field_code" = "character"))
 
 decline_params = fread(paste0(data_path, param_file), header = T, colClasses = c('doc_field_code' = 'character'))
 
@@ -90,7 +94,15 @@ setorderv(dt_pred_long, c('doc_field_code', 'year', 'start_year'))
 
 dt_pred_long[, c('q_i', 'D', 'b', 'd', 'int_yr') := NULL]
 
-## now incorporate setbacks and plugged wells
+## incorporate plugged wells by reducing projected bbl using adj values
+dt_pred_long <- merge(dt_pred_long, pred_adj_vals,
+                      by = c("doc_field_code", "start_year"),
+                      all.x = T)
+
+dt_pred_long[, production_bbl_adj := production_bbl * non_plug_rel_prod]
+
+
+## now incorporate setbacks 
 ## ---------------------------------------------
 
 ## setback df with all wells 
@@ -121,29 +133,32 @@ op_wells_agg <- op_wells %>%
   ## assume NA means not in setback (note that there are about 20 wells that are na)
   mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback),
          active_well = ifelse(well_status == "Plugged", 0, 1),
-         productive_well = ifelse(within_setback == 0 & active_well == 1, 1, 0)) %>%
+         prod_post_setback = ifelse(within_setback == 0, 1, 0),
+         prod_post_setback_plug = ifelse(within_setback == 0 & active_well == 1, 1, 0)) %>%
   group_by(setback_scenario, doc_field_code, doc_fieldname, start_year) %>% 
   ## calculate total number of wells, active wells (- plugged), active wells post setback (- plugged)
   summarise(n_wells_total = n(),
             n_active_wells = sum(active_well),
-            n_active_post_setback = sum(productive_well)) %>%
+            n_not_in_setback = sum(prod_post_setback),
+            n_not_setback_active = sum(prod_post_setback_plug)) %>%
   ungroup()
 
-## clean for joining  
+## clean for joining  -- adjust this depending on version
 op_wells_agg2 <- op_wells_agg %>%
-  select(-n_active_wells) %>%
-  rename(adj_no_wells = n_active_post_setback)
+  select(-n_active_wells, -n_not_setback_active) %>%
+  rename(adj_no_wells = n_not_in_setback)
 
 ## join with dt_pred_long, adjust production to account for setbacks and plugged wells
 dt_pred_long_adj <- merge(op_wells_agg2, dt_pred_long, by = c('doc_field_code', 'doc_fieldname', 'start_year'), all.x = T)
 
-setcolorder(dt_pred_long_adj, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", "n_wells_total", "adj_no_wells", "year", "production_bbl"))
+setcolorder(dt_pred_long_adj, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", 
+                                "n_wells_total", "adj_no_wells", "year", "production_bbl", "production_bbl_adj", "non_plug_rel_prod"))
 
-dt_pred_long_adj <- dt_pred_long_adj[, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", "adj_no_wells", "year", "production_bbl")]
+dt_pred_long_adj <- dt_pred_long_adj[, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", "adj_no_wells", "year", "production_bbl_adj")]
 
 ## calculate prod per bbl
 setDT(dt_pred_long_adj)
-dt_pred_long_adj[, prod_per_bbl := production_bbl / no_wells]
+dt_pred_long_adj[, prod_per_bbl := production_bbl_adj / no_wells]
 dt_pred_long_adj[, production_bbl := prod_per_bbl * adj_no_wells]
 
 dt_pred_long_adj <- dt_pred_long_adj[, c('doc_field_code', 'doc_fieldname', 'setback_scenario', 'start_year', 'no_wells', 'adj_no_wells', 'year', 'production_bbl')]
