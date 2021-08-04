@@ -13,7 +13,7 @@ recent_path <- "extraction_2021-08-03/update-adjust_existing_prod/"
 
 ## file names
 field_file <- "diagnostic-field-level-results.csv"
-
+exit_file <- "diagnostic-exit-results.csv"
 
 ## read in outputs
 calepa_field_out <- fread('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/download/field_level_prod_emissions_2020-2045.csv', header = T,
@@ -24,6 +24,11 @@ calepa_wells_out <- fread("/Volumes/GoogleDrive/Shared drives/emlab/projects/cur
 prev_out <- fread(file.path(main_path, output_path, prev_path, field_file), colClasses = ('doc_field_code' = 'character'))
 
 recent_out <- fread(file.path(main_path, output_path, recent_path, field_file), colClasses = ('doc_field_code' = 'character'))
+
+exit_prev <- fread(file.path(main_path, output_path, prev_path, exit_file), colClasses = ('doc_field_code' = 'character'))
+
+exit_recent <- fread(file.path(main_path, output_path, recent_path, exit_file), colClasses = ('doc_field_code' = 'character'))
+
 
 ## filter data sets to BAU, new production
 ## -----------------------------------------------------
@@ -202,6 +207,59 @@ well_fig <- ggplot(wells_out %>% filter(doc_field_code %in% c("052", "190")),
   geom_line(size = 0.5, alpha = 0.5) 
 
 ggplotly(well_fig)
+
+
+## plot exits for 052 and 190
+## ----------------------------------------
+
+## prev -- exit
+prev_out_exit <- exit_prev[(oil_price_scenario == 'reference case' &
+                              innovation_scenario == 'low innovation' &
+                              carbon_price_scenario == 'price floor' &
+                              ccs_scenario == 'medium CCS cost' &
+                              excise_tax_scenario == 'no tax' &
+                              setback_scenario == 'no_setback' &
+                              prod_quota_scenario == 'no quota'), .(doc_field_code, year, vintage, start_year, adj_no_wells, n_well_exit, no_wells_after_exit)]
+
+prev_out_exit[, version := "update"]
+
+
+## recent -- exit
+recent_out_exit <- exit_recent[(oil_price_scenario == 'reference case' &
+                                  innovation_scenario == 'low innovation' &
+                                  carbon_price_scenario == 'price floor' &
+                                  ccs_scenario == 'medium CCS cost' &
+                                  excise_tax_scenario == 'no tax' &
+                                  setback_scenario == 'no_setback' &
+                                  prod_quota_scenario == 'no quota'), .(doc_field_code, year, vintage, start_year, adj_no_wells, n_well_exit, no_wells_after_exit)]
+
+recent_out_exit[, version := "update2"]
+
+
+## bind
+exit_out <- rbind(prev_out_exit, recent_out_exit)
+exit_out[, ":=" (year = as.integer(year),
+                  adj_no_wells = as.numeric(adj_no_wells),
+                  n_well_exit = as.numeric(n_well_exit),
+                  no_wells_after_exit = as.numeric(no_wells_after_exit))]
+
+exit_out_summary <- exit_out[, .(adj_no_wells = sum(adj_no_wells, na.rm = T),
+                                 n_well_exit = sum(n_well_exit, na.rm = T),
+                                 no_wells_after_exit = sum(no_wells_after_exit, na.rm = T)), by = .(version, doc_field_code, year)]
+
+
+## melt back
+exit_out_summary <- melt(exit_out_summary, id.vars = c("version", "doc_field_code", "year"),
+                  measure.vars = c("adj_no_wells", "n_well_exit", "no_wells_after_exit"))
+
+setnames(exit_out_summary, c("variable", "value"), c("indicator", "n_wells"))
+
+exit_fig <- ggplot(exit_out_summary %>% filter(doc_field_code %in% c("052", "190")), 
+                   aes(x = year, y = n_wells, group = doc_field_code, color = indicator, lty = version)) +
+  geom_line(size = 0.5, alpha = 0.5) +
+  facet_wrap(~doc_field_code)
+
+ggplotly(exit_fig)
 
 
 

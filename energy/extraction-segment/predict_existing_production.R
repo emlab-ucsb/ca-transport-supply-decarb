@@ -163,6 +163,13 @@ dt_pred_long_adj[, production_bbl := prod_per_bbl * adj_no_wells]
 
 dt_pred_long_adj <- dt_pred_long_adj[, c('doc_field_code', 'doc_fieldname', 'setback_scenario', 'start_year', 'no_wells', 'adj_no_wells', 'year', 'production_bbl')]
 
+## replace adj number of wells with the number after setbacks and after removing plugeged
+n_wells_rem_plug_setback <- op_wells_agg %>%
+  select(setback_scenario, doc_field_code, start_year, n_not_setback_active)
+
+dt_pred_long_adj2 <- merge(dt_pred_long_adj, n_wells_rem_plug_setback,
+                           by = c("setback_scenario", "doc_field_code", "start_year"),
+                           all.x = T)
 
 ## save production without exit
 fwrite(dt_pred_long_adj, paste0(save_path, 'pred_prod_no_exit_2020-2045_field_start_year_revised.csv'))
