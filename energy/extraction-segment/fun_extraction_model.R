@@ -1091,7 +1091,7 @@ run_extraction_model <- function(oil_px_selection) {
         
       }
       
-      rm(dt_depl_z)
+      # rm(dt_depl_z)
       
       # # pred_prod = rbindlist(list_pred_prod) ##
       # # pred_prod_wide = rbindlist(list_pred_prod_wide)
@@ -1248,7 +1248,8 @@ run_extraction_model <- function(oil_px_selection) {
                          field_all,
                          state_all,
                          density_dt,
-                         exit_out)
+                         exit_out,
+                         dt_depl_z)
       
       rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, dt_info_z, density_dt_merg, density_dt, exit_out)
 
@@ -1327,6 +1328,13 @@ run_extraction_model <- function(oil_px_selection) {
     exit_fname = paste0(oil_price_selection, '-exit-results.csv')
     fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
     print(paste0('Exit results to ', exit_fname))
+    
+    # save exit results ------
+    
+    exit_fname = paste0(oil_price_selection, '-depletion-results.csv')
+    fwrite(output_list[[6]], file.path(save_processed_path, exit_fname), row.names = F)
+    print(paste0('Depletion results to ', exit_fname))
+    
     
     rm(solve_b, solve_mean_b, ghg_all)
     
