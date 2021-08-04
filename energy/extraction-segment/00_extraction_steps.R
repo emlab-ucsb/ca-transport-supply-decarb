@@ -4,7 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'diagnostic' ## diagnostic, benchmark
     # choose from: reference, high, low, iea
-  run_type = "update-adjust_existing_prod"
+  run_type = "revert-to-july-28"
     
 # outputs -------
   
@@ -18,9 +18,9 @@
   dir.create(save_path, showWarnings = FALSE)
   
 # set binary switches
-  run_diagnostic_figs   = 0
+  run_diagnostic_figs   = 1
   run_benchmark_figs    = 0
-  processes_out         = 1
+  processes_out         = 0
   
 # set seed
   set.seed(228)
