@@ -2871,6 +2871,6 @@
     
   # save outputs ----------
       
-    # fwrite(outputs_indiv, file.path(output_path, 'refining_scenario_outputs_refinery_net_exports.csv'), row.names = F)
-    # fwrite(outputs_clus, file.path(output_path, 'refining_scenario_outputs_cluster_net_exports.csv'), row.names = F)
-    # fwrite(outputs_state, file.path(output_path, 'refining_scenario_outputs_state_net_exports.csv'), row.names = F)
+    fwrite(outputs_indiv, file.path(output_path, 'refining_scenario_outputs_refinery_net_exports_revised.csv'), row.names = F)
+    fwrite(outputs_clus, file.path(output_path, 'refining_scenario_outputs_cluster_net_exports_revised.csv'), row.names = F)
+    fwrite(outputs_state, file.path(output_path, 'refining_scenario_outputs_state_net_exports_revised.csv'), row.names = F)
