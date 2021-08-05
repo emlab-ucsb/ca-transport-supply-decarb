@@ -94,12 +94,14 @@ setorderv(dt_pred_long, c('doc_field_code', 'year', 'start_year'))
 
 dt_pred_long[, c('q_i', 'D', 'b', 'd', 'int_yr') := NULL]
 
-## incorporate plugged wells by reducing projected bbl using adj values
-dt_pred_long <- merge(dt_pred_long, pred_adj_vals,
-                      by = c("doc_field_code", "start_year"),
-                      all.x = T)
 
-dt_pred_long[, production_bbl_adj := production_bbl * non_plug_rel_prod]
+## DO NOT ADJUST NOW.
+# ## incorporate plugged wells by reducing projected bbl using adj values
+# dt_pred_long <- merge(dt_pred_long, pred_adj_vals,
+#                       by = c("doc_field_code", "start_year"),
+#                       all.x = T)
+# 
+# dt_pred_long[, production_bbl_adj := production_bbl * non_plug_rel_prod]
 
 
 ## now incorporate setbacks 
@@ -151,13 +153,12 @@ op_wells_agg2 <- op_wells_agg %>%
 dt_pred_long_adj <- merge(op_wells_agg2, dt_pred_long, by = c('doc_field_code', 'doc_fieldname', 'start_year'), all.x = T)
 
 setcolorder(dt_pred_long_adj, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", 
-                                "n_active_wells", "n_not_setback_active", "year", "production_bbl", "non_plug_rel_prod", "production_bbl_adj"))
-##
+                                "n_active_wells", "n_not_setback_active", "year", "production_bbl"))
+
 setDT(dt_pred_long_adj)
-dt_pred_long_adj[, non_plug_rel_prod := NULL]
 
 ## calculate prod per bbl, use the number of non-plugged wells
-dt_pred_long_adj[, prod_per_bbl := fifelse(n_active_wells == 0, 0, production_bbl_adj / n_active_wells)]
+dt_pred_long_adj[, prod_per_bbl := fifelse(n_active_wells == 0, 0, production_bbl / n_active_wells)]
 
 ## account for setbacks -- multiple by number of active and non-setback wells
 dt_pred_long_adj[, production_bbl_sb := prod_per_bbl * n_not_setback_active]
