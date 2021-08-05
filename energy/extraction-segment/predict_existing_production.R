@@ -145,31 +145,29 @@ op_wells_agg <- op_wells %>%
 
 ## clean for joining  -- adjust this depending on version
 op_wells_agg2 <- op_wells_agg %>%
-  select(-n_active_wells, -n_not_setback_active) %>%
-  rename(adj_no_wells = n_not_in_setback)
+  select(-n_wells_total, -n_not_in_setback) 
 
 ## join with dt_pred_long, adjust production to account for setbacks and plugged wells
 dt_pred_long_adj <- merge(op_wells_agg2, dt_pred_long, by = c('doc_field_code', 'doc_fieldname', 'start_year'), all.x = T)
 
 setcolorder(dt_pred_long_adj, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", 
-                                "n_wells_total", "adj_no_wells", "year", "production_bbl", "production_bbl_adj", "non_plug_rel_prod"))
-
-dt_pred_long_adj <- dt_pred_long_adj[, c("doc_field_code", "doc_fieldname", "setback_scenario", "start_year", "no_wells", "adj_no_wells", "year", "production_bbl_adj")]
-
-## calculate prod per bbl
+                                "n_active_wells", "n_not_setback_active", "year", "production_bbl", "non_plug_rel_prod", "production_bbl_adj"))
+##
 setDT(dt_pred_long_adj)
-dt_pred_long_adj[, prod_per_bbl := production_bbl_adj / no_wells]
-dt_pred_long_adj[, production_bbl := prod_per_bbl * adj_no_wells]
+dt_pred_long_adj[, non_plug_rel_prod := NULL]
 
-dt_pred_long_adj <- dt_pred_long_adj[, c('doc_field_code', 'doc_fieldname', 'setback_scenario', 'start_year', 'no_wells', 'adj_no_wells', 'year', 'production_bbl')]
+## calculate prod per bbl, use the number of non-plugged wells
+dt_pred_long_adj[, prod_per_bbl := fifelse(n_active_wells == 0, 0, production_bbl_adj / n_active_wells)]
 
-## replace adj number of wells with the number after setbacks and after removing plugeged
-n_wells_rem_plug_setback <- op_wells_agg %>%
-  select(setback_scenario, doc_field_code, start_year, n_not_setback_active)
+## account for setbacks -- multiple by number of active and non-setback wells
+dt_pred_long_adj[, production_bbl_sb := prod_per_bbl * n_not_setback_active]
 
-dt_pred_long_adj2 <- merge(dt_pred_long_adj, n_wells_rem_plug_setback,
-                           by = c("setback_scenario", "doc_field_code", "start_year"),
-                           all.x = T)
+## use production_bbl_sb (rename to production_bbl) & n_not_setback_active (rename to adj_no_wells)
+dt_pred_long_adj <- dt_pred_long_adj[, c('doc_field_code', 'doc_fieldname', 'setback_scenario', 'start_year', 'no_wells', 'n_not_setback_active', 'year', 'production_bbl_sb')]
+
+## rename
+setnames(dt_pred_long_adj, c('n_not_setback_active', 'production_bbl_sb'), c('adj_no_wells', 'production_bbl'))
+
 
 ## save production without exit
 fwrite(dt_pred_long_adj, paste0(save_path, 'pred_prod_no_exit_2020-2045_field_start_year_revised.csv'))
