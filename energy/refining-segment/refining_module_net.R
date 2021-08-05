@@ -37,7 +37,7 @@
 
   save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
   cur_date    = Sys.Date()
-  run_name    = 'update-ccs-decision'
+  run_name    = 'separate-plots'
   save_path   = file.path(save_path, paste0('refining_', cur_date))
   dir.create(save_path)
   save_path   = file.path(save_path, run_name)
@@ -2274,7 +2274,11 @@
 
   # plot: refinery-ghg emissions under scenarios ----------
 
-      scen_combos = CJ(demand_scenario = dem_scens, refining_scenario = ref_scens, region = c('North', 'South'))
+      scen_combos = CJ(demand_scenario = dem_scens, 
+                       refining_scenario = ref_scens, 
+                       innovation_scenario = c('low innovation', 'high innovation'),
+                       carbon_price_scenario = c('price floor', 'central SCC', 'price ceiling'),
+                       region = c('North', 'South'))
 
       for (i in 1:nrow(scen_combos)) {
 
@@ -2289,11 +2293,11 @@
 
         fname = paste0(scen_dir, '_scenario_refinery_equivalent_ghg.pdf')
 
-        dt = ref_cons_prod_scens[scen, on = .(demand_scenario, refining_scenario, region), nomatch = 0]
+        dt = ref_cons_prod_scens[scen, on = .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, region), nomatch = 0]
 
         fig_scen_ghg = ggplot(dt, aes(x = year, y = total_kgCO2e_adj/1e9, color = refinery_name)) +
           geom_line(size = 1) +
-          facet_grid(innovation_scenario + ccs_scenario ~ carbon_price_scenario,
+          facet_wrap(. ~ ccs_scenario, ncol = 3,
                      labeller = labeller(carbon_price_scenario = c('price floor' = 'low carbon price',
                                                                    'central SCC' = 'medium carbon price',
                                                                    'price ceiling' = 'high carbon price'))) +
@@ -2306,11 +2310,12 @@
           scale_x_continuous(breaks = seq(2020,2040,5), limits = c(2020, 2045), expand = c(0,0)) +
           scale_y_continuous(expand = c(0,0)) +
           scale_color_manual(values = pal_refinery) +
-          theme_line
+          theme_line # +
+          # theme(plot.title = element_text(size = 13))
 
         ggsave(fig_scen_ghg,
                filename = file.path(save_path, 'scenarios', fname),
-               width = 12,
+               width = 15,
                height = 14.5)
 
         embed_fonts(file.path(save_path, 'scenarios', fname),
@@ -2755,7 +2760,12 @@
     
   # plot: cluster level crude consumption in scenarios -----------
     
-    scen_combos = CJ(demand_scenario = dem_scens, refining_scenario = ref_scens, innovation_scenario = c('low innovation', 'high innovation'))
+    # scen_combos = CJ(demand_scenario = dem_scens, refining_scenario = ref_scens, innovation_scenario = c('low innovation', 'high innovation'))
+    scen_combos = CJ(demand_scenario = dem_scens, 
+                     refining_scenario = ref_scens, 
+                     innovation_scenario = c('low innovation', 'high innovation'),
+                     carbon_price_scenario = c('price floor', 'central SCC', 'price ceiling'))
+    
     
     for (i in 1:nrow(scen_combos)) {
       
@@ -2767,7 +2777,7 @@
       
       fname = paste0(scen_dir, '_cluster_crude_consumption.pdf')
       
-      dt = clus_cons_output[scen, on = .(demand_scenario, refining_scenario, innovation_scenario), nomatch = 0]
+      dt = clus_cons_output[scen, on = .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario), nomatch = 0]
       dt = dt[! source == 'total']
       
       dt[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable'))]
@@ -2782,7 +2792,7 @@
       
       fig_scen_crude = ggplot(dt, aes(x = year, y = value/1e6, fill = source)) +
         geom_area() +
-        facet_grid(cluster ~ carbon_price_scenario + ccs_scenario, scales = 'free_y') +
+        facet_wrap(ccs_scenario ~ cluster, scales = 'free_y', ncol = 3) +
         labs(title = paste0('Annual crude consumption ', scen_title, ' scenario (2020-2045)'),
              subtitle = 'Million barrels',
              x = NULL,
@@ -2797,8 +2807,8 @@
       
       ggsave(fig_scen_crude,
              filename = file.path(save_path, 'scenarios_crude', fname),
-             width = 21,
-             height = 11)
+             width = 17,
+             height = 30)
       
       embed_fonts(file.path(save_path, 'scenarios_crude', fname),
                   outfile = file.path(save_path, 'scenarios_crude', fname))
@@ -2811,7 +2821,11 @@
     
   # plot: cluster level ghg emissions in scenarios -----------
     
-    scen_combos = CJ(demand_scenario = dem_scens, refining_scenario = ref_scens, innovation_scenario = c('low innovation', 'high innovation'))
+    # scen_combos = CJ(demand_scenario = dem_scens, refining_scenario = ref_scens, innovation_scenario = c('low innovation', 'high innovation'))
+    scen_combos = CJ(demand_scenario = dem_scens, 
+                     refining_scenario = ref_scens, 
+                     innovation_scenario = c('low innovation', 'high innovation'),
+                     carbon_price_scenario = c('price floor', 'central SCC', 'price ceiling'))
     
     for (i in 1:nrow(scen_combos)) {
       
@@ -2827,7 +2841,7 @@
       
       fname = paste0(scen_dir, '_cluster_ghg_emissions.pdf')
       
-      dt = clus_ghg_output[scen, on = .(demand_scenario, refining_scenario, innovation_scenario), nomatch = 0]
+      dt = clus_ghg_output[scen, on = .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario), nomatch = 0]
       dt = dt[! source == 'total']
       
       dt[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable'))]
@@ -2842,7 +2856,7 @@
       
       fig_scen_ghg = ggplot(dt, aes(x = year, y = value/1e9, fill = source)) +
         geom_area() +
-        facet_grid(cluster ~ carbon_price_scenario + ccs_scenario, scales = 'free_y') +
+        facet_wrap(ccs_scenario ~ cluster, scales = 'free_y', ncol = 3) +
         labs(title = paste0('Annual GHG emissions in the ', scen_title, ' scenario (2020-2045)'),
              subtitle = 'Million tonnes',
              x = NULL,
@@ -2857,8 +2871,8 @@
       
       ggsave(fig_scen_ghg,
              filename = file.path(save_path, 'scenarios_ghg', fname),
-             width = 21,
-             height = 11)
+             width = 17,
+             height = 30)
       
       embed_fonts(file.path(save_path, 'scenarios_ghg', fname),
                   outfile = file.path(save_path, 'scenarios_ghg', fname))
@@ -2871,6 +2885,6 @@
     
   # save outputs ----------
       
-    fwrite(outputs_indiv, file.path(output_path, 'refining_scenario_outputs_refinery_net_exports_revised.csv'), row.names = F)
-    fwrite(outputs_clus, file.path(output_path, 'refining_scenario_outputs_cluster_net_exports_revised.csv'), row.names = F)
-    fwrite(outputs_state, file.path(output_path, 'refining_scenario_outputs_state_net_exports_revised.csv'), row.names = F)
+    # fwrite(outputs_indiv, file.path(output_path, 'refining_scenario_outputs_refinery_net_exports_revised.csv'), row.names = F)
+    # fwrite(outputs_clus, file.path(output_path, 'refining_scenario_outputs_cluster_net_exports_revised.csv'), row.names = F)
+    # fwrite(outputs_state, file.path(output_path, 'refining_scenario_outputs_state_net_exports_revised.csv'), row.names = F)
