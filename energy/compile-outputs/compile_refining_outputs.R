@@ -34,8 +34,49 @@ setorderv(oilpx_scens, c('oil_price_scenario', 'year'))
 refining_out <- fread(file.path(main_path, outputs_path, refining_file))
 
 ## site ids 
-site_id <- read_csv(paste0(calepa_path, "data/stocks-flows/processed/refinery_loc_cap.csv")) %>%
+site_id <- fread(paste0(main_path, "/data/stocks-flows/processed/refinery_loc_cap.csv")) %>%
   select(site_id, county)
 
+##
+crack_spread <- tibble(product = c("gasoline", "jet_fuel", "diesel"),
+                       spread = c(23, 21, 23))
 
 
+## create site level outputs for health (crude bbls processed)
+## ---------------------------------
+site_out_refining <- refining_out[type == "consumption" & 
+                                  fuel == "crude" &
+                                  source == "total" &
+                                  boundary == "complete", .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario,
+                                   ccs_scenario, site_id, location, region, cluster, refinery_name, location, year, fuel, source,
+                                      boundary, type, value)]
+
+
+## county out
+## --------------------------------
+
+county_out_refining <- refining_out[type == "production", .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario,
+                                                            ccs_scenario, site_id, location, region, cluster, refinery_name, location, year, fuel, source,
+                                                            boundary, type, value)]
+## add product for calculating price
+county_out_refining[, product := fifelse(fuel %chin% c("gasoline", "drop-in gasoline"), "gasoline",
+                                         fifelse(fuel %chin% c("diesel", "renewable diesel"), "diesel", "jet_fuel"))]
+
+## merge with site_id df for counties
+
+# county_revenue <- df %>%
+#   mutate(site_id =  as.numeric(str_extract(site_id, pattern = START %R% one_or_more(DGT)))) %>%
+#   filter(type == "production") %>%
+#   mutate(product = ifelse(fuel %in% c("gasoline", "drop-in gasoline"), "gasoline",
+#                           ifelse(fuel %in% c("diesel", "renewable diesel"), "diesel", "jet_fuel"))) %>%
+#   left_join(site_id) %>%
+#   mutate(county = ifelse(site_id == "99999", "Kern", county)) %>%
+#   left_join(prices2) %>%
+#   left_join(crack_spread) %>%
+#   mutate(product_price = oil_price_usd_per_bbl_real + spread,
+#          prod_revenue = value * product_price) %>%
+#   group_by(year, oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario, innovation_multiplier, carbon_price_scenario, ccs_scenario, county) %>%
+#   summarise(prod_revenue = sum(prod_revenue)) %>%
+#   ungroup()
+# 
+# 
