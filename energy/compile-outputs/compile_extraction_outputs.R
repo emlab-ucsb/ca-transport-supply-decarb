@@ -206,7 +206,7 @@ setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'innovation_scenar
 
 ## save site level output for health and labor
 extraction_site_fname = paste0('site_extraction_outputs.csv')
-fwrite(prod_list, file.path(compiled_save_path, extraction_site_fname), row.names = F)
+fwrite(full_site_out, file.path(compiled_save_path, extraction_site_fname), row.names = F)
 print(paste0('Extraction site outputs saved to ', extraction_site_fname))
 
 
@@ -259,7 +259,7 @@ setcolorder(county_out, c('scen_id', 'oil_price_scenario', 'innovation_scenario'
 
 ## save outputs for health and labor
 extraction_county_fname = paste0('county_extraction_outputs.csv')
-fwrite(prod_list, file.path(compiled_save_path, extraction_county_fname), row.names = F)
+fwrite(county_out, file.path(compiled_save_path, extraction_county_fname), row.names = F)
 print(paste0('Extraction county outputs saved to ', extraction_county_fname))
 
 
