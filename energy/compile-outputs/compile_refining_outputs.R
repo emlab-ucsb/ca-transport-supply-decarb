@@ -47,6 +47,24 @@ crack_spread <- tibble(product = c("gasoline", "jet_fuel", "diesel"),
                        spread = c(23, 21, 23))
 
 
+
+
+
+## calculate crude equivalent processed and revenue for 2019 by site
+## --------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## create site level outputs for health (crude bbls processed)
 ## ---------------------------------
 site_out_refining <- refining_out[type == "consumption" & 
