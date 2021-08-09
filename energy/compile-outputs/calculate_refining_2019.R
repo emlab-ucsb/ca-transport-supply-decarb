@@ -57,7 +57,7 @@ crack_spread <- tibble(product = c("gasoline", "jet_fuel", "diesel"),
 
 
 ## state emissions for 2019
-## ***NOTE: needs to be rerun (and possibly updated)
+## ***NOTE: needs to be rerun (and possibly updated), made in refining_ghg_emissions_boundary.R
 refinery_2019 <- read.csv(file.path(main_path, outputs_path, 'refining_emissions_state_2019.csv'))
 
 ## finished products from weekly fuel watch
@@ -72,11 +72,9 @@ rdiesel_19 <- read_csv(file.path(main_path, "model-development/scenario-plot/ren
 renewables_ratio <- read_csv(paste0(main_path, "/outputs/stocks-flows/renewable_diesel_credits.csv"))
 
 ## site ratios (created in refinery_module_net.R)
-## ***NOTE: needs to be rerun (and possibly updated)
 site_ratios <- read_csv(paste0(main_path, "/outputs/stocks-flows/refinery_capacity_ratios.csv"))
 
 ## for crude equivalent (created in refinery_module_net.R)
-## ***NOTE: needs to be rerun (and possibly updated)
 intensities  <- read_csv(paste0(main_path, "/outputs/stocks-flows/crude_and_refined_products__energy_intensities_and_coefficients.csv"))
 
 
@@ -271,7 +269,7 @@ county_revenue <- site_production %>%
   summarise(revenue = sum(revenue)) %>%
   ungroup()
 
-unique(refining_out)
+
 
 
 
