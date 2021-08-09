@@ -225,8 +225,12 @@ site_crude_equiv3 <- site_crude_equiv2 %>%
                          ifelse(site_id == "99999", "Kern",
                                  ifelse(site_id == "t-800", "Los Angeles", county))))
 
-## save consumption output
+## save consumption output, 2019
 ## -----------------------------
+refining_site19_fname = paste0('site_refining_outputs_2019.csv')
+fwrite(site_crude_equiv3, file.path(main_path, outputs_path, refining_site19_fname), row.names = F)
+print(paste0('2019 refining site outputs saved to ', refining_site19_fname))
+
 
 
 
@@ -271,9 +275,12 @@ county_revenue <- site_production %>%
 
 
 
+## save county output, 2019
+## -----------------------------
+refining_county19_fname = paste0('county_refining_outputs_2019.csv')
+fwrite(county_revenue, file.path(main_path, outputs_path, refining_county19_fname), row.names = F)
+print(paste0('2019 refining county outputs saved to ', refining_county19_fname))
 
-
-# fwrite(all_refinery_baseline, file.path(save_path2, 'baseline-2019', 'baseline_site_level_refining.csv'), row.names = F)
 
 # ## (meas) region/cluster level crude equiv by fuel
 # region_crude_equiv <- region_products_adj %>%
