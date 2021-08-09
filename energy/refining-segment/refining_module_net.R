@@ -297,7 +297,7 @@
     region_fuel_ratio[fuel == 'crude_bbl', fuel := 'crude']
     region_fuel_ratio[, years_used := '2015-2019']
     
-    # fwrite(region_fuel_ratio, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products_region_proportion.csv'), row.names = F)
+    fwrite(region_fuel_ratio, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products_region_proportion.csv'), row.names = F)
     
     region_fuel_ratio[, years_used := NULL]
 
@@ -425,9 +425,9 @@
     refinery_capacity_ratio[, capacity_ratio_within_region := capacity_ratio]
     refinery_capacity_ratio[, capacity_ratio_within_state := barrels_per_year/sum(barrels_per_year)]
     
-    # fwrite(refinery_capacity_ratio[, .(site_id, refinery_name, location, region, barrels_per_day, barrels_per_year,
-    #                                    capacity_ratio_within_region, capacity_ratio_within_state)], 
-    #        file.path(proj_path, 'outputs/stocks-flows/refinery_capacity_ratios.csv'), row.names = F)
+    fwrite(refinery_capacity_ratio[, .(site_id, refinery_name, location, region, barrels_per_day, barrels_per_year,
+                                       capacity_ratio_within_region, capacity_ratio_within_state)],
+           file.path(proj_path, 'outputs/stocks-flows/refinery_capacity_ratios.csv'), row.names = F)
     
     
   # use heat content balance to get historical relationship between crude and refined products -------
@@ -451,7 +451,7 @@
     setcolorder(crude_refined_region_csv, c('region', 'crude_bbl', 'gasoline_bbl', 'diesel_bbl', 'jet_bbl', 
                                             'ei_crude_mmbtu_bbl', 'ei_gasoline_mmbtu_bbl', 'ei_diesel_mmbtu_bbl', 'ei_jet_mmbtu_bbl', 'coef'))
     
-    # fwrite(crude_refined_region_csv, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products__energy_intensities_and_coefficients.csv'), row.names = F)
+    fwrite(crude_refined_region_csv, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products__energy_intensities_and_coefficients.csv'), row.names = F)
     
     crude_refined_tot = crude_refined_week[, lapply(.SD, sum, na.rm = T), 
                                               .SDcols = c('crude_bbl', 'gasoline', 'diesel', 'jet', 'residual')]
