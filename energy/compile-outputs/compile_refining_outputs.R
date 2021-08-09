@@ -20,7 +20,8 @@ outputs_path <- 'model-development/scenario-plot/refinery-outputs'
 ## files
 oil_price_file <- 'oil_price_projections_revised.xlsx'
 refining_file <- 'refining_scenario_outputs_refinery_net_exports_revised.csv'
-
+site_2019_file <- 'site_refining_outputs_2019.csv'
+county_2019_file <- 'county_refining_outputs_2019.csv'
 
 ## read in files
 ## ---------------------------------------
@@ -37,6 +38,12 @@ setorderv(oilpx_scens_real, c('oil_price_scenario', 'year'))
 
 ## refining outputs
 refining_out <- fread(file.path(main_path, outputs_path, refining_file))
+
+## 2019 site level out
+site_2019 <- fread(file.path(main_path, outputs_path, site_2019_file))
+
+## 2019 county level out
+county_2019 <- fread(file.path(main_path, outputs_path, county_2019_file))
 
 ## site ids 
 site_id <- fread(paste0(main_path, "/data/stocks-flows/processed/refinery_loc_cap_manual.csv"), colClasses = c("site_id" = "character")) %>%
