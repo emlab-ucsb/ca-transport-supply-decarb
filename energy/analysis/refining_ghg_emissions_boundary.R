@@ -7,7 +7,7 @@
   fpm_file        = 'finished_product_movements_weekly_cec.csv'
   fw_file         = 'fuel_watch_data.csv'
   cec_file        = 'California Transportion Fuel Consumption - Summary 2020-06-01 GDS_rename.xlsx'
-  ghg_file        = 'refinery_ghg_factor_x_indiv_refinery.csv'
+  ghg_file        = 'refinery_ghg_factor_x_indiv_refinery_revised.csv'
   ei_crude        = 5.698               # mmbtu/bbl; source: https://www.eia.gov/totalenergy/data/monthly/pdf/sec12_3.pdf
   ei_gasoline     = 5.052               # mmbtu/bbl; source: https://www.eia.gov/totalenergy/data/monthly/pdf/sec12_4.pdf
   ei_diesel       = 5.770               # mmbtu/bbl; source: https://www.eia.gov/totalenergy/data/monthly/pdf/sec12_2.pdf
@@ -16,6 +16,7 @@
 # outputs ---------
 
   output_path = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/model-development/scenario-plot/refinery-outputs'
+  output_file = 'refining_emissions_state_2019_revised.csv'
 
 # libraries ------
 
@@ -163,5 +164,5 @@
   
 # save outputs ----------
   
-  fwrite(state_ghg[year == 2019], file.path(output_path, 'refining_emissions_state_2019.csv'), row.names = F)
+  fwrite(state_ghg[year == 2019], file.path(output_path, output_file), row.names = F)
   
