@@ -168,59 +168,56 @@ county_out_refining[, revenue := value * product_price]
 county_out_refining_summary <- county_out_refining[, .(revenue = sum(revenue)), by = .(oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario,
                                                                                        carbon_price_scenario, ccs_scenario, county, year)]
 
-# ## add 2019, make full df
-# all_county_scens <- unique(county_out_refining_summary[, .(oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario)])
-# 
-# all_county_scens[, scen_id := .I]
-# setcolorder(all_county_scens, c("scen_id", "oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario"))
-# 
-# full_county_df <- expand.grid(scen_id = unique(all_county_scens$scen_id),
-#                               county = unique(county_out_refining_summary$county),
-#                               year = seq(2019, 2045, 1))
-# 
-# setDT(full_county_df)
-# 
-# ## 2019
-# full_county_2019 <- full_county_df[year == 2019]
-# 
-# full_county_2019 <- merge(full_county_2019, county_2019,
-#                            by = c("county", "year"),
-#                            all.x = T)
-# 
-# full_county_2019 <- merge(full_county_2019, all_county_scens,
-#                           by = c("scen_id"))
-# 
-# setcolorder(full_county_2019, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-#                              'county', 'year', 'revenue'))
-# 
-# 
-# ## projection
-# full_county_proj <- full_county_df[year > 2019]
-# 
-# full_county_proj <- merge(full_county_proj, all_county_scens,
-#                           by = "scen_id",
-#                           all.x = T)
-# 
-# county_out_refining_summary <- merge(county_out_refining_summary, all_county_scens,
-#                                      by = c("oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario"))
-# 
-# 
-# 
-# full_county_proj <- merge(full_county_proj, county_out_refining_summary,
-#                            by = c('scen_id', 'county', 'year'),
-#                            all.x = T)
-# 
-# full_county_proj[, revenue := fifelse(is.na(revenue), 0, revenue)]
-# 
-# ## bind 2019 to projected
-# county_out_refining_all <- rbind(full_county_2019, full_county_proj)
-# county_out_refining_all[, scen_id := NULL]
-# 
-# 
-# 
-# ## save outputs for health and labor
-# refining_county_fname = paste0('county_refining_outputs.csv')
-# fwrite(county_out_refining_summary, file.path(compiled_save_path_refining, refining_county_fname), row.names = F)
-# print(paste0('Refining county outputs saved to ', refining_county_fname))
-# 
-# 
+## add 2019, make full df
+all_county_scens <- unique(county_out_refining_summary[, .(oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario)])
+
+all_county_scens[, scen_id := .I]
+setcolorder(all_county_scens, c("scen_id", "oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario"))
+
+full_county_df <- expand.grid(scen_id = unique(all_county_scens$scen_id),
+                              county = unique(county_out_refining_summary$county),
+                              year = seq(2019, 2045, 1))
+
+setDT(full_county_df)
+
+## 2019
+full_county_2019 <- full_county_df[year == 2019]
+
+full_county_2019 <- merge(full_county_2019, county_2019,
+                           by = c("county", "year"),
+                           all.x = T)
+
+full_county_2019 <- merge(full_county_2019, all_county_scens,
+                          by = c("scen_id"))
+
+setcolorder(full_county_2019, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                             'county', 'year', 'revenue'))
+
+
+## projection
+full_county_proj <- full_county_df[year > 2019]
+
+full_county_proj <- merge(full_county_proj, all_county_scens,
+                          by = "scen_id",
+                          all.x = T)
+
+full_county_proj <- merge(full_county_proj, county_out_refining_summary,
+                                     by = c("oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", 
+                                            "carbon_price_scenario", "ccs_scenario", "county", "year"),
+                          all.x = T)
+
+
+full_county_proj[, revenue := fifelse(is.na(revenue), 0, revenue)]
+
+## bind 2019 to projected
+county_out_refining_all <- rbind(full_county_2019, full_county_proj)
+county_out_refining_all[, scen_id := NULL]
+
+
+
+## save outputs for health and labor
+refining_county_fname = paste0('county_refining_outputs.csv')
+fwrite(county_out_refining_all, file.path(compiled_save_path_refining, refining_county_fname), row.names = F)
+print(paste0('Refining county outputs saved to ', refining_county_fname))
+
+
