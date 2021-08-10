@@ -124,10 +124,10 @@ renewable_fig <-
   geom_bar(stat = "identity", position = "stack") +
   facet_grid(source ~ unit) +
   ggtitle("Renewable Diesel") +
-  scale_fill_manual(values = prim_calepa_pal) +
+  # scale_fill_manual(values = prim_calepa_pal) +
   ylab("Production (millions)") +
   scale_x_continuous(breaks=c(seq(2011, 2019, 2))) +
-  base_theme +
+  # base_theme +
   theme(axis.text.x = element_text(angle = 45, size = 10, hjust = 1, vjust = 1))
 
 ggsave(filename =  paste0(save_directory, "figures/synthesis-report-figures/drafts/stocks-flows/renewable_fig.png"), renewable_fig, width = 8, height = 8, units = "in", dpi = 300)

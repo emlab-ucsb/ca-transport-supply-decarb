@@ -46,7 +46,11 @@ renewable_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/proc
 
 alt_air_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/raw/altair_refinery_capacity.xlsx")))
 
-
+## ITS demand
+its_demand <- fread(file.path(main_path, 'outputs/fuel-demand/prelim-results/its_demand_bau_and_lc1_2020_2045.csv')) %>%
+  filter(year == 2019, fuel == "renewable diesel") %>%
+  select(-scenario) %>%
+  unique()
 
 ##
 ## crack spread and prices for revenue
