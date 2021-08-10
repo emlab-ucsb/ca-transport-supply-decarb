@@ -46,11 +46,11 @@ renewable_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/proc
 
 alt_air_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/raw/altair_refinery_capacity.xlsx")))
 
-## ITS demand
-its_demand <- fread(file.path(main_path, 'outputs/fuel-demand/prelim-results/its_demand_bau_and_lc1_2020_2045.csv')) %>%
-  filter(year == 2019, fuel == "renewable diesel") %>%
-  select(-scenario) %>%
-  unique()
+# ## ITS demand
+# its_demand <- fread(file.path(main_path, 'outputs/fuel-demand/prelim-results/its_demand_bau_and_lc1_2020_2045.csv')) %>%
+#   filter(year == 2019, fuel == "renewable diesel") %>%
+#   select(-scenario) %>%
+#   unique()
 
 ##
 ## crack spread and prices for revenue
@@ -61,8 +61,7 @@ crack_spread <- tibble(product = c("gasoline", "jet_fuel", "diesel"),
 
 
 ## state emissions for 2019
-## ***NOTE: needs to be rerun (and possibly updated), made in refining_ghg_emissions_boundary.R
-refinery_2019 <- read.csv(file.path(main_path, outputs_path, 'refining_emissions_state_2019.csv'))
+refinery_2019 <- read.csv(file.path(main_path, outputs_path, 'refining_emissions_state_2019_revised.csv'))
 
 ## finished products from weekly fuel watch
 ## note: Other Diesel Fuel* includes renewable diesel
@@ -99,6 +98,8 @@ region_products <- fw_df %>%
   mutate(bbls = thous_barrels * 1000) %>%
   select(-thous_barrels)
 
+
+## NOTE -- should i be using gallons or gge?
 ## prepare renewable diesel info for binding with regional production
 renewd <- rdiesel_19 %>%
   select(fuel_type, year, production) %>%

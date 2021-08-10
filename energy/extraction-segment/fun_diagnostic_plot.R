@@ -232,7 +232,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   
   # read in baseline for comparison ------
   
-  state_base = fread(file.path(base_path, 'extraction_2021-08-05', 'update_extraction_revision', 'diagnostic-state-level-results.csv'), header = T)
+  state_base = fread(file.path(base_path, 'extraction_2021-08-05', 'update_no_proportion_adj', 'diagnostic-state-level-results.csv'), header = T)
   
   state_base = state_base[(oil_price_scenario == 'reference case' &
                 innovation_scenario == 'low innovation' &
@@ -257,7 +257,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
                  prod_quota_scenario == 'quota_20')]
   
   # add column for base case
-  state_base[, version := "update_proportion"]
+  state_base[, version := "update_no_proportion"]
   
   # bind data
   state_all <- rbind(state_base, state_out)

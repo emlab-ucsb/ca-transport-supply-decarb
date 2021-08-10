@@ -6,12 +6,12 @@ library(tidyverse)
 library(readxl)
 library(rebus)
 library(cowplot)
-library(extrafont)
+# library(extrafont)
 
-## deal with the fonts
-font_import(pattern = "(?i)calibri") # load only calibri fonts
-
-loadfonts(device = "pdf")
+# ## deal with the fonts
+# font_import(pattern = "(?i)calibri") # load only calibri fonts
+# 
+# loadfonts(device = "pdf")
 
 
 ## set directory
@@ -19,9 +19,9 @@ data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-pr
 save_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/"
 
 ## source items
-items <- list.files(here::here("src"))
-
-walk(items, ~ here::here("src", .x) %>% source()) # load local items
+# items <- list.files(here::here("src"))
+# 
+# walk(items, ~ here::here("src", .x) %>% source()) # load local items
 ### 
 
 ## read in the data
