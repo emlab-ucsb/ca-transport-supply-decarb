@@ -48,11 +48,6 @@
     ghg_region = unique(dt_ghg[, .(year, region, region_barrels, region_co2e_kg, region_kgco2e_bbl)])
     ghg_region_2018 = ghg_region[year == 2018]
     
-  # read in historic renewable diesel consumption
-    dt_rediesel = setDT(read.xlsx(file.path(proj_path, 'data/stocks-flows/raw', cec_file), sheet = 'CA Fuel Consumption Data', rows = c(8, 16:25), cols = c(1, 13)))
-    dt_rediesel[, fuel := 'renewable diesel']
-    setnames(dt_rediesel, 'renewable_diesel', 'consumption_gal')
-
 # get historic fuel production data ------
     
   prod_refined = dt_prod[stock_flow == 'Refinery Production']
