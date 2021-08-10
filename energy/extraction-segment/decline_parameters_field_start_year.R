@@ -321,10 +321,15 @@
   res_stat_exp = rbindlist(l_stat_exp)
   res_stat_exp[, type := 'exponential coef (averaged)']
 
+# calculate average of multi fit coefficients by vintage ------
+  
+  mean_mult_fit = res_mult_fit[, lapply(.SD, mean), by = .(start_year), .SDcols = c('q_i', 'D', 'b', 'd', 'int_yr')]
+  
 # final list of fields that don't have any coefficients -------
   
   final_fields = non_fields[!doc_field_code %in% unique(res_exp_fit[, doc_field_code])]
-  final_fields[, type := 'no coefs (no longer producing)']
+  final_fields = mean_mult_fit[final_fields, on = .(start_year)]
+  final_fields[, type := 'hyperbolic and exponential coefs (vintage mean)']
   
 # combine all results -------
   
