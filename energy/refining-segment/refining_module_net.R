@@ -11,7 +11,7 @@
   fpm_file        = 'finished_product_movements_weekly_cec.csv'
   fw_file         = 'fuel_watch_data.csv'
   ei_file         = 'fuel-energy-intensities.csv'
-  cec_file        = 'California Transportion Fuel Consumption - Summary 2020-06-01 GDS_rename.xlsx'
+  rediesel_file   = 'CARB_RE_fuels_CA_imports_figure10_053120.xlsx'
   refcap_file     = 'refinery_loc_cap_manual.csv'
   renref_file     = 'renewable_refinery_capacity.xlsx'
   altair_file     = 'altair_refinery_capacity.xlsx'
@@ -37,7 +37,7 @@
 
   save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
   cur_date    = Sys.Date()
-  run_name    = 'separate-plots'
+  run_name    = 'use-rediesel-production'
   save_path   = file.path(save_path, paste0('refining_', cur_date))
   dir.create(save_path)
   save_path   = file.path(save_path, run_name)
@@ -81,9 +81,12 @@
     dt_ei = fread(file.path(proj_path, 'data/stocks-flows/processed', ei_file), header = T)
     
   # read in historic renewable diesel consumption
-    dt_rediesel = setDT(read.xlsx(file.path(proj_path, 'data/stocks-flows/raw', cec_file), sheet = 'CA Fuel Consumption Data', rows = c(8, 16:25), cols = c(1, 13)))
+    dt_rediesel = setDT(read.xlsx(file.path(proj_path, 'data/stocks-flows/processed', rediesel_file), sheet = 'Fig10', rows = c(2, 15), cols = seq(1, 10)))
+    dt_rediesel = melt(dt_rediesel, id.vars = 'X1', variable.name = 'year', value.name = 'consumption_gal')
+    dt_rediesel[, year := as.numeric(as.character(year))]
     dt_rediesel[, fuel := 'renewable diesel']
-    setnames(dt_rediesel, 'renewable_diesel', 'consumption_gal')
+    dt_rediesel[, X1 := NULL]
+    # setnames(dt_rediesel, 'renewable_diesel', 'consumption_gal')
   
   # read in refinery capacities
     dt_refcap = fread(file.path(proj_path, 'data/stocks-flows/processed', refcap_file), header = T)
