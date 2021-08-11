@@ -6,7 +6,6 @@
   intra_file      = 'its_demand_intrastate_jet_2020_2045.csv'
   fpm_file        = 'finished_product_movements_weekly_cec.csv'
   fw_file         = 'fuel_watch_data.csv'
-  cec_file        = 'California Transportion Fuel Consumption - Summary 2020-06-01 GDS_rename.xlsx'
   ghg_file        = 'refinery_ghg_factor_x_indiv_refinery_revised.csv'
   ei_crude        = 5.698               # mmbtu/bbl; source: https://www.eia.gov/totalenergy/data/monthly/pdf/sec12_3.pdf
   ei_gasoline     = 5.052               # mmbtu/bbl; source: https://www.eia.gov/totalenergy/data/monthly/pdf/sec12_4.pdf
