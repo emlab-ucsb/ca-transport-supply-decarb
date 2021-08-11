@@ -68,7 +68,6 @@ refinery_2019 <- read.csv(file.path(main_path, outputs_path, 'refining_emissions
 fw_df <- read_csv(paste0("/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/fuel_watch_data.csv"))
 
 ## 2019 state-wide renewable fuel production (made in renewables.R) -- 
-## note: maybe change this
 rdiesel_19 <- read_csv(file.path(main_path, "model-development/scenario-plot/renewable_diesel_2019.csv"))
 
 ## get kern and alt air production of renewables (made in kern_renewable_d.R)
@@ -99,7 +98,6 @@ region_products <- fw_df %>%
   select(-thous_barrels)
 
 
-## NOTE -- should i be using gallons or gge?
 ## prepare renewable diesel info for binding with regional production
 renewd <- rdiesel_19 %>%
   select(fuel_type, year, production) %>%
