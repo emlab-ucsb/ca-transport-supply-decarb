@@ -9,13 +9,13 @@ library(openxlsx)
 
 ## paths
 calepa_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/"
-results_path <- "outputs/predict-production/extraction_2021-08-10/update_final/"
+results_path <- "outputs/predict-production/extraction_2021-08-11/update_final/"
 save_path2    <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/energy-model-outputs/selected-scenarios/'
 
 ## file names
 prod_file  <- "well_prod_m_processed.csv"
 ghg_file <- 'ghg_emissions_x_field_2018-2045.csv'
-state_out_file <- "benchmark-state-level-results.csv"
+state_out_file <- "diagnostic-state-level-results.csv"
 
 ## load data
 ## --------------
