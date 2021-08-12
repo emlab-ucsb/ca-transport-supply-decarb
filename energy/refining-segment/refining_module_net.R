@@ -37,16 +37,18 @@
 
   save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
   cur_date    = Sys.Date()
-  run_name    = 'use-rediesel-production'
+  run_name    = 'CUF0.6'
   save_path   = file.path(save_path, paste0('refining_', cur_date))
   dir.create(save_path)
   save_path   = file.path(save_path, run_name)
   dir.create(save_path)
   
-  output_path = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/model-development/scenario-plot/refinery-outputs'
+  # output_path = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/model-development/scenario-plot/refinery-outputs'
   dir.create(file.path(save_path, 'scenarios'), showWarnings = FALSE)
   dir.create(file.path(save_path, 'scenarios_crude'), showWarnings = FALSE)
   dir.create(file.path(save_path, 'scenarios_ghg'), showWarnings = FALSE)
+  dir.create(file.path(save_path, 'outputs'), showWarnings = FALSE)
+  output_path = file.path(save_path, 'outputs')
   
 # libraries ------
 
@@ -1516,7 +1518,10 @@
     
     embed_fonts(file.path(save_path, 'refinery_count.pdf'),
                 outfile = file.path(save_path, 'refinery_count.pdf'))
-  
+    
+    fwrite(res_crude_ref_reg, file.path(save_path, 'crude_refinery_capacity_and_count.csv'))
+    fwrite(res_renew_ref_reg, file.path(save_path, 'renewable_refinery_capacity_and_count.csv'))
+    
   # crude consumption at all refineries (area plot) ----------
     
     fig_crude_cons_all = ggplot(tot_crude_all, aes(x = year, y = total_crude_demand_bbl/1e6, group = region, fill = region)) +
@@ -2888,6 +2893,6 @@
     
   # save outputs ----------
       
-    # fwrite(outputs_indiv, file.path(output_path, 'refining_scenario_outputs_refinery_net_exports_revised.csv'), row.names = F)
-    # fwrite(outputs_clus, file.path(output_path, 'refining_scenario_outputs_cluster_net_exports_revised.csv'), row.names = F)
-    # fwrite(outputs_state, file.path(output_path, 'refining_scenario_outputs_state_net_exports_revised.csv'), row.names = F)
+    fwrite(outputs_indiv, file.path(output_path, 'refining_scenario_outputs_refinery_net_exports_revised.csv'), row.names = F)
+    fwrite(outputs_clus, file.path(output_path, 'refining_scenario_outputs_cluster_net_exports_revised.csv'), row.names = F)
+    fwrite(outputs_state, file.path(output_path, 'refining_scenario_outputs_state_net_exports_revised.csv'), row.names = F)

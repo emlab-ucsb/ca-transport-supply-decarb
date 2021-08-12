@@ -7,9 +7,9 @@
   ext_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/energy-model-outputs/selected-scenarios'
   ref_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/model-development/scenario-plot/refinery-outputs'
   base_path       = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/energy-model-outputs/baseline-2019'
-  ext_file        = 'extraction_prod_ghg_outputs.csv'
-  ref_file        = 'refining_scenario_outputs_state_net_exports.csv'
-  base_file       = 'refining_emissions_state_2019.csv'
+  ext_file        = 'extraction_prod_ghg_outputs_revised.csv'
+  ref_file        = 'refining_scenario_outputs_state_net_exports_revised.csv'
+  base_file       = 'refining_emissions_state_2019_revised.csv'
 
 # ------------------ outputs ------------------
   
@@ -161,13 +161,13 @@
          y = 'CO2e emitted (million metric tons)',
          fill = NULL) +
     scale_x_continuous(breaks = c(2019, seq(2025, 2045, 5)), limits = c(2019, 2045), expand = c(0,0)) +
-    scale_y_continuous(breaks = seq(0, 45, 5), limits = c(0, 45), expand = c(0,0)) +
+    scale_y_continuous(breaks = seq(0, 50, 5), limits = c(0, 50), expand = c(0,0)) +
     scale_fill_manual(values = pal_source) +
     theme_line
   fig_comparison
   
   ggsave(fig_comparison,
-         filename = file.path(fig_path, 'selected_scenarios_extraction_and_refining_ghg.png'),
+         filename = file.path(fig_path, 'selected_scenarios_extraction_and_refining_ghg_revised.png'),
          width = 6.5,
          height = 8,
          dpi = 400, 
@@ -175,12 +175,12 @@
          device = 'png')
   
   ggsave(fig_comparison,
-         filename = file.path(fig_path, 'selected_scenarios_extraction_and_refining_ghg.pdf'),
+         filename = file.path(fig_path, 'selected_scenarios_extraction_and_refining_ghg_revised.pdf'),
          width = 6.5,
          height = 8,
          units = 'in', 
          device = 'pdf')
   
-  embed_fonts(file.path(fig_path, 'selected_scenarios_extraction_and_refining_ghg.pdf'),
-              outfile = file.path(fig_path, 'selected_scenarios_extraction_and_refining_ghg.pdf'))
+  embed_fonts(file.path(fig_path, 'selected_scenarios_extraction_and_refining_ghg_revised.pdf'),
+              outfile = file.path(fig_path, 'selected_scenarios_extraction_and_refining_ghg_revised.pdf'))
   
