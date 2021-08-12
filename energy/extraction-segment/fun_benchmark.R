@@ -498,8 +498,8 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   macro_fname = paste0(oil_price_selection, '_macro_fig.pdf')
   ggsave(macro_plot, 
          filename = file.path(save_info_path, macro_fname), 
-         width = 25, 
-         height = 20)
+         width = 30, 
+         height = 35)
   
   embed_fonts(file.path(save_info_path, macro_fname),
               outfile = file.path(save_info_path, macro_fname))
