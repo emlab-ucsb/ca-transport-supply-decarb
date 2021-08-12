@@ -123,6 +123,8 @@ full_site_out[, scen_id := paste0("R", scen_id)]
 setcolorder(full_site_out, c('scen_id', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                              'site_id', 'refinery_name', 'type', 'fuel', 'year', 'value'))
 
+full_site_out[, scen_id := NULL]
+
 ## save outputs for health and labor
 refining_site_fname = paste0('site_refining_outputs.csv')
 fwrite(full_site_out, file.path(compiled_save_path_refining, refining_site_fname), row.names = F)
