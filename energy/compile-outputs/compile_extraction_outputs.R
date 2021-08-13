@@ -34,7 +34,7 @@ ghg_factors = fread(file.path(main_path, 'outputs/stocks-flows', ghg_file), head
 ghg_factors_2019 = ghg_factors[year == 2019, c('doc_field_code', 'year', 'upstream_kgCO2e_bbl')]
 
 ## oil prices
-oilpx_scens = setDT(read.xlsx(file.path(main_path, data_path, oil_price_file), sheet = 'real', cols = c(1, 7:9)))
+oilpx_scens = setDT(read.xlsx(file.path(main_path, data_path, oil_price_file), sheet = 'real', cols = c(1:4)))
 colnames(oilpx_scens) = c('year', 'reference_case', 'high_oil_price', 'low_oil_price')
 oilpx_scens = melt(oilpx_scens, measure.vars = c('reference_case', 'high_oil_price', 'low_oil_price'), 
                    variable.name = 'oil_price_scenario', value.name = 'oil_price_usd_per_bbl')
@@ -191,7 +191,7 @@ print(paste0('Fields with positive production saved to ', pos_field_fname))
 ## filter full site out for fields with > 0 production
 full_site_out <- full_site_out[doc_field_code %in% prod_list[, doc_field_code]]
 
-## add oil prices (including 2019... 2021 real dollars)
+## add oil prices (including 2019... 2020 real dollars)
 full_site_out <- merge(full_site_out, oilpx_scens,
                        by = c("oil_price_scenario", "year"),
                        all.x = T)

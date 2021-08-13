@@ -24,7 +24,7 @@ refining_file <- 'refining_scenario_outputs_refinery_net_exports_revised.csv'
 ## ---------------------------------------
 
 ## oil prices
-oilpx_scens_real = setDT(read.xlsx(file.path(main_path, data_path, oil_price_file), sheet = 'real', cols = c(1, 7:9)))
+oilpx_scens_real = setDT(read.xlsx(file.path(main_path, data_path, oil_price_file), sheet = 'real', cols = c(1:4)))
 colnames(oilpx_scens_real) = c('year', 'reference_case', 'high_oil_price', 'low_oil_price')
 oilpx_scens_real = melt(oilpx_scens_real, measure.vars = c('reference_case', 'high_oil_price', 'low_oil_price'), 
                         variable.name = 'oil_price_scenario', value.name = 'oil_price_usd_per_bbl')
