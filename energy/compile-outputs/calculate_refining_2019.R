@@ -55,7 +55,7 @@ alt_air_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/raw/al
 ##
 ## crack spread and prices for revenue
 crack_spread <- tibble(product = c("gasoline", "jet_fuel", "diesel"),
-                       spread = c(23, 21, 23),
+                       spread = c(23, 20, 23),
                        brent = rep(as.numeric(oilpx_real_2019$oil_price_usd_per_bbl[1])),
                        product_price = spread + brent)
 

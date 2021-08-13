@@ -51,7 +51,7 @@ site_id <- fread(paste0(main_path, "/data/stocks-flows/processed/refinery_loc_ca
 
 ##
 crack_spread <- tibble(product = c("gasoline", "jet_fuel", "diesel"),
-                       spread = c(23, 21, 23))
+                       spread = c(23, 20, 23))
 
 
 
