@@ -280,8 +280,8 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                                                 'low CCS cost', 'medium CCS cost', 'high CCS cost', 'low CCS cost - 45Q', 'medium CCS cost - 45Q', 
                                                                 'high CCS cost - 45Q', 'low CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'high CCS cost - 45Q - LCFS', 
                                                                 'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)',
-                                                                'no_setback', 'setback_1000ft', 'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_40', 'quota_20', 'quota_10', 'quota_00', 
-                                                                'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
+                                                                'no_setback', 'setback_1000ft', 'setback_2500ft', 'setback_5280ft', 'no quota', 'setback_2500_quota', 'setback_5280_quota', 'quota_40', 
+                                                                'quota_20', 'quota_10', 'quota_00', 'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
   
 
   ## make spatial fig plots

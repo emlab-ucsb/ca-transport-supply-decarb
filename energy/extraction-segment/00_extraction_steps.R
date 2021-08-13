@@ -4,7 +4,7 @@
   # oil_price_selection    = args[1]
   oil_price_selection   = 'benchmark' ## diagnostic, benchmark
     # choose from: reference, high, low, iea
-  run_type = "update_final"
+  run_type = "final_new_quotas"
     
 # outputs -------
   

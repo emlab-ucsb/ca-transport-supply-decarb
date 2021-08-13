@@ -19,7 +19,8 @@ load_scenarios_dt = function(oil_px_selection) {
   ccs_ref_file      = 'ccs_refining_scenarios.csv'
   ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
   setback_file      = 'setback_coverage_R.csv'
-  prod_quota_file   = 'prod_quota_scenarios.csv'
+  # prod_quota_file   = 'prod_quota_scenarios.csv'
+  prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
   excise_tax_file   = 'excise_tax_scenarios.csv'
   incentive_file    = 'CCS_LCFS_45Q.xlsx'
   n_wells_file      = 'n_wells_area.csv'
@@ -100,10 +101,16 @@ load_scenarios_dt = function(oil_px_selection) {
   
   # load production quota file
   prod_quota_scens = fread(file.path(scen_path, prod_quota_file), header = T)
-  prod_quota_scens = subset(prod_quota_scens, select = -units)
   
-  ## make sure quota is numeric
-  prod_quota_scens[, quota := as.numeric(gsub(",", "", quota))]
+  
+  ## turn back on if needed
+  # prod_quota_scens = subset(prod_quota_scens, select = -units)
+  # 
+  # ## make sure quota is numeric
+  # prod_quota_scens[, quota := as.numeric(gsub(",", "", quota))]
+  
+  
+  
   
   # ## load range of prod quotas
   # range_prod_quota_scens = fread(file.path(scen_path, range_prod_quota_file), header = T)
