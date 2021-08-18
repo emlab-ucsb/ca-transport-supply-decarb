@@ -960,7 +960,7 @@ ica_comp_ref_statewide <- read_csv('ica-va-ref-statewide.csv',skip = 1) %>%
 
 
 
-#2. Bind data frames together for ICA and impact 
+#2. Bind data frames together for ICA and impact
 
 ## ica 
 
@@ -971,6 +971,7 @@ ica_comp <- bind_rows(ica_comp_ref_cc,ica_comp_ref_solano,ica_comp_ref_la,ica_co
                       ica_comp_ext_orange,ica_comp_ext_sb,ica_comp_ext_ventura,ica_comp_ext_slo,ica_comp_ext_sanbenito,ica_comp_ext_cc,
                       ica_comp_ext_sanbernardino,ica_comp_ext_tulare,ica_comp_ext_sanmateo,ica_comp_ext_kings,ica_comp_ext_alameda,
                       ica_comp_ext_riverside,ica_comp_ext_santaclara,ica_comp_ext_statewide)
+
 
 ica_emp <- bind_rows(ica_emp_ref_cc,ica_emp_ref_solano,ica_emp_ref_la,ica_emp_ref_kern,ica_emp_ref_sb,ica_emp_ref_slo,ica_emp_ref_statewide,
                      ica_emp_drill_fresno,ica_emp_drill_kern,ica_emp_drill_la,ica_emp_drill_monterey,
@@ -1167,6 +1168,27 @@ ica_comp_induced_all_counties <- left_join(county_df,ica_comp_wide_induced,by=c(
 ica_comp_induced_all_counties[is.na(ica_comp_induced_all_counties)] <- 0 
 ica_comp_induced_all_counties <- mutate(ica_comp_induced_all_counties, segment = ifelse(segment=="0",NA,segment))
 
+
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+#5. replace direct compensation multipliers with the sample average for counties where it is 0 
+
+ica_total_positive <- ica_total_all_counties %>% 
+  filter(direct_comp != 0 & indirect_comp != 0 & induced_comp != 0) %>% 
+  group_by(segment) %>% 
+  summarize(avg_direct_comp = mean(direct_comp),avg_indirect_comp = mean(indirect_comp),avg_induced_comp = mean(induced_comp))
+
+ica_total_all_counties_interpolated <- ica_total_all_counties %>% 
+  inner_join(ica_total_positive,by=c("segment")) %>% 
+  mutate(ip.direct_comp = ifelse((direct_comp==0 & is.na(segment) == F),avg_direct_comp,direct_comp),
+         ip.indirect_comp = ifelse((indirect_comp==0 & is.na(segment) == F),avg_indirect_comp,indirect_comp),
+         ip.induced_comp = ifelse((induced_comp==0 & is.na(segment) == F),avg_induced_comp,induced_comp)) %>% 
+  dplyr::select(-avg_direct_comp,-avg_indirect_comp,-avg_induced_comp)
+
+
 ####################################################################################################################
 ####################################################################################################################
 ####################################################################################################################
@@ -1177,11 +1199,25 @@ ica_comp_induced_all_counties <- mutate(ica_comp_induced_all_counties, segment =
 
 setwd(processed)
 
-##7a. ICA file 
+## ICA file 
 
-ica_list = list(ica_total=ica_total_all_counties,ica_indirect_emp = ica_emp_indirect_all_counties,
+ica_list = list(ica_total=ica_total_all_counties_interpolated,ica_indirect_emp = ica_emp_indirect_all_counties,
                 ica_induced_emp = ica_emp_induced_all_counties, ica_indirect_comp = ica_comp_indirect_all_counties,
                 ica_induced_comp = ica_comp_induced_all_counties)
 write_xlsx(x=ica_list,"ica_multipliers_v2.xlsx")
 
 
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+
+#6. save ICA industry multipliers as a csv for use in compiling results by industry in long format
+
+setwd(processed)
+
+ica_ind_output <- ica %>% 
+  dplyr::select(county,segment,industry,direct_emp,indirect_emp,induced_emp,direct_comp,indirect_comp,induced_comp)
+
+write_csv(ica_ind_output,'ica_multipliers_by_industry_long.csv')
