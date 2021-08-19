@@ -2,9 +2,8 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  oil_price_selection   = 'benchmark' ## diagnostic, benchmark
-    # choose from: reference, high, low, iea
-  run_type = "final_new_quotas"
+  scen_selection   = 'tax_scens' ## diagnostic, benchmark, tax_scens
+  run_type = "tax_scenarios"
     
 # outputs -------
   
@@ -20,7 +19,7 @@
 # set binary switches
   run_diagnostic_figs   = 0
   run_benchmark_figs    = 0
-  processes_out         = 1
+  processes_out         = 0
   
 # set seed
   set.seed(228)
@@ -44,7 +43,7 @@
 
 # step 1: run extraction model and get outputs -------
   
-  output_extraction = run_extraction_model(oil_price_selection)
+  output_extraction = run_extraction_model(scen_selection)
   
 # step 2: if relevant, run diagnostic plots/ benchmark plots
   
@@ -57,7 +56,7 @@
     library(hrbrthemes)
     library(extrafont)
   
-    plot_diagnostic_outputs(oil_price_selection, output_extraction)
+    plot_diagnostic_outputs(scen_selection, output_extraction)
     
   }
   
@@ -71,7 +70,7 @@
     library(extrafont)
     library(cowplot)
     
-    benchmark_outputs(oil_price_selection, output_extraction)
+    benchmark_outputs(scen_selection, output_extraction)
     
   }
   

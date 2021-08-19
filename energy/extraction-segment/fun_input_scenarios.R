@@ -2,7 +2,7 @@
 # created: march 9, 2021
 # author: meas meng
 
-load_scenarios_dt = function(oil_px_selection) {
+load_scenarios_dt = function(scenario_selection) {
   # inputs -----
   
   outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
@@ -21,7 +21,8 @@ load_scenarios_dt = function(oil_px_selection) {
   setback_file      = 'setback_coverage_R.csv'
   # prod_quota_file   = 'prod_quota_scenarios.csv'
   prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
-  excise_tax_file   = 'excise_tax_scenarios.csv'
+  excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback
+  # excise_tax_file   = 'excise_tax_scenarios.csv'
   incentive_file    = 'CCS_LCFS_45Q.xlsx'
   n_wells_file      = 'n_wells_area.csv'
   
@@ -30,7 +31,6 @@ load_scenarios_dt = function(oil_px_selection) {
   
   library(data.table)
   library(openxlsx)
-  # library(tidyverse)
   
   # load data -----
   
@@ -43,15 +43,15 @@ load_scenarios_dt = function(oil_px_selection) {
   oilpx_scens <- oilpx_scens[year > 2019]
   setorderv(oilpx_scens, c('oil_price_scenario', 'year'))
   
-  if(oil_px_selection %chin% c('reference', 'high', 'low', 'diagnostic')) {
-    
-    # filter oil price scenario to only keep what is specified as input
-    oilpx_scens = oilpx_scens[oil_price_scenario == fcase(oil_px_selection == 'reference', 'reference case',
-                                                          oil_px_selection == 'high', 'high oil price',
-                                                          oil_px_selection == 'low', 'low oil price',
-                                                          oil_px_selection == 'diagnostic', 'reference case')]
-  
-  }
+  # if(oil_px_selection %chin% c('reference', 'high', 'low', 'diagnostic', 'tax_scens')) {
+  #   
+  #   # filter oil price scenario to only keep what is specified as input
+  #   oilpx_scens = oilpx_scens[oil_price_scenario == fcase(oil_px_selection == 'reference', 'reference case',
+  #                                                         oil_px_selection == 'high', 'high oil price',
+  #                                                         oil_px_selection == 'low', 'low oil price',
+  #                                                         oil_px_selection == 'diagnostic', 'reference case')]
+  # 
+  # }
   # oilpx_scens = fread(file.path(data_path, brent_file), header = T)
   # oilpx_scens = oilpx_scens[scenario %in% c('high_oil_price', 'low_oil_price', 'reference_case')]
   # oilpx_scens[, oil_price_scenario := gsub('_', ' ', scenario)]
@@ -165,6 +165,7 @@ load_scenarios_dt = function(oil_px_selection) {
   ccs_scens_all = ccs_scens_all[, .(year, ccs_scenario_adj, ccs_price_usd_per_kg_adj)]
   setnames(ccs_scens_all, c('ccs_scenario_adj', 'ccs_price_usd_per_kg_adj'), c('ccs_scenario', 'ccs_price_usd_per_kg'))
   
+  
   ## list through all scenarios ------
   
   scenarios_dt = vars_dt[oilpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
@@ -173,15 +174,53 @@ load_scenarios_dt = function(oil_px_selection) {
   scenarios_dt = scenarios_dt[ccs_scens_all, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[setback_scens, on = .(doc_field_code), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[prod_quota_scens, on = .(year), allow.cartesian = T, nomatch = 0]
+  
+  ## review tax scenarios vs setbacks
+  ## ------------------------------------
+  
+  if (scenario_selection == 'tax_scens') {
+    
+    scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' & 
+                                   innovation_scenario == 'low innovation' & 
+                                   carbon_price_scenario == 'price floor' & 
+                                   ccs_scenario == 'medium CCS cost' & 
+                                   # excise_tax_scenario == 'no tax' & ## all tax
+                                   # setback_scenario == 'no_setback' &
+                                   prod_quota_scenario == 'no quota')] ## all quota
+  }
+  
+  
   scenarios_dt = scenarios_dt[excise_tax_scens, on = .(year), allow.cartesian = T, nomatch = 0]
 
+  if (scenario_selection == 'tax_scens') {
+    
+    scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' & 
+                                 innovation_scenario == 'low innovation' & 
+                                 carbon_price_scenario == 'price floor' & 
+                                 ccs_scenario == 'medium CCS cost' & 
+                                 # excise_tax_scenario == 'no tax' & ## all tax
+                                 setback_scenario == 'no_setback' &
+                                 prod_quota_scenario == 'no quota') |
+                                (oil_price_scenario == 'reference case' & 
+                                 innovation_scenario == 'low innovation' & 
+                                 carbon_price_scenario == 'price floor' & 
+                                 ccs_scenario == 'medium CCS cost' & 
+                                 excise_tax_scenario == 'no tax' & 
+                                 # setback_scenario == 'no_setback' & ## all setback
+                                 prod_quota_scenario == 'no quota')] 
+  }
+  
+  
+  
   scenarios_dt[, tax := tax_rate * oil_price_usd_per_bbl]
-  scenarios_dt[, tax_rate:=NULL]
+  scenarios_dt[, tax_rate:= NULL]
+  
+  
   
   
   # keep diagnostics only (if that is input) ------
   
-  if (oil_px_selection == 'diagnostic') {
+  if (scenario_selection == 'diagnostic') {
     
     scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' & 
                                    innovation_scenario == 'low innovation' & 
@@ -206,7 +245,7 @@ load_scenarios_dt = function(oil_px_selection) {
                                      prod_quota_scenario == 'quota_20')]
   }
   
-  if (oil_px_selection == 'benchmark') {
+  if (scenario_selection == 'benchmark') {
     
     scenarios_dt = scenarios_dt[(innovation_scenario == 'low innovation' & 
                                    carbon_price_scenario == 'price floor' & 
@@ -258,7 +297,7 @@ load_scenarios_dt = function(oil_px_selection) {
   }
   
   
-  
+
   # reorder columns -----
 
   

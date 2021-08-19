@@ -1,4 +1,4 @@
-benchmark_outputs <- function(oil_price_selection, output_extraction) {
+benchmark_outputs <- function(scenario_selection, output_extraction) {
   
   print('Now creating benchmarks...')
   
@@ -495,7 +495,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   # save figures  -----
   
   # save figures ----
-  macro_fname = paste0(oil_price_selection, '_macro_fig.pdf')
+  macro_fname = paste0(scenario_selection, '_macro_fig.pdf')
   ggsave(macro_plot, 
          filename = file.path(save_info_path, macro_fname), 
          width = 30, 
@@ -506,7 +506,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   print(paste0('Saved benchmark figures to ', macro_fname))
   
   
-  policy_fname = paste0(oil_price_selection, '_policy_fig.pdf')
+  policy_fname = paste0(scenario_selection, '_policy_fig.pdf')
   ggsave(policy_plot, 
          filename = file.path(save_info_path, policy_fname), 
          width = 25, 

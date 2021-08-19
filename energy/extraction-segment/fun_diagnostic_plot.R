@@ -1,4 +1,4 @@
-plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
+plot_diagnostic_outputs <- function(scenario_selection, output_extraction) {
   
   print('Now plotting outputs...')
   
@@ -427,7 +427,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   print(paste0("Saving diagnostic figures to ", save_info_path))
   
   # save figures ----
-  extraction_fname = paste0(oil_price_selection, '_extraction_fig.pdf')
+  extraction_fname = paste0(scenario_selection, '_extraction_fig.pdf')
   ggsave(extraction_fig, 
          filename = file.path(save_info_path, extraction_fname), 
          width = 23, 
@@ -438,7 +438,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   print(paste0('Saved diagnostic figures to ', extraction_fname))
  
   
-  ghg_fname = paste0(oil_price_selection, '_ghg_fig.pdf')
+  ghg_fname = paste0(scenario_selection, '_ghg_fig.pdf')
   ggsave(ghg_fig, 
          filename = file.path(save_info_path, ghg_fname), 
          width = 23, 
@@ -449,7 +449,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
   print(paste0('Saved diagnostic figures to ', ghg_fname))
   
   
-  new_wells_fname = paste0(oil_price_selection, '_new_wells_fig.pdf')
+  new_wells_fname = paste0(scenario_selection, '_new_wells_fig.pdf')
   ggsave(new_wells_fig, 
          filename = file.path(save_info_path, new_wells_fname), 
          width = 23, 
@@ -459,7 +459,7 @@ plot_diagnostic_outputs <- function(oil_price_selection, output_extraction) {
               outfile = file.path(save_info_path, new_wells_fname))
   print(paste0('Saved diagnostic figures to ', new_wells_fname))
   
-  density_fname = paste0(oil_price_selection, '_density_fig.pdf')
+  density_fname = paste0(scenario_selection, '_density_fig.pdf')
   ggsave(density_fig, 
          filename = file.path(save_info_path, density_fname), 
          width = 23, 

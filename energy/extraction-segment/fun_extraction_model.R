@@ -1,5 +1,5 @@
 
-run_extraction_model <- function(oil_px_selection) {
+run_extraction_model <- function(scenario_selection) {
   
   # set start time -----
     start_time <- Sys.time()
@@ -44,8 +44,7 @@ run_extraction_model <- function(oil_px_selection) {
     entry_dt = fread(file.path(model_path, entry_file), header = T, colClasses = c('doc_field_code' = 'character'))
     
     # load matrix of scenarios and forecasted variables
-    scenarios_dt = load_scenarios_dt(oil_px_selection)
-    
+    scenarios_dt = load_scenarios_dt(scenario_selection)
     
     # load coefficients from poisson regression of historic data
     coefs_dt = fread(file.path(model_path, 'entry-model-results', coef_file), header = T, colClasses = c('doc_field_code' = 'character'))
@@ -230,7 +229,7 @@ run_extraction_model <- function(oil_px_selection) {
     
   # keep diagnostics only (if that is input) ------
     
-    if (oil_px_selection == 'diagnostic') {
+    if (scenario_selection == 'diagnostic') {
 
       scen_sel = scen_sel[(oil_price_scenario == 'reference case' &
                                      innovation_scenario == 'low innovation' &
@@ -1284,7 +1283,7 @@ run_extraction_model <- function(oil_px_selection) {
       save_info_path = file.path(save_path, run_type)
       dir.create(save_info_path)
       print(paste0("Saving run information file to ", save_info_path))
-      run_info = data.table(oil_price_selection = oil_price_selection,
+      run_info = data.table(scenario_selection = scenario_selection,
                             start_time = start_time,
                             end_time = end_time,
                             duration = paste0(round(time_diff[[1]]), ' minutes'))
@@ -1299,19 +1298,19 @@ run_extraction_model <- function(oil_px_selection) {
     
     # save vintage-level results ----
     
-    vintage_fname = paste0(oil_price_selection, '-vintage-level-results.csv')
+    vintage_fname = paste0(scenario_selection, '-vintage-level-results.csv')
     fwrite(output_list[[1]], file.path(save_processed_path, vintage_fname), row.names = F)
     print(paste0('Saved vintage-level results to ', vintage_fname))
     
     # save field-level results -----
     
-    field_fname = paste0(oil_price_selection, '-field-level-results.csv')
+    field_fname = paste0(scenario_selection, '-field-level-results.csv')
     fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
     print(paste0('Saved field-level results to ', field_fname))
     
     # save state-level results ------
     
-    state_fname = paste0(oil_price_selection, '-state-level-results.csv')
+    state_fname = paste0(scenario_selection, '-state-level-results.csv')
     fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
     print(paste0('Saved state-level results to ', state_fname))
     
@@ -1319,19 +1318,19 @@ run_extraction_model <- function(oil_px_selection) {
     
     # save density results ------
     
-    density_fname = paste0(oil_price_selection, '-density-results.csv')
+    density_fname = paste0(scenario_selection, '-density-results.csv')
     fwrite(output_list[[4]], file.path(save_processed_path, density_fname), row.names = F)
     print(paste0('Density results to ', density_fname))
     
     # save exit results ------
     
-    exit_fname = paste0(oil_price_selection, '-exit-results.csv')
+    exit_fname = paste0(scenario_selection, '-exit-results.csv')
     fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
     print(paste0('Exit results to ', exit_fname))
     
     # save exit results ------
     
-    exit_fname = paste0(oil_price_selection, '-depletion-results.csv')
+    exit_fname = paste0(scenario_selection, '-depletion-results.csv')
     fwrite(output_list[[6]], file.path(save_processed_path, exit_fname), row.names = F)
     print(paste0('Depletion results to ', exit_fname))
     
