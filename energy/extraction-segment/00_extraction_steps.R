@@ -19,8 +19,8 @@
   
 # set binary switches
   run_diagnostic_figs   = 0
-  run_benchmark_figs    = 1
-  processes_out         = 0
+  run_benchmark_figs    = 0
+  processes_out         = 1
   
 # set seed
   set.seed(228)

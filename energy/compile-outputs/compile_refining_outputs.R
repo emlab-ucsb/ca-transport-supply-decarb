@@ -65,8 +65,19 @@ site_out_refining <- refining_out[type == "consumption" &
 ## all scenario, refinery, year combinations
 all_scens <- unique(refining_out[, .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario)])
 
+## merge with prices
+oilpx_scen_names <- unique(oilpx_scens_real[, .(oil_price_scenario)])
+
+all_scens <- crossing(all_scens, oilpx_scen_names)
+
+setDT(all_scens)
+
+## add id
 all_scens[, scen_id := .I]
-setcolorder(all_scens, c("scen_id", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario"))
+
+
+
+setcolorder(all_scens, c("scen_id", "oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario"))
 
 full_site_df <- expand.grid(scen_id = unique(all_scens$scen_id),
                             site_id = unique(site_out_refining$site_id),
@@ -79,7 +90,7 @@ full_site_df <- merge(full_site_df, all_scens,
                       by = c("scen_id"),
                       all.x = T)
 
-setcolorder(full_site_df, c("scen_id", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario", "site_id", "year"))
+setcolorder(full_site_df, c("scen_id", "oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario", "site_id", "year"))
 
 ## 2019
 full_site_df_2019 <- full_site_df[year == 2019]
@@ -88,7 +99,7 @@ full_site_df_2019 <- merge(full_site_df_2019, site_2019,
                            by = c("site_id", "year"),
                            all.x = T)
 
-full_site_df_2019 <- full_site_df_2019[, .(scen_id, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario,
+full_site_df_2019 <- full_site_df_2019[, .(scen_id, oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario,
                                            ccs_scenario, site_id, type, fuel, year, value_bbls)]
 
 setnames(full_site_df_2019, "value_bbls", "value")
@@ -118,12 +129,20 @@ full_site_out <- merge(full_site_out, refinery_names,
                        by = "site_id",
                        all.x = T)
 
-full_site_out[, scen_id := paste0("R", scen_id)]
-
-setcolorder(full_site_out, c('scen_id', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                              'site_id', 'refinery_name', 'type', 'fuel', 'year', 'value'))
 
-full_site_out[, scen_id := NULL]
+setorder(full_site_out, "scen_id", "site_id", "year")
+
+
+## bau scen ids
+full_site_out[, scen_id := fifelse((oil_price_scenario == 'reference case' & 
+                                  innovation_scenario == 'low innovation' & 
+                                  carbon_price_scenario == 'price floor' & 
+                                  ccs_scenario == 'medium CCS cost' &
+                                  demand_scenario == 'BAU' &
+                                  refining_scenario == 'historic exports'), 'R-BAU', paste0("R-", scen_id))]
+
 
 ## save outputs for health and labor
 refining_site_fname = paste0('site_refining_outputs.csv')
@@ -138,6 +157,23 @@ print(paste0('Refining site outputs saved to ', refining_site_fname))
 county_out_refining <- refining_out[type == "production", .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario,
                                                             ccs_scenario, site_id, location, region, cluster, refinery_name, year, fuel, source,
                                                             boundary, type, value)]
+
+## create county scenarios
+county_scens <- full_site_df[year != 2019]
+
+prod_options <- unique(county_out_refining[, .(fuel, source, boundary, type)])
+
+county_scens <- crossing(county_scens, prod_options)
+
+setDT(county_scens)
+
+## merge
+county_out_refining <- merge(county_scens, county_out_refining,
+                             by = c("demand_scenario", "refining_scenario", "innovation_scenario",
+                                    "carbon_price_scenario", "ccs_scenario", "site_id", "year", "fuel",
+                                    "source", "boundary", "type"),
+                             all.x = T)
+
 ## add product for calculating price
 county_out_refining[, product := fifelse(fuel %chin% c("gasoline", "drop-in gasoline"), "gasoline",
                                          fifelse(fuel %chin% c("diesel", "renewable diesel"), "diesel", "jet_fuel"))]
@@ -154,66 +190,72 @@ county_out_refining[, county := fifelse(site_id == "342-2", "Contra Costa",
 
 ## merge with prices
 county_out_refining <- merge(county_out_refining, oilpx_scens_real,
-                             by = c("year"),
-                             all.x = T,
-                             allow.cartesian = TRUE)
+                             by = c("year", "oil_price_scenario"),
+                             all.x = T)
 
 ## join with crack spread
 county_out_refining <- merge(county_out_refining, crack_spread,
                              by = c("product"),
                              all.x = T)
 
+county_out_refining[, value := fifelse(is.na(value), 0, value)]
 county_out_refining[, product_price := oil_price_usd_per_bbl + spread]
 county_out_refining[, revenue := value * product_price]
 
 ## summarize at the county level
-county_out_refining_summary <- county_out_refining[, .(revenue = sum(revenue)), by = .(oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario,
+county_out_refining_summary <- county_out_refining[, .(revenue = sum(revenue)), by = .(scen_id, oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario,
                                                                                        carbon_price_scenario, ccs_scenario, county, year)]
 
 ## add 2019, make full df
-all_county_scens <- unique(county_out_refining_summary[, .(oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario)])
+## -----------------------------
 
-all_county_scens[, scen_id := .I]
-setcolorder(all_county_scens, c("scen_id", "oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario"))
+county_scens2 <- unique(county_out_refining_summary[, .(scen_id, oil_price_scenario, demand_scenario, refining_scenario,
+                                                       innovation_scenario, carbon_price_scenario, ccs_scenario, county)])
 
-full_county_df <- expand.grid(scen_id = unique(all_county_scens$scen_id),
-                              county = unique(county_out_refining_summary$county),
-                              year = seq(2019, 2045, 1))
-
-setDT(full_county_df)
 
 ## 2019
-full_county_2019 <- full_county_df[year == 2019]
-
-full_county_2019 <- merge(full_county_2019, county_2019,
-                           by = c("county", "year"),
+full_county_2019 <- merge(county_scens2, county_2019,
+                           by = c("county"),
                            all.x = T)
 
-full_county_2019 <- merge(full_county_2019, all_county_scens,
-                          by = c("scen_id"))
-
-setcolorder(full_county_2019, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                             'county', 'year', 'revenue'))
-
-
-## projection
-full_county_proj <- full_county_df[year > 2019]
-
-full_county_proj <- merge(full_county_proj, all_county_scens,
-                          by = "scen_id",
-                          all.x = T)
-
-full_county_proj <- merge(full_county_proj, county_out_refining_summary,
-                                     by = c("oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", 
-                                            "carbon_price_scenario", "ccs_scenario", "county", "year"),
-                          all.x = T)
-
-
-full_county_proj[, revenue := fifelse(is.na(revenue), 0, revenue)]
+# full_county_2019 <- merge(full_county_2019, all_county_scens,
+#                           by = c("scen_id"))
+# 
+# setcolorder(full_county_2019, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+#                              'county', 'year', 'revenue'))
+# 
+# 
+# ## projection
+# full_county_proj <- full_county_df[year > 2019]
+# 
+# full_county_proj <- merge(full_county_proj, all_county_scens,
+#                           by = "scen_id",
+#                           all.x = T)
+# 
+# full_county_proj <- merge(full_county_proj, county_out_refining_summary,
+#                                      by = c("oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", 
+#                                             "carbon_price_scenario", "ccs_scenario", "county", "year"),
+#                           all.x = T)
+# 
+# 
+# full_county_proj[, revenue := fifelse(is.na(revenue), 0, revenue)]
 
 ## bind 2019 to projected
-county_out_refining_all <- rbind(full_county_2019, full_county_proj)
-county_out_refining_all[, scen_id := NULL]
+county_out_refining_all <- rbind(full_county_2019, county_out_refining_summary)
+
+setcolorder(county_out_refining_all, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 
+                                       'carbon_price_scenario', 'ccs_scenario', 'county', 'year', 'revenue'))
+
+setorder(county_out_refining_all, "scen_id", "county", "year")
+
+
+## bau scen ids
+county_out_refining_all[, scen_id := fifelse((oil_price_scenario == 'reference case' & 
+                                      innovation_scenario == 'low innovation' & 
+                                      carbon_price_scenario == 'price floor' & 
+                                      ccs_scenario == 'medium CCS cost' &
+                                      demand_scenario == 'BAU' &
+                                      refining_scenario == 'historic exports'), 'R-BAU', paste0("R-", scen_id))]
 
 
 

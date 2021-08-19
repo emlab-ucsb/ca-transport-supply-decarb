@@ -120,8 +120,9 @@ site_out <- field_out[, .(oil_price_scenario, innovation_scenario, carbon_price_
 ## create out with all scenario, field, and year combinations
 all_scens <- unique(state_out[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
                                   setback_scenario, prod_quota_scenario, excise_tax_scenario)])
-
+## scenario ids
 all_scens[, scen_id := .I]
+
 setcolorder(all_scens, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
                          "setback_scenario", "prod_quota_scenario", "excise_tax_scenario"))
 
@@ -202,7 +203,16 @@ setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'innovation_scenar
                              'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'doc_field_code', 'doc_fieldname',
                              'year', 'total_prod_bbl', 'oil_price_usd_per_bbl', 'revenue'))
 
+setorder(full_site_out, "scen_id", "doc_field_code", "year")
 
+## bau scen ids
+full_site_out[, scen_id := fifelse((oil_price_scenario == 'reference case' & 
+                                      innovation_scenario == 'low innovation' & 
+                                      carbon_price_scenario == 'price floor' & 
+                                      ccs_scenario == 'medium CCS cost' &
+                                      excise_tax_scenario == 'no tax' &
+                                      setback_scenario == 'no_setback' &
+                                      prod_quota_scenario == 'no quota'), 'E-BAU', paste0("E-", scen_id))]
 
 ## save site level output for health and labor
 extraction_site_fname = paste0('site_extraction_outputs.csv')
@@ -244,6 +254,8 @@ county_out[, revenue := total_county_bbl * oil_price_usd_per_bbl]
 setcolorder(county_out, c('scen_id', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                           'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
                           'year', 'adj_county_name', 'total_county_bbl', 'oil_price_usd_per_bbl', 'revenue'))
+
+setorder(county_out, "scen_id", "adj_county_name", "year")
 
 # ## test
 # test <- county_out[, .(prod = sum(total_county_bbl)), by = .(oil_price_scenario, innovation_scenario,
