@@ -1,0 +1,5 @@
+site_id,refinery_name,region,cluster,county,lat,lon,diam,temp,velocity
+3422,"Phillips 66, Santa Maria Refinery",North,Bay Area,San Luis Obispo,35.040050501,-120.58961,1.98120,631.13610,13.55000
+t-800,AltAir Paramount,South,South,Los Angeles,33.90000143,-118.1502882,1.88976,596.7426,8.7423
+342-2,"Phillips 66, Separate Unit",North,Bay Area,Contra Costa,38.043474,-122.255632,1.98120,631.13610,13.55000
+99999,Global Clean Energy,North,Bakersfield,Kern,35.380165,-119.072434,0.27432,441.0389,0.134874
