@@ -256,12 +256,7 @@ run_extraction_model <- function(scenario_selection) {
     
     
   # START OF LOOP -------
-
-    # scen_sel = scen_combos[oil_price_scenario == fcase(oil_px_selection == 'reference', 'reference case',
-    #                                                    oil_px_selection == 'high', 'high oil price',
-    #                                                    oil_px_selection == 'low', 'low oil price',
-    #                                                    oil_px_selection == 'iea', 'iea oil price')]
-
+    
     func_yearly_production <- function(z) {
       
       
