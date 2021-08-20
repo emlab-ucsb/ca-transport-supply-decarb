@@ -11,17 +11,24 @@ library(ggrepel)
 
 ## set paths and file names
 model_out_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/'
-run_folder          = 'extraction_2021-07-19/revised-exit-after-entryl/'
-px_change_folder    = 'extraction_2021-07-21/revised-update-oil-price/'
-exit_fname          = 'diagnostic-exit-results.csv'
-field_fname         = "diagnostic-field-level-results.csv"
+run_folder          = 'extraction_2021-08-19/tax_update/'
+# px_change_folder    = 'extraction_2021-07-21/revised-update-oil-price/'
+exit_fname          = 'benchmark-exit-results.csv'
+field_fname         = "benchmark-field-level-results.csv"
+state_fname         = "benchmark-state-level-results.csv"
 save_exit_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/exit/'
-exit_file           = 'well_exits_under_rule_forecast.csv'
-save_info_path      = paste0(model_out_path, "/", run_folder, 'diagnostic-figs/exit-figs-x-field')
+# exit_file           = 'well_exits_under_rule_forecast.csv'
+# save_info_path      = paste0(model_out_path, "/", run_folder, 'diagnostic-figs/exit-figs-x-field')
 
 
 ## new well entry by field
 field_out <- fread(paste0(model_out_path, run_folder, field_fname), header = T, colClasses = c('doc_field_code' = 'character'))
+
+state_out <- fread(paste0(model_out_path, run_folder, state_fname), header = T)
+
+
+
+
 field_out[, scen_name := fifelse(setback_scenario == "setback_2500ft", "LCE2",
                                  fifelse(setback_scenario == "no_setback" & prod_quota_scenario == "quota_20", "LCE1", "BAU"))]
 
@@ -288,5 +295,79 @@ setnames(exit_out_old_px, "production_bbl", "production_bbl_old_px")
 
 exit_comp <- merge(exit_out_old_px, exit_out_px)
 exit_comp[, diff := production_bbl_new_px - production_bbl_old_px]
+
+## review exits and new well entry for the 100% tax scenario
+## ------------------------------------------------------------
+
+## filter outputs for relevant tax scenario
+tax100_out <- field_out[(oil_price_scenario == 'reference case' & 
+                           innovation_scenario == 'low innovation' & 
+                           carbon_price_scenario == 'price floor' & 
+                           ccs_scenario == 'medium CCS cost' & 
+                           excise_tax_scenario == 'tax_100' &
+                           setback_scenario == 'no_setback' &
+                           prod_quota_scenario == 'no quota'), .(excise_tax_scenario, year, doc_field_code,
+                                                                 doc_fieldname, ccs_adopted, existing_prod_bbl,
+                                                                 existing_ghg_kgCO2e, new_prod_bbl, new_ghg_kgCO2e,
+                                                                 total_prod_bbl, total_ghg_kgCO2e, new_wells)]
+
+
+tax100_prod <- tax100_out %>%
+  select(excise_tax_scenario:doc_fieldname, existing_prod_bbl, new_prod_bbl, total_prod_bbl) %>%
+  pivot_longer(existing_prod_bbl:total_prod_bbl, names_to = "vintage", values_to = "prod_bbl")
+
+tax100_ghg <- tax100_out %>%
+  select(excise_tax_scenario:doc_fieldname, existing_ghg_kgCO2e, new_ghg_kgCO2e, total_ghg_kgCO2e) %>%
+  pivot_longer(existing_ghg_kgCO2e:total_ghg_kgCO2e, names_to = "vintage", values_to = "ghg_kgCO2e")
+
+tax100_new_wells <- tax100_out %>%
+  select(excise_tax_scenario:doc_fieldname, new_wells) 
+
+## state level
+tax100_state_out <- state_out[(oil_price_scenario == 'reference case' & 
+                           innovation_scenario == 'low innovation' & 
+                           carbon_price_scenario == 'price floor' & 
+                           ccs_scenario == 'medium CCS cost' & 
+                           excise_tax_scenario == 'tax_100' &
+                           setback_scenario == 'no_setback' &
+                           prod_quota_scenario == 'no quota'), .(excise_tax_scenario, year, existing_prod_bbl,
+                                                                 existing_ghg_kgCO2e, new_prod_bbl, new_ghg_kgCO2e,
+                                                                 total_prod_bbl, total_ghg_kgCO2e, new_wells)]
+
+
+tax100_state_prod <- tax100_state_out %>%
+  select(excise_tax_scenario:year, existing_prod_bbl, new_prod_bbl, total_prod_bbl) %>%
+  pivot_longer(existing_prod_bbl:total_prod_bbl, names_to = "vintage", values_to = "prod_bbl")
+
+tax100_state_ghg <- tax100_state_out %>%
+  select(excise_tax_scenario:year, existing_ghg_kgCO2e, new_ghg_kgCO2e, total_ghg_kgCO2e) %>%
+  pivot_longer(existing_ghg_kgCO2e:total_ghg_kgCO2e, names_to = "vintage", values_to = "ghg_kgCO2e")
+
+tax100_state_new_wells <- tax100_state_out %>%
+  select(excise_tax_scenario:year, new_wells) 
+
+## exits
+exit_out <- fread(file.path(model_out_path, run_folder, exit_fname), header = T, colClasses = c('doc_field_code' = 'character'))
+
+tax100_exit <- exit_out[(oil_price_scenario == 'reference case' & 
+                          innovation_scenario == 'low innovation' & 
+                          carbon_price_scenario == 'price floor' & 
+                          ccs_scenario == 'medium CCS cost' & 
+                          excise_tax_scenario == 'tax_100' &
+                          setback_scenario == 'no_setback' &
+                          prod_quota_scenario == 'no quota'), .(excise_tax_scenario, doc_field_code, doc_fieldname, vintage, start_year,
+                                                                adj_no_wells, no_wells_after_exit, year, n_well_exit)]
+
+
+tax100_exit_field <- tax100_exit[, .(n_well_exit = unique(n_well_exit),
+                                     n_wells = sum(adj_no_wells),
+                                     n_wells_left = sum(no_wells_after_exit)), by = .(excise_tax_scenario, doc_field_code, doc_fieldname, year)]
+
+tax100_exit_state <- tax100_exit_field[, .(n_well_exit = sum(n_well_exit, na.rm = T),
+                                           n_wells = sum(n_wells, na.rm = T),
+                                           n_wells_left = sum(n_wells_left, na.rm = T)), by = .(excise_tax_scenario, year)]
+
+
+
 
   
