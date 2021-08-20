@@ -359,13 +359,26 @@ tax100_exit <- exit_out[(oil_price_scenario == 'reference case' &
                                                                 adj_no_wells, no_wells_after_exit, year, n_well_exit)]
 
 
-tax100_exit_field <- tax100_exit[, .(n_well_exit = unique(n_well_exit),
-                                     n_wells = sum(adj_no_wells),
-                                     n_wells_left = sum(no_wells_after_exit)), by = .(excise_tax_scenario, doc_field_code, doc_fieldname, year)]
+tax100_exit_field <- tax100_exit[, .(n_well_exit = unique(n_well_exit, na.rm = T),
+                                     n_wells = sum(adj_no_wells, na.rm = T),
+                                     n_wells_left = sum(no_wells_after_exit, na.rm = T)), by = .(excise_tax_scenario, doc_field_code, doc_fieldname, year)]
 
 tax100_exit_state <- tax100_exit_field[, .(n_well_exit = sum(n_well_exit, na.rm = T),
                                            n_wells = sum(n_wells, na.rm = T),
                                            n_wells_left = sum(n_wells_left, na.rm = T)), by = .(excise_tax_scenario, year)]
+
+
+## plot production
+ggplot(tax100_state_prod, aes(x = year, y = prod_bbl / 1e6, color = vintage, group = vintage)) +
+  geom_line(size = 1)
+
+## plot new wells
+ggplot(tax100_state_new_wells, aes(x = year, y = new_wells)) +
+  geom_line(size = 1)
+
+## plot exit
+ggplot(tax100_exit_state, aes(x = year, y = n_wells_left)) +
+  geom_line(size = 1)
 
 
 
