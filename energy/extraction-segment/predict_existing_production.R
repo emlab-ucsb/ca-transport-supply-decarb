@@ -132,6 +132,8 @@ fwrite(n_wells_area, paste0(save_path, 'n_wells_area.csv'))
 op_wells_agg <- op_wells %>%
   ## join with setback info
   left_join(well_setbacks) %>%
+  ## make well status for NA "Unknown_NL" for unknown, not listed
+  mutate(well_status = ifelse(is.na(well_status), "Unknown_NL", well_status)) %>%
   ## assume NA means not in setback (note that there are about 20 wells that are na)
   mutate(within_setback = ifelse(is.na(within_setback), 0, within_setback),
          active_well = ifelse(well_status == "Plugged", 0, 1),
