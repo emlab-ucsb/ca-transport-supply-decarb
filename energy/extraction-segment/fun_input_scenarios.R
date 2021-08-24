@@ -179,37 +179,37 @@ load_scenarios_dt = function(scenario_selection) {
   ## ------------------------------------
   
   if (scenario_selection == 'tax_scens') {
-    
-    scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' & 
-                                   innovation_scenario == 'low innovation' & 
-                                   carbon_price_scenario == 'price floor' & 
-                                   ccs_scenario == 'medium CCS cost' & 
+
+    scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' &
+                                   innovation_scenario == 'low innovation' &
+                                   carbon_price_scenario == 'price floor' &
+                                   ccs_scenario == 'medium CCS cost' &
                                    # excise_tax_scenario == 'no tax' & ## all tax
                                    # setback_scenario == 'no_setback' &
                                    prod_quota_scenario == 'no quota')] ## all quota
   }
-  
+
   
   scenarios_dt = scenarios_dt[excise_tax_scens, on = .(year), allow.cartesian = T, nomatch = 0]
 
   if (scenario_selection == 'tax_scens') {
-    
-    scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' & 
-                                 innovation_scenario == 'low innovation' & 
-                                 carbon_price_scenario == 'price floor' & 
-                                 ccs_scenario == 'medium CCS cost' & 
+
+    scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' &
+                                 innovation_scenario == 'low innovation' &
+                                 carbon_price_scenario == 'price floor' &
+                                 ccs_scenario == 'medium CCS cost' &
                                  # excise_tax_scenario == 'no tax' & ## all tax
                                  setback_scenario == 'no_setback' &
                                  prod_quota_scenario == 'no quota') |
-                                (oil_price_scenario == 'reference case' & 
-                                 innovation_scenario == 'low innovation' & 
-                                 carbon_price_scenario == 'price floor' & 
-                                 ccs_scenario == 'medium CCS cost' & 
-                                 excise_tax_scenario == 'no tax' & 
+                                (oil_price_scenario == 'reference case' &
+                                 innovation_scenario == 'low innovation' &
+                                 carbon_price_scenario == 'price floor' &
+                                 ccs_scenario == 'medium CCS cost' &
+                                 excise_tax_scenario == 'no tax' &
                                  # setback_scenario == 'no_setback' & ## all setback
-                                 prod_quota_scenario == 'no quota')] 
+                                 prod_quota_scenario == 'no quota')]
   }
-  
+
   
   
   scenarios_dt[, tax := tax_rate * oil_price_usd_per_bbl]
@@ -219,84 +219,84 @@ load_scenarios_dt = function(scenario_selection) {
   
   
   # keep diagnostics only (if that is input) ------
-  
+
   if (scenario_selection == 'diagnostic') {
-    
-    scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' & 
-                                   innovation_scenario == 'low innovation' & 
-                                   carbon_price_scenario == 'price floor' & 
+
+    scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' &
+                                   innovation_scenario == 'low innovation' &
+                                   carbon_price_scenario == 'price floor' &
                                    ccs_scenario == 'medium CCS cost' &
                                    excise_tax_scenario == 'no tax' &
                                    setback_scenario == 'no_setback' &
                                    prod_quota_scenario == 'no quota') |
-                                  (oil_price_scenario == 'reference case' & 
-                                     innovation_scenario == 'low innovation' & 
-                                     carbon_price_scenario == 'price floor' & 
+                                  (oil_price_scenario == 'reference case' &
+                                     innovation_scenario == 'low innovation' &
+                                     carbon_price_scenario == 'price floor' &
                                      ccs_scenario == 'medium CCS cost' &
                                      excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'no_setback' &
                                      prod_quota_scenario == 'quota_20') |
-                                  (oil_price_scenario == 'reference case' & 
-                                     innovation_scenario == 'low innovation' & 
-                                     carbon_price_scenario == 'price floor' & 
+                                  (oil_price_scenario == 'reference case' &
+                                     innovation_scenario == 'low innovation' &
+                                     carbon_price_scenario == 'price floor' &
                                      ccs_scenario == 'medium CCS cost' &
                                      excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'setback_2500ft' &
                                      prod_quota_scenario == 'quota_20')]
   }
-  
+
   if (scenario_selection == 'benchmark') {
-    
-    scenarios_dt = scenarios_dt[(innovation_scenario == 'low innovation' & 
-                                   carbon_price_scenario == 'price floor' & 
+
+    scenarios_dt = scenarios_dt[(innovation_scenario == 'low innovation' &
+                                   carbon_price_scenario == 'price floor' &
                                    ccs_scenario == 'medium CCS cost' &
                                    excise_tax_scenario == 'no tax' &
                                    setback_scenario == 'no_setback' &
                                    prod_quota_scenario == 'no quota') | ## all oil scenarios, hold everything else BAU
-                                  (oil_price_scenario == 'reference case' & 
+                                  (oil_price_scenario == 'reference case' &
                                      # innovation_scenario == 'low innovation' &  ## all innovation scenarios, everything else BAU
-                                     carbon_price_scenario == 'price floor' & 
+                                     carbon_price_scenario == 'price floor' &
                                      ccs_scenario == 'medium CCS cost' &
                                      excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'no_setback' &
                                      prod_quota_scenario == 'no quota') |
-                                  (oil_price_scenario == 'reference case' & 
-                                     innovation_scenario == 'low innovation' & 
+                                  (oil_price_scenario == 'reference case' &
+                                     innovation_scenario == 'low innovation' &
                                      # carbon_price_scenario == 'price floor' & ## all carbon scenarios, everything else BAU
                                      ccs_scenario == 'medium CCS cost' &
                                      excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'no_setback' &
                                      prod_quota_scenario == 'no quota') |
-                                  (oil_price_scenario == 'reference case' & 
-                                     innovation_scenario == 'low innovation' & 
-                                     carbon_price_scenario == 'central SCC' & 
+                                  (oil_price_scenario == 'reference case' &
+                                     innovation_scenario == 'low innovation' &
+                                     carbon_price_scenario == 'central SCC' &
                                      # ccs_scenario == 'medium CCS cost' & ## all CCS
                                      excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'no_setback' &
                                      prod_quota_scenario == 'no quota') |
-                                (oil_price_scenario == 'reference case' & 
-                                    innovation_scenario == 'low innovation' & 
-                                    carbon_price_scenario == 'price floor' & 
-                                    ccs_scenario == 'medium CCS cost' & 
+                                (oil_price_scenario == 'reference case' &
+                                    innovation_scenario == 'low innovation' &
+                                    carbon_price_scenario == 'price floor' &
+                                    ccs_scenario == 'medium CCS cost' &
                                    # excise_tax_scenario == 'no tax' & ## all tax
                                     setback_scenario == 'no_setback' &
                                     prod_quota_scenario == 'no quota')  |
-                                  (oil_price_scenario == 'reference case' & 
-                                     innovation_scenario == 'low innovation' & 
-                                     carbon_price_scenario == 'price floor' & 
-                                     ccs_scenario == 'medium CCS cost' & 
-                                     excise_tax_scenario == 'no tax' & 
+                                  (oil_price_scenario == 'reference case' &
+                                     innovation_scenario == 'low innovation' &
+                                     carbon_price_scenario == 'price floor' &
+                                     ccs_scenario == 'medium CCS cost' &
+                                     excise_tax_scenario == 'no tax' &
                                      # setback_scenario == 'setback_2500ft' & ## all setback
                                      prod_quota_scenario == 'no quota') |
-                                  (oil_price_scenario == 'reference case' & 
-                                     innovation_scenario == 'low innovation' & 
-                                     carbon_price_scenario == 'price floor' & 
-                                     ccs_scenario == 'medium CCS cost' & 
-                                     excise_tax_scenario == 'no tax' & 
+                                  (oil_price_scenario == 'reference case' &
+                                     innovation_scenario == 'low innovation' &
+                                     carbon_price_scenario == 'price floor' &
+                                     ccs_scenario == 'medium CCS cost' &
+                                     excise_tax_scenario == 'no tax' &
                                      setback_scenario == 'no_setback') ] ## all quota
   }
-  
-  
+
+
 
   # reorder columns -----
 
