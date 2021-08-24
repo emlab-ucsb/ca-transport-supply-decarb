@@ -35,8 +35,8 @@ impact_dollar <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-proj
 statewide_processed <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results/statewide/processed'
 processed <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results/academic-paper-multipliers/processed'
 fte <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results'
-energy_model_output_extraction <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/extraction_2021-08-12'
-energy_model_output_refining <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining/refining_2021-08-12'
+energy_model_output_extraction <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/extraction_2021-08-18'
+energy_model_output_refining <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining/refining_2021-08-18'
 
 ############################################################################################ 
 # Part A: file with total multipliers 
@@ -88,7 +88,7 @@ write_xlsx(x=ica_list,"energy_model_output_with_multipliers.xlsx")
 ####################################################################################################################
 ####################################################################################################################
 ####################################################################################################################
-# Part B: File with statewide multipliers  
+# Part B: File with statewide multipliers (inclusive of indirect and induced effects across counties)
 
 # 1. Import processed IMPLAN multipliers for the labor analysis and keep the statewide multipliers 
 
@@ -117,8 +117,9 @@ extraction_revenue_state <- extraction_revenue %>%
 
 
 refining_revenue_state <- refining_revenue %>% 
-  group_by(oil_price_scenario,demand_scenario,refining_scenario,innovation_scenario,carbon_price_scenario,ccs_scenario,year) %>% 
-  summarize(revenue = sum(revenue)) %>% 
+  group_by(scen_id,year) %>% 
+  summarize(revenue = sum(revenue),oil_price_scenario = first(oil_price_scenario),demand_scenario=first(demand_scenario),refining_scenario=first(refining_scenario),
+            innovation_scenario=first(innovation_scenario),carbon_price_scenario=first(carbon_price_scenario),ccs_scenario=first(ccs_scenario)) %>% 
   mutate(direct_emp = state_multipliers_ref$direct_emp, indirect_emp = state_multipliers_ref$indirect_emp, induced_emp = state_multipliers_ref$induced_emp,
          direct_comp = state_multipliers_ref$direct_comp, indirect_comp = state_multipliers_ref$indirect_comp, induced_comp = state_multipliers_ref$induced_comp)
 
