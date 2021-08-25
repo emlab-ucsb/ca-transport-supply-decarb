@@ -2,7 +2,7 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  scen_selection   = 'full_run' ## diagnostic, benchmark, tax_scens
+  scen_selection   = 'diagnostic' ## diagnostic, benchmark, tax_scens
   run_type = "full-run"
     
 # outputs -------
@@ -17,9 +17,9 @@
   dir.create(save_path, showWarnings = FALSE)
   
 # set binary switches
-  run_diagnostic_figs   = 0
+  run_diagnostic_figs   = 1
   run_benchmark_figs    = 0
-  processes_out         = 1
+  processes_out         = 0
   
 # set seed
   set.seed(228)
@@ -39,9 +39,6 @@
   library(openxlsx)
   library(hrbrthemes)
   library(tidyverse)
-  library(sf)
-  library(maps)
-  library(cowplot)
 
 # step 1: run extraction model and get outputs -------
   
@@ -71,6 +68,8 @@
     library(hrbrthemes)
     library(extrafont)
     library(cowplot)
+    library(sf)
+    library(maps)
     
     benchmark_outputs(scen_selection, output_extraction)
     
