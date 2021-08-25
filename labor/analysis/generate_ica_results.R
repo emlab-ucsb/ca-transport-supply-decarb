@@ -35,6 +35,7 @@ impact_dollar <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-proj
 statewide_processed <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results/statewide/processed'
 processed <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results/academic-paper-multipliers/processed'
 fte <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results'
+health_team_files <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/health/raw'
 energy_model_output_extraction <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/extraction_2021-08-18'
 energy_model_output_refining <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining/refining_2021-08-18'
 
@@ -48,10 +49,16 @@ energy_model_output_refining <- '/Volumes/GoogleDrive/Shared drives/emlab/projec
 setwd(processed)
 
 total_multipliers_ext <- read_xlsx('ica_multipliers_v2.xlsx',sheet='ica_total') %>% 
-  filter((county != "Statewide" & segment == "extraction") | is.na(segment)==T)
+  filter((county != "Statewide" & segment == "extraction") | is.na(segment)==T) %>% 
+  rename(dire_emp_mult = direct_emp, indi_emp_mult = indirect_emp, indu_emp_mult = induced_emp,
+         dire_comp_mult = direct_comp, indi_comp_mult = indirect_comp, indu_comp_mult = induced_comp,
+         ip.dire_comp_mult = ip.direct_comp, ip.indi_comp_mult = ip.indirect_comp, ip.indu_comp_mult = ip.induced_comp)
 
 total_multipliers_ref <- read_xlsx('ica_multipliers_v2.xlsx',sheet='ica_total') %>% 
-  filter((county != "Statewide" & segment == "refining") | is.na(segment)==T)
+  filter((county != "Statewide" & segment == "refining") | is.na(segment)==T) %>% 
+  rename(dire_emp_mult = direct_emp, indi_emp_mult = indirect_emp, indu_emp_mult = induced_emp,
+         dire_comp_mult = direct_comp, indi_comp_mult = indirect_comp, indu_comp_mult = induced_comp,
+         ip.dire_comp_mult = ip.direct_comp, ip.indi_comp_mult = ip.indirect_comp, ip.indu_comp_mult = ip.induced_comp)
 
 # 2. Import extraction and refining output from the energy modeling team 
 
@@ -64,6 +71,17 @@ setwd(energy_model_output_refining)
 
 refining_revenue <- read_csv('county_refining_outputs.csv') %>% 
   mutate(county = ifelse(county=="Solano County", "Solano",county))
+
+
+# 3. Import DAC status by census tract from CalEnviroScreen 2018 update 
+
+setwd(health_team_files)
+
+dac_tract <- read_xlsx("ces3results.xlsx",sheet="CES 3.0 (2018 Update)") 
+
+ttl_county_pop <- dac_tract %>% 
+  group_by(`California County`) %>% 
+  summarize(ttl_pop = sum(`Total Population`))
 
 
 # 3. Join multipliers to output from the energy modeling team by county 
@@ -97,10 +115,16 @@ write_xlsx(x=ica_list,"energy_model_output_with_multipliers.xlsx")
 setwd(processed)
 
 state_multipliers_ext <- read_xlsx('ica_multipliers_v2.xlsx',sheet='ica_total') %>% 
-  filter((county == "Statewide" & segment == "extraction") | is.na(segment)==T)
+  filter((county == "Statewide" & segment == "extraction") | is.na(segment)==T) %>% 
+  rename(dire_emp_mult = direct_emp, indi_emp_mult = indirect_emp, indu_emp_mult = induced_emp,
+         dire_comp_mult = direct_comp, indi_comp_mult = indirect_comp, indu_comp_mult = induced_comp,
+         ip.dire_comp_mult = ip.direct_comp, ip.indi_comp_mult = ip.indirect_comp, ip.indu_comp_mult = ip.induced_comp)
 
 state_multipliers_ref <- read_xlsx('ica_multipliers_v2.xlsx',sheet='ica_total') %>% 
-  filter((county == "Statewide" & segment == "refining") | is.na(segment)==T)
+  filter((county == "Statewide" & segment == "refining") | is.na(segment)==T) %>% 
+  rename(dire_emp_mult = direct_emp, indi_emp_mult = indirect_emp, indu_emp_mult = induced_emp,
+         dire_comp_mult = direct_comp, indi_comp_mult = indirect_comp, indu_comp_mult = induced_comp,
+         ip.dire_comp_mult = ip.direct_comp, ip.indi_comp_mult = ip.indirect_comp, ip.indu_comp_mult = ip.induced_comp)
 
 
 # 2. Collapse energy model output to the scenario-state-year level, add statewide multipliers 
@@ -152,7 +176,9 @@ ind_multipliers_ext <- read_csv('ica_multipliers_by_industry_long.csv') %>%
   arrange(-indirect_induced_emp) %>% 
   mutate(rank = row_number()) %>% 
   filter(rank<=10) %>% 
-  dplyr::select(-indirect_induced_emp,-indirect_induced_comp)
+  dplyr::select(-indirect_induced_emp,-indirect_induced_comp) %>% 
+  rename(dire_emp_mult = direct_emp, indi_emp_mult = indirect_emp, indu_emp_mult = induced_emp,
+         dire_comp_mult = direct_comp, indi_comp_mult = indirect_comp, indu_comp_mult = induced_comp)
 
 ind_multipliers_ref <- read_csv('ica_multipliers_by_industry_long.csv') %>% 
   filter((county != "Statewide" & segment == "refining")) %>% 
@@ -162,7 +188,9 @@ ind_multipliers_ref <- read_csv('ica_multipliers_by_industry_long.csv') %>%
   arrange(-indirect_induced_emp) %>% 
   mutate(rank = row_number()) %>% 
   filter(rank<=10) %>% 
-  dplyr::select(-indirect_induced_emp,-indirect_induced_comp)
+  dplyr::select(-indirect_induced_emp,-indirect_induced_comp) %>% 
+  rename(dire_emp_mult = direct_emp, indi_emp_mult = indirect_emp, indu_emp_mult = induced_emp,
+         dire_comp_mult = direct_comp, indi_comp_mult = indirect_comp, indu_comp_mult = induced_comp)
 
 # 2. Import extraction and refining output from the energy modeling team 
 
