@@ -2,8 +2,8 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  scen_selection   = 'diagnostic' ## diagnostic, benchmark, tax_scens
-  run_type = "test"
+  scen_selection   = 'full_run' ## diagnostic, benchmark, tax_scens
+  run_type = "full-run"
     
 # outputs -------
   
