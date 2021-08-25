@@ -2,8 +2,8 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  scen_selection   = 'full_run' ## diagnostic, benchmark, tax_scens
-  run_type = "full-run"
+  scen_selection   = 'benchmark' ## diagnostic, benchmark, tax_scens
+  run_type = "test"
     
 # outputs -------
   
@@ -12,36 +12,53 @@
 # create save path that is based on the specified path and the run date ------
   
   cur_date              = Sys.Date()
-  save_path             = file.path(save_path, paste0('extraction_', cur_date))
   
+  save_path             = file.path(save_path, paste0('extraction_', cur_date))
   dir.create(save_path, showWarnings = FALSE)
+
+  # create directories for individual outputs
+
+  save_info_path = file.path(save_path, run_type)
+  dir.create(save_info_path)
+  
+  dir.create(file.path(save_path, run_type, 'vintage-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'field-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'state-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'density-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'depl-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'exit-out'), showWarnings = FALSE)
   
 # set binary switches
   run_diagnostic_figs   = 0
   run_benchmark_figs    = 0
-  processes_out         = 1
+  processes_out         = 0
   
 # set seed
   set.seed(228)
-    
+      
 # source from other scripts -------
   
   # source function to predict extraction
-    source(here::here('energy', 'extraction-segment', 'fun_extraction_model.R'))
+    source(here::here('energy', 'extraction-segment', 'full-run', 'fun_extraction_model_full.R'))
   
-  # source function to predict extraction
+  # source function to process extraction
     source(here::here('energy', 'extraction-segment', 'fun_process_extraction.R'))
+  
   
 # load libraries ------
 
   library(data.table)
-  library(hrbrthemes)
+  library(openxlsx)
   library(tidyverse)
-  library(sf)
-  library(maps)
-  library(cowplot)
+  # Multiprocessing
+  library(doParallel)
+  library(foreach)
 
 # step 1: run extraction model and get outputs -------
+  
+  # cores
+  n_cores <- 2
+  doParallel::registerDoParallel(cores = n_cores)
   
   output_extraction = run_extraction_model(scen_selection)
   
@@ -55,6 +72,7 @@
     library(stringr)  
     library(hrbrthemes)
     library(extrafont)
+    library(hrbrthemes)
   
     plot_diagnostic_outputs(scen_selection, output_extraction)
     
@@ -69,6 +87,8 @@
     library(hrbrthemes)
     library(extrafont)
     library(cowplot)
+    library(sf)
+    library(maps)
     
     benchmark_outputs(scen_selection, output_extraction)
     

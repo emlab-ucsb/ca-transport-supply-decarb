@@ -1,4 +1,4 @@
-benchmark_outputs <- function(oil_price_selection, output_extraction) {
+benchmark_outputs <- function(scenario_selection, output_extraction) {
   
   print('Now creating benchmarks...')
   
@@ -18,6 +18,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                              colClasses = ('doc_field_code' = 'character'))
 
   report_wells_out <- fread("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production/archive/scenarios_20_all_scens/well_entry_state_1977-2045.csv")
+  
   
   ## files
   prod_file    <- "well_prod_m_processed.csv"
@@ -281,7 +282,8 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                                                 'high CCS cost - 45Q', 'low CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'high CCS cost - 45Q - LCFS', 
                                                                 'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)',
                                                                 'no_setback', 'setback_1000ft', 'setback_2500ft', 'setback_5280ft', 'no quota', 'setback_2500_quota', 'setback_5280_quota', 'quota_40', 
-                                                                'quota_20', 'quota_10', 'quota_00', 'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
+                                                                'quota_20', 'quota_10', 'quota_00', 'no tax', 'tax_setback_1000ft', 'tax_05', 'tax_setback_2500ft', 'tax_10', 'tax_setback_5280ft', 'tax_50', 
+                                                                'tax_90', 'tax_100'))
   
 
   ## make spatial fig plots
@@ -342,7 +344,8 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
                                                                         'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)',
                                                                         'no_setback', 'setback_1000ft',
                                                                         'setback_2500ft', 'setback_5280ft', 'no quota', 'quota_40', 'quota_20', 'quota_10', 'quota_00', 
-                                                                        'no tax', 'tax_05', 'tax_10', 'tax_50', 'tax_90'))
+                                                                        'no tax', 'tax_setback_1000ft', 'tax_05', 'tax_setback_2500ft', 'tax_10', 'tax_setback_5280ft', 'tax_50', 
+                                                                        'tax_90', 'tax_100'))
   
   
   plot_scen <- function(scen_choice) {
@@ -495,7 +498,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   # save figures  -----
   
   # save figures ----
-  macro_fname = paste0(oil_price_selection, '_macro_fig.pdf')
+  macro_fname = paste0(scenario_selection, '_macro_fig.pdf')
   ggsave(macro_plot, 
          filename = file.path(save_info_path, macro_fname), 
          width = 30, 
@@ -506,7 +509,7 @@ benchmark_outputs <- function(oil_price_selection, output_extraction) {
   print(paste0('Saved benchmark figures to ', macro_fname))
   
   
-  policy_fname = paste0(oil_price_selection, '_policy_fig.pdf')
+  policy_fname = paste0(scenario_selection, '_policy_fig.pdf')
   ggsave(policy_plot, 
          filename = file.path(save_info_path, policy_fname), 
          width = 25, 
