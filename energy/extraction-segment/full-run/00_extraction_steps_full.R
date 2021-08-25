@@ -2,8 +2,8 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  scen_selection   = 'full_run' ## diagnostic, benchmark, tax_scens
-  run_type = "full-run"
+  scen_selection   = 'benchmark' ## diagnostic, benchmark, tax_scens
+  run_type = "test"
     
 # outputs -------
   
@@ -35,7 +35,7 @@
   
 # set seed
   set.seed(228)
-    
+      
 # source from other scripts -------
   
   # source function to predict extraction
@@ -50,8 +50,15 @@
   library(data.table)
   library(openxlsx)
   library(tidyverse)
+  # Multiprocessing
+  library(doParallel)
+  library(foreach)
 
 # step 1: run extraction model and get outputs -------
+  
+  # cores
+  n_cores <- 2
+  doParallel::registerDoParallel(cores = n_cores)
   
   output_extraction = run_extraction_model(scen_selection)
   

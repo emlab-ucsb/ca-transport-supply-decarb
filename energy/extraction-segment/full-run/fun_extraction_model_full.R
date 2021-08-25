@@ -1420,101 +1420,101 @@ run_extraction_model <- function(scenario_selection) {
       fwrite(dt_depl_z, file.path(save_info_path, 'depl-out', depl_fname_z), row.names = F)
       
       
-      output_scen = list(vintage_all,
-                         field_all,
-                         state_all,
-                         density_dt,
-                         exit_out,
-                         dt_depl_z)
+      # output_scen = list(vintage_all,
+      #                    field_all,
+      #                    state_all,
+      #                    density_dt,
+      #                    exit_out,
+      #                    dt_depl_z)
       
       rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, scen, scenarios_dt_z, 
          depl_2019_z, prod_2019_z, trr_2020_z, depl_2020_z, dt_depl_z, dt_info_z, density_dt_merg, 
          density_dt, exit_out, scenario_name_z)
 
-      return(output_scen)
+      # return(output_scen)
       
     }
     
     # SAVE OUTPUTS -------
-    
-    # prod_existing = rbindlist(list_existing_z)
-    # prod_new = rbindlist(list_new_z)
-    # 
-    # output_list = list(prod_existing,
-    #                    prod_new)
-    
-    ## res selection
-    res = lapply(1:nrow(scen_sel), func_yearly_production)
+  
 
-    ## for diagnostic
-    # res = lapply(2:2, func_yearly_production)
+    ## res selection
+    # res = lapply(1:nrow(scen_sel), func_yearly_production)
     
-    output_list = do.call(Map, c(f = rbind, res))
+    foreach(i = 1:nrow(scen_sel)) %dopar% {
+      func_yearly_production(i)
+    }
     
-    end_time = Sys.time()
-    time_diff = difftime(end_time, start_time, units='mins')
+
+    # ## for diagnostic
+    # # res = lapply(2:2, func_yearly_production)
+    # 
+    # output_list = do.call(Map, c(f = rbind, res))
+    # 
+    # end_time = Sys.time()
+    # time_diff = difftime(end_time, start_time, units='mins')
+    # 
+    # print(paste("Ended extraction model at ", end_time))
+    # 
+    # print(paste("Model took ", round(time_diff[[1]]), " minutes to complete. Now saving results ..."))
+    # 
+    # # save info file
+    #   print(paste0("Saving run information file to ", save_info_path))
+    #   run_info = data.table(scenario_selection = scenario_selection,
+    #                         start_time = start_time,
+    #                         end_time = end_time,
+    #                         duration = paste0(round(time_diff[[1]]), ' minutes'))
+    #   fwrite(run_info, file.path(save_info_path, 'run_info.csv'), row.names = F)
+    # 
+    # # save outputs to csv -----
+    # 
+    # # create subdirectory of save_path, currently based on run_type ------
+    # 
+    # save_processed_path = file.path(save_path, run_type)
+    # dir.create(save_processed_path, showWarnings = FALSE)
+    # 
+    # # save vintage-level results ----
+    # 
+    # vintage_fname = paste0(scenario_selection, '-vintage-level-results.csv')
+    # fwrite(output_list[[1]], file.path(save_processed_path, vintage_fname), row.names = F)
+    # print(paste0('Saved vintage-level results to ', vintage_fname))
+    # 
+    # # save field-level results -----
+    # 
+    # field_fname = paste0(scenario_selection, '-field-level-results.csv')
+    # fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
+    # print(paste0('Saved field-level results to ', field_fname))
+    # 
+    # # save state-level results ------
+    # 
+    # state_fname = paste0(scenario_selection, '-state-level-results.csv')
+    # fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
+    # print(paste0('Saved state-level results to ', state_fname))
+    # 
+    # rm(solve_b, solve_mean_b, ghg_all)
+    # 
+    # # save density results ------
+    # 
+    # density_fname = paste0(scenario_selection, '-density-results.csv')
+    # fwrite(output_list[[4]], file.path(save_processed_path, density_fname), row.names = F)
+    # print(paste0('Density results to ', density_fname))
+    # 
+    # # save exit results ------
+    # 
+    # exit_fname = paste0(scenario_selection, '-exit-results.csv')
+    # fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
+    # print(paste0('Exit results to ', exit_fname))
+    # 
+    # # save exit results ------
+    # 
+    # exit_fname = paste0(scenario_selection, '-depletion-results.csv')
+    # fwrite(output_list[[6]], file.path(save_processed_path, exit_fname), row.names = F)
+    # print(paste0('Depletion results to ', exit_fname))
     
-    print(paste("Ended extraction model at ", end_time))
-    
-    print(paste("Model took ", round(time_diff[[1]]), " minutes to complete. Now saving results ..."))
-    
-    # save info file
-      print(paste0("Saving run information file to ", save_info_path))
-      run_info = data.table(scenario_selection = scenario_selection,
-                            start_time = start_time,
-                            end_time = end_time,
-                            duration = paste0(round(time_diff[[1]]), ' minutes'))
-      fwrite(run_info, file.path(save_info_path, 'run_info.csv'), row.names = F)
-    
-    # save outputs to csv -----
-    
-    # create subdirectory of save_path, currently based on run_type ------
-    
-    save_processed_path = file.path(save_path, run_type)
-    dir.create(save_processed_path, showWarnings = FALSE)
-    
-    # save vintage-level results ----
-    
-    vintage_fname = paste0(scenario_selection, '-vintage-level-results.csv')
-    fwrite(output_list[[1]], file.path(save_processed_path, vintage_fname), row.names = F)
-    print(paste0('Saved vintage-level results to ', vintage_fname))
-    
-    # save field-level results -----
-    
-    field_fname = paste0(scenario_selection, '-field-level-results.csv')
-    fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
-    print(paste0('Saved field-level results to ', field_fname))
-    
-    # save state-level results ------
-    
-    state_fname = paste0(scenario_selection, '-state-level-results.csv')
-    fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
-    print(paste0('Saved state-level results to ', state_fname))
     
     rm(solve_b, solve_mean_b, ghg_all)
     
-    # save density results ------
-    
-    density_fname = paste0(scenario_selection, '-density-results.csv')
-    fwrite(output_list[[4]], file.path(save_processed_path, density_fname), row.names = F)
-    print(paste0('Density results to ', density_fname))
-    
-    # save exit results ------
-    
-    exit_fname = paste0(scenario_selection, '-exit-results.csv')
-    fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
-    print(paste0('Exit results to ', exit_fname))
-    
-    # save exit results ------
-    
-    exit_fname = paste0(scenario_selection, '-depletion-results.csv')
-    fwrite(output_list[[6]], file.path(save_processed_path, exit_fname), row.names = F)
-    print(paste0('Depletion results to ', exit_fname))
-    
-    
-    rm(solve_b, solve_mean_b, ghg_all)
-    
-    return(output_list)
+    # return(output_list)
     
     # all_prod = rbind(prod_new, prod_existing_updated, use.names = T, fill = T)
     # all_prod[, batch := z]
