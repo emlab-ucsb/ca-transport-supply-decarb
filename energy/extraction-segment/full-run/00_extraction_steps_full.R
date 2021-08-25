@@ -3,7 +3,7 @@
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
   scen_selection   = 'diagnostic' ## diagnostic, benchmark, tax_scens
-  run_type = "full-run"
+  run_type = "test"
     
 # outputs -------
   
@@ -12,12 +12,24 @@
 # create save path that is based on the specified path and the run date ------
   
   cur_date              = Sys.Date()
-  save_path             = file.path(save_path, paste0('extraction_', cur_date))
   
+  save_path             = file.path(save_path, paste0('extraction_', cur_date))
   dir.create(save_path, showWarnings = FALSE)
+
+  # create directories for individual outputs
+
+  save_info_path = file.path(save_path, run_type)
+  dir.create(save_info_path)
+  
+  dir.create(file.path(save_path, run_type, 'vintage-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'field-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'state-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'density-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'depl-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'exit-out'), showWarnings = FALSE)
   
 # set binary switches
-  run_diagnostic_figs   = 1
+  run_diagnostic_figs   = 0
   run_benchmark_figs    = 0
   processes_out         = 0
   

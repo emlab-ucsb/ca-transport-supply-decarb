@@ -261,6 +261,14 @@ run_extraction_model <- function(scenario_selection) {
     
     setDT(scen_sel)
 
+    ## add ID column
+    scen_sel[, scen_id := paste(oil_price_scenario, setback_scenario, prod_quota_scenario,
+                                carbon_price_scenario, ccs_scenario, innovation_scenario, excise_tax_scenario, sep = "_")]
+    
+    setcolorder(scen_sel, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'prod_quota_scenario',
+                'carbon_price_scenario', 'ccs_scenario', 'innovation_scenario', 'excise_tax_scenario'))
+    
+    
     ## filter scen_sel for appropriate set of scenarios
     scen_sel = filter_run_scens(scenario_selection, scen_sel)
     
@@ -272,6 +280,7 @@ run_extraction_model <- function(scenario_selection) {
       
       print(z)
       scen = scen_sel[z]
+      scenario_name_z <- scen[, scen_id][1]
       
       ## create input sheet
       ## list through all scenarios ------
@@ -287,6 +296,8 @@ run_extraction_model <- function(scenario_selection) {
       ## compute tax
       scenarios_dt_z[, tax := tax_rate * oil_price_usd_per_bbl]
       scenarios_dt_z[, tax_rate:= NULL]
+      scenarios_dt_z[, scen_id := NULL]
+      
       
       ## set order
       setcolorder(scenarios_dt_z, c('year', 'doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
@@ -1219,6 +1230,9 @@ run_extraction_model <- function(scenario_selection) {
       }
       
       # rm(dt_depl_z)
+      dt_depl_z[, scen_id := scenario_name_z]
+      
+      
       
       # # pred_prod = rbindlist(list_pred_prod) ##
       # # pred_prod_wide = rbindlist(list_pred_prod_wide)
@@ -1274,6 +1288,7 @@ run_extraction_model <- function(scenario_selection) {
       
       exit_out = rbind(exit_out, exit_out_existing)
       exit_out = exit_out[order(doc_field_code, start_year)]
+      exit_out[, scen_id := scenario_name_z]
       
       
       rm(list_pred_prod, list_prod_existing, list_prod_new, exit_out_existing, prod_existing_vintage_z, prod_new_vintage_z, list_exits)
@@ -1293,6 +1308,7 @@ run_extraction_model <- function(scenario_selection) {
       setorder(vintage_all, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
                setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code, 
                doc_fieldname, year, vintage_start)
+      vintage_all[, scen_id := scenario_name_z]
       
       
       ## field well entry
@@ -1335,6 +1351,7 @@ run_extraction_model <- function(scenario_selection) {
       
       field_all[is.na(new_wells), new_wells := 0]
       
+      
       ## add density
     
       density_dt = dt_info_z[, c('doc_field_code', 'year', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
@@ -1350,6 +1367,10 @@ run_extraction_model <- function(scenario_selection) {
       density_dt = density_dt[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                   ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, n_wells_start,
                                   orig_area_m2, n_wells_setback, scen_area_m2, year, new_wells, cumulative_wells, wells_km2)]
+      density_dt[, scen_id := scenario_name_z]
+      
+      
+      
       
       density_dt_merg = density_dt[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                        ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
@@ -1359,17 +1380,45 @@ run_extraction_model <- function(scenario_selection) {
                         by = c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                                'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
                                'doc_field_code', 'year'))
-      
+      field_all[, scen_id := scenario_name_z]
       
       
 
       cols = c('new_wells', 'existing_prod_bbl', 'new_prod_bbl', 'total_prod_bbl', 
                'existing_ghg_kgCO2e', 'new_ghg_kgCO2e', 'total_ghg_kgCO2e')
       state_all = field_all[ , lapply(.SD, sum, na.rm = T), .SDcols = cols,
-                             by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+                             by = .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
                                     setback_scenario, prod_quota_scenario, excise_tax_scenario, year)] 
       
       state_all[, total_ghg_mtCO2e := total_ghg_kgCO2e/1e9]
+      
+      ## save csvs for each scenario
+      ## -------------------------------------------
+      
+      ## vintage
+      vintage_fname_z = paste0(scenario_name_z, '_vintage.csv')
+      fwrite(vintage_all, file.path(save_info_path, 'vintage-out', vintage_fname_z), row.names = F)
+      
+      ## field
+      field_fname_z = paste0(scenario_name_z, '_field.csv')
+      fwrite(field_all, file.path(save_info_path, 'field-out', field_fname_z), row.names = F)
+      
+      ## state
+      state_fname_z = paste0(scenario_name_z, '_state.csv')
+      fwrite(state_all, file.path(save_info_path, 'state-out', state_fname_z), row.names = F)
+      
+      ## density
+      density_fname_z = paste0(scenario_name_z, '_density.csv')
+      fwrite(density_dt, file.path(save_info_path, 'density-out', density_fname_z), row.names = F)
+      
+      ## exit
+      exit_fname_z = paste0(scenario_name_z, '_exit.csv')
+      fwrite(exit_out, file.path(save_info_path, 'exit-out', exit_fname_z), row.names = F)
+      
+      ## depletion
+      depl_fname_z = paste0(scenario_name_z, '_depletion.csv')
+      fwrite(dt_depl_z, file.path(save_info_path, 'depl-out', depl_fname_z), row.names = F)
+      
       
       output_scen = list(vintage_all,
                          field_all,
@@ -1380,7 +1429,7 @@ run_extraction_model <- function(scenario_selection) {
       
       rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, scen, scenarios_dt_z, 
          depl_2019_z, prod_2019_z, trr_2020_z, depl_2020_z, dt_depl_z, dt_info_z, density_dt_merg, 
-         density_dt, exit_out)
+         density_dt, exit_out, scenario_name_z)
 
       return(output_scen)
       
@@ -1410,8 +1459,6 @@ run_extraction_model <- function(scenario_selection) {
     print(paste("Model took ", round(time_diff[[1]]), " minutes to complete. Now saving results ..."))
     
     # save info file
-      save_info_path = file.path(save_path, run_type)
-      dir.create(save_info_path)
       print(paste0("Saving run information file to ", save_info_path))
       run_info = data.table(scenario_selection = scenario_selection,
                             start_time = start_time,
