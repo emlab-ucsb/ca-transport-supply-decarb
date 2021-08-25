@@ -49,7 +49,6 @@
 
   library(data.table)
   library(openxlsx)
-  library(hrbrthemes)
   library(tidyverse)
 
 # step 1: run extraction model and get outputs -------
@@ -66,6 +65,7 @@
     library(stringr)  
     library(hrbrthemes)
     library(extrafont)
+    library(hrbrthemes)
   
     plot_diagnostic_outputs(scen_selection, output_extraction)
     
