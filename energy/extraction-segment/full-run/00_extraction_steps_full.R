@@ -27,14 +27,16 @@
 # source from other scripts -------
   
   # source function to predict extraction
-    source(here::here('energy', 'extraction-segment', 'fun_extraction_model.R'))
+    source(here::here('energy', 'extraction-segment', 'full-run', 'fun_extraction_model_full.R'))
   
-  # source function to predict extraction
+  # source function to process extraction
     source(here::here('energy', 'extraction-segment', 'fun_process_extraction.R'))
+  
   
 # load libraries ------
 
   library(data.table)
+  library(openxlsx)
   library(hrbrthemes)
   library(tidyverse)
   library(sf)

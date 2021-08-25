@@ -232,7 +232,7 @@ plot_diagnostic_outputs <- function(scenario_selection, output_extraction) {
   
   # read in baseline for comparison ------
   
-  state_base = fread(file.path(base_path, 'extraction_2021-08-19', 'tax_update', 'diagnostic-state-level-results.csv'), header = T)
+  state_base = fread(file.path(base_path, 'extraction_2021-08-20', 'tax_update_correction', 'diagnostic-state-level-results.csv'), header = T)
   
   state_base = state_base[(oil_price_scenario == 'reference case' &
                 innovation_scenario == 'low innovation' &
