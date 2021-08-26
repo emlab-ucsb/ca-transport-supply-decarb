@@ -7,7 +7,7 @@ library(data.table)
 
 ## paths
 calepa_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/"
-extraction_path <- "outputs/predict-production/extraction_2021-08-12/update_final/"
+extraction_path <- "outputs/predict-production/extraction_2021-08-20/tax_update_correction/"
 inputs_path <- "project-materials/scenario-inputs/"
 
 ## file names
@@ -32,18 +32,19 @@ setback_out <- state_out[(oil_price_scenario == 'reference case' &
                             prod_quota_scenario == 'no quota' &
                             year == 2045)]
 
-setback_out <- setback_out[setback_scenario %in% c("setback_2500ft", "setback_5280ft"), .(setback_scenario, total_prod_bbl)]
+setback_out <- setback_out[setback_scenario %in% c("setback_1000ft", "setback_2500ft", "setback_5280ft"), .(setback_scenario, total_prod_bbl)]
 
 ## add setback scenarios
 orig_val <- 155747231
 
 quota_scens <- tibble(year = 2019:2045,
-                      setback_2500_quota = seq(orig_val, setback_out$total_prod_bbl[1], length.out = length(2019:2045)),
-                      setback_5280_quota = seq(orig_val, setback_out$total_prod_bbl[2], length.out = length(2019:2045)))
+                      setback_1000_quota = seq(orig_val, setback_out$total_prod_bbl[1], length.out = length(2019:2045)),
+                      setback_2500_quota = seq(orig_val, setback_out$total_prod_bbl[2], length.out = length(2019:2045)),
+                      setback_5280_quota = seq(orig_val, setback_out$total_prod_bbl[3], length.out = length(2019:2045)))
 
 quota_scens <- quota_scens %>%
   filter(year > 2019) %>%
-  pivot_longer(setback_2500_quota:setback_5280_quota, names_to = "prod_quota_scenario", values_to = "quota") %>%
+  pivot_longer(setback_1000_quota:setback_5280_quota, names_to = "prod_quota_scenario", values_to = "quota") %>%
   mutate(quota = round(quota)) %>%
   rbind(prod_quota_scens)
 
