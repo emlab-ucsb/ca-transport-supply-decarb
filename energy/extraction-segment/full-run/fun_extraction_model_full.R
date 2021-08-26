@@ -37,8 +37,8 @@ run_extraction_model <- function(scenario_selection) {
     setback_file      = 'setback_coverage_R.csv'
     # prod_quota_file   = 'prod_quota_scenarios.csv'
     prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
-    excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback
-    # excise_tax_file   = 'excise_tax_scenarios.csv'
+    # excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback
+    excise_tax_file   = 'excise_tax_scenarios.csv'
     incentive_file    = 'CCS_LCFS_45Q.xlsx'
     n_wells_file      = 'n_wells_area.csv'
     
