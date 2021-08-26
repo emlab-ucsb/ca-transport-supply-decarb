@@ -1089,4 +1089,23 @@ brent_p3 <- brent_p2 %>%
 ## save clean file
 write_csv(brent_p3, path = paste0(data_directory, "processed/brent_oil_price_projections.csv"))
 
+## updated sector ghg emissions
+## -------------------------------------------
+
+indust_ghg <- read_xlsx(paste0(data_directory, "raw/2000_2019_ghg_inventory_trends_figures.xlsx"), sheet = "Figure 13", skip = 4)
+
+source <- as.character(indust_ghg[9, 1])
+
+indust_ghg <- indust_ghg[1:7, ]
+
+indust_ghg2 <- indust_ghg %>%
+  pivot_longer(`2000`:`2019`, names_to = "year", values_to = "value") %>%
+  mutate(year = as.numeric(year)) %>%
+  rename(segment = Parameter,
+         unit = Unit) %>%
+  mutate(source = source)
+
+## save clean file
+write_csv(indust_ghg2, file = paste0(data_directory, "processed/indust_emissions_2000-2019.csv"))
+
 
