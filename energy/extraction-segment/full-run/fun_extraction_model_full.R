@@ -1,10 +1,6 @@
 
 run_extraction_model <- function(scenario_selection) {
   
-  # set start time -----
-    start_time <- Sys.time()
-    print(paste("Starting extraction model at ", start_time))
-  
   # paths -----
     model_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
     scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
@@ -37,8 +33,8 @@ run_extraction_model <- function(scenario_selection) {
     setback_file      = 'setback_coverage_R.csv'
     # prod_quota_file   = 'prod_quota_scenarios.csv'
     prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
-    excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback
-    # excise_tax_file   = 'excise_tax_scenarios.csv'
+    # excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback
+    excise_tax_file   = 'excise_tax_scenarios.csv'
     incentive_file    = 'CCS_LCFS_45Q.xlsx'
     n_wells_file      = 'n_wells_area.csv'
     
@@ -261,8 +257,18 @@ run_extraction_model <- function(scenario_selection) {
     
     setDT(scen_sel)
 
+    ## add ID column
+    scen_sel[, scen_id := paste(oil_price_scenario, setback_scenario, prod_quota_scenario,
+                                carbon_price_scenario, ccs_scenario, innovation_scenario, excise_tax_scenario, sep = "_")]
+    
+    setcolorder(scen_sel, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'prod_quota_scenario',
+                'carbon_price_scenario', 'ccs_scenario', 'innovation_scenario', 'excise_tax_scenario'))
+    
+    
     ## filter scen_sel for appropriate set of scenarios
     scen_sel = filter_run_scens(scenario_selection, scen_sel)
+    
+    print(nrow(scen_sel))
     
     
   ## start scenario 
@@ -272,6 +278,7 @@ run_extraction_model <- function(scenario_selection) {
       
       print(z)
       scen = scen_sel[z]
+      scenario_name_z <- scen[, scen_id][1]
       
       ## create input sheet
       ## list through all scenarios ------
@@ -287,6 +294,8 @@ run_extraction_model <- function(scenario_selection) {
       ## compute tax
       scenarios_dt_z[, tax := tax_rate * oil_price_usd_per_bbl]
       scenarios_dt_z[, tax_rate:= NULL]
+      scenarios_dt_z[, scen_id := NULL]
+      
       
       ## set order
       setcolorder(scenarios_dt_z, c('year', 'doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
@@ -1218,26 +1227,11 @@ run_extraction_model <- function(scenario_selection) {
         
       }
       
-      # rm(dt_depl_z)
+      ## depl dt
+      dt_depl_z[, scen_id := scenario_name_z]
+      dt_depl_z <- dt_depl_z[, .(scen_id, doc_field_code, year, depl)]
       
-      # # pred_prod = rbindlist(list_pred_prod) ##
-      # # pred_prod_wide = rbindlist(list_pred_prod_wide)
-      # list_existing_z[[z]] = rbindlist(list_prod_existing)
-      # # pred_prod[, year := as.numeric(as.character(year))]
-      # list_new_z[[z]] = rbindlist(list_prod_new)
-      
-      # prod_existing = rbindlist(list_prod_existing)
-      # prod_new = rbindlist(list_prod_new)
-
-      # output_list = list(rbindlist(list_prod_existing)[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-      #                                                      setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-      #                                                      doc_field_code, doc_fieldname, year, ccs_adopted, production_bbl, 
-      #                                                      upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)],
-      #                    rbindlist(list_prod_new)[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-      #                                                 setback_scenario, prod_quota_scenario, excise_tax_scenario, 
-      #                                                 doc_field_code, doc_fieldname, year, vintage_start, ccs_adopted, production_bbl, n_wells,
-      #                                                 upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)])
-
+  
       
       
       existing_prod_dt = rbindlist(list_prod_existing)[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
@@ -1274,6 +1268,7 @@ run_extraction_model <- function(scenario_selection) {
       
       exit_out = rbind(exit_out, exit_out_existing)
       exit_out = exit_out[order(doc_field_code, start_year)]
+      exit_out[, scen_id := scenario_name_z]
       
       
       rm(list_pred_prod, list_prod_existing, list_prod_new, exit_out_existing, prod_existing_vintage_z, prod_new_vintage_z, list_exits)
@@ -1293,6 +1288,7 @@ run_extraction_model <- function(scenario_selection) {
       setorder(vintage_all, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
                setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code, 
                doc_fieldname, year, vintage_start)
+      vintage_all[, scen_id := scenario_name_z]
       
       
       ## field well entry
@@ -1335,8 +1331,8 @@ run_extraction_model <- function(scenario_selection) {
       
       field_all[is.na(new_wells), new_wells := 0]
       
+      
       ## add density
-    
       density_dt = dt_info_z[, c('doc_field_code', 'year', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                                  'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'n_wells_start',
                                  'orig_area_m2', 'n_wells_setback', 'scen_area_m2',  'cumulative_wells', 'wells_km2')]
@@ -1350,6 +1346,10 @@ run_extraction_model <- function(scenario_selection) {
       density_dt = density_dt[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                   ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, n_wells_start,
                                   orig_area_m2, n_wells_setback, scen_area_m2, year, new_wells, cumulative_wells, wells_km2)]
+      density_dt[, scen_id := scenario_name_z]
+      
+      
+      
       
       density_dt_merg = density_dt[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                        ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
@@ -1358,116 +1358,175 @@ run_extraction_model <- function(scenario_selection) {
       field_all = merge(field_all, density_dt_merg,
                         by = c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
                                'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
-                               'doc_field_code', 'year'))
+                               'doc_field_code', 'year'),
+                        all.x = T)
+      
+      field_all[, scen_id := scenario_name_z]
+      
+      ## add field-level depl
+      field_all = merge(field_all, dt_depl_z,
+                        by = c('scen_id', 'doc_field_code', 'year'),
+                        all.x = T)
+      
+      ## add field-level exit
+      exit_field_dt <- exit_out[, .(scen_id, doc_field_code, year, vintage, start_year, n_well_exit, adj_no_wells, no_wells_after_exit)]
+      setnames(exit_field_dt, "n_well_exit", "n_pred_exit")
+      exit_field_dt <- exit_field_dt[, .(adj_no_wells = sum(adj_no_wells),
+                                         n_wells_after_exit = sum(no_wells_after_exit)), by = .(scen_id, doc_field_code, year, n_pred_exit)]
+      
+      field_all <-  merge(field_all, exit_field_dt,
+                          by = c('scen_id', 'doc_field_code', 'year'),
+                          all.x = T)
+      
+      ## set coloum order
+      field_all <- field_all[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
+                                 ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                 doc_field_code, doc_fieldname, year, ccs_adopted, existing_prod_bbl,
+                                 new_prod_bbl, total_prod_bbl, existing_ghg_kgCO2e, new_ghg_kgCO2e, 
+                                 total_ghg_kgCO2e, depl, new_wells, cumulative_wells, wells_km2,
+                                 n_pred_exit, n_wells_after_exit, adj_no_wells)]
+      
+      field_all[, prev_n_well := shift(n_wells_after_exit, type = "lag")]
+      field_all[, prev_n_well := fifelse(year == 2020, adj_no_wells, prev_n_well)]
+      field_all[, n_wells_exit := fifelse(year == 2020, prev_n_well - n_wells_after_exit, 
+                                          prev_n_well + new_wells - n_wells_after_exit)]
+      
+      field_all[, ':=' (adj_no_wells = NULL, 
+                        prev_n_well = NULL)]
       
       
       
-
       cols = c('new_wells', 'existing_prod_bbl', 'new_prod_bbl', 'total_prod_bbl', 
-               'existing_ghg_kgCO2e', 'new_ghg_kgCO2e', 'total_ghg_kgCO2e')
+               'existing_ghg_kgCO2e', 'new_ghg_kgCO2e', 'total_ghg_kgCO2e', 'new_wells', 'n_wells_exit')
       state_all = field_all[ , lapply(.SD, sum, na.rm = T), .SDcols = cols,
-                             by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
+                             by = .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
                                     setback_scenario, prod_quota_scenario, excise_tax_scenario, year)] 
       
       state_all[, total_ghg_mtCO2e := total_ghg_kgCO2e/1e9]
       
-      output_scen = list(vintage_all,
-                         field_all,
-                         state_all,
-                         density_dt,
-                         exit_out,
-                         dt_depl_z)
+      ## save rds for each scenario
+      ## -------------------------------------------
+      
+      # ## vintage
+      # vintage_fname_z = paste0(scenario_name_z, '_vintage.csv')
+      # fwrite(vintage_all, file.path(save_info_path, 'vintage-out', vintage_fname_z), row.names = F)
+      
+      ## field
+      field_fname_z = paste0(scenario_name_z, '_field.rds')
+      saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
+      
+      ## state
+      state_fname_z = paste0(scenario_name_z, '_state.rds')
+      saveRDS(state_all, file.path(save_info_path, 'state-out', state_fname_z))
+      
+      # ## density
+      # density_fname_z = paste0(scenario_name_z, '_density.csv')
+      # fwrite(density_dt, file.path(save_info_path, 'density-out', density_fname_z), row.names = F)
+      # 
+      # ## exit
+      # exit_fname_z = paste0(scenario_name_z, '_exit.csv')
+      # fwrite(exit_out, file.path(save_info_path, 'exit-out', exit_fname_z), row.names = F)
+      # 
+      # ## depletion
+      # depl_fname_z = paste0(scenario_name_z, '_depletion.csv')
+      # fwrite(dt_depl_z, file.path(save_info_path, 'depl-out', depl_fname_z), row.names = F)
+      
+      
+      # output_scen = list(vintage_all,
+      #                    field_all,
+      #                    state_all,
+      #                    density_dt,
+      #                    exit_out,
+      #                    dt_depl_z)
       
       rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, scen, scenarios_dt_z, 
          depl_2019_z, prod_2019_z, trr_2020_z, depl_2020_z, dt_depl_z, dt_info_z, density_dt_merg, 
-         density_dt, exit_out)
+         density_dt, exit_out, scenario_name_z)
 
-      return(output_scen)
+      # return(output_scen)
       
     }
     
     # SAVE OUTPUTS -------
-    
-    # prod_existing = rbindlist(list_existing_z)
-    # prod_new = rbindlist(list_new_z)
-    # 
-    # output_list = list(prod_existing,
-    #                    prod_new)
-    
-    ## res selection
-    res = lapply(1:nrow(scen_sel), func_yearly_production)
+  
 
-    ## for diagnostic
-    # res = lapply(2:2, func_yearly_production)
+    ## res selection
+    # res = lapply(1:nrow(scen_sel), func_yearly_production)
     
-    output_list = do.call(Map, c(f = rbind, res))
+    foreach(i = 1:nrow(scen_sel)) %dopar% {
+      func_yearly_production(i)
+    }
     
-    end_time = Sys.time()
-    time_diff = difftime(end_time, start_time, units='mins')
+
+    # ## for diagnostic
+    # # res = lapply(2:2, func_yearly_production)
+    # 
+    # output_list = do.call(Map, c(f = rbind, res))
+    # 
+    # end_time = Sys.time()
+    # time_diff = difftime(end_time, start_time, units='mins')
+    # 
+    # print(paste("Ended extraction model at ", end_time))
+    # 
+    # print(paste("Model took ", round(time_diff[[1]]), " minutes to complete. Now saving results ..."))
+    # 
+    # # save info file
+    #   print(paste0("Saving run information file to ", save_info_path))
+    #   run_info = data.table(scenario_selection = scenario_selection,
+    #                         start_time = start_time,
+    #                         end_time = end_time,
+    #                         duration = paste0(round(time_diff[[1]]), ' minutes'))
+    #   fwrite(run_info, file.path(save_info_path, 'run_info.csv'), row.names = F)
+    # 
+    # # save outputs to csv -----
+    # 
+    # # create subdirectory of save_path, currently based on run_type ------
+    # 
+    # save_processed_path = file.path(save_path, run_type)
+    # dir.create(save_processed_path, showWarnings = FALSE)
+    # 
+    # # save vintage-level results ----
+    # 
+    # vintage_fname = paste0(scenario_selection, '-vintage-level-results.csv')
+    # fwrite(output_list[[1]], file.path(save_processed_path, vintage_fname), row.names = F)
+    # print(paste0('Saved vintage-level results to ', vintage_fname))
+    # 
+    # # save field-level results -----
+    # 
+    # field_fname = paste0(scenario_selection, '-field-level-results.csv')
+    # fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
+    # print(paste0('Saved field-level results to ', field_fname))
+    # 
+    # # save state-level results ------
+    # 
+    # state_fname = paste0(scenario_selection, '-state-level-results.csv')
+    # fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
+    # print(paste0('Saved state-level results to ', state_fname))
+    # 
+    # rm(solve_b, solve_mean_b, ghg_all)
+    # 
+    # # save density results ------
+    # 
+    # density_fname = paste0(scenario_selection, '-density-results.csv')
+    # fwrite(output_list[[4]], file.path(save_processed_path, density_fname), row.names = F)
+    # print(paste0('Density results to ', density_fname))
+    # 
+    # # save exit results ------
+    # 
+    # exit_fname = paste0(scenario_selection, '-exit-results.csv')
+    # fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
+    # print(paste0('Exit results to ', exit_fname))
+    # 
+    # # save exit results ------
+    # 
+    # exit_fname = paste0(scenario_selection, '-depletion-results.csv')
+    # fwrite(output_list[[6]], file.path(save_processed_path, exit_fname), row.names = F)
+    # print(paste0('Depletion results to ', exit_fname))
     
-    print(paste("Ended extraction model at ", end_time))
-    
-    print(paste("Model took ", round(time_diff[[1]]), " minutes to complete. Now saving results ..."))
-    
-    # save info file
-      save_info_path = file.path(save_path, run_type)
-      dir.create(save_info_path)
-      print(paste0("Saving run information file to ", save_info_path))
-      run_info = data.table(scenario_selection = scenario_selection,
-                            start_time = start_time,
-                            end_time = end_time,
-                            duration = paste0(round(time_diff[[1]]), ' minutes'))
-      fwrite(run_info, file.path(save_info_path, 'run_info.csv'), row.names = F)
-    
-    # save outputs to csv -----
-    
-    # create subdirectory of save_path, currently based on run_type ------
-    
-    save_processed_path = file.path(save_path, run_type)
-    dir.create(save_processed_path, showWarnings = FALSE)
-    
-    # save vintage-level results ----
-    
-    vintage_fname = paste0(scenario_selection, '-vintage-level-results.csv')
-    fwrite(output_list[[1]], file.path(save_processed_path, vintage_fname), row.names = F)
-    print(paste0('Saved vintage-level results to ', vintage_fname))
-    
-    # save field-level results -----
-    
-    field_fname = paste0(scenario_selection, '-field-level-results.csv')
-    fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
-    print(paste0('Saved field-level results to ', field_fname))
-    
-    # save state-level results ------
-    
-    state_fname = paste0(scenario_selection, '-state-level-results.csv')
-    fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
-    print(paste0('Saved state-level results to ', state_fname))
     
     rm(solve_b, solve_mean_b, ghg_all)
     
-    # save density results ------
-    
-    density_fname = paste0(scenario_selection, '-density-results.csv')
-    fwrite(output_list[[4]], file.path(save_processed_path, density_fname), row.names = F)
-    print(paste0('Density results to ', density_fname))
-    
-    # save exit results ------
-    
-    exit_fname = paste0(scenario_selection, '-exit-results.csv')
-    fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
-    print(paste0('Exit results to ', exit_fname))
-    
-    # save exit results ------
-    
-    exit_fname = paste0(scenario_selection, '-depletion-results.csv')
-    fwrite(output_list[[6]], file.path(save_processed_path, exit_fname), row.names = F)
-    print(paste0('Depletion results to ', exit_fname))
-    
-    
-    rm(solve_b, solve_mean_b, ghg_all)
-    
-    return(output_list)
+    # return(output_list)
     
     # all_prod = rbind(prod_new, prod_existing_updated, use.names = T, fill = T)
     # all_prod[, batch := z]

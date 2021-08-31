@@ -2,8 +2,8 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  scen_selection   = 'full_run' ## diagnostic, benchmark, tax_scens
-  run_type = "full-run"
+  scen_selection   = 'comparison_scens' ## diagnostic, benchmark, tax_scens
+  run_type = "comp-scens"
     
 # outputs -------
   
@@ -19,7 +19,7 @@
 # set binary switches
   run_diagnostic_figs   = 0
   run_benchmark_figs    = 0
-  processes_out         = 1
+  processes_out         = 0
   
 # set seed
   set.seed(228)
