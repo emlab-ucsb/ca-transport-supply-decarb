@@ -61,7 +61,7 @@
   print(paste("Starting extraction model at ", start_time))
   
   # cores
-  n_cores <- 2
+  n_cores <- 10
   doParallel::registerDoParallel(cores = n_cores)
   
   output_extraction = run_extraction_model(scen_selection)
