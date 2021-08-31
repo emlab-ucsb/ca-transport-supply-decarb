@@ -36,6 +36,7 @@ processed <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects
 fte <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results'
 energy_model_output_extraction <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/extraction_2021-08-18'
 energy_model_output_refining <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining/refining_2021-08-18'
+population_files <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/raw/population'
 
 ############################################################################################ 
 
@@ -44,13 +45,35 @@ energy_model_output_refining <- '/Volumes/GoogleDrive/Shared drives/emlab/projec
 ## 1. Import files with energy model output and multipliers (unit of observation: scen_id x county x year), compute direct, indirect, induced impacts 
 setwd(processed)
 
-ext_df <- read_xlsx('energy_model_output_with_multipliers.xlsx',sheet='extraction') %>% 
-  mutate(dire_emp = (revenue/(10^6))*dire_emp_mult, indi_emp = (revenue/(10^6))*indi_emp_mult, indu_emp = (revenue/(10^6))*indu_emp_mult,
-         dire_comp = (revenue/(10^6))*dire_comp_mult, indi_comp = (revenue/(10^6))*indi_comp_mult, indu_comp = (revenue/(10^6))*indu_comp_mult)
+ext_df <- read_xlsx('energy_model_output_with_multipliers.xlsx',sheet='extraction') 
 
-ref_df <- read_xlsx('energy_model_output_with_multipliers.xlsx',sheet='refining') %>% 
-  mutate(dire_emp = (revenue/(10^6))*dire_emp_mult, indi_emp = (revenue/(10^6))*indi_emp_mult, indu_emp = (revenue/(10^6))*indu_emp_mult,
-         dire_comp = (revenue/(10^6))*dire_comp_mult, indi_comp = (revenue/(10^6))*indi_comp_mult, indu_comp = (revenue/(10^6))*indu_comp_mult)
+ref_df <- read_xlsx('energy_model_output_with_multipliers.xlsx',sheet='refining') 
+
+
+# 3. Import DAC status by census tract from CalEnviroScreen 2018 update 
+
+setwd(health_team_files)
+
+dac_tract <- read_xlsx("ces3results.xlsx",sheet="CES 3.0 (2018 Update)") 
+
+
+setwd(population_files)
+
+ttl_county_pop <- read_xlsx("co-est2019-annres-06.xlsx",range ="A6:B63",col_names = F)
+
+ttl_county_pop <- dac_tract %>% 
+  group_by(`California County`) %>% 
+  summarize(ttl_pop = sum(`Total Population`))
+
+dac_county_pop <- dac_tract %>% 
+  filter(`SB 535 Disadvantaged Community`=="Yes") %>% 
+  group_by(`California County`) %>% 
+  summarize(dac_pop = sum(`Total Population`))
+
+county_frac_dac <- left_join(ttl_county_pop,dac_county_pop,by="California County") %>% 
+  mutate(dac_pop = ifelse(is.na(dac_pop)==T,0,dac_pop),
+         dac_pop = as.numeric(dac_pop),frac_dac = dac_pop/ttl_pop)
+
 
 
 ## 2. Create figures 
