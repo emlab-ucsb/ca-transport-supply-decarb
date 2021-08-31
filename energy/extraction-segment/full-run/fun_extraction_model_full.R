@@ -268,6 +268,8 @@ run_extraction_model <- function(scenario_selection) {
     ## filter scen_sel for appropriate set of scenarios
     scen_sel = filter_run_scens(scenario_selection, scen_sel)
     
+    print(nrow(scen_sel))
+    
     
   ## start scenario 
   ## --------------------------------------------------  
