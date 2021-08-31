@@ -1413,11 +1413,11 @@ run_extraction_model <- function(scenario_selection) {
       
       ## field
       field_fname_z = paste0(scenario_name_z, '_field.rds')
-      saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z), row.names = F)
+      saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
       
       ## state
       state_fname_z = paste0(scenario_name_z, '_state.rds')
-      saveRDS(state_all, file.path(save_info_path, 'state-out', state_fname_z), row.names = F)
+      saveRDS(state_all, file.path(save_info_path, 'state-out', state_fname_z))
       
       # ## density
       # density_fname_z = paste0(scenario_name_z, '_density.csv')
