@@ -2,8 +2,8 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  scen_selection   = 'benchmark' ## diagnostic, benchmark, tax_scens
-  run_type = "test"
+  scen_selection   = 'full_run_subset' ## diagnostic, benchmark, tax_scens, full_run, full_run_subset
+  run_type = "full_run_subset"
     
 # outputs -------
   
@@ -21,12 +21,12 @@
   save_info_path = file.path(save_path, run_type)
   dir.create(save_info_path)
   
-  dir.create(file.path(save_path, run_type, 'vintage-out'), showWarnings = FALSE)
+  # dir.create(file.path(save_path, run_type, 'vintage-out'), showWarnings = FALSE)
   dir.create(file.path(save_path, run_type, 'field-out'), showWarnings = FALSE)
   dir.create(file.path(save_path, run_type, 'state-out'), showWarnings = FALSE)
-  dir.create(file.path(save_path, run_type, 'density-out'), showWarnings = FALSE)
-  dir.create(file.path(save_path, run_type, 'depl-out'), showWarnings = FALSE)
-  dir.create(file.path(save_path, run_type, 'exit-out'), showWarnings = FALSE)
+  # dir.create(file.path(save_path, run_type, 'density-out'), showWarnings = FALSE)
+  # dir.create(file.path(save_path, run_type, 'depl-out'), showWarnings = FALSE)
+  # dir.create(file.path(save_path, run_type, 'exit-out'), showWarnings = FALSE)
   
 # set binary switches
   run_diagnostic_figs   = 0
@@ -56,13 +56,20 @@
 
 # step 1: run extraction model and get outputs -------
   
+  # set start time -----
+  start_time <- Sys.time()
+  print(paste("Starting extraction model at ", start_time))
+  
   # cores
   n_cores <- 2
   doParallel::registerDoParallel(cores = n_cores)
   
   output_extraction = run_extraction_model(scen_selection)
   
-# step 2: if relevant, run diagnostic plots/ benchmark plots
+  elapsed_time <- Sys.time() - start_time
+  print(elapsed_time)
+  
+  # step 2: if relevant, run diagnostic plots/ benchmark plots
   
   # source function to predict extraction
   source(here::here('energy', 'extraction-segment', 'fun_diagnostic_plot.R'))
