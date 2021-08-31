@@ -117,7 +117,7 @@ filter_run_scens = function(scenario_selection, scens) {
     if (scenario_selection == 'full_run_subset') {
       
       sel_scenarios_dt = sel_scenarios_dt[prod_quota_scenario == 'no quota']
-      sel_scenarios_dt = sel_scenarios_dt[1:1000]
+      sel_scenarios_dt = sel_scenarios_dt[1:100]
       
       
     }
