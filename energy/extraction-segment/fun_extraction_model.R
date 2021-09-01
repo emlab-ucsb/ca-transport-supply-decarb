@@ -1289,18 +1289,18 @@ run_extraction_model <- function(scenario_selection) {
     save_processed_path = file.path(save_path, run_type)
     dir.create(save_processed_path, showWarnings = FALSE)
     
-    # save vintage-level results ----
-    
-    vintage_fname = paste0(scenario_selection, '-vintage-level-results.csv')
-    fwrite(output_list[[1]], file.path(save_processed_path, vintage_fname), row.names = F)
-    print(paste0('Saved vintage-level results to ', vintage_fname))
-    
-    # save field-level results -----
-    
-    field_fname = paste0(scenario_selection, '-field-level-results.csv')
-    fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
-    print(paste0('Saved field-level results to ', field_fname))
-    
+    # # save vintage-level results ----
+    # 
+    # vintage_fname = paste0(scenario_selection, '-vintage-level-results.csv')
+    # fwrite(output_list[[1]], file.path(save_processed_path, vintage_fname), row.names = F)
+    # print(paste0('Saved vintage-level results to ', vintage_fname))
+    # 
+    # # save field-level results -----
+    # 
+    # field_fname = paste0(scenario_selection, '-field-level-results.csv')
+    # fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
+    # print(paste0('Saved field-level results to ', field_fname))
+    # 
     # save state-level results ------
     
     state_fname = paste0(scenario_selection, '-state-level-results.csv')
@@ -1309,24 +1309,24 @@ run_extraction_model <- function(scenario_selection) {
     
     rm(solve_b, solve_mean_b, ghg_all)
     
-    # save density results ------
-    
-    density_fname = paste0(scenario_selection, '-density-results.csv')
-    fwrite(output_list[[4]], file.path(save_processed_path, density_fname), row.names = F)
-    print(paste0('Density results to ', density_fname))
-    
-    # save exit results ------
-    
-    exit_fname = paste0(scenario_selection, '-exit-results.csv')
-    fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
-    print(paste0('Exit results to ', exit_fname))
-    
-    # save exit results ------
-    
-    exit_fname = paste0(scenario_selection, '-depletion-results.csv')
-    fwrite(output_list[[6]], file.path(save_processed_path, exit_fname), row.names = F)
-    print(paste0('Depletion results to ', exit_fname))
-    
+    # # save density results ------
+    # 
+    # density_fname = paste0(scenario_selection, '-density-results.csv')
+    # fwrite(output_list[[4]], file.path(save_processed_path, density_fname), row.names = F)
+    # print(paste0('Density results to ', density_fname))
+    # 
+    # # save exit results ------
+    # 
+    # exit_fname = paste0(scenario_selection, '-exit-results.csv')
+    # fwrite(output_list[[5]], file.path(save_processed_path, exit_fname), row.names = F)
+    # print(paste0('Exit results to ', exit_fname))
+    # 
+    # # save exit results ------
+    # 
+    # exit_fname = paste0(scenario_selection, '-depletion-results.csv')
+    # fwrite(output_list[[6]], file.path(save_processed_path, exit_fname), row.names = F)
+    # print(paste0('Depletion results to ', exit_fname))
+    # 
     
     rm(solve_b, solve_mean_b, ghg_all)
     

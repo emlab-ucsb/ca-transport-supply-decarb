@@ -11,6 +11,7 @@ proj_dir <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/
 data_path <- 'data/stocks-flows/processed/'
 outputs_path <- 'outputs/predict-production/extraction_2021-08-20/tax_update_correction/'
 tax_path <- 'outputs/predict-production/extraction_2021-08-27/tax-scenarios/'
+carbon_path <- 'outputs/predict-production/extraction_2021-09-01/carbon-scens/'
 scen_path  = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs/'
 
 
@@ -18,6 +19,7 @@ scen_path  = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects
 benchmark_file <- 'benchmark-state-level-results.csv'
 state_file <- 'tax_scens-state-level-results.csv'
 ghg_file <- 'indust_emissions_2000-2019.csv'
+carbon_file <- 'carbon_scens-state-level-results.csv'
 
 
 ## 2019 GHG emissions
@@ -117,22 +119,13 @@ fwrite(tax_match_df, paste0(scen_path, 'setback_tax_values.csv'))
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 ## carbon price
 ## create scenarios that hit the 2045 GHG emissions for all 3 setbacks and 90% of ghg emissions
 ## -----------------------------------
 
-carbon_out <- benchmark_out[(oil_price_scenario == 'reference case' & 
+carbon_out <- fread(paste0(proj_dir, carbon_path, carbon_file), header = T)
+
+carbon_out <- carbon_out[(oil_price_scenario == 'reference case' & 
                             innovation_scenario == 'low innovation' & 
                             # carbon_price_scenario == 'price floor' & 
                             ccs_scenario == 'medium CCS cost' & 
@@ -145,55 +138,42 @@ carbon_out <- carbon_out[year == 2045, .(oil_price_scenario, innovation_scenario
                                          setback_scenario, prod_quota_scenario,
                                          excise_tax_scenario, year, total_ghg_mtCO2e)]
 
+## find excise taxes that hit setback outputs
+## -------------------------------------------
 
-## read in files
-state_out <- fread(paste0(proj_dir, 'outputs/predict-production/extraction_2021-08-19/tax_scenarios/', state_file), header = T)
+target_carbon_df <- setback_out[, .(setback_scenario, total_ghg_mtCO2e)]
+setnames(target_carbon_df, c("setback_scenario", "total_ghg_mtCO2e"), c("target_scen", "target_ghg_mtCO2e"))
 
-## setback scenarios
-setback_out <- state_out[(oil_price_scenario == 'reference case' & 
-                            innovation_scenario == 'low innovation' & 
-                            carbon_price_scenario == 'price floor' & 
-                            ccs_scenario == 'medium CCS cost' & 
-                            excise_tax_scenario == 'no tax' & 
-                            # setback_scenario == 'no_setback' &
-                            prod_quota_scenario == 'no quota')]
+reduction_df <- data.table(target_scen = "90_perc_reduction",
+                           target_ghg_mtCO2e = ghg_target_90)
 
-setback_out[, scenario_grp := 'setback scenarios']
-
-tax_out2 <- state_out[(oil_price_scenario == 'reference case' & 
-                        innovation_scenario == 'low innovation' & 
-                        carbon_price_scenario == 'price floor' & 
-                        ccs_scenario == 'medium CCS cost' & 
-                        # excise_tax_scenario == 'no tax' & 
-                        setback_scenario == 'no_setback' &
-                        prod_quota_scenario == 'no quota')]
-
-tax_out[, scenario_grp := 'tax scenarios']
+target_carbon_df <- rbind(target_carbon_df, reduction_df)
 
 
-## all scens
-all_scens <- rbind(setback_out, tax_out)
+carbon_match_list <- list()
+
+for(i in 1:nrow(target_carbon_df)) {
+  
+  scen_tmp <- target_carbon_df[i]
+  scen_name_tmp <- scen_tmp[, target_scen][1]
+  ghg_tmp <- scen_tmp[, target_ghg_mtCO2e][1]
+  
+  carbon_match_tmp <- carbon_out %>%
+    filter(abs(total_ghg_mtCO2e - ghg_tmp) == min(abs(total_ghg_mtCO2e - ghg_tmp))) %>%
+    mutate(match_scen = scen_name_tmp,
+           match_emission = ghg_tmp) %>%
+    select(carbon_price_scenario, total_ghg_mtCO2e, match_scen, match_emission)
+  
+  carbon_match_list[[i]] <- carbon_match_tmp
+  
+}
+
+carbon_match_df <- bind_rows(carbon_match_list)
 
 
+fwrite(carbon_match_df, paste0(scen_path, 'setback_carbon_values.csv'))
 
 
-
-
-
-
-ggplot(setback_out, aes(x = year, y = total_ghg_mtCO2e, color = setback_scenario, group = setback_scenario)) +
-  geom_line() +
-  labs(y = 'GHG emissions (MtCO2e)',
-       x = NULL) +
-  scale_y_continuous(limits = c(0, 15)) +
-  theme_bw()
-
-ggplot(tax_out, aes(x = year, y = total_ghg_mtCO2e, color = excise_tax_scenario, group = excise_tax_scenario)) +
-  geom_line() +
-  labs(y = 'GHG emissions (MtCO2e)',
-       x = NULL) +
-  scale_y_continuous(limits = c(0, 15)) +
-  theme_bw()
 
 
 
