@@ -14,15 +14,16 @@ load_scenarios_dt = function(scenario_selection) {
   # brent_file        = 'brent_oil_price_projections_real.xlsx'
   oil_price_file    = 'oil_price_projections_revised.xlsx'
   inn_file          = 'innovation_scenarios.csv'
-  carbon_file       = 'carbon_prices_revised.csv'
+  # carbon_file       = 'carbon_prices_revised.csv'
+  carbon_file       = 'carbon_px_scens_search.csv' ## search for carbon scens
   ccs_ext_file      = 'ccs_extraction_scenarios.csv'
   ccs_ref_file      = 'ccs_refining_scenarios.csv'
   ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
   setback_file      = 'setback_coverage_R.csv'
   # prod_quota_file   = 'prod_quota_scenarios.csv'
   prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## three setback scenarios added
-  excise_tax_file   = 'comparison_excise_tax_scenarios.csv' ## only additional scenarios
-  # excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback
+  # excise_tax_file   = 'comparison_excise_tax_scenarios.csv' ## only additional scenarios
+  excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback
   # excise_tax_file = 'all_excise_tax_scenarios.csv' ## use to find equiv scenarios
   # excise_tax_file   = 'excise_tax_scenarios.csv'
   incentive_file    = 'CCS_LCFS_45Q.xlsx'
@@ -172,7 +173,7 @@ load_scenarios_dt = function(scenario_selection) {
   
   scenarios_dt = vars_dt[oilpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[innovation_scens, on = .(year), allow.cartesian = T, nomatch = 0]
-  scenarios_dt = scenarios_dt[carbonpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
+  # scenarios_dt = scenarios_dt[carbonpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[ccs_scens_all, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[setback_scens, on = .(doc_field_code), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[prod_quota_scens, on = .(year), allow.cartesian = T, nomatch = 0]
@@ -180,38 +181,47 @@ load_scenarios_dt = function(scenario_selection) {
   ## review tax scenarios vs setbacks
   ## ------------------------------------
   
-  if (scenario_selection == 'tax_scens') {
-
+  if (scenario_selection == 'carbon_scens') {
+    
     scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' &
                                    innovation_scenario == 'low innovation' &
-                                   carbon_price_scenario == 'price floor' &
+                                   # carbon_price_scenario == 'price floor' &
                                    ccs_scenario == 'medium CCS cost' &
                                    # excise_tax_scenario == 'no tax' & ## all tax
                                    # setback_scenario == 'no_setback' &
                                    prod_quota_scenario == 'no quota')] ## all quota
-  }
-
-  
-  scenarios_dt = scenarios_dt[excise_tax_scens, on = .(year), allow.cartesian = T, nomatch = 0]
-
-  if (scenario_selection == 'tax_scens') {
-
+    
+    
+    scenarios_dt = scenarios_dt[carbonpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
+    
+    scenarios_dt = scenarios_dt[excise_tax_scens[excise_tax_scenario == 'no tax'], on = .(year), allow.cartesian = T, nomatch = 0]
+    
     scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' &
-                                 innovation_scenario == 'low innovation' &
-                                 carbon_price_scenario == 'price floor' &
-                                 ccs_scenario == 'medium CCS cost' &
-                                 # excise_tax_scenario == 'no tax' & ## all tax
-                                 setback_scenario == 'no_setback' &
-                                 prod_quota_scenario == 'no quota') |
-                                (oil_price_scenario == 'reference case' &
-                                 innovation_scenario == 'low innovation' &
-                                 carbon_price_scenario == 'price floor' &
-                                 ccs_scenario == 'medium CCS cost' &
-                                 excise_tax_scenario == 'no tax' &
-                                 # setback_scenario == 'no_setback' & ## all setback
-                                 prod_quota_scenario == 'no quota')]
+                                   innovation_scenario == 'low innovation' &
+                                   # carbon_price_scenario == 'price floor' &
+                                   ccs_scenario == 'medium CCS cost' &
+                                   excise_tax_scenario == 'no tax' & ## all tax
+                                   setback_scenario == 'no_setback' &
+                                   prod_quota_scenario == 'no quota') |
+                                  (oil_price_scenario == 'reference case' &
+                                     innovation_scenario == 'low innovation' &
+                                     carbon_price_scenario == 'price floor' &
+                                     ccs_scenario == 'medium CCS cost' &
+                                     excise_tax_scenario == 'no tax' &
+                                     # setback_scenario == 'no_setback' & ## all setback
+                                     prod_quota_scenario == 'no quota')]
+    
   }
-
+  
+  
+  if (!scenario_selection %chin% c('tax_scens', 'carbon_scens')) {
+    
+    scenarios_dt = scenarios_dt[carbonpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
+    
+    scenarios_dt = scenarios_dt[excise_tax_scens, on = .(year), allow.cartesian = T, nomatch = 0]
+    
+  }
+  
   
   
   scenarios_dt[, tax := tax_rate * oil_price_usd_per_bbl]

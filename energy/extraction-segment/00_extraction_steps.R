@@ -2,8 +2,8 @@
 
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
-  scen_selection   = 'comparison_scens' ## diagnostic, benchmark, tax_scens
-  run_type = "comp-scens"
+  scen_selection   = 'carbon_scens' ## diagnostic, benchmark, tax_scens
+  run_type = "carbon-scens"
     
 # outputs -------
   
@@ -35,17 +35,19 @@
 # load libraries ------
 
   library(data.table)
-  library(hrbrthemes)
   library(tidyverse)
-  library(sf)
-  library(maps)
-  library(cowplot)
+
 
 # step 1: run extraction model and get outputs -------
   
   output_extraction = run_extraction_model(scen_selection)
   
 # step 2: if relevant, run diagnostic plots/ benchmark plots
+  
+  library(hrbrthemes)
+  library(sf)
+  library(maps)
+  library(cowplot)
   
   # source function to predict extraction
   source(here::here('energy', 'extraction-segment', 'fun_diagnostic_plot.R'))
