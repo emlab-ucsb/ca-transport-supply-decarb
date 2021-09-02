@@ -13,15 +13,8 @@ main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects
 extraction_path <- 'outputs/predict-production/extraction_2021-09-02/'
 data_path  <-'data/stocks-flows/processed/'
 
-## labor paths
-fte <- 'data/labor/processed/implan-results/'
-ica_dollar <- 'academic-paper-multipliers/ica/' 
-impact_dollar <- 'academic-paper-multipliers/impact/'
-statewide_processed <- 'statewide/processed/'
+## labor path
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed/'
-health_team_files <- 'calepa-cn/data/health/raw/'
-
-
 
 ## save paths
 compiled_save_path  = paste0(main_path, 'academic-out/extraction/')

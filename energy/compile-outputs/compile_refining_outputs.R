@@ -17,6 +17,10 @@ main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-project
 data_path  <-'data/stocks-flows/processed'
 outputs_path <- 'model-development/scenario-plot/refinery-outputs'
 
+## labor path
+labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed'
+
+
 ## files
 oil_price_file <- 'oil_price_projections_revised.xlsx'
 refining_file <- 'refining_scenario_outputs_refinery_net_exports_revised.csv'
@@ -52,6 +56,14 @@ site_id <- fread(paste0(main_path, "/data/stocks-flows/processed/refinery_loc_ca
 ##
 crack_spread <- tibble(product = c("gasoline", "jet_fuel", "diesel"),
                        spread = c(23, 20, 23))
+
+
+## labor
+total_multipliers_ref <- read_xlsx(file.path(main_path, labor_processed, 'ica_multipliers_v2.xlsx'), sheet = 'ica_total') %>% 
+  filter((county != "Statewide" & segment == "refining") | is.na(segment)==T) %>% 
+  rename(dire_emp_mult = direct_emp, indi_emp_mult = indirect_emp, indu_emp_mult = induced_emp,
+         dire_comp_mult = direct_comp, indi_comp_mult = indirect_comp, indu_comp_mult = induced_comp,
+         ip.dire_comp_mult = ip.direct_comp, ip.indi_comp_mult = ip.indirect_comp, ip.indu_comp_mult = ip.induced_comp)
 
 
 
@@ -257,6 +269,25 @@ county_out_refining_all[, scen_id := fifelse((oil_price_scenario == 'reference c
                                       demand_scenario == 'BAU' &
                                       refining_scenario == 'historic exports'), 'R-BAU', paste0("R-", scen_id))]
 
+county_out_refining_all[, county := fifelse(county == "Solano County", "Solano", county)]
+
+
+## calculate labor impacts
+county_out_labor <- merge(county_out_refining_all, total_multipliers_ref,
+                          by = c("county"),
+                          all.x = T)
+
+county_out_labor[, ':=' (c.dire_emp = (revenue / (10 ^ 6)) * dire_emp_mult, 
+                         c.indi_emp = (revenue / (10 ^ 6)) * indi_emp_mult, 
+                         c.indu_emp = (revenue / (10 ^ 6)) * indu_emp_mult,
+                         c.dire_comp = (revenue / (10 ^ 6)) * dire_comp_mult, 
+                         c.indi_comp = (revenue / (10 ^ 6)) * ip.indi_comp_mult, 
+                         c.indu_comp = (revenue / (10 ^ 6)) * ip.indu_comp_mult)]
+
+county_out_labor <- county_out_labor[, .(scen_id, oil_price_scenario, demand_scenario, refining_scenario,
+                                         innovation_scenario, carbon_price_scenario, ccs_scenario, county,
+                                         year, revenue, c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp,
+                                         c.indu_comp)]
 
 
 ## save outputs for health and labor
