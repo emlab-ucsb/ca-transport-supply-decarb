@@ -148,7 +148,7 @@ init_prod <- init_prod[!doc_field_code %in% c("302", "502", "000")]
 
 
 # read in files
-state_files_to_process <- list.files(paste0(main_path, extraction_path, 'full_run_subset/field-out/'))
+state_files_to_process <- list.files(paste0(main_path, extraction_path, 'full_run_subset/state-out/'))
 field_files_to_process <- list.files(paste0(main_path, extraction_path, 'full_run_subset/field-out/'))
 
 process_extraction_outputs <- function(field_file_name, state_file_name) {
@@ -316,7 +316,7 @@ process_extraction_outputs <- function(field_file_name, state_file_name) {
   
   ## 
   county_out <- county_out[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                               setback_scenario, prod_quota_scenario, excise_tax_scenario, total_county_bbl, total_county_ghg_kgCO2e, revenue,
+                               setback_scenario, prod_quota_scenario, excise_tax_scenario, year, total_county_bbl, total_county_ghg_kgCO2e, revenue,
                                c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp, c.indu_comp)]
   
   # 4. Save extraction and refining output to 1 excel file with 2 sheets 
@@ -324,6 +324,25 @@ process_extraction_outputs <- function(field_file_name, state_file_name) {
   ## save county outputs (labor, production, and revenue)
   saveRDS(county_out, paste0(county_save_path, scenario_id_tmp, "_county_results.rds"))
   
+  
+  ## state outputs
+  ## -------------------------------------
+  
+  state_out <- county_out[, lapply(.SD, sum, na.rm = T), .SDcols = c("total_county_bbl", "revenue",
+                                                                     "total_county_ghg_kgCO2e",
+                                                                     "c.dire_emp", "c.indi_emp", 
+                                                                     "c.indu_emp", "c.dire_comp", 
+                                                                     "c.indi_comp", "c.indu_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
+                                                                                                           innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                                                                                           setback_scenario, prod_quota_scenario, excise_tax_scenario, year)]
+  
+  setnames(state_out, c("total_county_bbl", "revenue",  "total_county_ghg_kgCO2e"), c("total_state_bbl", "total_state_revenue", "total_state_ghg_kgCO2"))
+                                                
+  
+  ## save state outputs (labor, production, and revenue)
+  saveRDS(state_out, paste0(state_save_path, scenario_id_tmp, "_state_results.rds"))
+  
+
   
 }
 
