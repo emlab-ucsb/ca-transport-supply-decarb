@@ -130,7 +130,7 @@ carbon_px_scens_search <- carbon_px_scens_search %>%
 carbon_px_scens_search <- rbind(carbon_px_scens_search, carbon_px_scens)
 
 ## final set
-fwrite(carbon_px_scens_search, paste0(scen_path, 'final_carbon_tax_scenarios.csv'))
+fwrite(carbon_px_scens_search, paste0(scen_path, '/final_carbon_tax_scenarios.csv'))
 
 # ## now just include "new" scens
 # 
