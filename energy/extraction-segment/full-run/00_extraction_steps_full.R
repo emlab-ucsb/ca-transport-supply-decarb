@@ -7,7 +7,8 @@
     
 # outputs -------
   
-  save_path             = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+  # save_path             = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+  save_path             = '/Volumes/calepa/extraction-out/'
   
 # create save path that is based on the specified path and the run date ------
   
