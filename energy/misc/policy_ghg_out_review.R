@@ -138,7 +138,7 @@ carbon_out <- carbon_out[year == 2045, .(oil_price_scenario, innovation_scenario
                                          setback_scenario, prod_quota_scenario,
                                          excise_tax_scenario, year, total_ghg_mtCO2e)]
 
-## find excise taxes that hit setback outputs
+## find carbon px that hit setback outputs
 ## -------------------------------------------
 
 target_carbon_df <- setback_out[, .(setback_scenario, total_ghg_mtCO2e)]
