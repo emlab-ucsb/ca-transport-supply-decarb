@@ -1397,7 +1397,7 @@ run_extraction_model <- function(scenario_selection) {
       
       
       
-      cols = c('new_wells', 'existing_prod_bbl', 'new_prod_bbl', 'total_prod_bbl', 
+      cols = c('existing_prod_bbl', 'new_prod_bbl', 'total_prod_bbl', 
                'existing_ghg_kgCO2e', 'new_ghg_kgCO2e', 'total_ghg_kgCO2e', 'new_wells', 'n_wells_exit')
       state_all = field_all[ , lapply(.SD, sum, na.rm = T), .SDcols = cols,
                              by = .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
@@ -1412,10 +1412,10 @@ run_extraction_model <- function(scenario_selection) {
       # vintage_fname_z = paste0(scenario_name_z, '_vintage.csv')
       # fwrite(vintage_all, file.path(save_info_path, 'vintage-out', vintage_fname_z), row.names = F)
       
-      ## field
-      field_fname_z = paste0(scenario_name_z, '_field.rds')
-      saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
-      
+      # ## field
+      # field_fname_z = paste0(scenario_name_z, '_field.rds')
+      # saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
+      # 
       ## state
       state_fname_z = paste0(scenario_name_z, '_state.rds')
       saveRDS(state_all, file.path(save_info_path, 'state-out', state_fname_z))
