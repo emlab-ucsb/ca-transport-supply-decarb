@@ -10,7 +10,9 @@ library(readxl)
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+# main_path <- '/Volumes/calepa/'
 extraction_path <- 'outputs/predict-production/extraction_2021-09-02/'
+# extraction_path <- paste0(main_path, 'extraction_2021-09-02/')
 data_path  <-'data/stocks-flows/processed/'
 
 ## labor path
@@ -21,7 +23,7 @@ compiled_save_path  = paste0(main_path, 'academic-out/extraction/')
 field_save_path     = paste0(compiled_save_path, 'field-results/')
 state_save_path     = paste0(compiled_save_path, 'state-results/')
 county_save_path    = paste0(compiled_save_path, 'county-results/')
-censust_save_path   = paste0(compiled_save_path, 'census-tract-results/')
+# censust_save_path   = paste0(compiled_save_path, 'census-tract-results/')
 
 ## files
 prod_file       <- "well_prod_m_processed.csv"
@@ -33,7 +35,7 @@ dir.create(compiled_save_path, showWarnings = FALSE)
 dir.create(field_save_path, showWarnings = FALSE) 
 dir.create(state_save_path, showWarnings = FALSE)  
 dir.create(county_save_path, showWarnings = FALSE)
-dir.create(censust_save_path, showWarnings = FALSE)  
+# dir.create(censust_save_path, showWarnings = FALSE)  
 
 ## outputs should include:
 ## - county-level health
@@ -141,10 +143,20 @@ init_prod <- init_prod[!doc_field_code %in% c("302", "502", "000")]
 
 
 # read in files
-state_files_to_process <- list.files(paste0(main_path, extraction_path, 'full_run_subset/state-out/'))
 field_files_to_process <- list.files(paste0(main_path, extraction_path, 'full_run_subset/field-out/'))
 
-process_extraction_outputs <- function(field_file_name, state_file_name) {
+# set start time -----
+start_time <- Sys.time()
+print(paste("Starting extraction compiling at ", start_time))
+
+# cores
+n_cores <- 8
+doParallel::registerDoParallel(cores = n_cores)
+
+for (i in length(field_files_to_process)) {
+  
+  
+  field_file_name <- field_files_to_process[i]
   
   field_scen_out <- readRDS(paste0(main_path, extraction_path, 'full_run_subset/field-out/', field_file_name))
 
@@ -326,7 +338,7 @@ process_extraction_outputs <- function(field_file_name, state_file_name) {
                                                                      "c.dire_emp", "c.indi_emp", 
                                                                      "c.indu_emp", "c.dire_comp", 
                                                                      "c.indi_comp", "c.indu_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
-                                                                                                           innovation_scenario, carbon_price_scenario, ccs_scenario,
+                                                                                                           carbon_price_scenario, ccs_scenario,
                                                                                                            setback_scenario, prod_quota_scenario, excise_tax_scenario, year)]
   
   setnames(state_out, c("total_county_bbl", "revenue",  "total_county_ghg_kgCO2e"), c("total_state_bbl", "total_state_revenue", "total_state_ghg_kgCO2"))
@@ -338,6 +350,11 @@ process_extraction_outputs <- function(field_file_name, state_file_name) {
 
   
 }
+
+elapsed_time <- Sys.time() - start_time
+print(elapsed_time)
+
+
 
 ## segment, year, doc_field_code, doc_field_name, oil_price_scenario, innovation_scenario,	carbon_price_scenario,	ccs_scenario,
 ## setback_scenario,	prod_quota_scenario,	excise_tax_scenario,	production_bbl,	oil_price_usd_per_bbl_real, revenue,
