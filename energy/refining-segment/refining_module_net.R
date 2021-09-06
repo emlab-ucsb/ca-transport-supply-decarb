@@ -2281,7 +2281,7 @@
       
     # reorder factor levels
       ref_cons_prod_scens[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-      ref_cons_prod_scens[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling', 'carbon_90_perc_reduction'))]
+      ref_cons_prod_scens[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
       ref_cons_prod_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                                             'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                                             'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
@@ -2292,7 +2292,7 @@
       scen_combos = CJ(demand_scenario = dem_scens, 
                        refining_scenario = ref_scens, 
                        innovation_scenario = c('low innovation', 'high innovation'),
-                       carbon_price_scenario = c('price floor', 'central SCC', 'price ceiling'),
+                       carbon_price_scenario = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'),
                        region = c('North', 'South'))
 
       for (i in 1:nrow(scen_combos)) {
@@ -2314,8 +2314,11 @@
           geom_line(size = 1) +
           facet_wrap(. ~ ccs_scenario, ncol = 3,
                      labeller = labeller(carbon_price_scenario = c('price floor' = 'low carbon price',
+                                                                   'carbon_setback_1000ft' = '1000ft setback carbon price',
                                                                    'central SCC' = 'medium carbon price',
-                                                                   'price ceiling' = 'high carbon price'))) +
+                                                                   'carbon_setback_5280ft' = '5280ft setback carbon price',
+                                                                   'price ceiling' = 'high carbon price',
+                                                                   'carbon_90_perc_reduction' = '90% emissions reduction (extr.) carbon price'))) +
           labs(title = paste0('Annual GHG emissions (million tonnes) in ', scen_title, ' scenario'),
                x = NULL,
                y = NULL,
@@ -2410,7 +2413,7 @@
       indiv_prod[, fuel := factor(fuel, levels = c('gasoline', 'drop-in gasoline', 'diesel', 'renewable diesel', 'jet', 'sustainable aviation fuel'))]
       indiv_prod[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       indiv_prod[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-      indiv_prod[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling'))]
+      indiv_prod[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
       indiv_prod[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                                    'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                                    'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
@@ -2463,7 +2466,7 @@
       indiv_cons[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable',  'total'))]
       indiv_cons[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       indiv_cons[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-      indiv_cons[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling'))]
+      indiv_cons[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
       indiv_cons[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                                    'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                                    'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
@@ -2511,7 +2514,7 @@
       indiv_ghg[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable',  'total'))]
       indiv_ghg[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       indiv_ghg[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-      indiv_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling'))]
+      indiv_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
       indiv_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                                   'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                                   'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
@@ -2657,7 +2660,7 @@
     
     in_state_ghg[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable',  'total'))]
     in_state_ghg[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-    in_state_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling'))]
+    in_state_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
     in_state_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                                    'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                                    'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
@@ -2696,7 +2699,7 @@
     
     out_state_ghg[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable',  'total'))]
     out_state_ghg[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-    out_state_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling'))]
+    out_state_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
     out_state_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                                     'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                                     'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
@@ -2779,7 +2782,7 @@
     scen_combos = CJ(demand_scenario = dem_scens, 
                      refining_scenario = ref_scens, 
                      innovation_scenario = c('low innovation', 'high innovation'),
-                     carbon_price_scenario = c('price floor', 'central SCC', 'price ceiling'))
+                     carbon_price_scenario = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))
     
     
     for (i in 1:nrow(scen_combos)) {
@@ -2798,7 +2801,7 @@
       dt[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable'))]
       dt[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       dt[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-      dt[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling'))]
+      dt[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
       dt[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                            'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                            'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
@@ -2840,7 +2843,7 @@
     scen_combos = CJ(demand_scenario = dem_scens, 
                      refining_scenario = ref_scens, 
                      innovation_scenario = c('low innovation', 'high innovation'),
-                     carbon_price_scenario = c('price floor', 'central SCC', 'price ceiling'))
+                     carbon_price_scenario = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))
     
     for (i in 1:nrow(scen_combos)) {
       
@@ -2862,7 +2865,7 @@
       dt[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable'))]
       dt[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       dt[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-      dt[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling'))]
+      dt[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
       dt[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                            'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                            'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
@@ -2903,3 +2906,4 @@
     fwrite(outputs_indiv, file.path(output_path, 'refining_scenario_outputs_refinery_net_exports_revised.csv'), row.names = F)
     fwrite(outputs_clus, file.path(output_path, 'refining_scenario_outputs_cluster_net_exports_revised.csv'), row.names = F)
     fwrite(outputs_state, file.path(output_path, 'refining_scenario_outputs_state_net_exports_revised.csv'), row.names = F)
+    
