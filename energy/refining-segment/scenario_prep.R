@@ -8,7 +8,6 @@
   scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
   inn_file          = 'innovation_scenarios.csv'
   carbon_file       = 'final_carbon_tax_scenarios.csv'
-  ccs_ext_file      = 'ccs_extraction_scenarios.csv'
   ccs_ref_file      = 'ccs_refining_scenarios.csv'
   incentive_file    = 'CCS_LCFS_45Q.xlsx'
   
@@ -26,7 +25,7 @@
   carbonpx_scens[, carbon_price_usd_per_kg := carbon_price/1000] # convert from usd per metric ton to usd per kg
   carbonpx_scens = carbonpx_scens[, c('year', 'carbon_price_scenario', 'carbon_price_usd_per_kg')]
   
-  ccs_scens = fread(file.path(scen_path, ccs_ext_file), header = T)
+  ccs_scens = fread(file.path(scen_path, ccs_ref_file), header = T)
   ccs_scens[, ccs_price_usd_per_kg := ccs_price/1000] # convert from usd per metric ton to usd per kg
   ccs_scens = ccs_scens[, c('year', 'ccs_scenario', 'ccs_price_usd_per_kg')]
   ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost'))]
