@@ -10,16 +10,18 @@ library(readxl)
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-# main_path <- '/Volumes/calepa/'
-extraction_path <- 'outputs/predict-production/extraction_2021-09-02/'
-# extraction_path <- paste0(main_path, 'extraction_2021-09-02/')
+main_path_external <- '/Volumes/calepa/'
+# extraction_path <- 'outputs/predict-production/extraction_2021-09-02/'
+extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2021-09-02/full_run/')
 data_path  <-'data/stocks-flows/processed/'
 
 ## labor path
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed/'
 
+cur_date              = Sys.Date()
+
 ## save paths
-compiled_save_path  = paste0(main_path, 'academic-out/extraction/')
+compiled_save_path  = paste0(main_path_external, 'academic-out/extraction_', cur_date, '/')
 field_save_path     = paste0(compiled_save_path, 'field-results/')
 state_save_path     = paste0(compiled_save_path, 'state-results/')
 county_save_path    = paste0(compiled_save_path, 'county-results/')
@@ -31,6 +33,7 @@ oil_price_file  <- 'oil_price_projections_revised.xlsx'
 ghg_file        <- 'ghg_emissions_x_field_2018-2045.csv'
 
 ## create folder for outputs
+dir.create(paste0(main_path_external, 'academic-out/'), showWarnings = FALSE)
 dir.create(compiled_save_path, showWarnings = FALSE)
 dir.create(field_save_path, showWarnings = FALSE) 
 dir.create(state_save_path, showWarnings = FALSE)  
@@ -143,7 +146,7 @@ init_prod <- init_prod[!doc_field_code %in% c("302", "502", "000")]
 
 
 # read in files
-field_files_to_process <- list.files(paste0(main_path, extraction_path, 'full_run_subset/field-out/'))
+field_files_to_process <- list.files(paste0(extraction_path, 'field-out/'))
 
 # set start time -----
 start_time <- Sys.time()
@@ -153,12 +156,12 @@ print(paste("Starting extraction compiling at ", start_time))
 n_cores <- 8
 doParallel::registerDoParallel(cores = n_cores)
 
-for (i in length(field_files_to_process)) {
+for (i in 1:length(field_files_to_process)) {
   
   
   field_file_name <- field_files_to_process[i]
   
-  field_scen_out <- readRDS(paste0(main_path, extraction_path, 'full_run_subset/field-out/', field_file_name))
+  field_scen_out <- readRDS(paste0(extraction_path, 'field-out/', field_file_name))
 
   # ## check fields in 2019 vs outputs
   # ## ------------------------------------------------------
