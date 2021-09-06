@@ -5,6 +5,7 @@
 # inputs ---------
 
   proj_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
+  refin_scens     = 'refinery_scenario_inputs.csv'
   its_file        = 'its_demand_bau_and_lc1_2020_2045.csv'
   jet_file        = 'cec_jet_fuel_demand_incl_military_forecasted_2020_2045.csv'
   intra_file      = 'its_demand_intrastate_jet_2020_2045.csv'
@@ -64,6 +65,9 @@
   
 # load all data -----
 
+  # read in scenarios
+    dt_scen = fread(file.path(proj_path, 'project-materials/scenario-inputs', refin_scens), header = T)
+  
   # read in its demand forecast
     dt_its = fread(file.path(proj_path, 'outputs/fuel-demand/prelim-results', its_file), header = T)
   
@@ -127,14 +131,14 @@
   # source ccs emissions mean b calculation script
     source(here::here('energy', 'scenario-prep', 'ccs_parameterization.R'))
     
-  # source function to create matrix of scenarios and forecasted variables
-    source(here::here('energy', 'extraction-segment', 'fun_input_scenarios.R'))
-    
-# get refinery specific scenarios ------
-    
-  dt_scen = load_scenarios_dt('reference')
-  dt_scen = unique(dt_scen[, .(year, innovation_scenario, innovation_multiplier, carbon_price_scenario, 
-                               carbon_price_usd_per_kg, ccs_scenario, ccs_price_usd_per_kg)])
+#   # source function to create matrix of scenarios and forecasted variables
+#     # source(here::here('energy', 'extraction-segment', 'fun_input_scenarios.R'))
+#     
+# # get refinery specific scenarios ------
+#     
+#   dt_scen = load_scenarios_dt('reference')
+#   dt_scen = unique(dt_scen[, .(year, innovation_scenario, innovation_multiplier, carbon_price_scenario, 
+#                                carbon_price_usd_per_kg, ccs_scenario, ccs_price_usd_per_kg)])
   
 # plot theme & palettes ------
   
@@ -169,7 +173,10 @@
   pal_refinery = c(seecol(pal_unikn_pair)[1:16], '#ebd74e')
   names(pal_refinery) = unique(c(dt_refcap[, refinery_name], dt_renref[, refinery_name], 'AltAir Paramount'))
   
-  theme_line = theme_ipsum(base_family = 'Secca Soft',
+  # font_name <- 'Secca Soft'
+  font_name <- 'Arial'
+  
+  theme_line = theme_ipsum(base_family = font_name,
                            grid = 'Y', 
                            plot_title_size = 20, 
                            subtitle_size = 18,
@@ -653,9 +660,9 @@
       scale_linetype_manual(breaks = 'GJD',
                             values = 2) +
       annotate("text", label = "GJD (million bge)", x = 2015, y = 1.025*370,
-               size = 6.5, fontface = 'plain', family = 'Secca Soft', hjust = 0.2) +
+               size = 6.5, fontface = 'plain', family = font_name, hjust = 0.2) +
       annotate("text", label = "Crude (million bbl)", x = 2044, y = 1.025*370, 
-               size = 6.5, fontface = 'plain', family = 'Secca Soft', hjust = 0.79) +
+               size = 6.5, fontface = 'plain', family = font_name, hjust = 0.79) +
       theme_line
     
     fig_bau = ggplotGrob(fig_bau)
@@ -687,9 +694,9 @@
       scale_linetype_manual(breaks = 'GJD',
                             values = 2) +
       annotate("text", label = "GJD (million bge)", x = 2015, y = 1.025*370,
-               size = 6.5, fontface = 'plain', family = 'Secca Soft', hjust = 0.2) +
+               size = 6.5, fontface = 'plain', family = font_name, hjust = 0.2) +
       annotate("text", label = "Crude (million bbl)", x = 2044, y = 1.025*370, 
-               size = 6.5, fontface = 'plain', family = 'Secca Soft', hjust = 0.79) +
+               size = 6.5, fontface = 'plain', family = font_name, hjust = 0.79) +
       theme_line
     
     fig_lc1 = ggplotGrob(fig_lc1)
@@ -1993,7 +2000,7 @@
     fig_cap_ratio = ggplot(dac_ref) + 
       geom_point(size = 5, aes(x = barrels_per_day/1e3, y = ratio, fill = refinery_name, color = refinery_name)) + 
       geom_text(aes(x = barrels_per_day/1e3, y = ratio, color = refinery_name, label = gsub(' Refinery', '', refinery_name)),
-                hjust = 0.3, vjust =0, family = 'Secca Soft', size = 5) +
+                hjust = 0.3, vjust =0, family = font_name, size = 5) +
       stat_smooth(method = 'lm', aes(x = barrels_per_day/1e3, y = ratio), color = '#636363', alpha = 0.2) +
       labs(title = 'Ratio of weighted DAC to weighted total population vs refinery capacity',
            subtitle = 'Ratio of weighted DAC to weighted total population',
@@ -2274,7 +2281,7 @@
       
     # reorder factor levels
       ref_cons_prod_scens[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
-      ref_cons_prod_scens[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling'))]
+      ref_cons_prod_scens[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'central SCC', 'price ceiling', 'carbon_90_perc_reduction'))]
       ref_cons_prod_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
                                                                             'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
                                                                             'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
