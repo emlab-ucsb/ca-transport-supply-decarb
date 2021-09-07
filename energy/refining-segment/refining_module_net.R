@@ -25,8 +25,11 @@
   ei_jet          = (5.670 + 5.355)/2   # mmbtu/bbl; source: https://www.eia.gov/totalenergy/data/monthly/pdf/sec12_2.pdf
 
 # selection ------  
+  
+  ## 0.2, 0.3, 0.4, 0.5, 0.7, 0.8
 
-  ref_threshold     = 0.6
+  # ref_threshold     = 0.6
+  ref_threshold     = 0.3
   ren_threshold     = 0.9
   pred_years        = 2020:2045
   a                 = 4
@@ -38,7 +41,8 @@
 
   save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
   cur_date    = Sys.Date()
-  run_name    = 'CUF0.6'
+  # run_name    = 'CUF0.6'
+  run_name    = 'CUF0.3'
   save_path   = file.path(save_path, paste0('refining_', cur_date))
   dir.create(save_path)
   save_path   = file.path(save_path, run_name)

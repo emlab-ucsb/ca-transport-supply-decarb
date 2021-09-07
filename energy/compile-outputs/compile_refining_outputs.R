@@ -5,6 +5,7 @@
 library(data.table)  
 library(tidyverse)
 library(openxlsx)
+library(readxl)
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
@@ -293,7 +294,7 @@ county_out_labor <- county_out_labor[, .(scen_id, oil_price_scenario, demand_sce
 
 ## save outputs for health and labor
 refining_county_fname = paste0('county_refining_outputs.csv')
-fwrite(county_out_refining_all, file.path(compiled_save_path_refining, refining_county_fname), row.names = F)
+fwrite(county_out_labor, file.path(compiled_save_path_refining, refining_county_fname), row.names = F)
 print(paste0('Refining county outputs saved to ', refining_county_fname))
 
 
