@@ -7,6 +7,7 @@
 library(data.table)
 library(tidyverse)
 library(readxl)
+library(openxlsx)
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
