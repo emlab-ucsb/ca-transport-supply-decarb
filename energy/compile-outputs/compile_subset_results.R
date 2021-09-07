@@ -11,7 +11,7 @@ academic_out      <- file.path(main_path, 'outputs/academic-out/extraction')
 main_path_external <- '/Volumes/calepa/'
 
 ## read in from external
-extraction_folder = '_2021-09-04'
+extraction_folder = '_2021-09-06'
 compiled_ext_path  = paste0(main_path_external, 'academic-out/extraction', extraction_folder, '/')
 field_ext_path     = paste0(compiled_ext_path, 'field-results/')
 state_ext_path     = paste0(compiled_ext_path, 'state-results/')
