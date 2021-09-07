@@ -324,7 +324,7 @@ for (i in 1:length(field_files_to_process)) {
   
   ## 
   county_out <- county_out[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                               setback_scenario, prod_quota_scenario, excise_tax_scenario, year, total_county_bbl, total_county_ghg_kgCO2e, revenue,
+                               setback_scenario, prod_quota_scenario, excise_tax_scenario, county, year, total_county_bbl, total_county_ghg_kgCO2e, revenue,
                                c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp, c.indu_comp)]
   
   # 4. Save extraction and refining output to 1 excel file with 2 sheets 
