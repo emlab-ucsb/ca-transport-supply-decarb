@@ -1412,9 +1412,9 @@ run_extraction_model <- function(scenario_selection) {
       # vintage_fname_z = paste0(scenario_name_z, '_vintage.csv')
       # fwrite(vintage_all, file.path(save_info_path, 'vintage-out', vintage_fname_z), row.names = F)
       
-      # ## field
-      # field_fname_z = paste0(scenario_name_z, '_field.rds')
-      # saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
+      ## field
+      field_fname_z = paste0(scenario_name_z, '_field.rds')
+      saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
       # 
       ## state
       state_fname_z = paste0(scenario_name_z, '_state.rds')

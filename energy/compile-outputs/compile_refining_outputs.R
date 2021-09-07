@@ -16,6 +16,7 @@ dir.create(compiled_save_path_refining, showWarnings = FALSE)
 main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
 data_path  <-'data/stocks-flows/processed'
 outputs_path <- 'model-development/scenario-plot/refinery-outputs'
+model_outputs_path <- 'outputs/predict-production/refining_2021-09-06/CUF0.6/outputs'
 
 ## labor path
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed'
@@ -41,7 +42,7 @@ oilpx_scens_real <- oilpx_scens_real[year >= 2019]
 setorderv(oilpx_scens_real, c('oil_price_scenario', 'year'))
 
 ## refining outputs
-refining_out <- fread(file.path(main_path, outputs_path, refining_file))
+refining_out <- fread(file.path(main_path, model_outputs_path, refining_file))
 
 ## 2019 site level out
 site_2019 <- fread(file.path(main_path, outputs_path, site_2019_file))
