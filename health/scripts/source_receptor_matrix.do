@@ -95,3 +95,21 @@ import delimited D:\Dropbox\UCSB-PhD\emLab\CALEPA\data\source_receptor_matrix\ex
 	rename output_fid id
 	
 	saveold D:\Dropbox\UCSB-PhD\emLab\CALEPA\data\source_receptor_matrix\extraction_fields_clusters_10km, replace
+
+import dbase D:\Dropbox\UCSB-PhD\emLab\CALEPA\data\source_receptor_matrix\extraction_fields_xwalk_id.dbf, clear
+	rename id input_fid
+	rename dc_fld_ doc_field_code
+	
+	saveold D:\Dropbox\UCSB-PhD\emLab\CALEPA\data\source_receptor_matrix\extraction_fields_xwalk, replace
+	
+	
+	use D:\Dropbox\UCSB-PhD\emLab\CALEPA\data\source_receptor_matrix\extraction_fields_clusters_10km, clear
+	
+	merge m:1 input_fid using D:\Dropbox\UCSB-PhD\emLab\CALEPA\data\source_receptor_matrix\extraction_fields_xwalk
+	
+	destring doc_field_code, replace
+	
+	drop _merge
+	
+	saveold D:\Dropbox\UCSB-PhD\emLab\CALEPA\data\source_receptor_matrix\extraction_field_clusters_xxwalk, replace
+	
