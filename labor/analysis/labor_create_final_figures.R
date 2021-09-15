@@ -42,41 +42,284 @@ population_files <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-p
 
 # Part A: Main results (county specific direct, indirect, induced) 
 
-## 1. Import files with energy model output and multipliers (unit of observation: scen_id x county x year), compute direct, indirect, induced impacts 
+## 1. Import files with labor results (unit of observation: scen_id x county x year)
 setwd(processed)
 
-ext_df <- read_xlsx('energy_model_output_with_multipliers.xlsx',sheet='extraction') 
+ext <- read_xlsx('labor_results.xlsx',sheet="extraction") 
 
-ref_df <- read_xlsx('energy_model_output_with_multipliers.xlsx',sheet='refining') 
+ref <- read_xlsx('labor_results.xlsx',sheet="refining")  
 
+str(ext)
+str(ref)
 
-# 3. Import DAC status by census tract from CalEnviroScreen 2018 update 
+test <- filter(ext_impact,dire_emp_diff>0)
 
-setwd(health_team_files)
+## 2. Compute scenario employment - BAU for each county-year-scenario 
 
-dac_tract <- read_xlsx("ces3results.xlsx",sheet="CES 3.0 (2018 Update)") 
+### extract just BAU results 
 
+ext_bau <- filter(ext,BAU_scen==1) %>% 
+  rename(c.dire_emp_bau = c.dire_emp, c.indi_emp_bau = c.indi_emp, c.indu_emp_bau = c.indu_emp, 
+         c.dire_comp_bau = c.dire_comp, c.indi_comp_bau = c.indi_comp, c.indu_comp_bau = c.indu_comp) %>% 
+  dplyr::select(county,year,c.dire_emp_bau,c.indi_emp_bau,c.indu_emp_bau,c.dire_comp_bau,c.indi_comp_bau,c.indu_comp_bau,revenue)
 
-setwd(population_files)
-
-ttl_county_pop <- read_xlsx("co-est2019-annres-06.xlsx",range ="A6:B63",col_names = F)
-
-ttl_county_pop <- dac_tract %>% 
-  group_by(`California County`) %>% 
-  summarize(ttl_pop = sum(`Total Population`))
-
-dac_county_pop <- dac_tract %>% 
-  filter(`SB 535 Disadvantaged Community`=="Yes") %>% 
-  group_by(`California County`) %>% 
-  summarize(dac_pop = sum(`Total Population`))
-
-county_frac_dac <- left_join(ttl_county_pop,dac_county_pop,by="California County") %>% 
-  mutate(dac_pop = ifelse(is.na(dac_pop)==T,0,dac_pop),
-         dac_pop = as.numeric(dac_pop),frac_dac = dac_pop/ttl_pop)
+ref_bau <- filter(ref,scen_id=="R-BAU") %>% 
+  rename(c.dire_emp_bau = c.dire_emp, c.indi_emp_bau = c.indi_emp, c.indu_emp_bau = c.indu_emp, 
+         c.dire_comp_bau = c.dire_comp, c.indi_comp_bau = c.indi_comp, c.indu_comp_bau = c.indu_comp) %>% 
+  dplyr::select(county,year,c.dire_emp_bau,c.indi_emp_bau,c.indu_emp_bau,c.dire_comp_bau,c.indi_comp_bau,c.indu_comp_bau)
 
 
+ext_impact <- ext %>% 
+  filter(BAU_scen==0) %>% 
+  inner_join(ext_bau,by=c("county","year")) %>% 
+  group_by(scen_id,year) %>% 
+  summarize(c.dire_emp = sum(c.dire_emp), c.indi_emp = sum(c.indi_emp), c.indu_emp = sum(c.indu_emp), 
+            c.dire_comp = sum(c.dire_comp), c.indi_comp = sum(c.indi_comp), c.indu_comp = sum(c.indu_comp),
+            c.dire_emp_bau = sum(c.dire_emp_bau), c.indi_emp_bau = sum(c.indi_emp_bau), c.indu_emp_bau = sum(c.indu_emp_bau), 
+            c.dire_comp_bau = sum(c.dire_comp_bau), c.indi_comp_bau = sum(c.indi_comp_bau), c.indu_comp_bau = sum(c.indu_comp_bau)) %>% 
+  mutate(tot_emp = c.dire_emp+c.indi_emp+c.indu_emp, tot_comp = c.dire_comp+c.indi_comp+c.indu_comp, 
+         tot_emp_bau = c.dire_emp_bau+c.indi_emp_bau+c.indu_emp_bau,tot_comp_bau = c.dire_comp_bau+c.indi_comp_bau+c.indu_comp_bau,
+         tot_emp_diff = tot_emp-tot_emp_bau, tot_comp_diff = tot_comp-tot_comp_bau,
+         dire_emp_diff = c.dire_emp-c.dire_emp_bau, indi_emp_diff = c.indi_emp-c.indi_emp_bau, indu_emp_diff = c.indu_emp-c.indu_emp_bau,
+         dire_comp_diff = c.dire_comp-c.dire_comp_bau, indi_comp_diff = c.indi_comp-c.indi_comp_bau, indu_comp_diff = c.indu_comp-c.indu_comp_bau,
+         label = NA)
 
-## 2. Create figures 
+ext_pctile_direct <- ext_impact %>% 
+  group_by(year) %>% 
+  summarize(dire_emp_p95=quantile(dire_emp_diff,0.9,na.rm = T),
+            dire_emp_p75=quantile(dire_emp_diff,0.75,na.rm = T),
+            dire_emp_p50=quantile(dire_emp_diff,0.5,na.rm = T),
+            dire_emp_p25=quantile(dire_emp_diff,0.25,na.rm = T), 
+            dire_emp_p5=quantile(dire_emp_diff,0.05,na.rm = T)) %>% 
+  pivot_longer(c("dire_emp_p95","dire_emp_p75","dire_emp_p50","dire_emp_p25","dire_emp_p5"),names_to = "label",names_prefix = "dire_emp_",values_to="dire_emp") %>% 
+  mutate(scen_id=label)
 
-ext_for_fig1 <- ext_df %>% 
-  mutate(emp_p25 = quantile(dire_emp_mult,0.25,na.rm=T))
+ext_pctile_total <- ext_impact %>% 
+  group_by(year) %>% 
+  summarize(tot_emp_p95=quantile(tot_emp_diff,0.9,na.rm = T),
+            tot_emp_p75=quantile(tot_emp_diff,0.75,na.rm = T),
+            tot_emp_p50=quantile(tot_emp_diff,0.5,na.rm = T),
+            tot_emp_p25=quantile(tot_emp_diff,0.25,na.rm = T), 
+            tot_emp_p5=quantile(tot_emp_diff,0.05,na.rm = T)) %>% 
+  pivot_longer(c("tot_emp_p95","tot_emp_p75","tot_emp_p50","tot_emp_p25","tot_emp_p5"),names_to = "label",names_prefix = "tot_emp_",values_to="tot_emp") %>% 
+  mutate(scen_id=label)
+
+
+ext_pctile_direct_comp <- ext_impact %>% 
+  group_by(year) %>% 
+  summarize(dire_comp_p95=quantile(dire_comp_diff,0.9,na.rm = T),
+            dire_comp_p75=quantile(dire_comp_diff,0.75,na.rm = T),
+            dire_comp_p50=quantile(dire_comp_diff,0.5,na.rm = T),
+            dire_comp_p25=quantile(dire_comp_diff,0.25,na.rm = T), 
+            dire_comp_p5=quantile(dire_comp_diff,0.05,na.rm = T)) %>% 
+  pivot_longer(c("dire_comp_p95","dire_comp_p75","dire_comp_p50","dire_comp_p25","dire_comp_p5"),names_to = "label",names_prefix = "dire_comp_",values_to="dire_comp") %>% 
+  mutate(scen_id=label)
+
+ext_pctile_total_comp <- ext_impact %>% 
+  group_by(year) %>% 
+  summarize(tot_comp_p95=quantile(tot_comp_diff,0.9,na.rm = T),
+            tot_comp_p75=quantile(tot_comp_diff,0.75,na.rm = T),
+            tot_comp_p50=quantile(tot_comp_diff,0.5,na.rm = T),
+            tot_comp_p25=quantile(tot_comp_diff,0.25,na.rm = T), 
+            tot_comp_p5=quantile(tot_comp_diff,0.05,na.rm = T)) %>% 
+  pivot_longer(c("tot_comp_p95","tot_comp_p75","tot_comp_p50","tot_comp_p25","tot_comp_p5"),names_to = "label",names_prefix = "tot_comp_",values_to="tot_comp") %>% 
+  mutate(scen_id=label)
+
+ref_impact <- ref %>% 
+  filter(scen_id != "R-BAU") %>% 
+  inner_join(ref_bau,by=c("county","year")) %>% 
+  group_by(scen_id,year) %>% 
+  summarize(c.dire_emp = sum(c.dire_emp), c.indi_emp = sum(c.indi_emp), c.indu_emp = sum(c.indu_emp), 
+            c.dire_comp = sum(c.dire_comp), c.indi_comp = sum(c.indi_comp), c.indu_comp = sum(c.indu_comp),
+            c.dire_emp_bau = sum(c.dire_emp_bau), c.indi_emp_bau = sum(c.indi_emp_bau), c.indu_emp_bau = sum(c.indu_emp_bau), 
+            c.dire_comp_bau = sum(c.dire_comp_bau), c.indi_comp_bau = sum(c.indi_comp_bau), c.indu_comp_bau = sum(c.indu_comp_bau)) %>% 
+  mutate(tot_emp = c.dire_emp+c.indi_emp+c.indu_emp, tot_comp = c.dire_comp+c.indi_comp+c.indu_comp, 
+         tot_emp_bau = c.dire_emp_bau+c.indi_emp_bau+c.indu_emp_bau,tot_comp_bau = c.dire_comp_bau+c.indi_comp_bau+c.indu_comp_bau,
+         tot_emp_diff = tot_emp-tot_emp_bau, tot_comp_diff = tot_comp-tot_comp_bau,
+         dire_emp_diff = c.dire_emp-c.dire_emp_bau, indi_emp_diff = c.indi_emp-c.indi_emp_bau, indu_emp_diff = c.indu_emp-c.indu_emp_bau,
+         dire_comp_diff = c.dire_comp-c.dire_comp_bau, indi_comp_diff = c.indi_comp-c.indi_comp_bau, indu_comp_diff = c.indu_comp-c.indu_comp_bau,
+         label = NA)
+
+
+ref_pctile_direct <- ref_impact %>% 
+  group_by(year) %>% 
+  summarize(dire_emp_p95=quantile(dire_emp_diff,0.9,na.rm = T),
+            dire_emp_p75=quantile(dire_emp_diff,0.75,na.rm = T),
+            dire_emp_p50=quantile(dire_emp_diff,0.5,na.rm = T),
+            dire_emp_p25=quantile(dire_emp_diff,0.25,na.rm = T), 
+            dire_emp_p5=quantile(dire_emp_diff,0.05,na.rm = T)) %>% 
+  pivot_longer(c("dire_emp_p95","dire_emp_p75","dire_emp_p50","dire_emp_p25","dire_emp_p5"),names_to = "label",names_prefix = "dire_emp_",values_to="dire_emp") %>% 
+  mutate(scen_id=label)
+
+ref_pctile_total <- ref_impact %>% 
+  group_by(year) %>% 
+  summarize(tot_emp_p95=quantile(tot_emp_diff,0.9,na.rm = T),
+            tot_emp_p75=quantile(tot_emp_diff,0.75,na.rm = T),
+            tot_emp_p50=quantile(tot_emp_diff,0.5,na.rm = T),
+            tot_emp_p25=quantile(tot_emp_diff,0.25,na.rm = T), 
+            tot_emp_p5=quantile(tot_emp_diff,0.05,na.rm = T)) %>% 
+  pivot_longer(c("tot_emp_p95","tot_emp_p75","tot_emp_p50","tot_emp_p25","tot_emp_p5"),names_to = "label",names_prefix = "tot_emp_",values_to="tot_emp") %>% 
+  mutate(scen_id=label)
+
+
+ref_pctile_direct_comp <- ref_impact %>% 
+  group_by(year) %>% 
+  summarize(dire_comp_p95=quantile(dire_comp_diff,0.9,na.rm = T),
+            dire_comp_p75=quantile(dire_comp_diff,0.75,na.rm = T),
+            dire_comp_p50=quantile(dire_comp_diff,0.5,na.rm = T),
+            dire_comp_p25=quantile(dire_comp_diff,0.25,na.rm = T), 
+            dire_comp_p5=quantile(dire_comp_diff,0.05,na.rm = T)) %>% 
+  pivot_longer(c("dire_comp_p95","dire_comp_p75","dire_comp_p50","dire_comp_p25","dire_comp_p5"),names_to = "label",names_prefix = "dire_comp_",values_to="dire_comp") %>% 
+  mutate(scen_id=label)
+
+ref_pctile_total_comp <- ref_impact %>% 
+  group_by(year) %>% 
+  summarize(tot_comp_p95=quantile(tot_comp_diff,0.9,na.rm = T),
+            tot_comp_p75=quantile(tot_comp_diff,0.75,na.rm = T),
+            tot_comp_p50=quantile(tot_comp_diff,0.5,na.rm = T),
+            tot_comp_p25=quantile(tot_comp_diff,0.25,na.rm = T), 
+            tot_comp_p5=quantile(tot_comp_diff,0.05,na.rm = T)) %>% 
+  pivot_longer(c("tot_comp_p95","tot_comp_p75","tot_comp_p50","tot_comp_p25","tot_comp_p5"),names_to = "label",names_prefix = "tot_comp_",values_to="tot_comp") %>% 
+  mutate(scen_id=label)
+
+# extraction
+
+## direct emp 
+
+v1 <- ggplot(ext_impact,aes(x=year,y=dire_emp_diff,group=factor(scen_id))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ext_pctile_direct,color='black',aes(y=dire_emp)) +
+  geom_text(data=ext_pctile_direct %>% filter(year==max(year)),aes(x = year+0.3,y=dire_emp,label=label)) +
+  labs(y="Difference in Direct FTE job-years", x = "",color="",linetype="") +
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
+
+plot(v1)  
+
+## total emp 
+
+v2 <- ggplot(ext_impact,aes(x=year,y=tot_emp_diff,group=factor(scen_id))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ext_pctile_total,color='black',aes(y=tot_emp)) +
+  geom_text(data=ext_pctile_total %>% filter(year==max(year)),aes(x = year+0.3,y=tot_emp,label=label)) +
+  labs(y="Difference in Total FTE job-years", x = "",color="",linetype="") +
+  ylim(-20000,90000) + 
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
+
+plot(v2)  
+
+
+## direct comp 
+
+v3 <- ggplot(ext_impact,aes(x=year,y=dire_comp_diff/10^9,group=factor(scen_id))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ext_pctile_direct_comp,color='black',aes(y=dire_comp/10^9)) +
+  geom_text(data=ext_pctile_direct_comp %>% filter(year==max(year)),aes(x = year+0.3,y=dire_comp/10^9,label=label)) +
+  labs(y="Difference in Total Compensation (Billions of 2020 $)", x = "",color="",linetype="") +
+  ylim(-2.5,7.5) +
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
+
+plot(v3)  
+
+## total comp 
+
+v4 <- ggplot(ext_impact,aes(x=year,y=tot_comp_diff/10^9,group=factor(scen_id))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ext_pctile_total_comp,color='black',aes(y=tot_comp/10^9)) +
+  geom_text(data=ext_pctile_total_comp %>% filter(year==max(year)),aes(x = year+0.3,y=tot_comp/10^9,label=label)) +
+  labs(y="Difference in Total Compensation (Billions of 2020 $)", x = "",color="",linetype="") +
+  ylim(-5,10) +
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
+
+plot(v4)  
+
+
+# refining 
+
+## direct emp 
+
+v5 <- ggplot(ref_impact,aes(x=year,y=dire_emp_diff,group=factor(scen_id))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ref_pctile_direct,color='black',aes(y=dire_emp)) +
+  geom_text(data=ref_pctile_direct %>% filter(year==max(year)),aes(x = year+0.3,y=dire_emp,label=label)) +
+  labs(y="Difference in Direct FTE job-years", x = "",color="",linetype="") +
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
+
+plot(v5)  
+
+## total emp 
+
+v6 <- ggplot(ref_impact,aes(x=year,y=tot_emp_diff,group=factor(scen_id))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ref_pctile_total,color='black',aes(y=tot_emp)) +
+  geom_text(data=ref_pctile_total %>% filter(year==max(year)),aes(x = year+0.3,y=tot_emp,label=label)) +
+  labs(y="Difference in Total FTE job-years", x = "",color="",linetype="") +
+  ylim(-50000,50000) + 
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
+
+plot(v6)  
+
+
+## direct comp 
+
+v7 <- ggplot(ref_impact,aes(x=year,y=dire_comp_diff/10^9,group=factor(scen_id))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ref_pctile_direct_comp,color='black',aes(y=dire_comp/10^9)) +
+  geom_text(data=ref_pctile_direct_comp %>% filter(year==max(year)),aes(x = year+0.3,y=dire_comp/10^9,label=label)) +
+  labs(y="Difference in Total Compensation (Billions of 2020 $)", x = "",color="",linetype="") +
+  ylim(-2,2) +
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
+
+plot(v7)  
+
+## total comp 
+
+v8 <- ggplot(ref_impact,aes(x=year,y=tot_comp_diff/10^9,group=factor(scen_id))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ref_pctile_total_comp,color='black',aes(y=tot_comp/10^9)) +
+  geom_text(data=ref_pctile_total_comp %>% filter(year==max(year)),aes(x = year+0.3,y=tot_comp/10^9,label=label)) +
+  labs(y="Difference in Total Compensation (Billions of 2020 $)", x = "",color="",linetype="") +
+  ylim(-5,5) +
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
+
+plot(v8)  
+
+setwd('~/Dropbox/calepa') 
+
+ggsave("ext_direct_emp.png",v1,width = 7.5,height=5,units = "in",dpi=300)
+ggsave("ext_total_emp.png",v2,width = 7.5,height=5,units = "in",dpi=300)
+ggsave("ext_direct_comp.png",v3,width = 7.5,height=5,units = "in",dpi=300)
+ggsave("ext_total_comp.png",v4,width = 7.5,height=5,units = "in",dpi=300)
+
+ggsave("ref_direct_emp.png",v5,width = 7.5,height=5,units = "in",dpi=300)
+ggsave("ref_total_emp.png",v6,width = 7.5,height=5,units = "in",dpi=300)
+ggsave("ref_direct_comp.png",v7,width = 7.5,height=5,units = "in",dpi=300)
+ggsave("ref_total_comp.png",v8,width = 7.5,height=5,units = "in",dpi=300)
+
+
+
+
+
