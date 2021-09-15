@@ -52,7 +52,7 @@ ref <- read_xlsx('labor_results.xlsx',sheet="refining")
 str(ext)
 str(ref)
 
-test <- filter(ext_impact,dire_emp_diff>0)
+
 
 ## 2. Compute scenario employment - BAU for each county-year-scenario 
 
@@ -69,6 +69,10 @@ ref_bau <- filter(ref,scen_id=="R-BAU") %>%
   dplyr::select(county,year,c.dire_emp_bau,c.indi_emp_bau,c.indu_emp_bau,c.dire_comp_bau,c.indi_comp_bau,c.indu_comp_bau)
 
 
+### extract non BAU results and join the BAU results to them by county and year 
+### collapse the data to the state level (summing across counties within scenario)
+### compute job impacts as employment-bau_employment 
+
 ext_impact <- ext %>% 
   filter(BAU_scen==0) %>% 
   inner_join(ext_bau,by=c("county","year")) %>% 
@@ -76,7 +80,11 @@ ext_impact <- ext %>%
   summarize(c.dire_emp = sum(c.dire_emp), c.indi_emp = sum(c.indi_emp), c.indu_emp = sum(c.indu_emp), 
             c.dire_comp = sum(c.dire_comp), c.indi_comp = sum(c.indi_comp), c.indu_comp = sum(c.indu_comp),
             c.dire_emp_bau = sum(c.dire_emp_bau), c.indi_emp_bau = sum(c.indi_emp_bau), c.indu_emp_bau = sum(c.indu_emp_bau), 
-            c.dire_comp_bau = sum(c.dire_comp_bau), c.indi_comp_bau = sum(c.indi_comp_bau), c.indu_comp_bau = sum(c.indu_comp_bau)) %>% 
+            c.dire_comp_bau = sum(c.dire_comp_bau), c.indi_comp_bau = sum(c.indi_comp_bau), c.indu_comp_bau = sum(c.indu_comp_bau),
+            oil_price_scenario = first(oil_price_scenario),innovation_scenario = first(innovation_scenario),
+            carbon_price_scenario = first(carbon_price_scenario),ccs_scenario = first(ccs_scenario),
+            setback_scenario = first(setback_scenario), prod_quota_scenario = first(prod_quota_scenario),
+            excise_tax_scenario = first(excise_tax_scenario)) %>% 
   mutate(tot_emp = c.dire_emp+c.indi_emp+c.indu_emp, tot_comp = c.dire_comp+c.indi_comp+c.indu_comp, 
          tot_emp_bau = c.dire_emp_bau+c.indi_emp_bau+c.indu_emp_bau,tot_comp_bau = c.dire_comp_bau+c.indi_comp_bau+c.indu_comp_bau,
          tot_emp_diff = tot_emp-tot_emp_bau, tot_comp_diff = tot_comp-tot_comp_bau,
@@ -84,6 +92,9 @@ ext_impact <- ext %>%
          dire_comp_diff = c.dire_comp-c.dire_comp_bau, indi_comp_diff = c.indi_comp-c.indi_comp_bau, indu_comp_diff = c.indu_comp-c.indu_comp_bau,
          label = NA)
 
+### Separately compute different percentiles of employment impacts by year (takes jth percentile across scenarios within a given year)
+### NOTE: I do this once for each of 4 outcomes (direct employment and compensation, total employment and compensation)
+ 
 ext_pctile_direct <- ext_impact %>% 
   group_by(year) %>% 
   summarize(dire_emp_p95=quantile(dire_emp_diff,0.9,na.rm = T),
@@ -125,6 +136,8 @@ ext_pctile_total_comp <- ext_impact %>%
   pivot_longer(c("tot_comp_p95","tot_comp_p75","tot_comp_p50","tot_comp_p25","tot_comp_p5"),names_to = "label",names_prefix = "tot_comp_",values_to="tot_comp") %>% 
   mutate(scen_id=label)
 
+### re-do the same process for refining 
+
 ref_impact <- ref %>% 
   filter(scen_id != "R-BAU") %>% 
   inner_join(ref_bau,by=c("county","year")) %>% 
@@ -132,7 +145,10 @@ ref_impact <- ref %>%
   summarize(c.dire_emp = sum(c.dire_emp), c.indi_emp = sum(c.indi_emp), c.indu_emp = sum(c.indu_emp), 
             c.dire_comp = sum(c.dire_comp), c.indi_comp = sum(c.indi_comp), c.indu_comp = sum(c.indu_comp),
             c.dire_emp_bau = sum(c.dire_emp_bau), c.indi_emp_bau = sum(c.indi_emp_bau), c.indu_emp_bau = sum(c.indu_emp_bau), 
-            c.dire_comp_bau = sum(c.dire_comp_bau), c.indi_comp_bau = sum(c.indi_comp_bau), c.indu_comp_bau = sum(c.indu_comp_bau)) %>% 
+            c.dire_comp_bau = sum(c.dire_comp_bau), c.indi_comp_bau = sum(c.indi_comp_bau), c.indu_comp_bau = sum(c.indu_comp_bau),
+            oil_price_scenario = first(oil_price_scenario),innovation_scenario = first(innovation_scenario),
+            carbon_price_scenario = first(carbon_price_scenario),ccs_scenario = first(ccs_scenario),
+            refining_scenario = first(refining_scenario), demand_scenario = first(demand_scenario)) %>% 
   mutate(tot_emp = c.dire_emp+c.indi_emp+c.indu_emp, tot_comp = c.dire_comp+c.indi_comp+c.indu_comp, 
          tot_emp_bau = c.dire_emp_bau+c.indi_emp_bau+c.indu_emp_bau,tot_comp_bau = c.dire_comp_bau+c.indi_comp_bau+c.indu_comp_bau,
          tot_emp_diff = tot_emp-tot_emp_bau, tot_comp_diff = tot_comp-tot_comp_bau,
@@ -182,6 +198,11 @@ ref_pctile_total_comp <- ref_impact %>%
   pivot_longer(c("tot_comp_p95","tot_comp_p75","tot_comp_p50","tot_comp_p25","tot_comp_p5"),names_to = "label",names_prefix = "tot_comp_",values_to="tot_comp") %>% 
   mutate(scen_id=label)
 
+
+#############################################################################################
+
+#Create spaghetti plots (just amounts to plotting each scenario impact in light gray with the percentiles overlaid in black)
+
 # extraction
 
 ## direct emp 
@@ -191,7 +212,7 @@ v1 <- ggplot(ext_impact,aes(x=year,y=dire_emp_diff,group=factor(scen_id))) +
   geom_line(data=ext_pctile_direct,color='black',aes(y=dire_emp)) +
   geom_text(data=ext_pctile_direct %>% filter(year==max(year)),aes(x = year+0.3,y=dire_emp,label=label)) +
   labs(y="Difference in Direct FTE job-years", x = "",color="",linetype="") +
-  theme(legend.position = 'none',
+  theme(legend.position = 'none', 
         axis.ticks.x=element_blank(),
         panel.grid.major.y = element_line(color = "gray",size=0.5),
         panel.background = element_blank())
