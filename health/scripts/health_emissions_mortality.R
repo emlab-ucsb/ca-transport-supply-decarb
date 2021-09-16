@@ -1,7 +1,7 @@
 # CA transportation decarb: Local emissions and mortality impacts
 # hernandezcortes@ucsb.edu; vthivierge@ucsb.edu
 # created: 09/13/2021
-# updated: 09/14/2021
+# updated: 09/16/2021
 
 # set up environment ########################################
 
@@ -10,11 +10,18 @@ rm(list=ls())
 #Packages
 
 packages=c("xlsx", "gdata", "dplyr","tidyr", "stringr", "fuzzyjoin", "stringr", "tictoc","maptools",
-           "ggplot2", "stargazer", "plm", "cowplot", "sf", "lwgeom","data.table", "foreign")
+           "ggplot2", "stargazer", "plm", "cowplot", "sf", "lwgeom","data.table", "foreign", "purrr",
+           "future", "furrr", "tidyverse")
 
 lapply(1:length(packages), function(x) 
   ifelse((require(packages[x],character.only=TRUE)==FALSE),install.packages(packages[x]),
          require(packages[x],character.only=TRUE)))
+
+#Set-up cores and memory
+
+no_cores <- availableCores()/2 - 1
+plan(multisession, workers = no_cores)
+#memory.limit(size = 100000) #Set to 100GB (Only works on Windows...)
 
 #Set directory
 
@@ -56,13 +63,12 @@ read_extraction <- function(buff_field){
 }
 
 #DO THE FUNCTION
-extraction_srm <-map_df(fields_vector, read_extraction) %>% 
+extraction_srm <-future_map_dfr(fields_vector, read_extraction) %>% 
   bind_rows()%>%
   rename(weighted_totalpm25=totalpm25_aw)
 
-extractions_srm_reshape<-dcast(extraction_srm,field+GEOID~poll,value.var="weighted_totalpm25")
-srm_all_pollutants_extraction<-dplyr::rename(extractions_srm_reshape,weighted_totalpm25nh3=nh3,weighted_totalpm25nox=nox,weighted_totalpm25pm25=pm25,weighted_totalpm25sox=sox,weighted_totalpm25voc=voc,id=field)
-
+srm_all_pollutants_extraction<-dcast(extraction_srm,field+GEOID~poll,value.var="weighted_totalpm25")%>%
+  rename(weighted_totalpm25nh3=nh3,weighted_totalpm25nox=nox,weighted_totalpm25pm25=pm25,weighted_totalpm25sox=sox,weighted_totalpm25voc=voc,id=field)
 
 # Refining
 
@@ -92,12 +98,12 @@ read_refining <- function(buff_site){
 }
 
 #DO THE FUNCTION
-refining_srm <-map_df(sites_vector, read_refining) %>% 
+refining_srm <-future_map_dfr(sites_vector, read_refining) %>% 
   bind_rows()%>%
   rename(weighted_totalpm25=totalpm25_aw)
 
-refining_srm_reshape<-dcast(refining_srm,site+GEOID~poll,value.var="weighted_totalpm25")
-srm_all_pollutants_refining<-dplyr::rename(refining_srm_reshape,weighted_totalpm25nh3=nh3,weighted_totalpm25nox=nox,weighted_totalpm25pm25=pm25,weighted_totalpm25sox=sox,weighted_totalpm25voc=voc,site_id=site)
+srm_all_pollutants_refining<-dcast(refining_srm,site+GEOID~poll,value.var="weighted_totalpm25")%>%
+  rename(weighted_totalpm25nh3=nh3,weighted_totalpm25nox=nox,weighted_totalpm25pm25=pm25,weighted_totalpm25sox=sox,weighted_totalpm25voc=voc,site_id=site)
 
 # (1.2) Calculate census tract ambient emissions for extraction  #######
 
@@ -162,7 +168,7 @@ prepare_extraction <- function(buff_year){
 }
 
 #DO THE FUNCTION
-extraction_scenarios <-map_df(years_vector, prepare_extraction) %>% 
+extraction_scenarios <-future_map_dfr(years_vector, prepare_extraction) %>% 
   bind_rows()%>%
   mutate(id = as.numeric(as.factor(scen_id)))
 
@@ -179,7 +185,7 @@ deltas_extraction <- extraction_scenarios %>%
 
 # (1.3) Calculate census tract ambient emissions for refining  #######
 
-refining_outputs<-read_csv(paste(outputFiles, "/refining_2021-09-07/site_refining_outputs.csv", sep = ""))
+refining_outputs<-read_csv(paste(outputFiles, "/refining/refining_2021-09-07/site_refining_outputs.csv", sep = ""))
 
 refining_outputs <- refining_outputs%>%
   mutate(site_id = ifelse(site_id=="t-800","800",site_id),
@@ -189,11 +195,11 @@ refining_outputs <- refining_outputs%>%
          nox=value*0.01495,
          pm25=value*0.00402,
          sox=value*0.00851,
-         voc=value*0.01247)%>%
+         voc=value*0.01247)
   
-  #MERGE WITH SOURCE RECEPTOR MATRIX AND OBTAIN AVERAGE POLLUTION EXPOSURE
+#MERGE WITH SOURCE RECEPTOR MATRIX AND OBTAIN AVERAGE POLLUTION EXPOSURE
   
-  years_vector <- c(2019:2045)
+years_vector <- c(2019:2045)
 
 prepare_refining <- function(buff_year){
   
@@ -220,8 +226,10 @@ prepare_refining <- function(buff_year){
 }
 
 #DO THE FUNCTION
-refining_scenarios <-map_df(years_vector, prepare_refining)%>% 
+tic()
+refining_scenarios <-future_map_dfr(years_vector, prepare_refining)%>% 
   bind_rows()
+toc()
 
 #OBTAIN BAU
 refining_BAU<-subset(refining_scenarios,(scen_id=="R-BAU"))%>%
@@ -237,8 +245,8 @@ deltas_refining<- refining_scenarios%>%
 # (1.4) Append extraction and refinig deltas #############
 
 deltas <- deltas_extraction%>% 
-  select(GEOID, year,scen_id,id,sector,delta_total_pm25)%>%
-  bind_rows(deltas_refining %>% select(GEOID, year,scen_id,id,sector,delta_total_pm25))
+  select(GEOID, year,scen_id,id,sector,delta_total_pm25,total_pm25)%>%
+  bind_rows(deltas_refining %>% select(GEOID, year,scen_id,id,sector,delta_total_pm25,total_pm25))
 
 # (2) Health impact #####################################
 
@@ -252,23 +260,31 @@ ces3 <- read.csv("./calepa-cn/data/health/processed/ces3_data.csv", stringsAsFac
 
 # Population and incidence
 
-ct_inc_pop_45 <- read.csv("./calepa-cn/data/benmap/processed/ct_inc_45.csv", stringsAsFactors  = FALSE)%>%
+ct_inc_pop_45 <- fread("./calepa-cn/data/benmap/processed/ct_inc_45.csv", stringsAsFactors  = FALSE)%>%
   mutate(ct_id = paste0(stringr::str_sub(gisjoin,2,3),
                                    stringr::str_sub(gisjoin,5,7),
                                    stringr::str_sub(gisjoin,9,14)))%>%
   select(ct_id,lower_age, upper_age, year, pop, incidence_2015); ct_inc_pop_45
 
+#census-tract level population-weighted incidence rate (for age>29)
+
+ct_inc_pop_45_weighted <-ct_inc_pop_45 %>%
+  filter(lower_age>29)%>%
+  group_by(ct_id, year)%>%
+  mutate(ct_pop = sum(pop, na.rm = T),
+         share = pop/ct_pop,
+         weighted_incidence = sum(share*incidence_2015, na.rm = T))%>%
+  summarize(weighted_incidence = unique(weighted_incidence),
+            pop = unique(ct_pop))%>%
+  ungroup()
+
 ## (2.2) Merge demographic data to pollution scenarios
 
-str(read.csv(paste0("./calepa-cn/data/benmap/processed/inmap/deltas/",names[1], sep=""), stringsAsFactors = FALSE)) #sample of data 
-
-tic()
 ct_incidence_ca_poll <- deltas %>%
   mutate(GEOID = ifelse(GEOID %in% "06037137000", "06037930401", GEOID))%>% #Adjust mismatch of census tract ids between inmap and benmap (census ID changed in 2012 http://www.diversitydatakids.org/sites/default/files/2020-02/ddk_coi2.0_technical_documentation_20200212.pdf)
   left_join(ces3, by = c("GEOID"="census_tract"))%>%
-  right_join(ct_inc_pop_45, by = c("GEOID"="ct_id", "year"="year"))%>%
+  right_join(ct_inc_pop_45_weighted, by = c("GEOID"="ct_id", "year"="year"))%>%
   drop_na(id);ct_incidence_ca_poll # remove census tracts that are water area only tracts (no population)
-toc()
 
 # (3) Calculate mortality impact ######################################
 
@@ -278,36 +294,24 @@ se <- 0.0009628
 
 #Mortality impact fold adults (>=29 years old)
 ct_health <- ct_incidence_ca_poll %>%
-  filter(lower_age>29)%>%
-  mutate(mortality_change = (1-(1/exp(beta*delta_total_pm25)))*incidence_2015*pop)
+  #filter(lower_age>29)%>%
+  mutate(mortality_delta = (1-(1/exp(beta*delta_total_pm25)))*weighted_incidence*pop,
+         mortality_level = (1-(1/exp(beta*total_pm25)))*weighted_incidence*pop)
 
-## Output for analysis
 
-ct_health_mort <- ct_health %>%
-  group_by(ct_id, year, sector, scenario)%>%
-  summarise(mortality = sum(mortality_change),
-            pop = sum(pop),
-            disadvantaged = unique(disadvantaged))
+# (4) Analysis ##############################################
 
-#write.csv(ct_health_mort,file = "./calepa-cn/data/benmap/results/ct_mortality.csv", row.names = FALSE)
+state_health <- ct_health%>%
+  group_by(year,id)%>%
+  summarise(mortality_delta = sum(mortality_delta, na.rm = T),
+            mortality_level = sum(mortality_level, na.rm = T))%>%
+  ungroup()
 
-## Prelim analsysis of results
-
-##Statewide by emission source
-
-ct_health_mort%>%
-  group_by(scenario)%>%
-  summarise(mortality = sum(mortality, na.rm = T))%>%
-  ggplot(aes(x=scenario, y=mortality))+
-  geom_bar(stat='identity')+
+state_health%>%
+  gather(type,mortality,mortality_delta:mortality_level)%>%
+  ggplot(aes(y=mortality, x=year, group = id))+
+  geom_line()+
+  facet_grid(~type)+
+  theme(legend.position = "none")+
   theme_cowplot()
-
-state_wide <- ct_health_mort%>%
-  mutate(sce_sector = paste0(scenario,"_",sector))%>%
-  group_by(year,sce_sector)%>%
-  summarize(mortality = as.integer(sum(mortality_change)))%>%#,
-  #mortality_2020comp = as.integer(sum(mortality_change_2020comp)),
-  #mortality_2020inc = as.integer(sum(mortality_change_2020inc)));state_wide
-  spread(sce_sector,mortality);state_wide
-
 
