@@ -28,6 +28,16 @@ use $tempFiles/delta_scen_R1, clear
 *EXTRACTION
 forvalues y=1(1)100{
 	import delimited using $outputFiles/deltas_extraction/scenario_E-`y'.csv, clear
+	su delta_totalpm25, det
+	keep if inrange(delta_totalpm25, r(p1), r(p99))
+		collapse (max) delta_totalpm25 delta_primpm25
+		gen scenario="E-`y'"
+		saveold $tempFiles/delta_scen_E`y', replace
+}	
+forvalues y=102(1)109{
+	import delimited using $outputFiles/deltas_extraction/scenario_E-`y'.csv, clear
+	su delta_totalpm25, det
+	keep if inrange(delta_totalpm25, r(p1), r(p99))
 		collapse (max) delta_totalpm25 delta_primpm25
 		gen scenario="E-`y'"
 		saveold $tempFiles/delta_scen_E`y', replace
