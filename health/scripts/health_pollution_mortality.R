@@ -1,4 +1,4 @@
-# CA transportation decarb: Local emissions and mortality impacts
+# CA transportation decarb: Local pm2.5 and mortality impacts
 # hernandezcortes@ucsb.edu; vthivierge@ucsb.edu
 # created: 09/13/2021
 # updated: 09/16/2021
@@ -20,8 +20,8 @@ lapply(1:length(packages), function(x)
 #Set-up cores and memory
 
 no_cores <- availableCores()/2 - 1
+#no_cores <- availableCores() - 1
 plan(multisession, workers = no_cores)
-#memory.limit(size = 100000) #Set to 100GB (Only works on Windows...)
 
 #Set directory
 
@@ -63,19 +63,16 @@ read_extraction <- function(buff_field){
 }
 
 #DO THE FUNCTION
-extraction_srm <-future_map_dfr(fields_vector, read_extraction) %>% 
+srm_all_pollutants_extraction <-future_map_dfr(fields_vector, read_extraction) %>% 
   bind_rows()%>%
-  rename(weighted_totalpm25=totalpm25_aw)
-
-srm_all_pollutants_extraction<-dcast(extraction_srm,field+GEOID~poll,value.var="weighted_totalpm25")%>%
+  rename(weighted_totalpm25=totalpm25_aw)%>%
+  select(-totalpm25)%>%
+  spread(poll, weighted_totalpm25)%>%
   rename(weighted_totalpm25nh3=nh3,weighted_totalpm25nox=nox,weighted_totalpm25pm25=pm25,weighted_totalpm25sox=sox,weighted_totalpm25voc=voc,id=field)
 
 # Refining
 
-#Excluding 164
-#sites_vector <- c(97, 119, 164, 202, 209, 226, 271, 279, 332, 342, 343, 800, 3422, 34222, 99999)
-#Including 164 and 99999 (164 misses NOx, SOx, and PM2.5, 99999 misses VOC)
-sites_vector <- c(97, 119, 202, 209, 226, 271, 279, 332, 342, 343, 800, 3422, 34222, 99999)
+sites_vector <- c(97, 119, 164, 202, 209, 226, 271, 279, 332, 342, 343, 800, 3422, 34222, 99999)
 
 read_refining <- function(buff_site){
   
@@ -98,11 +95,11 @@ read_refining <- function(buff_site){
 }
 
 #DO THE FUNCTION
-refining_srm <-future_map_dfr(sites_vector, read_refining) %>% 
+srm_all_pollutants_refining <-future_map_dfr(sites_vector, read_refining) %>% 
   bind_rows()%>%
-  rename(weighted_totalpm25=totalpm25_aw)
-
-srm_all_pollutants_refining<-dcast(refining_srm,site+GEOID~poll,value.var="weighted_totalpm25")%>%
+  rename(weighted_totalpm25=totalpm25_aw)%>%
+  select(-totalpm25)%>%
+  spread(poll, weighted_totalpm25)%>%
   rename(weighted_totalpm25nh3=nh3,weighted_totalpm25nox=nox,weighted_totalpm25pm25=pm25,weighted_totalpm25sox=sox,weighted_totalpm25voc=voc,site_id=site)
 
 # (1.2) Calculate census tract ambient emissions for extraction  #######
@@ -168,9 +165,12 @@ prepare_extraction <- function(buff_year){
 }
 
 #DO THE FUNCTION
+gc()
+tic()
 extraction_scenarios <-future_map_dfr(years_vector, prepare_extraction) %>% 
   bind_rows()%>%
   mutate(id = as.numeric(as.factor(scen_id)))
+toc()
 
 #OBTAIN BAU
 extraction_BAU<-subset(extraction_scenarios,(scen_id=="reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_no tax"))%>%
@@ -200,6 +200,7 @@ refining_outputs <- refining_outputs%>%
 #MERGE WITH SOURCE RECEPTOR MATRIX AND OBTAIN AVERAGE POLLUTION EXPOSURE
   
 years_vector <- c(2019:2045)
+#years_vector <- c(2019:2021) # For diagnosis
 
 prepare_refining <- function(buff_year){
   
@@ -215,7 +216,7 @@ prepare_refining <- function(buff_year){
            total_pm25 = tot_nh3+tot_nox+tot_pm25+tot_sox+tot_voc,
            prim_pm25 = tot_pm25)
   
-  mean_exposure<-refining_outputs_merge%>%
+  mean_exposure<-refining_outputs%>%
     dplyr::group_by(GEOID, year, scen_id)%>%
     dplyr::summarize(total_pm25=mean(total_pm25), prim_pm25=mean(prim_pm25))
   
@@ -226,6 +227,7 @@ prepare_refining <- function(buff_year){
 }
 
 #DO THE FUNCTION
+gc()
 tic()
 refining_scenarios <-future_map_dfr(years_vector, prepare_refining)%>% 
   bind_rows()
@@ -237,16 +239,17 @@ refining_BAU<-subset(refining_scenarios,(scen_id=="R-BAU"))%>%
 
 #OBTAIN THE DIFFERENCE IN EXPOSURE
 deltas_refining<- refining_scenarios%>%
-  left_join(refining_BAU,by=c("GEOID", "year"))%>%
+  left_join(refining_BAU %>% select(-scen_id),by=c("GEOID", "year"))%>%
   mutate(delta_total_pm25=total_pm25-bau_total_pm25,
          delta_prim_pm25=prim_pm25-bau_prim_pm25,
          sector = "refining")
 
 # (1.4) Append extraction and refinig deltas #############
 
-deltas <- deltas_extraction%>% 
-  select(GEOID, year,scen_id,id,sector,delta_total_pm25,total_pm25)%>%
-  bind_rows(deltas_refining %>% select(GEOID, year,scen_id,id,sector,delta_total_pm25,total_pm25))
+deltas <- deltas_extraction%>%
+  mutate(scen_id = paste0("E-",id, sep=""))%>%
+  select(GEOID, year,scen_id,sector,delta_total_pm25,total_pm25)%>%
+  bind_rows(deltas_refining %>% select(GEOID, year,scen_id,sector,delta_total_pm25,total_pm25))
 
 # (2) Health impact #####################################
 
@@ -284,7 +287,7 @@ ct_incidence_ca_poll <- deltas %>%
   mutate(GEOID = ifelse(GEOID %in% "06037137000", "06037930401", GEOID))%>% #Adjust mismatch of census tract ids between inmap and benmap (census ID changed in 2012 http://www.diversitydatakids.org/sites/default/files/2020-02/ddk_coi2.0_technical_documentation_20200212.pdf)
   left_join(ces3, by = c("GEOID"="census_tract"))%>%
   right_join(ct_inc_pop_45_weighted, by = c("GEOID"="ct_id", "year"="year"))%>%
-  drop_na(id);ct_incidence_ca_poll # remove census tracts that are water area only tracts (no population)
+  drop_na(scen_id);ct_incidence_ca_poll # remove census tracts that are water area only tracts (no population)
 
 # (3) Calculate mortality impact ######################################
 
@@ -294,7 +297,6 @@ se <- 0.0009628
 
 #Mortality impact fold adults (>=29 years old)
 ct_health <- ct_incidence_ca_poll %>%
-  #filter(lower_age>29)%>%
   mutate(mortality_delta = (1-(1/exp(beta*delta_total_pm25)))*weighted_incidence*pop,
          mortality_level = (1-(1/exp(beta*total_pm25)))*weighted_incidence*pop)
 
@@ -302,16 +304,18 @@ ct_health <- ct_incidence_ca_poll %>%
 # (4) Analysis ##############################################
 
 state_health <- ct_health%>%
-  group_by(year,id)%>%
+  group_by(year,scen_id)%>%
   summarise(mortality_delta = sum(mortality_delta, na.rm = T),
-            mortality_level = sum(mortality_level, na.rm = T))%>%
+            mortality_level = sum(mortality_level, na.rm = T),
+            sector = unique(sector))%>%
   ungroup()
 
 state_health%>%
+  filter(sector %in% "refining")%>%
   gather(type,mortality,mortality_delta:mortality_level)%>%
-  ggplot(aes(y=mortality, x=year, group = id))+
+  ggplot(aes(y=mortality, x=year, group = scen_id))+
   geom_line()+
-  facet_grid(~type)+
+  facet_grid(sector~type)+
   theme(legend.position = "none")+
-  theme_cowplot()
+  theme_cowplot()+ scale_x_continuous(breaks=seq(2019, 2022, 1))
 
