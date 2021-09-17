@@ -36,7 +36,7 @@ inmapReFiles  <- "./calepa-cn/data/health/source_receptor_matrix/inmap_processed
 
 # (1) From production to emissions #################################
 
-# (1.1) Load source receptor matrix #######
+# (1.1) Load source receptor matrix (srm) #######
 
 #Extraction
 
@@ -62,7 +62,7 @@ read_extraction <- function(buff_field){
   
 }
 
-#DO THE FUNCTION
+#build extraction srm
 srm_all_pollutants_extraction <-future_map_dfr(fields_vector, read_extraction) %>% 
   bind_rows()%>%
   rename(weighted_totalpm25=totalpm25_aw)%>%
@@ -94,7 +94,7 @@ read_refining <- function(buff_site){
   
 }
 
-#DO THE FUNCTION
+#build refining srm
 srm_all_pollutants_refining <-future_map_dfr(sites_vector, read_refining) %>% 
   bind_rows()%>%
   rename(weighted_totalpm25=totalpm25_aw)%>%
@@ -104,7 +104,7 @@ srm_all_pollutants_refining <-future_map_dfr(sites_vector, read_refining) %>%
 
 # (1.2) Calculate census tract ambient emissions for extraction  #######
 
-#LOAD AND PROCESS X-WALK BETWEEN FIELDS AND CLUSTERS
+#load and process cross-walk between fields and clusters 
 extraction_field_clusters_10km<-read_csv(paste0(sourceFiles,"/extraction_fields_clusters_10km.csv",sep=""))%>%
   select(OUTPUT_FID,INPUT_FID)%>%
   rename(id=OUTPUT_FID,input_fid=INPUT_FID)
@@ -116,19 +116,19 @@ extraction_xwalk<- extraction_field_clusters_10km%>%
   left_join(extraction_fields_xwalk,by=c("input_fid"))%>%
   mutate(doc_field_code = as.numeric(as.character(doc_field_code)))
 
-#LOAD EXTRACTION OUTPUTS
+#load extraction production scenarios 
 extraction_outputs<-read_csv(paste(outputFiles, "/extraction/extraction_2021-09-07/field-results/subset/subset_field_results.csv", sep = ""))%>%
   mutate(doc_field_code = as.double(doc_field_code))
 
-#MERGE EXTRACTION OUTPUTS AT THE FIELD LEVEL AND X-WALK
+#merge extraction production scenarios with extraction cluster 
 fields_clusters<-left_join(extraction_outputs, extraction_xwalk,by="doc_field_code")
 
-#COLLAPSE: TOTAL PRODUCTION PER CLUSTER
+#summarize extraction production per cluster
 total_clusters<-fields_clusters%>%
   group_by(id, year, scen_id)%>%
   summarize(total_prod_bbl=sum(total_prod_bbl))
 
-#MULTIPLY BY EMISSIONS FACTORS
+#calculate air pollution using emission factors
 total_clusters <- total_clusters%>%
   mutate(nh3=total_prod_bbl*0.0061,
          nox=total_prod_bbl*0.04611,
@@ -136,7 +136,7 @@ total_clusters <- total_clusters%>%
          sox=total_prod_bbl*0.01344,
          voc=total_prod_bbl*0.02614)
 
-#MERGE WITH SOURCE RECEPTOR MATRIX AND OBTAIN AVERAGE POLLUTION EXPOSURE
+# Merge cluster pollution with extraction srm to get census tract pollution exposure 
 
 years_vector <- c(2019:2045)
 
@@ -164,7 +164,7 @@ prepare_extraction <- function(buff_year){
   
 }
 
-#DO THE FUNCTION
+#build census tract extraction pm2.5 exposure
 gc()
 tic()
 extraction_scenarios <-future_map_dfr(years_vector, prepare_extraction) %>% 
@@ -172,11 +172,11 @@ extraction_scenarios <-future_map_dfr(years_vector, prepare_extraction) %>%
   mutate(id = as.numeric(as.factor(scen_id)))
 toc()
 
-#OBTAIN BAU
+#extraction pm25 BAU
 extraction_BAU<-subset(extraction_scenarios,(scen_id=="reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_no tax"))%>%
   rename(bau_total_pm25=total_pm25, bau_prim_pm25=prim_pm25)
 
-#OBTAIN THE DIFFERENCE IN EXPOSURE
+#extraction pm25 differences
 deltas_extraction <- extraction_scenarios %>%
   left_join(extraction_BAU %>% select(-id,-scen_id),by=c("GEOID", "year"))%>%
   mutate(delta_total_pm25 = total_pm25- bau_total_pm25,
@@ -197,7 +197,7 @@ refining_outputs <- refining_outputs%>%
          sox=value*0.00851,
          voc=value*0.01247)
   
-#MERGE WITH SOURCE RECEPTOR MATRIX AND OBTAIN AVERAGE POLLUTION EXPOSURE
+# Merge refining srm to obtain census tract pm25 exposure
   
 years_vector <- c(2019:2045)
 #years_vector <- c(2019:2021) # For diagnosis
@@ -226,18 +226,18 @@ prepare_refining <- function(buff_year){
   
 }
 
-#DO THE FUNCTION
+#build refining census tract pm25 exposure
 gc()
 tic()
 refining_scenarios <-future_map_dfr(years_vector, prepare_refining)%>% 
   bind_rows()
 toc()
 
-#OBTAIN BAU
+#refining pm25 BAU
 refining_BAU<-subset(refining_scenarios,(scen_id=="R-BAU"))%>%
   rename(bau_total_pm25=total_pm25, bau_prim_pm25=prim_pm25)
 
-#OBTAIN THE DIFFERENCE IN EXPOSURE
+#refining pm25 difference
 deltas_refining<- refining_scenarios%>%
   left_join(refining_BAU %>% select(-scen_id),by=c("GEOID", "year"))%>%
   mutate(delta_total_pm25=total_pm25-bau_total_pm25,
@@ -311,11 +311,9 @@ state_health <- ct_health%>%
   ungroup()
 
 state_health%>%
-  filter(sector %in% "refining")%>%
+  #filter(sector %in% "refining")%>%
   gather(type,mortality,mortality_delta:mortality_level)%>%
   ggplot(aes(y=mortality, x=year, group = scen_id))+
   geom_line()+
   facet_grid(sector~type)+
-  theme(legend.position = "none")+
-  theme_cowplot()+ scale_x_continuous(breaks=seq(2019, 2022, 1))
-
+  theme(legend.position = "none")
