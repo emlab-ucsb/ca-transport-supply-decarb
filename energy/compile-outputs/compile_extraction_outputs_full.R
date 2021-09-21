@@ -9,20 +9,38 @@ library(tidyverse)
 library(readxl)
 library(openxlsx)
 
+## save location
+save_external <- 0
+
+## current date
+cur_date              = Sys.Date()
+
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 main_path_external <- '/Volumes/calepa/'
-# extraction_path <- 'outputs/predict-production/extraction_2021-09-02/'
-extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2021-09-02/full_run/')
+extraction_folder_path <- 'outputs/predict-production/extraction_2021-09-21/'
 data_path  <-'data/stocks-flows/processed/'
+
+if(save_external == 1) {
+  
+  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2021-09-02/full_run/')
+  
+  dir.create(paste0(main_path_external, 'academic-out/'), showWarnings = FALSE)
+  compiled_save_path  <- paste0(main_path_external, 'academic-out/extraction_', cur_date, '/')
+
+} else {
+  
+  extraction_path <- paste0(main_path, extraction_folder_path, 'full_run_subset/')
+
+  compiled_save_path  <- paste0(main_path, 'outputs/academic-out/extraction/extraction_', cur_date, '/')
+
+}
 
 ## labor path
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed/'
 
-cur_date              = Sys.Date()
 
-## save paths
-compiled_save_path  = paste0(main_path_external, 'academic-out/extraction_', cur_date, '/')
+## save path
 field_save_path     = paste0(compiled_save_path, 'field-results/')
 state_save_path     = paste0(compiled_save_path, 'state-results/')
 county_save_path    = paste0(compiled_save_path, 'county-results/')
@@ -34,7 +52,6 @@ oil_price_file  <- 'oil_price_projections_revised.xlsx'
 ghg_file        <- 'ghg_emissions_x_field_2018-2045.csv'
 
 ## create folder for outputs
-dir.create(paste0(main_path_external, 'academic-out/'), showWarnings = FALSE)
 dir.create(compiled_save_path, showWarnings = FALSE)
 dir.create(field_save_path, showWarnings = FALSE) 
 dir.create(state_save_path, showWarnings = FALSE)  
