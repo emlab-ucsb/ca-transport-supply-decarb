@@ -180,7 +180,7 @@ filter_run_scens = function(scenario_selection, scens) {
       
       ## bind
       sel_scenarios_dt = rbind(setback_dt, tax_dt, carbon_dt)
-      
+      sel_scenarios_dt = distinct(sel_scenarios_dt)
       
     }
   
