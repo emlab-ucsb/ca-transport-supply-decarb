@@ -13,7 +13,8 @@ refining_folder  = file.path("/Volumes/GoogleDrive/Shared drives/emlab/projects/
 ## paths
 main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
 data_path  <-'data/stocks-flows/processed'
-outputs_path <- 'model-development/scenario-plot/refinery-outputs'
+outputs_path <- 'outputs/predict-production/refining_2021-09-06/CUF0.6/outputs'
+emiss_path <- 'model-development/scenario-plot/refinery-outputs'
 
 ## files
 oil_price_file <- 'oil_price_projections_revised.xlsx'
@@ -61,7 +62,7 @@ crack_spread <- tibble(product = c("gasoline", "jet_fuel", "diesel"),
 
 
 ## state emissions for 2019
-refinery_2019 <- read.csv(file.path(main_path, outputs_path, 'refining_emissions_state_2019_revised.csv'))
+refinery_2019 <- read.csv(file.path(main_path, emiss_path, 'refining_emissions_state_2019_revised.csv'))
 
 ## finished products from weekly fuel watch
 ## note: Other Diesel Fuel* includes renewable diesel
