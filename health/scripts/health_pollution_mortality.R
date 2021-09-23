@@ -1,7 +1,7 @@
 # CA transportation decarb: Local pm2.5 and mortality impacts
 # hernandezcortes@ucsb.edu; vthivierge@ucsb.edu
 # created: 09/13/2021
-# updated: 09/16/2021
+# updated: 09/22/2021
 
 # set up environment ########################################
 
@@ -21,7 +21,9 @@ lapply(1:length(packages), function(x)
 
 no_cores <- availableCores()/2 - 1
 #no_cores <- availableCores() - 1
-plan(multisession, workers = no_cores)
+plan(multisession, workers = no_cores, gc = TRUE)
+
+#future:::ClusterRegistry("stop") ## To stop clusters
 
 #Set directory
 
@@ -117,7 +119,7 @@ extraction_xwalk<- extraction_field_clusters_10km%>%
   mutate(doc_field_code = as.numeric(as.character(doc_field_code)))
 
 #load extraction production scenarios 
-extraction_outputs<-read_csv(paste(outputFiles, "/extraction/extraction_2021-09-07/field-results/subset/subset_field_results.csv", sep = ""))%>%
+extraction_outputs<-read_csv(paste(outputFiles, "/extraction/extraction_2021-09-21/field-results/subset_field_results.csv", sep = ""))%>%
   mutate(doc_field_code = as.double(doc_field_code))
 
 #merge extraction production scenarios with extraction cluster 
@@ -130,7 +132,7 @@ total_clusters<-fields_clusters%>%
 
 #calculate air pollution using emission factors
 total_clusters <- total_clusters%>%
-  mutate(nh3=total_prod_bbl*0.0061,
+  mutate(nh3=total_prod_bbl*0.00061,
          nox=total_prod_bbl*0.04611,
          pm25=total_prod_bbl*0.00165,
          sox=total_prod_bbl*0.01344,
@@ -138,13 +140,13 @@ total_clusters <- total_clusters%>%
 
 # Merge cluster pollution with extraction srm to get census tract pollution exposure 
 
-years_vector <- c(2019:2045)
+scenarios <- unique(total_clusters$scen_id)
 
 prepare_extraction <- function(buff_year){
   
-  byear <- buff_year
+  scenarios_temp <- scenarios
   
-  total_clusters <-subset(total_clusters, (year==byear))%>%
+  total_clusters <-subset(total_clusters, (scen_id==scenarios_temp))%>%
   right_join(srm_all_pollutants_extraction,by=c("id"))%>%
     mutate(tot_nh3=weighted_totalpm25nh3*nh3,
            tot_nox=weighted_totalpm25nox*nox,
@@ -167,7 +169,7 @@ prepare_extraction <- function(buff_year){
 #build census tract extraction pm2.5 exposure
 gc()
 tic()
-extraction_scenarios <-future_map_dfr(years_vector, prepare_extraction) %>% 
+extraction_scenarios <-future_map_dfr(scenarios, prepare_extraction) %>% 
   bind_rows()%>%
   mutate(id = as.numeric(as.factor(scen_id)))
 toc()
@@ -198,15 +200,15 @@ refining_outputs <- refining_outputs%>%
          voc=value*0.01247)
   
 # Merge refining srm to obtain census tract pm25 exposure
-  
-years_vector <- c(2019:2045)
-#years_vector <- c(2019:2021) # For diagnosis
 
-prepare_refining <- function(buff_year){
+#Loop over scenarios  
+scenarios <- unique(refining_outputs$scen_id)
+
+prepare_refining <- function(scenarios){
   
-  byear <- buff_year
+  scenarios_temp <- scenarios
   
-  refining_outputs <-subset(refining_outputs, (year==byear))%>%
+  refining_outputs <-subset(refining_outputs, (scen_id==scenarios_temp))%>%
     right_join(srm_all_pollutants_refining, by=c("site_id"))%>%
     mutate(tot_nh3 = weighted_totalpm25nh3*nh3,
            tot_nox = weighted_totalpm25nox*nox,
@@ -229,7 +231,7 @@ prepare_refining <- function(buff_year){
 #build refining census tract pm25 exposure
 gc()
 tic()
-refining_scenarios <-future_map_dfr(years_vector, prepare_refining)%>% 
+refining_scenarios <-future_map_dfr(scenarios, prepare_refining)%>% 
   bind_rows()
 toc()
 
@@ -243,6 +245,8 @@ deltas_refining<- refining_scenarios%>%
   mutate(delta_total_pm25=total_pm25-bau_total_pm25,
          delta_prim_pm25=prim_pm25-bau_prim_pm25,
          sector = "refining")
+
+future:::ClusterRegistry("stop") ## To stop clusters
 
 # (1.4) Append extraction and refinig deltas #############
 
@@ -300,6 +304,10 @@ ct_health <- ct_incidence_ca_poll %>%
   mutate(mortality_delta = (1-(1/exp(beta*delta_total_pm25)))*weighted_incidence*pop,
          mortality_level = (1-(1/exp(beta*total_pm25)))*weighted_incidence*pop)
 
+#Output census tract level mortality 
+
+write.csv(ct_health, paste(outputFiles, "/health/census_tract_mortality.csv", sep = ""), row.names = F)
+ct_health <- fread(paste(outputFiles, "/health/census_tract_mortality.csv", sep = ""), stringsAsFactors = F)
 
 # (4) Analysis ##############################################
 
@@ -311,9 +319,27 @@ state_health <- ct_health%>%
   ungroup()
 
 state_health%>%
-  #filter(sector %in% "refining")%>%
+  filter(sector %in% "extraction")%>%
   gather(type,mortality,mortality_delta:mortality_level)%>%
   ggplot(aes(y=mortality, x=year, group = scen_id))+
   geom_line()+
   facet_grid(sector~type)+
+  theme_cowplot()+
+  theme(legend.position = "none")
+
+# (5) TEMP Analysis FOR POLLUTION ##############################################
+
+state_ref <- deltas_refining%>%
+  group_by(year,scen_id)%>%
+  summarise(delta_total_pm25 = mean(delta_total_pm25, na.rm = T),
+            total_pm25 = mean(total_pm25, na.rm = T),
+            sector = unique(sector))%>%
+  ungroup()
+
+state_ref%>%
+  gather(type,pm25,delta_total_pm25:total_pm25)%>%
+  ggplot(aes(y=pm25, x=year, group = scen_id))+
+  geom_line()+
+  facet_grid(sector~type)+
+  theme_cowplot()+
   theme(legend.position = "none")
