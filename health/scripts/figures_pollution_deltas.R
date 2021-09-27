@@ -1,6 +1,17 @@
-#Danae Hernandez-Cortes hernandezcortes@ucsb.edu
-#INFRASTRUCTURE TO SEND TO THE MODELING TEAM
-#Libraries
+# calepa-cn: Compute final results and create final labor figures 
+# Danae Hernandez-Cortes
+# created: 08/24/2021
+# updated: 08/24/2021
+
+############################################################################################
+# Set up environment 
+############################################################################################
+
+
+
+library(cowplot)
+library(quantmod)
+library(lubridate)
 library(sf)
 library(tidyverse)
 library(ggplot2)
@@ -15,7 +26,6 @@ library(foreign)
 library(haven)
 library(readr)
 library(dplyr)
-rm(list=ls())
 #DANAE'S MACHINE
 outputFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/academic_output"
 sourceFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix"
@@ -26,6 +36,7 @@ inmapReFiles  <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix/i
 #sourceFiles <- "emlab/projects/current-projects/calepa-cn/data/health/source_receptor_matrix"
 #inmapExFiles  <- "emlab/projects/current-projects/calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm/extraction"
 #inmapReFiles  <- "emlab/projects/current-projects/calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm/refining"
+
 
 #############################################
 # PREPARE FILES FROM INMAP OUTPUT: EXTRACTION
@@ -44,9 +55,9 @@ read_extraction <- function(buff_field){
   voc<-read_csv(paste0(inmapExFiles,"/voc/srm_voc_field",bfield,".csv",sep=""))%>%mutate(poll="voc")
   
   all_polls<-rbind(nh3,nox,pm25,sox,voc)
-
+  
   all_polls$field=bfield
-    
+  
   tmp<-as.data.frame(all_polls) 
   
   return(tmp)
@@ -59,40 +70,6 @@ extraction_srm <-dplyr::rename(extraction_srm,weighted_totalpm25=totalpm25_aw)
 extractions_srm_reshape<-dcast(extraction_srm,field+GEOID~poll,value.var="weighted_totalpm25")
 srm_all_pollutants_extraction<-dplyr::rename(extractions_srm_reshape,weighted_totalpm25nh3=nh3,weighted_totalpm25nox=nox,weighted_totalpm25pm25=pm25,weighted_totalpm25sox=sox,weighted_totalpm25voc=voc,id=field)
 
-#############################################
-# PREPARE FILES FROM INMAP OUTPUT: REFINING
-#############################################
-
-#Excluding 164
-#sites_vector <- c(97, 119, 164, 202, 209, 226, 271, 279, 332, 342, 343, 800, 3422, 34222, 99999)
-#Including 164 and 99999 (164 misses NOx, SOx, and PM2.5, 99999 misses VOC)
-sites_vector <- c(97, 119, 202, 209, 226, 271, 279, 332, 342, 343, 800, 3422, 34222, 99999)
-
-read_refining <- function(buff_site){
-  
-  bsite <- buff_site
-  
-  nh3<-read_csv(paste0(inmapReFiles,"/nh3/srm_nh3_site",bsite,".csv",sep=""))%>%mutate(poll="nh3")
-  nox<-read_csv(paste0(inmapReFiles,"/nox/srm_nox_site",bsite,".csv",sep=""))%>%mutate(poll="nox")
-  pm25<-read_csv(paste0(inmapReFiles,"/pm25/srm_pm25_site",bsite,".csv",sep=""))%>%mutate(poll="pm25")
-  sox<-read_csv(paste0(inmapReFiles,"/sox/srm_sox_site",bsite,".csv",sep=""))%>%mutate(poll="sox")
-  voc<-read_csv(paste0(inmapReFiles,"/voc/srm_voc_site",bsite,".csv",sep=""))%>%mutate(poll="voc")
-  
-  all_polls<-rbind(nh3,nox,pm25,sox,voc)
-  
-  all_polls$site=bsite
-  
-  tmp<-as.data.frame(all_polls) 
-  
-  return(tmp)
-  
-}
-#DO THE FUNCTION
-refining_srm <-map_df(sites_vector, read_refining) %>% bind_rows()
-refining_srm <-dplyr::rename(refining_srm,weighted_totalpm25=totalpm25_aw)
-
-refining_srm_reshape<-dcast(refining_srm,site+GEOID~poll,value.var="weighted_totalpm25")
-srm_all_pollutants_refining<-dplyr::rename(refining_srm_reshape,weighted_totalpm25nh3=nh3,weighted_totalpm25nox=nox,weighted_totalpm25pm25=pm25,weighted_totalpm25sox=sox,weighted_totalpm25voc=voc,site_id=site)
 
 
 ############################################
@@ -111,7 +88,7 @@ extraction_xwalk<-left_join(extraction_field_clusters_10km,extraction_fields_xwa
 extraction_xwalk$doc_field_code=as.numeric(as.character(extraction_xwalk$doc_field_code))
 
 #LOAD EXTRACTION OUTPUTS
-extraction_outputs<-read_csv(paste(outputFiles, "/09_07_2021/subset_field_results.csv", sep = ""))
+extraction_outputs<-read_csv(paste(outputFiles, "/09_21_2021/subset_field_results.csv", sep = ""))
 #extraction_outputs<-read_csv(paste(outputFiles, "/extraction_2021-09-07/field-results/subset/subset_field_results.csv", sep = ""))
 extraction_outputs$doc_field_code<-as.double(extraction_outputs$doc_field_code)
 
@@ -132,15 +109,15 @@ total_clusters$voc=total_clusters$total_prod_bbl*0.02614
 
 #MERGE WITH SOURCE RECEPTOR MATRIX AND OBTAIN AVERAGE POLLUTION EXPOSURE
 
-years_vector <- c(2020, 2021, 2022, 2023, 2024,	2025,	2026,	2027,	2028,	2029,	2030,	2031,	2032,	2033,	2034,	2035,	2036,	2037,	2038,	2039,	2040,	2041,	2042,	2043,	2044,	2045)
+years_vector <- c(2019, 2020, 2021, 2022, 2023, 2024,	2025,	2026,	2027,	2028,	2029,	2030,	2031,	2032,	2033,	2034,	2035,	2036,	2037,	2038,	2039,	2040,	2041,	2042,	2043,	2044,	2045)
 
 prepare_extraction <- function(buff_year){
   
   byear <- buff_year
-
+  
   total_clusters <-subset(total_clusters, (year==byear))
   total_clusters_merge<-left_join(srm_all_pollutants_extraction,total_clusters,by=c("id"))
-
+  
   #OBTAIN POLLUTION
   total_clusters_merge$tot_nh3=total_clusters_merge$weighted_totalpm25nh3*total_clusters_merge$nh3
   total_clusters_merge$tot_nox=total_clusters_merge$weighted_totalpm25nox*total_clusters_merge$nox
@@ -154,7 +131,7 @@ prepare_extraction <- function(buff_year){
   mean_exposure<-total_clusters_merge%>%
     dplyr::group_by(GEOID, year, scen_id)%>%
     dplyr::summarize(total_pm25=mean(total_pm25), prim_pm25=mean(prim_pm25))
-
+  
   tmp<-as.data.frame(mean_exposure) 
   
   return(tmp)
@@ -175,62 +152,40 @@ deltas_extraction<-left_join(extraction_scenarios,extraction_BAU,by=c("GEOID", "
 deltas_extraction$delta_total_pm25=deltas_extraction$total_pm25-deltas_extraction$bau_total_pm25
 deltas_extraction$delta_prim_pm25=deltas_extraction$prim_pm25-deltas_extraction$bau_prim_pm25
 
-write_csv(deltas_extraction,"D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/academic_output/output/extraction_deltas.csv")
+######SPAGHETTI GRAPHS
 
-##################################
-#REFINING
-##################################
-refining_outputs<-read_csv(paste(outputFiles, "/refining_2021-09-07/site_refining_outputs.csv", sep = ""))
-#Danae's
-#refining_outputs<-read_csv(paste(outputFiles, "/09_07_2021/site_refining_outputs.csv", sep = ""))
-refining_outputs$site_id<-ifelse(refining_outputs$site_id=="t-800","800",refining_outputs$site_id)
-refining_outputs$site_id<-ifelse(refining_outputs$site_id=="342-2","34222",refining_outputs$site_id)
+deltas_extraction2<-deltas_extraction %>% 
+  dplyr::group_by(year,id.x) %>%
+  dplyr::summarize(delta_total_pm25=mean(delta_total_pm25))
+  
 
-refining_outputs$nh3=refining_outputs$value*0.00056
-refining_outputs$nox=refining_outputs$value*0.01495
-refining_outputs$pm25=refining_outputs$value*0.00402
-refining_outputs$sox=refining_outputs$value*0.00851
-refining_outputs$voc=refining_outputs$value*0.01247
+ext_pctile_deltas <- deltas_extraction2 %>% 
+  dplyr::group_by(year) %>% 
+  dplyr::summarize(p95=quantile(delta_total_pm25,0.95,na.rm = T),
+            p75=quantile(delta_total_pm25,0.75,na.rm = T),
+            p50=quantile(delta_total_pm25,0.5,na.rm = T),
+            p25=quantile(delta_total_pm25,0.25,na.rm = T), 
+            p5=quantile(delta_total_pm25,0.05,na.rm = T)) %>% 
+  pivot_longer(c("p95","p75","p50","p25","p5"),names_to = "label",names_prefix = "delta_extraction",values_to="delta_extraction") %>% 
+  mutate(id.x=label)
 
-refining_outputs$site_id=as.numeric(refining_outputs$site_id)
-#MERGE WITH SOURCE RECEPTOR MATRIX AND OBTAIN AVERAGE POLLUTION EXPOSURE
+v2 <- ggplot(deltas_extraction2,aes(x=year,y=delta_total_pm25,group=factor(id.x))) + 
+  geom_line(color='lightgrey') + 
+  geom_line(data=ext_pctile_deltas,color='black',aes(y=delta_extraction)) +
+  geom_text(data=ext_pctile_deltas %>% filter(year==max(year)),aes(x = year+0.3,y=delta_extraction,label=label)) +
+  labs(y="Pollution Scenarios-Pollution BAU", x = "",color="",linetype="") +
+  theme(legend.position = 'none',
+        axis.ticks.x=element_blank(),
+        panel.grid.major.y = element_line(color = "gray",size=0.5),
+        panel.background = element_blank())
 
-years_vector <- c(2020, 2021, 2022, 2023, 2024,	2025,	2026,	2027,	2028,	2029,	2030,	2031,	2032,	2033,	2034,	2035,	2036,	2037,	2038,	2039,	2040,	2041,	2042,	2043,	2044,	2045)
+plot(v2)  
 
-prepare_refining <- function(buff_year){
-  
-  byear <- buff_year
-  
-  refining_outputs <-subset(refining_outputs, (year==byear))
-  refining_outputs_merge<-left_join(srm_all_pollutants_refining,refining_outputs,by=c("site_id"))
-  
-  #OBTAIN POLLUTION
-  refining_outputs_merge$tot_nh3=refining_outputs_merge$weighted_totalpm25nh3*refining_outputs_merge$nh3
-  refining_outputs_merge$tot_nox=refining_outputs_merge$weighted_totalpm25nox*refining_outputs_merge$nox
-  refining_outputs_merge$tot_sox=refining_outputs_merge$weighted_totalpm25sox*refining_outputs_merge$sox
-  refining_outputs_merge$tot_pm25=refining_outputs_merge$weighted_totalpm25pm25*refining_outputs_merge$pm25
-  refining_outputs_merge$tot_voc=refining_outputs_merge$weighted_totalpm25voc*refining_outputs_merge$voc
-  
-  refining_outputs_merge$total_pm25=refining_outputs_merge$tot_nh3+refining_outputs_merge$tot_nox+refining_outputs_merge$tot_pm25+refining_outputs_merge$tot_sox+refining_outputs_merge$tot_voc
-  refining_outputs_merge$prim_pm25=refining_outputs_merge$tot_pm25
-  
-  mean_exposure<-refining_outputs_merge%>%
-    dplyr::group_by(GEOID, year, scen_id)%>%
-    dplyr::summarize(total_pm25=mean(total_pm25), prim_pm25=mean(prim_pm25))
-  
-  tmp<-as.data.frame(mean_exposure) 
-  
-  return(tmp)
-  
-}
-#DO THE FUNCTION
-refining_scenarios <-map_df(years_vector, prepare_refining) %>% bind_rows()
 
-#OBTAIN BAU
-refining_BAU<-subset(refining_scenarios,(scen_id=="R-BAU"))
-refining_BAU<-refining_BAU%>%rename(bau_total_pm25=total_pm25, bau_prim_pm25=prim_pm25)
+v3 <- ggplot(deltas_extraction2,aes(x=year,y=delta_total_pm25,group=factor(id.x))) + 
+  geom_line(color='lightgrey')
++ 
+  geom_line(data=ext_pctile_deltas,color='black',aes(y=delta_extraction))
 
-deltas_refining<-left_join(refining_scenarios,refining_BAU,by=c("GEOID", "year"))
-#OBTAIN THE DIFFERENCE IN EXPOSURE
-deltas_refining$delta_total_pm25=deltas_refining$total_pm25-deltas_refining$bau_total_pm25
-deltas_refining$delta_prim_pm25=deltas_refining$prim_pm25-deltas_refining$bau_prim_pm25
+plot(v3)
+  
