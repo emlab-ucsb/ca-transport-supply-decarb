@@ -35,8 +35,8 @@ ef_raw <- read.csv("./emission_factors.csv", stringsAsFactors = FALSE)%>%
   select(-source)
 
 ef <- ef_raw %>%
-  mutate(quantity_kg_mmillionbbl = quantity * 1000,
-         quantity_kg_bbl = quantity_kg_mmillionbbl/1000000)%>%
+  mutate(quantity_ton_mmillionbbl = quantity,
+         quantity_ton_bbl = quantity_ton_mmillionbbl/1000000)%>%
   select(-unit); ef
 
 ## Save final emission factors (kg/bbl)
