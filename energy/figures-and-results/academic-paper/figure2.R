@@ -12,8 +12,8 @@ library(tidyverse)
 ## paths
 main_path           = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 academic_path       = paste0(main_path, 'outputs/academic-out/extraction/')
-academic_refin_path = paste0(main_path, 'outputs/academic-out/refining/refining_2021-09-07/')
-output_folder       = 'extraction_2021-09-07/'
+academic_refin_path = paste0(main_path, 'outputs/academic-out/refining/refining_2021-09-21/')
+output_folder       = 'extraction_2021-09-21'
 academic_out_path   = paste0(academic_path, output_folder, "/")
 model_outputs_path  = 'outputs/predict-production/refining_2021-09-06/CUF0.6/outputs'
 
@@ -61,7 +61,7 @@ for (i in 1:length(subset_ids)) {
   
   id_name_tmp <- subset_ids[i]
   
-  state_out_tmp <- readRDS(paste0(academic_out_path, 'state-results/subset/', id_name_tmp, '_state_results.rds'))
+  state_out_tmp <- readRDS(paste0(academic_out_path, 'state-results/', id_name_tmp, '_state_results.rds'))
   
   diff_tmp <- state_out_tmp[year == 2019 | year == 2045, .(scen_id, oil_price_scenario, innovation_scenario,
                                                                 carbon_price_scenario, ccs_scenario, setback_scenario,
@@ -105,7 +105,7 @@ scenario_prod <- rbindlist(scen_out_list)
 
 
 
-## 1A: production over time (with historic)
+## 2A: production over time (with historic)
 hist_prod <- well_prod[doc_field_code != "000", .(total_state_bbl = sum(OilorCondensateProduced, na.rm = T)), by = .(year)]
 hist_prod[, scen_name := "Historic"]
 
@@ -150,19 +150,23 @@ fig2a <- ggplot(annual_df, aes(x = year, y = total_state_bbl / 1e6, color = scen
   geom_vline(xintercept = 2019, color = "black", lty = "dashed")
 
 ## figure
-# fig2b <- ggplot(state_diff_vals %>% filter(indicator == "production"), aes(y = diff / 1e6, color = oil_price_scenario, shape = carbon_price_scenario)) +
-#   geom_jitter() +
-#   labs(x = NULL,
-#        y = "Production (million bbls)",
-#        color = NULL) +
-#   theme_line +
-#   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-#   scale_color_manual(values = c("Historic" = "grey",
-#                                 "BAU" = "#FFBF00",
-#                                 "1 mile setback" = "#FF7F50",
-#                                 "Excise tax" = "#DE3163",
-#                                 "Excise tax: 90% emissions reduction" = "navy")) +
-#   geom_vline(xintercept = 2019, color = "black", lty = "dashed")
+## delta BBLs (difference between 2019 and 2045) vs BAU, P1, P2. 
+## Each point is delta production for all our scenarios. Color based on oil price, shape based on carbon price. 
+
+fig2b <- ggplot(state_diff_vals %>% filter(indicator == "production"), aes(x = ccs_scenario, y = diff / 1e6, color = oil_price_scenario, shape = carbon_price_scenario)) +
+  geom_jitter() +
+  labs(x = NULL,
+       y = "Difference in production: 2045 vs 2019 (million bbls)",
+       color = NULL) +
+  geom_hline(yintercept = 0, color = "black", lty = "dashed")
+  # theme_line +
+  # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+  # scale_color_manual(values = c("Historic" = "grey",
+  #                               "BAU" = "#FFBF00",
+  #                               "1 mile setback" = "#FF7F50",
+  #                               "Excise tax" = "#DE3163",
+  #                               "Excise tax: 90% emissions reduction" = "navy")) 
+  
 
 
 

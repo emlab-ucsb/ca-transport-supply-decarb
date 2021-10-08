@@ -1,7 +1,7 @@
 # CalEPA: Intersection of inmap and census tract shape files
 # vthivierge@ucsb.edu
 # created: 08/06/2020
-# updated: 09/13/2020
+# updated: 09/28/2020
 
 
 # set up environment
@@ -39,7 +39,8 @@ census_tract <- read_sf("./calepa-cn/data/inmap/census-tract/tl_2019_06_tract.sh
 
 #Select sector
 #sector <- "extraction/"
-sector <- "refining/"
+#sector <- "refining/"
+sector <- "comparison_srm_inmap/"
 
 inmap_files_raw <- list.files(paste0("./calepa-cn/data/inmap/output/inmap_output_srm/",sector,sep = ""))
 

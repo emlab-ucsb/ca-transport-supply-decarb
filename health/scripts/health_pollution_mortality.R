@@ -1,7 +1,7 @@
 # CA transportation decarb: Local pm2.5 and mortality impacts
 # hernandezcortes@ucsb.edu; vthivierge@ucsb.edu
 # created: 09/13/2021
-# updated: 09/22/2021
+# updated: 10/04/2021
 
 # set up environment ########################################
 
@@ -19,8 +19,8 @@ lapply(1:length(packages), function(x)
 
 #Set-up cores and memory
 
-no_cores <- availableCores()/2 - 1
-#no_cores <- availableCores() - 1
+#no_cores <- availableCores()/2 - 1
+no_cores <- availableCores() - 1
 plan(multisession, workers = no_cores, gc = TRUE)
 
 #future:::ClusterRegistry("stop") ## To stop clusters
@@ -132,21 +132,21 @@ total_clusters<-fields_clusters%>%
 
 #calculate air pollution using emission factors
 total_clusters <- total_clusters%>%
-  mutate(nh3=total_prod_bbl*0.00061,
-         nox=total_prod_bbl*0.04611,
-         pm25=total_prod_bbl*0.00165,
-         sox=total_prod_bbl*0.01344,
-         voc=total_prod_bbl*0.02614)
+  mutate(nh3=total_prod_bbl*0.00061/1000,
+         nox=total_prod_bbl*0.04611/1000,
+         pm25=total_prod_bbl*0.00165/1000,
+         sox=total_prod_bbl*0.01344/1000,
+         voc=total_prod_bbl*0.02614/1000)
 
 # Merge cluster pollution with extraction srm to get census tract pollution exposure 
 
 scenarios <- unique(total_clusters$scen_id)
 
-prepare_extraction <- function(buff_year){
+prepare_extraction <- function(scenarios){
   
   scenarios_temp <- scenarios
   
-  total_clusters <-subset(total_clusters, (scen_id==scenarios_temp))%>%
+  total_clusters_temp <-subset(total_clusters, (scen_id==scenarios_temp))%>%
   right_join(srm_all_pollutants_extraction,by=c("id"))%>%
     mutate(tot_nh3=weighted_totalpm25nh3*nh3,
            tot_nox=weighted_totalpm25nox*nox,
@@ -156,11 +156,11 @@ prepare_extraction <- function(buff_year){
            total_pm25=tot_nh3+tot_nox+tot_pm25+tot_sox+tot_voc,
            prim_pm25=tot_pm25)
 
-  mean_exposure<-total_clusters%>%
+  ct_exposure<-total_clusters_temp%>%
     group_by(GEOID, year, scen_id)%>%
-    summarize(total_pm25=mean(total_pm25), prim_pm25=mean(prim_pm25))
+    summarize(total_pm25=sum(total_pm25, na.rm = T), prim_pm25=sum(prim_pm25, na.rm = T))
   
-  tmp<-as.data.frame(mean_exposure) 
+  tmp<-as.data.frame(ct_exposure) 
   
   return(tmp)
   
@@ -193,11 +193,11 @@ refining_outputs <- refining_outputs%>%
   mutate(site_id = ifelse(site_id=="t-800","800",site_id),
          site_id = ifelse(site_id=="342-2","34222",site_id),
          site_id = as.numeric(site_id))%>%
-  mutate(nh3=value*0.00056,
-         nox=value*0.01495,
-         pm25=value*0.00402,
-         sox=value*0.00851,
-         voc=value*0.01247)
+  mutate(nh3=value*0.00056/1000,
+         nox=value*0.01495/1000,
+         pm25=value*0.00402/1000,
+         sox=value*0.00851/1000,
+         voc=value*0.01247/1000)
   
 # Merge refining srm to obtain census tract pm25 exposure
 
@@ -208,7 +208,7 @@ prepare_refining <- function(scenarios){
   
   scenarios_temp <- scenarios
   
-  refining_outputs <-subset(refining_outputs, (scen_id==scenarios_temp))%>%
+  refining_outputs_temp <-subset(refining_outputs, (scen_id==scenarios_temp))%>%
     right_join(srm_all_pollutants_refining, by=c("site_id"))%>%
     mutate(tot_nh3 = weighted_totalpm25nh3*nh3,
            tot_nox = weighted_totalpm25nox*nox,
@@ -218,11 +218,11 @@ prepare_refining <- function(scenarios){
            total_pm25 = tot_nh3+tot_nox+tot_pm25+tot_sox+tot_voc,
            prim_pm25 = tot_pm25)
   
-  mean_exposure<-refining_outputs%>%
-    dplyr::group_by(GEOID, year, scen_id)%>%
-    dplyr::summarize(total_pm25=mean(total_pm25), prim_pm25=mean(prim_pm25))
+  ct_exposure<-refining_outputs_temp%>%
+    group_by(GEOID, year, scen_id)%>%
+    summarize(total_pm25=sum(total_pm25, na.rm = T), prim_pm25=sum(prim_pm25, na.rm = T))
   
-  tmp<-as.data.frame(mean_exposure) 
+  tmp<-as.data.frame(ct_exposure) 
   
   return(tmp)
   
@@ -329,7 +329,7 @@ state_health%>%
 
 # (5) TEMP Analysis FOR POLLUTION ##############################################
 
-state_ref <- deltas_refining%>%
+state_ref <- deltas_extraction%>%
   group_by(year,scen_id)%>%
   summarise(delta_total_pm25 = mean(delta_total_pm25, na.rm = T),
             total_pm25 = mean(total_pm25, na.rm = T),
