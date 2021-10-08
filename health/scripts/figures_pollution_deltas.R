@@ -124,13 +124,15 @@ prepare_extraction <- function(buff_year){
   total_clusters_merge$tot_sox=total_clusters_merge$weighted_totalpm25sox*total_clusters_merge$sox
   total_clusters_merge$tot_pm25=total_clusters_merge$weighted_totalpm25pm25*total_clusters_merge$pm25
   total_clusters_merge$tot_voc=total_clusters_merge$weighted_totalpm25voc*total_clusters_merge$voc
+
+  total_clusters_merge$avg_total_pm25=(total_clusters_merge$tot_nh3+total_clusters_merge$tot_nox+total_clusters_merge$tot_pm25+total_clusters_merge$tot_sox+total_clusters_merge$tot_voc)/5
   
-  total_clusters_merge$total_pm25=total_clusters_merge$tot_nh3+total_clusters_merge$tot_nox+total_clusters_merge$tot_pm25+total_clusters_merge$tot_sox+total_clusters_merge$tot_voc
+  total_clusters_merge$total_pm25=(total_clusters_merge$tot_nh3+total_clusters_merge$tot_nox+total_clusters_merge$tot_pm25+total_clusters_merge$tot_sox+total_clusters_merge$tot_voc)
   total_clusters_merge$prim_pm25=total_clusters_merge$tot_pm25
   
   mean_exposure<-total_clusters_merge%>%
     dplyr::group_by(GEOID, year, scen_id)%>%
-    dplyr::summarize(total_pm25=mean(total_pm25), prim_pm25=mean(prim_pm25))
+    dplyr::summarize(total_pm25=sum(total_pm25), prim_pm25=sum(prim_pm25), avg_total_pm25=sum(avg_total_pm25))
   
   tmp<-as.data.frame(mean_exposure) 
   
@@ -145,12 +147,19 @@ extraction_scenarios$id <- as.numeric(as.factor(extraction_scenarios$scen_id))
 #OBTAIN BAU
 extraction_BAU<-subset(extraction_scenarios,(scen_id=="reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_no tax"))
 extraction_BAU<-extraction_BAU%>%
-  dplyr::rename(bau_total_pm25=total_pm25, bau_prim_pm25=prim_pm25)
+  dplyr::rename(bau_total_pm25=total_pm25, bau_prim_pm25=prim_pm25, bau_avg_total_pm25=avg_total_pm25)
 
 deltas_extraction<-left_join(extraction_scenarios,extraction_BAU,by=c("GEOID", "year"))
 #OBTAIN THE DIFFERENCE IN EXPOSURE
 deltas_extraction$delta_total_pm25=deltas_extraction$total_pm25-deltas_extraction$bau_total_pm25
 deltas_extraction$delta_prim_pm25=deltas_extraction$prim_pm25-deltas_extraction$bau_prim_pm25
+deltas_extraction$delta_avg_total_pm25=deltas_extraction$avg_total_pm25-deltas_extraction$bau_avg_total_pm25
+
+deltas_comparison<-deltas_extraction%>%dplyr::filter(year==2045 & (id.x==1 | id.x==2 | id.x==3 | id.x==4))
+#write_csv(deltas_comparison, "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix/inmap_comparison_srm/comparison_deltas_srm.csv")
+
+write_csv(deltas_comparison, "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix/inmap_comparison_srm/comparison_deltas_srm_not1000.csv")
+
 
 ######SPAGHETTI GRAPHS
 
