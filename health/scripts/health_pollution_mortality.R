@@ -1,7 +1,7 @@
 # CA transportation decarb: Local pm2.5 and mortality impacts
 # hernandezcortes@ucsb.edu; vthivierge@ucsb.edu
 # created: 09/13/2021
-# updated: 10/04/2021
+# updated: 10/06/2021
 
 # set up environment ########################################
 
@@ -306,10 +306,68 @@ ct_health <- ct_incidence_ca_poll %>%
 
 #Output census tract level mortality 
 
-write.csv(ct_health, paste(outputFiles, "/health/census_tract_mortality.csv", sep = ""), row.names = F)
-ct_health <- fread(paste(outputFiles, "/health/census_tract_mortality.csv", sep = ""), stringsAsFactors = F)
+#write.csv(ct_health, paste(outputFiles, "/health/census_tract_mortality.csv", sep = ""), row.names = F)
+#ct_health <- fread(paste(outputFiles, "/health/census_tract_mortality.csv", sep = ""), stringsAsFactors = F)
 
-# (4) Analysis ##############################################
+# (4) Monetizing mortality ############################################
+
+#Load data 
+
+growth_rates <- read.csv("./calepa-cn/data/benmap/processed/growth_rates.csv", stringsAsFactors = FALSE)%>%
+  filter(year > 2018)%>%
+  mutate(growth = ifelse(year==2019,0,growth_2030),
+         cum_growth = cumprod(1+growth))%>%
+  select(-growth_2030,-growth);growth_rates
+
+#Parameters
+
+VSL_2015 <- 8705114.25462459
+VSL_2019 <- VSL_2015*107.8645906/100 #(https://fred.stlouisfed.org/series/CPALTT01USA661S)
+income_elasticity_mort <- 0.4
+discount_rate = 0.03
+
+future_WTP <- function(elasticity,growth_rate,WTP){
+  return(elasticity*growth_rate*WTP + WTP) 
+}
+
+#Calculate the cost per premature mortality
+
+ct_mort_cost <- ct_health %>%
+  mutate(VSL_2019 = VSL_2019)%>%
+  left_join(growth_rates, by = c("year"="year"))%>%
+  mutate(VSL = future_WTP(income_elasticity_mort, 
+                          (cum_growth-1),
+                          VSL_2019),
+         cost_2019 = mortality_level*VSL_2019,
+         cost = mortality_level*VSL)%>%
+  group_by(year)%>%
+  mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
+         cost_PV = cost/((1+discount_rate)^(year-2019)))
+
+#Output census tract level monetized mortality 
+
+#write.csv(ct_mort_cost,paste(outputFiles, "/health/ct_mort_cost.csv", sep = ""), row.names = FALSE)
+
+# (5) TEMP ANALYSIS OF RESULTS  ##############################################
+
+#Pollution exposure
+
+state_ref <- deltas_refining%>%
+  group_by(year,scen_id)%>%
+  summarise(delta_total_pm25 = mean(delta_total_pm25, na.rm = T),
+            total_pm25 = mean(total_pm25, na.rm = T),
+            sector = unique(sector))%>%
+  ungroup()
+
+state_ref%>%
+  gather(type,pm25,delta_total_pm25:total_pm25)%>%
+  ggplot(aes(y=pm25, x=year, group = scen_id))+
+  geom_line()+
+  facet_grid(sector~type)+
+  theme_cowplot()+
+  theme(legend.position = "none")
+
+#Mortality 
 
 state_health <- ct_health%>%
   group_by(year,scen_id)%>%
@@ -323,22 +381,23 @@ state_health%>%
   gather(type,mortality,mortality_delta:mortality_level)%>%
   ggplot(aes(y=mortality, x=year, group = scen_id))+
   geom_line()+
-  facet_grid(sector~type)+
+  facet_grid(sector~type, free)+
   theme_cowplot()+
   theme(legend.position = "none")
 
-# (5) TEMP Analysis FOR POLLUTION ##############################################
+#Monetized mortality
 
-state_ref <- deltas_extraction%>%
+state_health <- ct_mort_cost%>%
   group_by(year,scen_id)%>%
-  summarise(delta_total_pm25 = mean(delta_total_pm25, na.rm = T),
-            total_pm25 = mean(total_pm25, na.rm = T),
+  summarise(cost_2019 = sum(cost_2019, na.rm = T),
+            cost = sum(cost, na.rm = T),
             sector = unique(sector))%>%
   ungroup()
 
-state_ref%>%
-  gather(type,pm25,delta_total_pm25:total_pm25)%>%
-  ggplot(aes(y=pm25, x=year, group = scen_id))+
+state_health%>%
+  #filter(sector %in% "extraction")%>%
+  gather(type,cost,cost_2019:cost)%>%
+  ggplot(aes(y=cost, x=year, group = scen_id))+
   geom_line()+
   facet_grid(sector~type)+
   theme_cowplot()+
