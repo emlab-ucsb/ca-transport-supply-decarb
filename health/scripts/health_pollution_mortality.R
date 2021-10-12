@@ -338,8 +338,8 @@ ct_mort_cost <- ct_health %>%
   mutate(VSL = future_WTP(income_elasticity_mort, 
                           (cum_growth-1),
                           VSL_2019),
-         cost_2019 = mortality_level*VSL_2019,
-         cost = mortality_level*VSL)%>%
+         cost_2019 = mortality_delta*VSL_2019,
+         cost = mortality_delta*VSL)%>%
   group_by(year)%>%
   mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
          cost_PV = cost/((1+discount_rate)^(year-2019)))
