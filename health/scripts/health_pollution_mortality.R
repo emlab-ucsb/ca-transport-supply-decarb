@@ -1,7 +1,7 @@
 # CA transportation decarb: Local pm2.5 and mortality impacts
 # hernandezcortes@ucsb.edu; vthivierge@ucsb.edu
 # created: 09/13/2021
-# updated: 10/06/2021
+# updated: 10/12/2021
 
 # set up environment ########################################
 
@@ -301,8 +301,8 @@ se <- 0.0009628
 
 #Mortality impact fold adults (>=29 years old)
 ct_health <- ct_incidence_ca_poll %>%
-  mutate(mortality_delta = (1-(1/exp(beta*delta_total_pm25)))*weighted_incidence*pop,
-         mortality_level = (1-(1/exp(beta*total_pm25)))*weighted_incidence*pop)
+  mutate(mortality_delta = ((exp(beta*delta_total_pm25)-1))*weighted_incidence*pop,
+         mortality_level = ((exp(beta*total_pm25)-1))*weighted_incidence*pop)
 
 #Output census tract level mortality 
 
