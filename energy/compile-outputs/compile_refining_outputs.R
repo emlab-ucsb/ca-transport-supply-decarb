@@ -12,9 +12,12 @@ library(doParallel)
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
-compiled_save_path_refining  = file.path('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining/', paste0('refining_', cur_date))
+compiled_save_path_refining  = file.path('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining', paste0('refining_', cur_date))
 dir.create(compiled_save_path_refining, showWarnings = FALSE)  
 
+## create a folder for health outputs
+dir.create(paste0(compiled_save_path_refining, '/census-tract-results'), showWarnings = FALSE)
+dir.create(paste0(compiled_save_path_refining, '/subset-census-tract-results'), showWarnings = FALSE)
 
 ## paths
 main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
@@ -22,6 +25,7 @@ data_path  <-'data/stocks-flows/processed'
 outputs_path <- 'model-development/scenario-plot/refinery-outputs'
 model_outputs_path <- 'outputs/predict-production/refining_2021-09-06/CUF0.6/outputs'
 inmap_re_files  <- paste0(main_path, "/data/health/source_receptor_matrix/inmap_processed_srm/refining")
+ref_save_path <- paste0(main_path, '/outputs/academic-out/refining/')
 
 ## labor path
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed'
@@ -32,12 +36,15 @@ oil_price_file <- 'oil_price_projections_revised.xlsx'
 refining_file <- 'refining_scenario_outputs_refinery_net_exports_revised.csv'
 site_2019_file <- 'site_refining_outputs_2019.csv'
 county_2019_file <- 'county_refining_outputs_2019.csv'
+refin_file <- 'ref_scenario_id_list.csv'
 
 ## read in files
 ## ---------------------------------------
 
 ## health data
 ## ------------------------------------------------
+refin_scens <- fread(paste0(ref_save_path, refin_file))
+refin_scens <- refin_scens[, .(scen_id, BAU_scen, subset_scens)]
 
 #  Load extraction source receptor matrix (srm) #######
 n_cores <- availableCores() - 1
@@ -249,15 +256,9 @@ setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'demand_scenario',
 
 setorder(full_site_out, "scen_id", "site_id", "year")
 
-
-# ## bau scen ids
-# full_site_out[, scen_id := fifelse((oil_price_scenario == 'reference case' & 
-#                                   innovation_scenario == 'low innovation' & 
-#                                   carbon_price_scenario == 'price floor' & 
-#                                   ccs_scenario == 'medium CCS cost' &
-#                                   demand_scenario == 'BAU' &
-#                                   refining_scenario == 'historic exports'), 'R-BAU', paste0("R-", scen_id))]
-
+full_site_out <- merge(full_site_out, refin_scens,
+                       by = "scen_id",
+                       all.x = T)
 
 ## save outputs for health and labor
 refining_site_fname = paste0('site_refining_outputs.csv')
@@ -363,15 +364,6 @@ setcolorder(county_out_refining_all, c('scen_id', 'oil_price_scenario', 'demand_
 
 setorder(county_out_refining_all, "scen_id", "county", "year")
 
-
-## bau scen ids
-county_out_refining_all[, scen_id := fifelse((oil_price_scenario == 'reference case' & 
-                                      innovation_scenario == 'low innovation' & 
-                                      carbon_price_scenario == 'price floor' & 
-                                      ccs_scenario == 'medium CCS cost' &
-                                      demand_scenario == 'BAU' &
-                                      refining_scenario == 'historic exports'), 'R-BAU', paste0("R-", scen_id))]
-
 county_out_refining_all[, county := fifelse(county == "Solano County", "Solano", county)]
 
 
@@ -391,6 +383,10 @@ county_out_labor <- county_out_labor[, .(scen_id, oil_price_scenario, demand_sce
                                          innovation_scenario, carbon_price_scenario, ccs_scenario, county,
                                          year, revenue, c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp,
                                          c.indu_comp)]
+
+county_out_labor <- merge(county_out_labor, refin_scens,
+                       by = "scen_id",
+                       all.x = T)
 
 
 ## save outputs for health and labor
@@ -420,9 +416,6 @@ refining_outputs_health <- full_site_out %>%
 #Loop over scenarios  
 
 scenarios <- unique(refining_outputs_health$scen_id)
-scenarios <- scenarios[1:10]
-
-ct_list <- list()
 
 # cores
 doParallel::registerDoParallel(cores = n_cores)
@@ -451,7 +444,7 @@ calc_pm25 <- function(scen_index) {
     ungroup() %>%
     as.data.table()
   
-  ct_list[[scen_index]] <- health_tmp
+  saveRDS(health_tmp, paste0(compiled_save_path_refining, '/census-tract-results/', scen_name, "_ct_results.rds"))
   
 }
 
@@ -459,63 +452,118 @@ foreach(i = 1:length(scenarios)) %dopar% {
   calc_pm25(i)
 }
 
-ct_subset_all <- rbindlist(ct_list)
 
-## now make comparisons to BAU
-#refining pm25 BAU
-refining_BAU <- ct_subset_all[(oil_price_scenario == 'reference case' & 
-                               innovation_scenario == 'low innovation' & 
-                               carbon_price_scenario == 'price floor' & 
-                               ccs_scenario == 'medium CCS cost' &
-                               demand_scenario == 'BAU' &
-                               refining_scenario == 'historic exports')]
+## make comparisons to BAU
+## read in refining pm25 BAU
+
+bau_scen_name <- refin_scens[BAU_scen == 1, scen_id]
+
+refining_BAU <- readRDS(paste0(main_path, "/outputs/academic-out/refining/refining_2021-10-12/census-tract-results/", bau_scen_name, "_ct_results.rds"))
 
 setnames(refining_BAU, c("total_pm25", "prim_pm25"), c("bau_total_pm25", "bau_prim_pm25"))
 
 refining_BAU[, scen_id := NULL]
 
+## calculate health indicators for the subset
+refining_sub <- refin_scens[BAU_scen == 1 | subset_scens == 1, .(scen_id)]
+refining_sub_vec <- as.vector(refining_sub$scen_id)
 
-## refining pm25 difference
-deltas_refining <- merge(ct_subset_all, refining_BAU,
-                         by = c("GEOID", "year"),
-                         all.x = T)
+health_impacts_list <- list()
 
-deltas_refining[, delta_total_pm25 := total_pm25 - bau_total_pm25]
-deltas_refining[, delta_prim_pm25 := prim_pm25 - bau_prim_pm25]
-deltas_refining[, GEOID := ifelse(GEOID == "06037137000", "06037930401", GEOID)]
+for (i in 1:length(refining_sub_vec)) {
+  
+  scen_tmp <- refining_sub_vec[i]
+  
+  ct_scen_out <- readRDS(paste0(main_path, "/outputs/academic-out/refining/refining_2021-10-12/census-tract-results/", scen_tmp, "_ct_results.rds"))
+  setDT(ct_scen_out)
+  
+  ## refining pm25 difference
+  deltas_refining <- merge(ct_scen_out, refining_BAU,
+                           by = c("GEOID", "year"),
+                           all.x = T)
 
-## (2.2) Merge demographic data to pollution scenarios
+  deltas_refining[, delta_total_pm25 := total_pm25 - bau_total_pm25]
+  deltas_refining[, delta_prim_pm25 := prim_pm25 - bau_prim_pm25]
+  deltas_refining[, GEOID := ifelse(GEOID == "06037137000", "06037930401", GEOID)]
 
-deltas_refining <- deltas_refining %>%
-  left_join(ces3, by = c("GEOID" = "census_tract"))%>%
-  right_join(ct_inc_pop_45_weighted, by = c("GEOID" = "ct_id", "year" = "year")) %>%
-  # remove census tracts that are water area only tracts (no population)
-  drop_na(scen_id)
+  ## (2.2) Merge demographic data to pollution scenarios
+  
+  deltas_refining <- deltas_refining %>%
+    left_join(ces3, by = c("GEOID" = "census_tract"))%>%
+    right_join(ct_inc_pop_45_weighted, by = c("GEOID" = "ct_id", "year" = "year")) %>%
+    # remove census tracts that are water area only tracts (no population)
+    drop_na(scen_id)
 
-## Mortality impact fold adults (>=29 years old)
-deltas_refining <- deltas_refining %>%
-  mutate(mortality_delta = ((exp(beta * delta_total_pm25) - 1)) * weighted_incidence * pop,
-         mortality_level = ((exp(beta * total_pm25) - 1)) * weighted_incidence * pop)
+  ## Mortality impact fold adults (>=29 years old)
+  deltas_refining <- deltas_refining %>%
+    mutate(mortality_delta = ((exp(beta * delta_total_pm25) - 1)) * weighted_incidence * pop,
+           mortality_level = ((exp(beta * total_pm25) - 1)) * weighted_incidence * pop)
 
-#Calculate the cost per premature mortality
-deltas_refining <- deltas_refining %>%
-  mutate(VSL_2019 = VSL_2019)%>%
-  left_join(growth_rates, by = c("year"="year"))%>%
-  mutate(VSL = future_WTP(income_elasticity_mort, 
-                          (cum_growth-1),
-                          VSL_2019),
-         cost_2019 = mortality_delta*VSL_2019,
-         cost = mortality_delta*VSL)%>%
-  group_by(year)%>%
-  mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
-         cost_PV = cost/((1+discount_rate)^(year-2019)))
+  ## Calculate the cost per premature mortality
+  deltas_refining <- deltas_refining %>%
+    mutate(VSL_2019 = VSL_2019)%>%
+    left_join(growth_rates, by = c("year"="year"))%>%
+    mutate(VSL = future_WTP(income_elasticity_mort, 
+                            (cum_growth-1),
+                            VSL_2019),
+           cost_2019 = mortality_delta*VSL_2019,
+           cost = mortality_delta*VSL)%>%
+    group_by(year)%>%
+    mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
+           cost_PV = cost/((1+discount_rate)^(year-2019)))
+  
+  ## final census tract level health outputs
+  deltas_refining <- deltas_refining %>%
+    select(scen_id, GEOID, disadvantaged, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+           mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
+    as.data.table()
+  
+  ## resave the census tract data
+  saveRDS(deltas_refining, paste0(compiled_save_path_refining, "subset-census-tract-results/", scen_file_name, "_ct_results.rds"))
+  
+  health_impacts_list[[i]] <- deltas_refining
+  
+  
+}
 
-## final census tract level health outputs
-deltas_refining <- deltas_refining %>%
-  select(scen_id, GEOID, disadvantaged, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
-         mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
-  as.data.table()
+subset_health_impacts <- rbindlist(health_impacts_list)
+  
+## ----------------------------------------------------------------------------
+## calculate state values, read in state value, resave with mortality values
+## ----------------------------------------------------------------------------
 
+## health  
+health_state <- subset_health_impacts[, lapply(.SD, sum, na.rm = T), .SDcols = c("total_pm25", "bau_total_pm25",
+                                                                                       "delta_total_pm25",
+                                                                                        "mortality_delta", "mortality_level", 
+                                                                                        "cost_2019", "cost", 
+                                                                                        "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
+  
+
+## labor
+labor_state <- county_out_labor[, lapply(.SD, sum, na.rm = T), .SDcols = c("revenue", "c.dire_emp", "c.indi_emp", 
+                                                                           "c.indu_emp", "c.dire_comp", 
+                                                                           "c.indi_comp", "c.indu_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
+                                                                                                                 carbon_price_scenario, ccs_scenario,
+                                                                                                                 demand_scenario, refining_scenario, year)]
+
+setnames(labor_state, c("revenue"), c("total_state_revenue"))
+
+## bbls refined
+refined_state <- full_site_out[, lapply(.SD, sum, na.rm = T), .SDcols = c("value"), by = .(scen_id, year)]
+
+setnames(refined_state, c("value"), c("state_bbl_crude_eq_consumed"))
+
+state_out <- merge(labor_state, refined_state,
+                   by = c("scen_id", "year"),
+                   all.x = T)
+
+state_out <- merge(state_out, health_state,
+                   by = c("scen_id", "year"),
+                   all.x = T)
+  
+## resave state outputs
+fwrite(state_out, paste0(compiled_save_path_refining, "/subset_state_results.csv"))
 
 
 
