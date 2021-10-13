@@ -15,6 +15,7 @@
   save_path       = 'outputs/ghg-emissions/opgee-results'
   out_path        = 'outputs/stocks-flows'
   out_file        = 'ghg_emissions_x_field_2018-2045.csv'
+  hist_file       = 'ghg_emissions_x_field_historic.csv'
 
 # load packages ------
   
@@ -56,6 +57,27 @@
   dt_res[, upstream_gCO2e_MJ := exploration_gCO2e_MJ + drilling_gCO2e_MJ + crude_production_gCO2e_MJ + 
            surface_processing_gCO2e_MJ + maintenance_gCO2e_MJ + waste_gCO2e_MJ + other_gCO2e_MJ]
   dt_res[, upstream_kgCO2e_bbl := upstream_gCO2e_MJ*(1/(2e-4))*(1/1000)]
+  
+# save historic values ------
+  
+  historic_vals <- dt_res[, .(field_name, year, upstream_kgCO2e_bbl)]
+  
+  # fix field names to match DOC naming conventions -----
+  
+  historic_vals[, doc_fieldname := field_name]
+  historic_vals[, doc_fieldname := gsub(',', '', doc_fieldname)]
+  historic_vals[doc_fieldname %like% 'North$', doc_fieldname := gsub('North', ' North', doc_fieldname)]
+  historic_vals[doc_fieldname %like% 'South$', doc_fieldname := gsub('South', ' South', doc_fieldname)]
+  historic_vals[doc_fieldname %like% 'East$', doc_fieldname := gsub('East', ' East', doc_fieldname)]
+  historic_vals[doc_fieldname %like% 'West$', doc_fieldname := gsub('West', ' West', doc_fieldname)]
+  historic_vals[doc_fieldname %like% 'N$', doc_fieldname := gsub('N', ' North', doc_fieldname)]
+  historic_vals[doc_fieldname %like% 'S$', doc_fieldname := gsub('S', ' South', doc_fieldname)]
+  historic_vals[doc_fieldname %like% 'Northwest$', doc_fieldname := gsub('Northwest', ' Northwest', doc_fieldname)]
+  historic_vals[doc_fieldname == 'Elwood S. Offshore', doc_fieldname := 'Elwood  South  Offshore']
+  
+  historic_vals[, field_name := NULL]
+  
+  fwrite(historic_vals, file.path(emlab_path, out_path, hist_file), row.names = F)
   
 # get all fields that ever have sor > 0 ------
   
