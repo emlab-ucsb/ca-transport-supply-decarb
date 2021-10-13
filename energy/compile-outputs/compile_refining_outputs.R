@@ -6,6 +6,9 @@ library(data.table)
 library(tidyverse)
 library(openxlsx)
 library(readxl)
+library(furrr)
+library(future)
+library(doParallel)
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
@@ -18,6 +21,7 @@ main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-project
 data_path  <-'data/stocks-flows/processed'
 outputs_path <- 'model-development/scenario-plot/refinery-outputs'
 model_outputs_path <- 'outputs/predict-production/refining_2021-09-06/CUF0.6/outputs'
+inmap_re_files  <- paste0(main_path, "/data/health/source_receptor_matrix/inmap_processed_srm/refining")
 
 ## labor path
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed'
@@ -31,6 +35,104 @@ county_2019_file <- 'county_refining_outputs_2019.csv'
 
 ## read in files
 ## ---------------------------------------
+
+## health data
+## ------------------------------------------------
+
+#  Load extraction source receptor matrix (srm) #######
+n_cores <- availableCores() - 1
+plan(multisession, workers = n_cores, gc = TRUE)
+
+## refining sites
+sites_vector <- c(97, 119, 164, 202, 209, 226, 271, 279, 332, 342, 343, 800, 3422, 34222, 99999)
+
+read_refining <- function(buff_site){
+  
+  bsite <- buff_site
+  
+  nh3 <- read_csv(paste0(inmap_re_files, "/nh3/srm_nh3_site", bsite, ".csv", sep="")) %>% mutate(poll = "nh3")
+  nox <- read_csv(paste0(inmap_re_files, "/nox/srm_nox_site", bsite, ".csv", sep="")) %>% mutate(poll = "nox")
+  pm25 <- read_csv(paste0(inmap_re_files, "/pm25/srm_pm25_site", bsite, ".csv", sep="")) %>% mutate(poll = "pm25")
+  sox <- read_csv(paste0(inmap_re_files, "/sox/srm_sox_site", bsite, ".csv", sep="")) %>% mutate(poll = "sox")
+  voc <- read_csv(paste0(inmap_re_files, "/voc/srm_voc_site", bsite, ".csv", sep="")) %>% mutate(poll = "voc")
+  
+  all_polls <- rbind(nh3, nox, pm25, sox, voc)
+  
+  all_polls$site = bsite
+  
+  tmp <- as.data.frame(all_polls) 
+  
+  return(tmp)
+  
+}
+
+#build refining srm
+srm_all_pollutants_refining <- future_map_dfr(sites_vector, read_refining) %>% 
+  bind_rows() %>%
+  rename(weighted_totalpm25 = totalpm25_aw) %>%
+  select(-totalpm25) %>%
+  spread(poll, weighted_totalpm25) %>%
+  rename(weighted_totalpm25nh3 = nh3,
+         weighted_totalpm25nox = nox,
+         weighted_totalpm25pm25 = pm25,
+         weighted_totalpm25sox = sox,
+         weighted_totalpm25voc = voc,
+         site_id = site)
+
+setDT(srm_all_pollutants_refining)
+
+future:::ClusterRegistry("stop")
+
+## (2.1) Load demographic data
+# Disadvantaged community definition
+ces3 <- read.csv(paste0(main_path, "/data/health/processed/ces3_data.csv"), stringsAsFactors = FALSE) %>%
+  select(census_tract, disadvantaged)%>%
+  mutate(census_tract = paste0("0", census_tract, sep="")) %>%
+  as.data.table()
+
+# Population and incidence
+ct_inc_pop_45 <- fread(paste0(main_path, "/data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
+  mutate(ct_id = paste0(stringr::str_sub(gisjoin, 2, 3),
+                        stringr::str_sub(gisjoin, 5, 7),
+                        stringr::str_sub(gisjoin, 9, 14))) %>%
+  select(ct_id, lower_age, upper_age, year, pop, incidence_2015) %>%
+  as.data.table()
+
+## census-tract level population-weighted incidence rate (for age>29)
+ct_inc_pop_45_weighted <- ct_inc_pop_45 %>%
+  filter(lower_age > 29)%>%
+  group_by(ct_id, year) %>%
+  mutate(ct_pop = sum(pop, na.rm = T),
+         share = pop/ct_pop,
+         weighted_incidence = sum(share * incidence_2015, na.rm = T)) %>%
+  summarize(weighted_incidence = unique(weighted_incidence),
+            pop = unique(ct_pop)) %>%
+  ungroup() %>%
+  as.data.table()
+
+## Coefficients from Krewski et al (2009) for mortality impact
+beta <- 0.00582
+se <- 0.0009628
+
+## for monetary mortality impact
+growth_rates <- read.csv(paste0(main_path, "/data/benmap/processed/growth_rates.csv"), stringsAsFactors = FALSE) %>%
+  filter(year > 2018) %>%
+  mutate(growth = ifelse(year == 2019, 0, growth_2030),
+         cum_growth = cumprod(1 + growth)) %>%
+  select(-growth_2030, -growth) %>%
+  as.data.table()
+
+#Parameters for monetary health impact
+VSL_2015 <- 8705114.25462459
+VSL_2019 <- VSL_2015 * 107.8645906/100 #(https://fred.stlouisfed.org/series/CPALTT01USA661S)
+income_elasticity_mort <- 0.4
+discount_rate <- 0.03
+
+future_WTP <- function(elasticity, growth_rate, WTP){
+  return(elasticity * growth_rate * WTP + WTP) 
+}
+
+
 
 ## oil prices
 oilpx_scens_real = setDT(read.xlsx(file.path(main_path, data_path, oil_price_file), sheet = 'real', cols = c(1:4)))
@@ -87,8 +189,7 @@ all_scens <- crossing(all_scens, oilpx_scen_names)
 setDT(all_scens)
 
 ## add id
-all_scens[, scen_id := .I]
-
+all_scens[, scen_id := paste(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, oil_price_scenario)]
 
 
 setcolorder(all_scens, c("scen_id", "oil_price_scenario", "demand_scenario", "refining_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario"))
@@ -149,13 +250,13 @@ setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'demand_scenario',
 setorder(full_site_out, "scen_id", "site_id", "year")
 
 
-## bau scen ids
-full_site_out[, scen_id := fifelse((oil_price_scenario == 'reference case' & 
-                                  innovation_scenario == 'low innovation' & 
-                                  carbon_price_scenario == 'price floor' & 
-                                  ccs_scenario == 'medium CCS cost' &
-                                  demand_scenario == 'BAU' &
-                                  refining_scenario == 'historic exports'), 'R-BAU', paste0("R-", scen_id))]
+# ## bau scen ids
+# full_site_out[, scen_id := fifelse((oil_price_scenario == 'reference case' & 
+#                                   innovation_scenario == 'low innovation' & 
+#                                   carbon_price_scenario == 'price floor' & 
+#                                   ccs_scenario == 'medium CCS cost' &
+#                                   demand_scenario == 'BAU' &
+#                                   refining_scenario == 'historic exports'), 'R-BAU', paste0("R-", scen_id))]
 
 
 ## save outputs for health and labor
@@ -296,5 +397,126 @@ county_out_labor <- county_out_labor[, .(scen_id, oil_price_scenario, demand_sce
 refining_county_fname = paste0('county_refining_outputs.csv')
 fwrite(county_out_labor, file.path(compiled_save_path_refining, refining_county_fname), row.names = F)
 print(paste0('Refining county outputs saved to ', refining_county_fname))
+
+
+## health outputs
+## --------------------------------------------------------
+
+# (1.3) Calculate census tract ambient emissions for refining  #######
+
+refining_outputs_health <- full_site_out %>%
+  mutate(site_id = ifelse(site_id == "t-800", "800", site_id),
+         site_id = ifelse(site_id == "342-2", "34222", site_id),
+         site_id = as.numeric(site_id))%>%
+  mutate(nh3=value*0.00056/1000,
+         nox=value*0.01495/1000,
+         pm25=value*0.00402/1000,
+         sox=value*0.00851/1000,
+         voc=value*0.01247/1000) %>%
+  as.data.table()
+
+
+# Merge refining srm to obtain census tract pm25 exposure
+#Loop over scenarios  
+
+scenarios <- unique(refining_outputs_health$scen_id)
+scenarios <- scenarios[1:10]
+
+ct_list <- list()
+
+# cores
+doParallel::registerDoParallel(cores = n_cores)
+
+
+calc_pm25 <- function(scen_index) {
+  
+  scen_name <- scenarios[scen_index]
+  
+  health_tmp <- refining_outputs_health[scen_id == scen_name]
+  
+  health_tmp <- health_tmp %>%
+    right_join(srm_all_pollutants_refining, by = c("site_id"))%>%
+    mutate(tot_nh3 = weighted_totalpm25nh3 * nh3,
+           tot_nox = weighted_totalpm25nox * nox,
+           tot_sox = weighted_totalpm25sox * sox,
+           tot_pm25 = weighted_totalpm25pm25 * pm25,
+           tot_voc = weighted_totalpm25voc * voc,
+           total_pm25 = tot_nh3+tot_nox+tot_pm25+tot_sox+tot_voc,
+           prim_pm25 = tot_pm25)
+  
+  health_tmp <- health_tmp %>%
+    group_by(GEOID, year, scen_id) %>%
+    summarize(total_pm25 = sum(total_pm25, na.rm = T), 
+              prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
+    ungroup() %>%
+    as.data.table()
+  
+  ct_list[[scen_index]] <- health_tmp
+  
+}
+
+foreach(i = 1:length(scenarios)) %dopar% {
+  calc_pm25(i)
+}
+
+ct_subset_all <- rbindlist(ct_list)
+
+## now make comparisons to BAU
+#refining pm25 BAU
+refining_BAU <- ct_subset_all[(oil_price_scenario == 'reference case' & 
+                               innovation_scenario == 'low innovation' & 
+                               carbon_price_scenario == 'price floor' & 
+                               ccs_scenario == 'medium CCS cost' &
+                               demand_scenario == 'BAU' &
+                               refining_scenario == 'historic exports')]
+
+setnames(refining_BAU, c("total_pm25", "prim_pm25"), c("bau_total_pm25", "bau_prim_pm25"))
+
+refining_BAU[, scen_id := NULL]
+
+
+## refining pm25 difference
+deltas_refining <- merge(ct_subset_all, refining_BAU,
+                         by = c("GEOID", "year"),
+                         all.x = T)
+
+deltas_refining[, delta_total_pm25 := total_pm25 - bau_total_pm25]
+deltas_refining[, delta_prim_pm25 := prim_pm25 - bau_prim_pm25]
+deltas_refining[, GEOID := ifelse(GEOID == "06037137000", "06037930401", GEOID)]
+
+## (2.2) Merge demographic data to pollution scenarios
+
+deltas_refining <- deltas_refining %>%
+  left_join(ces3, by = c("GEOID" = "census_tract"))%>%
+  right_join(ct_inc_pop_45_weighted, by = c("GEOID" = "ct_id", "year" = "year")) %>%
+  # remove census tracts that are water area only tracts (no population)
+  drop_na(scen_id)
+
+## Mortality impact fold adults (>=29 years old)
+deltas_refining <- deltas_refining %>%
+  mutate(mortality_delta = ((exp(beta * delta_total_pm25) - 1)) * weighted_incidence * pop,
+         mortality_level = ((exp(beta * total_pm25) - 1)) * weighted_incidence * pop)
+
+#Calculate the cost per premature mortality
+deltas_refining <- deltas_refining %>%
+  mutate(VSL_2019 = VSL_2019)%>%
+  left_join(growth_rates, by = c("year"="year"))%>%
+  mutate(VSL = future_WTP(income_elasticity_mort, 
+                          (cum_growth-1),
+                          VSL_2019),
+         cost_2019 = mortality_delta*VSL_2019,
+         cost = mortality_delta*VSL)%>%
+  group_by(year)%>%
+  mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
+         cost_PV = cost/((1+discount_rate)^(year-2019)))
+
+## final census tract level health outputs
+deltas_refining <- deltas_refining %>%
+  select(scen_id, GEOID, disadvantaged, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+         mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
+  as.data.table()
+
+
+
 
 
