@@ -25,7 +25,6 @@ data_path  <-'data/stocks-flows/processed/'
 
 ## health code paths
 source_path   <- paste0(main_path, 'data/health/source_receptor_matrix/')
-outputFiles   <- paste0(main_path, "outputs/academic-out/")
 inmap_ex_path  <- paste0(main_path, "data/health/source_receptor_matrix/inmap_processed_srm/extraction")
 
 ## external paths
