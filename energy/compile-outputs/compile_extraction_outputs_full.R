@@ -6,8 +6,11 @@
 ## libraries
 library(data.table)
 library(tidyverse)
+library(purrr)
 library(readxl)
 library(openxlsx)
+library(furrr)
+library(future)
 
 ## save location
 save_external <- 0
@@ -15,11 +18,18 @@ save_external <- 0
 ## current date
 cur_date              = Sys.Date()
 
-## paths
+## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-main_path_external <- '/Volumes/calepa/'
 extraction_folder_path <- 'outputs/predict-production/extraction_2021-09-21/'
 data_path  <-'data/stocks-flows/processed/'
+
+## health code paths
+source_path   <- paste0(main_path, 'data/health/source_receptor_matrix/')
+outputFiles   <- paste0(main_path, "outputs/academic-out/")
+inmap_ex_path  <- paste0(main_path, "data/health/source_receptor_matrix/inmap_processed_srm/extraction")
+
+## external paths
+main_path_external <- '/Volumes/calepa/'
 
 if(save_external == 1) {
   
@@ -44,7 +54,7 @@ labor_processed <- 'data/labor/processed/implan-results/academic-paper-multiplie
 field_save_path     = paste0(compiled_save_path, 'field-results/')
 state_save_path     = paste0(compiled_save_path, 'state-results/')
 county_save_path    = paste0(compiled_save_path, 'county-results/')
-# censust_save_path   = paste0(compiled_save_path, 'census-tract-results/')
+ct_save_path        = paste0(compiled_save_path, 'census-tract-results/')
 
 ## files
 prod_file       <- "well_prod_m_processed.csv"
@@ -56,7 +66,7 @@ dir.create(compiled_save_path, showWarnings = FALSE)
 dir.create(field_save_path, showWarnings = FALSE) 
 dir.create(state_save_path, showWarnings = FALSE)  
 dir.create(county_save_path, showWarnings = FALSE)
-# dir.create(censust_save_path, showWarnings = FALSE)  
+dir.create(ct_save_path, showWarnings = FALSE)
 
 ## outputs should include:
 ## - county-level health
@@ -162,8 +172,120 @@ init_prod <- init_prod[!doc_field_code %in% c("302", "502", "000")]
 
 # init_prod_bbls_only <- init_prod[, .(doc_field_code, year, total_prod_bbl)]
 
+## health data
+## ------------------------------------------------
 
-# read in files
+#  Load extraction source receptor matrix (srm) #######
+n_cores <- availableCores() - 1
+plan(multisession, workers = n_cores, gc = TRUE)
+
+#fields vector
+fields_vector <- c(1:26)
+
+#function
+read_extraction <- function(buff_field){
+  
+  bfield <- buff_field
+  
+  nh3  <- read_csv(paste0(inmap_ex_path, "/nh3/srm_nh3_field", bfield, ".csv", sep="")) %>% mutate(poll = "nh3")
+  nox  <- read_csv(paste0(inmap_ex_path, "/nox/srm_nox_field", bfield, ".csv", sep="")) %>% mutate(poll = "nox")
+  pm25 <- read_csv(paste0(inmap_ex_path, "/pm25/srm_pm25_field", bfield, ".csv", sep="")) %>% mutate(poll = "pm25")
+  sox  <- read_csv(paste0(inmap_ex_path, "/sox/srm_sox_field", bfield, ".csv", sep="")) %>% mutate(poll = "sox")
+  voc  <- read_csv(paste0(inmap_ex_path, "/voc/srm_voc_field", bfield, ".csv", sep="")) %>% mutate(poll = "voc")
+  
+  all_polls <- rbind(nh3, nox, pm25, sox, voc)
+  
+  all_polls$field = bfield
+  
+  tmp <- as.data.frame(all_polls) 
+  
+  return(tmp)
+  
+}
+
+#build extraction srm
+srm_all_pollutants_extraction <- future_map_dfr(fields_vector, read_extraction) %>% 
+  bind_rows() %>%
+  rename(weighted_totalpm25 = totalpm25_aw)%>%
+  select(-totalpm25) %>%
+  spread(poll, weighted_totalpm25) %>%
+  rename(weighted_totalpm25nh3 = nh3,
+         weighted_totalpm25nox = nox,
+         weighted_totalpm25pm25 = pm25,
+         weighted_totalpm25sox = sox,
+         weighted_totalpm25voc = voc,
+         id = field)
+
+future:::ClusterRegistry("stop")
+
+# (1.2) Calculate census tract ambient emissions for extraction  #######
+
+#load and process cross-walk between fields and clusters 
+extraction_field_clusters_10km <- read_csv(paste0(source_path,"/extraction_fields_clusters_10km.csv",sep="")) %>%
+  select(OUTPUT_FID, INPUT_FID) %>%
+  rename(id = OUTPUT_FID, input_fid = INPUT_FID)
+
+extraction_fields_xwalk <- foreign::read.dbf(paste0(source_path, "/extraction_fields_xwalk_id.dbf", sep = "")) %>%
+  rename(input_fid = id, doc_field_code = dc_fld_)
+
+extraction_xwalk <- extraction_field_clusters_10km %>%
+  left_join(extraction_fields_xwalk, by = c("input_fid")) 
+
+
+## (2.1) Load demographic data
+# Disadvantaged community definition
+ces3 <- read.csv(paste0(main_path, "data/health/processed/ces3_data.csv"), stringsAsFactors = FALSE) %>%
+  select(census_tract, disadvantaged)%>%
+  mutate(census_tract = paste0("0", census_tract, sep="")) %>%
+  as.data.table()
+
+# Population and incidence
+ct_inc_pop_45 <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
+  mutate(ct_id = paste0(stringr::str_sub(gisjoin, 2, 3),
+                        stringr::str_sub(gisjoin, 5, 7),
+                        stringr::str_sub(gisjoin, 9, 14))) %>%
+  select(ct_id, lower_age, upper_age, year, pop, incidence_2015) %>%
+  as.data.table()
+
+## census-tract level population-weighted incidence rate (for age>29)
+ct_inc_pop_45_weighted <- ct_inc_pop_45 %>%
+  filter(lower_age > 29)%>%
+  group_by(ct_id, year) %>%
+  mutate(ct_pop = sum(pop, na.rm = T),
+         share = pop/ct_pop,
+         weighted_incidence = sum(share * incidence_2015, na.rm = T)) %>%
+  summarize(weighted_incidence = unique(weighted_incidence),
+            pop = unique(ct_pop)) %>%
+  ungroup() %>%
+  as.data.table()
+
+## Coefficients from Krewski et al (2009) for mortality impact
+beta <- 0.00582
+se <- 0.0009628
+
+## for monetary mortality impact
+growth_rates <- read.csv(paste0(main_path, "data/benmap/processed/growth_rates.csv"), stringsAsFactors = FALSE) %>%
+  filter(year > 2018) %>%
+  mutate(growth = ifelse(year == 2019, 0, growth_2030),
+         cum_growth = cumprod(1 + growth)) %>%
+  select(-growth_2030, -growth) %>%
+  as.data.table()
+
+#Parameters for monetary health impact
+VSL_2015 <- 8705114.25462459
+VSL_2019 <- VSL_2015 * 107.8645906/100 #(https://fred.stlouisfed.org/series/CPALTT01USA661S)
+income_elasticity_mort <- 0.4
+discount_rate <- 0.03
+
+future_WTP <- function(elasticity, growth_rate, WTP){
+  return(elasticity * growth_rate * WTP + WTP) 
+}
+
+## ------------------------------------------------------------
+## process all scenarios
+## ------------------------------------------------------------
+
+## read in files
 field_files_to_process <- list.files(paste0(extraction_path, 'field-out/'))
 
 # set start time -----
@@ -171,7 +293,6 @@ start_time <- Sys.time()
 print(paste("Starting extraction compiling at ", start_time))
 
 # cores
-n_cores <- 8
 doParallel::registerDoParallel(cores = n_cores)
 
 for (i in 1:length(field_files_to_process)) {
@@ -264,10 +385,10 @@ for (i in 1:length(field_files_to_process)) {
   
   setorder(full_site_out, "scen_id", "doc_field_code", "year")
   
-
   ## save site level output for production 
   saveRDS(full_site_out, paste0(field_save_path, scenario_id_tmp, "_field_results.rds"))
-
+  
+  
   
   ## now do county-level, add labor impacts
   ## ---------------------------------------------------------
@@ -351,6 +472,51 @@ for (i in 1:length(field_files_to_process)) {
   saveRDS(county_out, paste0(county_save_path, scenario_id_tmp, "_county_results.rds"))
   
   
+  
+  ## HEALTH IMPACTS: calculate census level health impacts
+  ## -------------------------------------------------------------
+  
+  ## merge extraction production scenarios with extraction cluster 
+  health_site_out <- merge(full_site_out, extraction_xwalk,
+                           by = c("doc_field_code"),
+                           all.x = T)
+  
+  ## summarize extraction production per cluster
+  total_clusters <- health_site_out[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(id, year, scen_id)] 
+  
+  ## calculate air pollution using emission factors
+  total_clusters <- total_clusters %>%
+    mutate(nh3 = total_prod_bbl * 0.00061 / 1000,
+           nox = total_prod_bbl * 0.04611 / 1000,
+           pm25 = total_prod_bbl * 0.00165 / 1000,
+           sox = total_prod_bbl * 0.01344 / 1000,
+           voc = total_prod_bbl * 0.02614 / 1000)
+  
+  total_clusters <- total_clusters %>%
+    right_join(srm_all_pollutants_extraction, by = c("id")) %>%
+    mutate(tot_nh3 = weighted_totalpm25nh3 * nh3,
+           tot_nox = weighted_totalpm25nox * nox,
+           tot_sox = weighted_totalpm25sox * sox,
+           tot_pm25 = weighted_totalpm25pm25 * pm25,
+           tot_voc = weighted_totalpm25voc * voc,
+           total_pm25 = tot_nh3 + tot_nox + tot_pm25 + tot_sox + tot_voc,
+           prim_pm25 = tot_pm25)
+  
+  ct_exposure <- total_clusters %>%
+    ## Adjust mismatch of census tract ids between inmap and benmap (census ID changed in 2012 
+    ## http://www.diversitydatakids.org/sites/default/files/2020-02/ddk_coi2.0_technical_documentation_20200212.pdf)
+    mutate(GEOID = ifelse(GEOID == "06037137000", "06037930401", GEOID)) %>%
+    group_by(GEOID, year, scen_id) %>%
+    summarize(total_pm25 = sum(total_pm25, na.rm = T), 
+              prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
+    ungroup() %>%
+    select(scen_id, GEOID, year, total_pm25)
+  
+  ## save census tract outputs (pm2.5 levels, mortality level, cost)
+  saveRDS(ct_exposure, paste0(ct_save_path, scenario_id_tmp, "_ct_results.rds"))
+  
+  
+
   ## state outputs
   ## -------------------------------------
   
@@ -368,12 +534,114 @@ for (i in 1:length(field_files_to_process)) {
   ## save state outputs (labor, production, and revenue)
   saveRDS(state_out, paste0(state_save_path, scenario_id_tmp, "_state_results.rds"))
   
-
-  
 }
 
 elapsed_time <- Sys.time() - start_time
 print(elapsed_time)
+
+## -------------------------------------------------------------
+## now calculate relative health outputs
+## add to ct_results
+## add state values to state_results
+## -------------------------------------------------------------
+
+## extraction pm25 BAU
+extraction_BAU <- readRDS(paste0(ct_save_path, "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_no tax_ct_results.rds")) %>%
+  rename(bau_total_pm25 = total_pm25) %>%
+  select(-scen_id) %>%
+  as.data.table()
+
+## scenarios
+scenarios_to_process <- str_remove_all(field_files_to_process, "_field.rds")
+
+
+for (i in 1:length(field_files_to_process)) {
+  
+  scen_file_name <- scenarios_to_process[i]
+  
+  ct_scen_out <- readRDS(paste0(ct_save_path, scen_file_name, "_ct_results.rds"))
+  setDT(ct_scen_out)
+  
+  ## calculate delta pm 2.5
+  delta_extraction <- merge(ct_scen_out, extraction_BAU,
+                            by = c("GEOID", "year"),
+                            all = T)
+  
+  delta_extraction[, delta_total_pm25 := total_pm25- bau_total_pm25]
+  
+  
+  ## Merge demographic data to pollution scenarios
+  ct_incidence <- delta_extraction %>%
+    left_join(ces3, by = c("GEOID" = "census_tract")) %>%
+    right_join(ct_inc_pop_45_weighted, by = c("GEOID" = "ct_id", "year" = "year")) %>%
+    # remove census tracts that are water area only tracts (no population)
+    drop_na(scen_id) %>% 
+    as.data.table()
+  
+  ## Calculate mortality impact ######################################
+  
+  #Mortality impact fold adults (>=29 years old)
+  ct_incidence <- ct_incidence[, mortality_delta := ((exp(beta * delta_total_pm25) - 1)) * weighted_incidence * pop]
+  ct_incidence <- ct_incidence[, mortality_level := ((exp(beta * total_pm25) - 1)) * weighted_incidence * pop]
+
+  ## Monetizing mortality ############################################
+  
+  ## Calculate the cost per premature mortality
+  ct_incidence <- ct_incidence %>%
+    mutate(VSL_2019 = VSL_2019)%>%
+    left_join(growth_rates, by = c("year" = "year"))%>%
+    mutate(VSL = future_WTP(income_elasticity_mort, 
+                            (cum_growth-1),
+                            VSL_2019),
+           cost_2019 = mortality_delta * VSL_2019,
+           cost = mortality_delta * VSL)%>%
+    group_by(year)%>%
+    mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
+           cost_PV = cost/((1+discount_rate)^(year-2019))) %>%
+    ungroup()
+  
+  ## final census tract level health outputs
+  ct_incidence <- ct_incidence %>%
+    select(scen_id, GEOID, disadvantaged, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+           mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
+    as.data.table()
+  
+  ## resave the census tract data
+  saveRDS(ct_incidence, paste0(ct_save_path, scen_file_name, "_ct_results.rds"))
+  
+  ## ----------------------------------------------------------------------------
+  ## calculate state values, read in state value, resave with mortality values
+  ## ----------------------------------------------------------------------------
+  
+  ct_incidence_state <- ct_incidence[, lapply(.SD, sum, na.rm = T), .SDcols = c("total_pm25", "bau_total_pm25",
+                                                                                "delta_total_pm25",
+                                                                                "mortality_delta", "mortality_level", 
+                                                                                "cost_2019", "cost", 
+                                                                                "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
+  
+  
+  state_out <- readRDS(paste0(state_save_path, scen_file_name, "_state_results.rds"))
+  setDT(state_out)
+  
+  state_out <- merge(state_out, ct_incidence_state,
+                     by = c("scen_id", "year"),
+                     all.x = T)
+  
+  ## resave state outputs
+  saveRDS(state_out, paste0(state_save_path, scen_file_name, "_state_results.rds"))
+  
+
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
