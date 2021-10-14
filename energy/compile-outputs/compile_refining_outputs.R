@@ -417,16 +417,20 @@ refining_outputs_health <- full_site_out %>%
 
 scenarios <- unique(refining_outputs_health$scen_id)
 
+## run this to save PM 2.5 exposure x census tract by scenario
+## -----------------------------------------------------------------
+
 # cores
 doParallel::registerDoParallel(cores = n_cores)
 
+run_pm25_exposure <- 0
 
 calc_pm25 <- function(scen_index) {
-  
+
   scen_name <- scenarios[scen_index]
-  
+
   health_tmp <- refining_outputs_health[scen_id == scen_name]
-  
+
   health_tmp <- health_tmp %>%
     right_join(srm_all_pollutants_refining, by = c("site_id"))%>%
     mutate(tot_nh3 = weighted_totalpm25nh3 * nh3,
@@ -436,29 +440,36 @@ calc_pm25 <- function(scen_index) {
            tot_voc = weighted_totalpm25voc * voc,
            total_pm25 = tot_nh3+tot_nox+tot_pm25+tot_sox+tot_voc,
            prim_pm25 = tot_pm25)
-  
+
   health_tmp <- health_tmp %>%
     group_by(GEOID, year, scen_id) %>%
-    summarize(total_pm25 = sum(total_pm25, na.rm = T), 
+    summarize(total_pm25 = sum(total_pm25, na.rm = T),
               prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
     ungroup() %>%
     as.data.table()
-  
+
   saveRDS(health_tmp, paste0(compiled_save_path_refining, '/census-tract-results/', scen_name, "_ct_results.rds"))
-  
+
 }
 
-foreach(i = 1:length(scenarios)) %dopar% {
-  calc_pm25(i)
+if(run_pm25_exposure == 1) {
+  
+  foreach(i = 1:length(scenarios)) %dopar% {
+    calc_pm25(i)
+  }
+
 }
 
 
 ## make comparisons to BAU
 ## read in refining pm25 BAU
 
+pm25_folder <- "refining_2021-10-12/census-tract-results/"
+
+
 bau_scen_name <- refin_scens[BAU_scen == 1, scen_id]
 
-refining_BAU <- readRDS(paste0(main_path, "/outputs/academic-out/refining/refining_2021-10-12/census-tract-results/", bau_scen_name, "_ct_results.rds"))
+refining_BAU <- readRDS(paste0(main_path, "/outputs/academic-out/refining/", pm25_folder,  bau_scen_name, "_ct_results.rds"))
 
 setnames(refining_BAU, c("total_pm25", "prim_pm25"), c("bau_total_pm25", "bau_prim_pm25"))
 
@@ -519,7 +530,7 @@ for (i in 1:length(refining_sub_vec)) {
     as.data.table()
   
   ## resave the census tract data
-  saveRDS(deltas_refining, paste0(compiled_save_path_refining, "subset-census-tract-results/", scen_file_name, "_ct_results.rds"))
+  saveRDS(deltas_refining, paste0(compiled_save_path_refining, "/subset-census-tract-results/", scen_tmp, "_ct_results.rds"))
   
   health_impacts_list[[i]] <- deltas_refining
   
@@ -552,7 +563,7 @@ setnames(labor_state, c("revenue"), c("total_state_revenue"))
 ## bbls refined
 refined_state <- full_site_out[, lapply(.SD, sum, na.rm = T), .SDcols = c("value"), by = .(scen_id, year)]
 
-setnames(refined_state, c("value"), c("state_bbl_crude_eq_consumed"))
+setnames(refined_state, c("value"), c("state_crude_eq_consumed_bbl"))
 
 state_out <- merge(labor_state, refined_state,
                    by = c("scen_id", "year"),
@@ -562,8 +573,16 @@ state_out <- merge(state_out, health_state,
                    by = c("scen_id", "year"),
                    all.x = T)
   
+setcolorder(state_out, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
+                         "demand_scenario", "refining_scenario", "year", "state_crude_eq_consumed_bbl", "total_state_revenue",
+                         "c.dire_emp", "c.indi_emp",  "c.indu_emp", "c.dire_comp", "c.indi_comp", 
+                         "c.indu_comp", "total_pm25", "bau_total_pm25", "delta_total_pm25", "mortality_delta", 
+                         "mortality_level", "cost_2019", "cost",  "cost_2019_PV", "cost_PV"))
+
+subset_state_out <- state_out[scen_id %in% refining_sub_vec]
+
 ## resave state outputs
-fwrite(state_out, paste0(compiled_save_path_refining, "/subset_state_results.csv"))
+fwrite(subset_state_out, paste0(compiled_save_path_refining, "/subset_state_results.csv"))
 
 
 
