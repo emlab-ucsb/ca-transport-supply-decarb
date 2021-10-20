@@ -27,6 +27,9 @@ model_outputs_path <- 'outputs/predict-production/refining_2021-09-06/CUF0.6/out
 inmap_re_files  <- paste0(main_path, "/data/health/source_receptor_matrix/inmap_processed_srm/refining")
 ref_save_path <- paste0(main_path, '/outputs/academic-out/refining/')
 
+## set this based on where the outputs will be
+pm25_folder <- "refining_2021-10-20/census-tract-results/"
+
 ## labor path
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed'
 
@@ -42,7 +45,7 @@ refin_file <- 'ref_scenario_id_list.csv'
 ## ---------------------------------------
 
 ## DAC and CES
-dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
+dac_ces <- read_xlsx(paste0(main_path, '/data/health/raw/ces3results.xlsx'))
 
 ces_county <- dac_ces %>%
   select(`Census Tract`, `California County`) %>%
@@ -51,13 +54,13 @@ ces_county <- dac_ces %>%
   mutate(census_tract = paste0("0", census_tract, sep="")) 
 
 ## income -- cencus tract
-med_house_income <- fread(paste0(main_path, "data/Census/ca-median-house-income.csv"), stringsAsFactors = F)
+med_house_income <- fread(paste0(main_path, "/data/Census/ca-median-house-income.csv"), stringsAsFactors = F)
 med_house_income[, census_tract := paste0("0", GEOID)]
 med_house_income <- med_house_income[, .(census_tract, estimate)]
 setnames(med_house_income, "estimate", "median_hh_income")
 
 ## income -- county
-county_income <- fread(paste0(main_path, "data/Census/ca-median-house-income-county.csv"), stringsAsFactors = F)
+county_income <- fread(paste0(main_path, "/data/Census/ca-median-house-income-county.csv"), stringsAsFactors = F)
 county_income <- county_income[, .(county, estimate)]
 setnames(county_income, "estimate", "median_hh_income")
 
@@ -116,6 +119,19 @@ ces3 <- read.csv(paste0(main_path, "/data/health/processed/ces3_data.csv"), stri
   select(census_tract, population, CES3_score, disadvantaged) %>%
   mutate(census_tract = paste0("0", census_tract, sep="")) %>%
   as.data.table()
+
+## add counties
+ces3 <- merge(ces3, ces_county, 
+              by = "census_tract")
+
+## DAC proportion
+county_dac <- dcast(ces3, county + census_tract ~ disadvantaged, value.var = "population")
+county_dac[, Yes := fifelse(is.na(Yes), 0, Yes)]
+county_dac[, No := fifelse(is.na(No), 0, No)]
+county_dac[, total_pop := No + Yes]
+county_dac[, dac_share := Yes / total_pop]
+county_dac <- county_dac[, .(dac_share = weighted.mean(dac_share, total_pop, na.rm = T)), by = .(county)]
+
 
 # Population and incidence
 ct_inc_pop_45 <- fread(paste0(main_path, "/data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
@@ -408,6 +424,7 @@ county_out_labor <- merge(county_out_labor, county_dac,
                     by = "county",
                     all.x = T)
 
+## merge with income
 county_out_labor <- merge(county_out_labor, county_income,
                     by = "county",
                     all.x = T)
@@ -473,7 +490,7 @@ calc_pm25 <- function(scen_index) {
            tot_sox = weighted_totalpm25sox * sox,
            tot_pm25 = weighted_totalpm25pm25 * pm25,
            tot_voc = weighted_totalpm25voc * voc,
-           total_pm25 = tot_nh3+tot_nox+tot_pm25+tot_sox+tot_voc,
+           total_pm25 = tot_nh3 + tot_nox + tot_pm25 + tot_sox + tot_voc,
            prim_pm25 = tot_pm25)
 
   health_tmp <- health_tmp %>%
@@ -503,6 +520,8 @@ calc_pm25 <- function(scen_index) {
   
   setcolorder(health_tmp, c("scen_id", "census_tract", "population", "disadvantaged", "CES3_score", "median_hh_income", "year", "total_pm25"))
   
+  health_tmp[, prim_pm25 := NULL]
+  
 
   saveRDS(health_tmp, paste0(compiled_save_path_refining, '/census-tract-results/', scen_name, "_ct_results.rds"))
 
@@ -520,14 +539,11 @@ if(run_pm25_exposure == 1) {
 ## make comparisons to BAU
 ## read in refining pm25 BAU
 
-pm25_folder <- "refining_2021-10-12/census-tract-results/"
-
-
 bau_scen_name <- refin_scens[BAU_scen == 1, scen_id]
 
 refining_BAU <- readRDS(paste0(main_path, "/outputs/academic-out/refining/", pm25_folder,  bau_scen_name, "_ct_results.rds"))
 
-setnames(refining_BAU, c("total_pm25", "prim_pm25"), c("bau_total_pm25", "bau_prim_pm25"))
+setnames(refining_BAU, c("total_pm25"), c("bau_total_pm25"))
 
 refining_BAU <- refining_BAU[, .(census_tract, year, bau_total_pm25)]
 
@@ -541,7 +557,8 @@ for (i in 1:length(refining_sub_vec)) {
   
   scen_tmp <- refining_sub_vec[i]
   
-  ct_scen_out <- readRDS(paste0(main_path, "/outputs/academic-out/refining/refining_2021-10-12/census-tract-results/", scen_tmp, "_ct_results.rds"))
+  ## make sure to update this
+  ct_scen_out <- readRDS(paste0(main_path, "/outputs/academic-out/refining/refining_2021-10-20/census-tract-results/", scen_tmp, "_ct_results.rds"))
   setDT(ct_scen_out)
   
   ## refining pm25 difference
@@ -642,7 +659,8 @@ state_out <- merge(state_out, health_state,
 setcolorder(state_out, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
                          "demand_scenario", "refining_scenario", "year", "state_crude_eq_consumed_bbl", "total_state_revenue",
                          "c.dire_emp", "c.indi_emp",  "c.indu_emp", "c.dire_comp", "c.indi_comp", 
-                         "c.indu_comp", "total_emp", "total_comp", "total_pm25", "bau_total_pm25", "delta_total_pm25", "mortality_delta", 
+                         "c.indu_comp", "total_emp", "total_comp", "mean_total_pm25", "mean_bau_total_pm25", "mean_delta_total_mp25",
+                         "delta_total_pm25", "mortality_delta", 
                          "mortality_level", "cost_2019", "cost",  "cost_2019_PV", "cost_PV"))
 
 subset_state_out <- state_out[scen_id %in% refining_sub_vec]
