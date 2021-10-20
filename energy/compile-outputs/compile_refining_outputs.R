@@ -475,7 +475,7 @@ scenarios <- unique(refining_outputs_health$scen_id)
 # cores
 doParallel::registerDoParallel(cores = n_cores)
 
-run_pm25_exposure <- 0
+run_pm25_exposure <- 1
 
 calc_pm25 <- function(scen_index) {
 
