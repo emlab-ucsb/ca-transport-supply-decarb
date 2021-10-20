@@ -75,6 +75,27 @@ dir.create(ct_save_path, showWarnings = FALSE)
 ## read in files
 ## --------------------------------
 
+## DAC and CES
+dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
+
+ces_county <- dac_ces %>%
+  select(`Census Tract`, `California County`) %>%
+  rename(census_tract = `Census Tract`,
+         county = `California County`) %>%
+  mutate(census_tract = paste0("0", census_tract, sep="")) 
+
+## income -- cencus tract
+med_house_income <- fread(paste0(main_path, "data/Census/ca-median-house-income.csv"), stringsAsFactors = F)
+med_house_income[, census_tract := paste0("0", GEOID)]
+med_house_income <- med_house_income[, .(census_tract, estimate)]
+setnames(med_house_income, "estimate", "median_hh_income")
+
+## income -- county
+county_income <- fread(paste0(main_path, "data/Census/ca-median-house-income-county.csv"), stringsAsFactors = F)
+county_income <- county_income[, .(county, estimate)]
+setnames(county_income, "estimate", "median_hh_income")
+
+
 ## monthly well production
 well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                                                  'doc_field_code' = 'character'))
@@ -234,9 +255,28 @@ extraction_xwalk <- extraction_field_clusters_10km %>%
 ## (2.1) Load demographic data
 # Disadvantaged community definition
 ces3 <- read.csv(paste0(main_path, "data/health/processed/ces3_data.csv"), stringsAsFactors = FALSE) %>%
-  select(census_tract, disadvantaged)%>%
+  select(census_tract, population, CES3_score, disadvantaged) %>%
   mutate(census_tract = paste0("0", census_tract, sep="")) %>%
   as.data.table()
+
+## add counties
+ces3 <- merge(ces3, ces_county, 
+              by = "census_tract")
+
+## DAC proportion
+county_dac <- dcast(ces3, county + census_tract ~ disadvantaged, value.var = "population")
+county_dac[, Yes := fifelse(is.na(Yes), 0, Yes)]
+county_dac[, No := fifelse(is.na(No), 0, No)]
+county_dac[, total_pop := No + Yes]
+county_dac[, dac_share := Yes / total_pop]
+county_dac <- county_dac[, .(dac_share = weighted.mean(dac_share, total_pop, na.rm = T)), by = .(county)]
+
+# test_dac <- ces3[, .(population = sum(population, na.rm = T)), by = .(disadvantaged, county)]
+# test_dac <- dcast(test_dac, county ~ disadvantaged, value.var = "population")
+# test_dac[, Yes := fifelse(is.na(Yes), 0, Yes)]
+# test_dac[, dac_share_test := Yes / (No + Yes)]
+# test_dac[, No := NULL]
+# test_dac[, Yes := NULL]
 
 # Population and incidence
 ct_inc_pop_45 <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
@@ -286,6 +326,7 @@ future_WTP <- function(elasticity, growth_rate, WTP){
 
 ## read in files
 field_files_to_process <- list.files(paste0(extraction_path, 'field-out/'))
+
 
 # set start time -----
 start_time <- Sys.time()
@@ -460,12 +501,26 @@ for (i in 1:length(field_files_to_process)) {
                      c.indi_comp = (revenue / (10 ^ 6)) * ip.indi_comp_mult, 
                      c.indu_comp = (revenue / (10 ^ 6)) * ip.indu_comp_mult)]
   
+  county_out[, ':=' (total_emp = c.dire_emp + c.indi_emp + c.indu_emp,
+                     total_comp = c.dire_comp + c.indi_comp + c.indu_comp)]
+  
+  ## merge with county dac proportion
+  county_out <- merge(county_out, county_dac,
+                      by = "county",
+                      all.x = T)
+  
+  county_out <- merge(county_out, county_income,
+                      by = "county",
+                      all.x = T)
+  
   ## 
   county_out <- county_out[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                               setback_scenario, prod_quota_scenario, excise_tax_scenario, county, year, total_county_bbl, total_county_ghg_kgCO2e, revenue,
-                               c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp, c.indu_comp)]
+                               setback_scenario, prod_quota_scenario, excise_tax_scenario, county, dac_share, median_hh_income,
+                               year, total_county_bbl, total_county_ghg_kgCO2e, revenue,
+                               c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp, c.indu_comp, total_emp, total_comp)]
   
-  # 4. Save extraction and refining output to 1 excel file with 2 sheets 
+ 
+  
   
   ## save county outputs (labor, production, and revenue)
   saveRDS(county_out, paste0(county_save_path, scenario_id_tmp, "_county_results.rds"))
@@ -509,7 +564,22 @@ for (i in 1:length(field_files_to_process)) {
     summarize(total_pm25 = sum(total_pm25, na.rm = T), 
               prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
     ungroup() %>%
-    select(scen_id, GEOID, year, total_pm25)
+    rename(census_tract = GEOID) %>%
+    select(scen_id, census_tract, year, total_pm25)
+  
+  ## add ces score, income, and dac
+  ct_exposure <- merge(ct_exposure, ces3[, .(census_tract, population, CES3_score, disadvantaged)],
+                       by = c("census_tract"),
+                       all.x = T)
+  
+  ## add income
+  ct_exposure <- merge(ct_exposure, med_house_income,
+                       by = c("census_tract"),
+                       all.x = T)
+  
+  setorder(ct_exposure, "census_tract", "year")
+  
+  setcolorder(ct_exposure, c("scen_id", "census_tract", "population", "disadvantaged", "CES3_score", "median_hh_income", "year", "total_pm25"))
   
   ## save census tract outputs (pm2.5 levels, mortality level, cost)
   saveRDS(ct_exposure, paste0(ct_save_path, scenario_id_tmp, "_ct_results.rds"))
@@ -523,7 +593,8 @@ for (i in 1:length(field_files_to_process)) {
                                                                      "total_county_ghg_kgCO2e",
                                                                      "c.dire_emp", "c.indi_emp", 
                                                                      "c.indu_emp", "c.dire_comp", 
-                                                                     "c.indi_comp", "c.indu_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
+                                                                     "c.indi_comp", "c.indu_comp",
+                                                                     "total_emp", "total_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
                                                                                                            carbon_price_scenario, ccs_scenario,
                                                                                                            setback_scenario, prod_quota_scenario, excise_tax_scenario, year)]
   
@@ -547,7 +618,7 @@ print(elapsed_time)
 ## extraction pm25 BAU
 extraction_BAU <- readRDS(paste0(ct_save_path, "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_no tax_ct_results.rds")) %>%
   rename(bau_total_pm25 = total_pm25) %>%
-  select(-scen_id) %>%
+  select(census_tract, year, bau_total_pm25) %>% 
   as.data.table()
 
 ## scenarios
@@ -563,7 +634,7 @@ for (i in 1:length(field_files_to_process)) {
   
   ## calculate delta pm 2.5
   delta_extraction <- merge(ct_scen_out, extraction_BAU,
-                            by = c("GEOID", "year"),
+                            by = c("census_tract", "year"),
                             all = T)
   
   delta_extraction[, delta_total_pm25 := total_pm25- bau_total_pm25]
@@ -571,8 +642,8 @@ for (i in 1:length(field_files_to_process)) {
   
   ## Merge demographic data to pollution scenarios
   ct_incidence <- delta_extraction %>%
-    left_join(ces3, by = c("GEOID" = "census_tract")) %>%
-    right_join(ct_inc_pop_45_weighted, by = c("GEOID" = "ct_id", "year" = "year")) %>%
+    # left_join(ces3, by = c("census_tract")) %>%
+    right_join(ct_inc_pop_45_weighted, by = c("census_tract" = "ct_id", "year" = "year")) %>%
     # remove census tracts that are water area only tracts (no population)
     drop_na(scen_id) %>% 
     as.data.table()
@@ -594,14 +665,14 @@ for (i in 1:length(field_files_to_process)) {
                             VSL_2019),
            cost_2019 = mortality_delta * VSL_2019,
            cost = mortality_delta * VSL)%>%
-    group_by(year)%>%
+    group_by(year) %>%
     mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
            cost_PV = cost/((1+discount_rate)^(year-2019))) %>%
     ungroup()
   
   ## final census tract level health outputs
   ct_incidence <- ct_incidence %>%
-    select(scen_id, GEOID, disadvantaged, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+    select(scen_id, census_tract, CES3_score, disadvantaged, median_hh_income, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
            mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
     as.data.table()
   
@@ -612,11 +683,17 @@ for (i in 1:length(field_files_to_process)) {
   ## calculate state values, read in state value, resave with mortality values
   ## ----------------------------------------------------------------------------
   
-  ct_incidence_state <- ct_incidence[, lapply(.SD, sum, na.rm = T), .SDcols = c("total_pm25", "bau_total_pm25",
-                                                                                "delta_total_pm25",
-                                                                                "mortality_delta", "mortality_level", 
+  ct_incidence_state <- ct_incidence[, lapply(.SD, sum, na.rm = T), .SDcols = c("mortality_delta", "mortality_level", 
                                                                                 "cost_2019", "cost", 
                                                                                 "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
+  
+  
+  ct_pm_state <- ct_incidence[, lapply(.SD, mean, na.rm = T), .SDcols = c("total_pm25", "delta_total_pm25"), by = .(scen_id,  year)]
+  setnames(ct_pm_state, c("total_pm25", "delta_total_pm25"), c("mean_total_pm25", "mean_delta_total_pm25"))
+  
+  ct_incidence_state <- merge(ct_incidence_state, ct_pm_state,
+                              by = c("scen_id", "year"))
+  
   
   
   state_out <- readRDS(paste0(state_save_path, scen_file_name, "_state_results.rds"))

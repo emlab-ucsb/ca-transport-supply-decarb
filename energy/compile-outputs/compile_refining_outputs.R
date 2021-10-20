@@ -41,6 +41,26 @@ refin_file <- 'ref_scenario_id_list.csv'
 ## read in files
 ## ---------------------------------------
 
+## DAC and CES
+dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
+
+ces_county <- dac_ces %>%
+  select(`Census Tract`, `California County`) %>%
+  rename(census_tract = `Census Tract`,
+         county = `California County`) %>%
+  mutate(census_tract = paste0("0", census_tract, sep="")) 
+
+## income -- cencus tract
+med_house_income <- fread(paste0(main_path, "data/Census/ca-median-house-income.csv"), stringsAsFactors = F)
+med_house_income[, census_tract := paste0("0", GEOID)]
+med_house_income <- med_house_income[, .(census_tract, estimate)]
+setnames(med_house_income, "estimate", "median_hh_income")
+
+## income -- county
+county_income <- fread(paste0(main_path, "data/Census/ca-median-house-income-county.csv"), stringsAsFactors = F)
+county_income <- county_income[, .(county, estimate)]
+setnames(county_income, "estimate", "median_hh_income")
+
 ## health data
 ## ------------------------------------------------
 refin_scens <- fread(paste0(ref_save_path, refin_file))
@@ -93,7 +113,7 @@ future:::ClusterRegistry("stop")
 ## (2.1) Load demographic data
 # Disadvantaged community definition
 ces3 <- read.csv(paste0(main_path, "/data/health/processed/ces3_data.csv"), stringsAsFactors = FALSE) %>%
-  select(census_tract, disadvantaged)%>%
+  select(census_tract, population, CES3_score, disadvantaged) %>%
   mutate(census_tract = paste0("0", census_tract, sep="")) %>%
   as.data.table()
 
@@ -379,14 +399,29 @@ county_out_labor[, ':=' (c.dire_emp = (revenue / (10 ^ 6)) * dire_emp_mult,
                          c.indi_comp = (revenue / (10 ^ 6)) * ip.indi_comp_mult, 
                          c.indu_comp = (revenue / (10 ^ 6)) * ip.indu_comp_mult)]
 
+county_out_labor[, ':=' (total_emp = c.dire_emp + c.indi_emp + c.indu_emp,
+                         total_comp = c.dire_comp + c.indi_comp + c.indu_comp)]
+
+
+## merge with county dac proportion
+county_out_labor <- merge(county_out_labor, county_dac,
+                    by = "county",
+                    all.x = T)
+
+county_out_labor <- merge(county_out_labor, county_income,
+                    by = "county",
+                    all.x = T)
+
 county_out_labor <- county_out_labor[, .(scen_id, oil_price_scenario, demand_scenario, refining_scenario,
-                                         innovation_scenario, carbon_price_scenario, ccs_scenario, county,
+                                         innovation_scenario, carbon_price_scenario, ccs_scenario, county, dac_share, median_hh_income,
                                          year, revenue, c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp,
-                                         c.indu_comp)]
+                                         c.indu_comp, total_emp, total_comp)]
 
 county_out_labor <- merge(county_out_labor, refin_scens,
                        by = "scen_id",
                        all.x = T)
+
+
 
 
 ## save outputs for health and labor
@@ -442,11 +477,32 @@ calc_pm25 <- function(scen_index) {
            prim_pm25 = tot_pm25)
 
   health_tmp <- health_tmp %>%
+    ## Adjust mismatch of census tract ids between inmap and benmap (census ID changed in 2012 
+    ## http://www.diversitydatakids.org/sites/default/files/2020-02/ddk_coi2.0_technical_documentation_20200212.pdf)
+    mutate(GEOID = ifelse(GEOID == "06037137000", "06037930401", GEOID)) %>%
     group_by(GEOID, year, scen_id) %>%
     summarize(total_pm25 = sum(total_pm25, na.rm = T),
               prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
     ungroup() %>%
+    rename(census_tract = GEOID) %>%
     as.data.table()
+  
+  setorder(health_tmp, "census_tract", "year")
+  
+  ## add ces score, income, and dac
+  health_tmp <- merge(health_tmp, ces3[, .(census_tract, population, CES3_score, disadvantaged)],
+                       by = c("census_tract"),
+                       all.x = T)
+  
+  ## add income
+  health_tmp <- merge(health_tmp, med_house_income,
+                       by = c("census_tract"),
+                       all.x = T)
+  
+  setorder(health_tmp, "census_tract", "year")
+  
+  setcolorder(health_tmp, c("scen_id", "census_tract", "population", "disadvantaged", "CES3_score", "median_hh_income", "year", "total_pm25"))
+  
 
   saveRDS(health_tmp, paste0(compiled_save_path_refining, '/census-tract-results/', scen_name, "_ct_results.rds"))
 
@@ -473,7 +529,7 @@ refining_BAU <- readRDS(paste0(main_path, "/outputs/academic-out/refining/", pm2
 
 setnames(refining_BAU, c("total_pm25", "prim_pm25"), c("bau_total_pm25", "bau_prim_pm25"))
 
-refining_BAU[, scen_id := NULL]
+refining_BAU <- refining_BAU[, .(census_tract, year, bau_total_pm25)]
 
 ## calculate health indicators for the subset
 refining_sub <- refin_scens[BAU_scen == 1 | subset_scens == 1, .(scen_id)]
@@ -490,18 +546,17 @@ for (i in 1:length(refining_sub_vec)) {
   
   ## refining pm25 difference
   deltas_refining <- merge(ct_scen_out, refining_BAU,
-                           by = c("GEOID", "year"),
+                           by = c("census_tract", "year"),
                            all.x = T)
 
   deltas_refining[, delta_total_pm25 := total_pm25 - bau_total_pm25]
-  deltas_refining[, delta_prim_pm25 := prim_pm25 - bau_prim_pm25]
-  deltas_refining[, GEOID := ifelse(GEOID == "06037137000", "06037930401", GEOID)]
+
 
   ## (2.2) Merge demographic data to pollution scenarios
   
   deltas_refining <- deltas_refining %>%
-    left_join(ces3, by = c("GEOID" = "census_tract"))%>%
-    right_join(ct_inc_pop_45_weighted, by = c("GEOID" = "ct_id", "year" = "year")) %>%
+    left_join(ces3, by = c("census_tract" = "census_tract"))%>%
+    right_join(ct_inc_pop_45_weighted, by = c("census_tract" = "ct_id", "year" = "year")) %>%
     # remove census tracts that are water area only tracts (no population)
     drop_na(scen_id)
 
@@ -525,7 +580,7 @@ for (i in 1:length(refining_sub_vec)) {
   
   ## final census tract level health outputs
   deltas_refining <- deltas_refining %>%
-    select(scen_id, GEOID, disadvantaged, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+    select(scen_id, census_tract, CES3_score, disadvantaged, median_hh_income, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
            mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
     as.data.table()
   
@@ -544,17 +599,28 @@ subset_health_impacts <- rbindlist(health_impacts_list)
 ## ----------------------------------------------------------------------------
 
 ## health  
-health_state <- subset_health_impacts[, lapply(.SD, sum, na.rm = T), .SDcols = c("total_pm25", "bau_total_pm25",
-                                                                                       "delta_total_pm25",
-                                                                                        "mortality_delta", "mortality_level", 
-                                                                                        "cost_2019", "cost", 
-                                                                                        "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
+health_state <- subset_health_impacts[, lapply(.SD, sum, na.rm = T), .SDcols = c("mortality_delta", "mortality_level", 
+                                                                                 "cost_2019", "cost", 
+                                                                                 "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
   
+
+health_state_pm25 <- subset_health_impacts[, lapply(.SD, mean, na.rm = T), .SDcols = c("total_pm25", "bau_total_pm25",
+                                                                                       "delta_total_pm25"), by = .(scen_id, year)]
+
+
+setnames(health_state_pm25, c("total_pm25", "bau_total_pm25", "delta_total_pm25"), c("mean_total_pm25", "mean_bau_total_pm25", "mean_delta_total_mp25"))
+
+
+health_state <- merge(health_state, health_state_pm25,
+                      by = "scen_id", "year",
+                      all.x = T)
+
 
 ## labor
 labor_state <- county_out_labor[, lapply(.SD, sum, na.rm = T), .SDcols = c("revenue", "c.dire_emp", "c.indi_emp", 
                                                                            "c.indu_emp", "c.dire_comp", 
-                                                                           "c.indi_comp", "c.indu_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
+                                                                           "c.indi_comp", "c.indu_comp", 
+                                                                           "total_emp", "total_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
                                                                                                                  carbon_price_scenario, ccs_scenario,
                                                                                                                  demand_scenario, refining_scenario, year)]
 
@@ -576,7 +642,7 @@ state_out <- merge(state_out, health_state,
 setcolorder(state_out, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
                          "demand_scenario", "refining_scenario", "year", "state_crude_eq_consumed_bbl", "total_state_revenue",
                          "c.dire_emp", "c.indi_emp",  "c.indu_emp", "c.dire_comp", "c.indi_comp", 
-                         "c.indu_comp", "total_pm25", "bau_total_pm25", "delta_total_pm25", "mortality_delta", 
+                         "c.indu_comp", "total_emp", "total_comp", "total_pm25", "bau_total_pm25", "delta_total_pm25", "mortality_delta", 
                          "mortality_level", "cost_2019", "cost",  "cost_2019_PV", "cost_PV"))
 
 subset_state_out <- state_out[scen_id %in% refining_sub_vec]
