@@ -36,7 +36,7 @@ theme_line = theme_ipsum(base_family = 'Arial',
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-10-12/'
+extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-10-20/'
 save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/exploratory-figs')
 
 
@@ -65,20 +65,9 @@ state_scens <- state_out[(oil_price_scenario == "reference case" &
                           excise_tax_scenario == "no tax")]
 
 state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                      ccs_scenario, excise_tax_scenario,  setback_scenario, year, c.dire_emp, c.indi_emp, c.indu_emp,
-                                      c.dire_comp, c.indi_comp, c.indu_comp)]
-## calculate totals
-state_labor_levels[, total_emp := c.dire_emp + c.indi_emp + c.indu_emp]
-state_labor_levels[, total_comp := c.dire_comp + c.indi_comp + c.indu_comp]
+                                      ccs_scenario, excise_tax_scenario,  setback_scenario, year, total_emp, total_comp)]
 
-## select columns
-state_labor_levels <- state_labor_levels[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                             ccs_scenario, setback_scenario, excise_tax_scenario, year, total_emp, total_comp)]
-
-## select columns
-state_labor_levels <- state_labor_levels[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                             ccs_scenario, setback_scenario, excise_tax_scenario, year, total_emp, total_comp)]
-
+## melt
 state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                            'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
                            measure.vars = c("total_emp", "total_comp"),
@@ -102,11 +91,11 @@ state_extract_levels <- melt(state_extract_levels, id.vars = c('scen_id', 'oil_p
 ## health
 ## ------------------------------
 state_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                        ccs_scenario, setback_scenario, excise_tax_scenario, year, total_pm25, mortality_level, cost_2019_PV, cost_PV)]
+                                        ccs_scenario, setback_scenario, excise_tax_scenario, year, mean_total_pm25, mean_delta_total_pm25, mortality_level, mortality_delta, cost_2019_PV, cost_PV)]
 
 state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                                'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
-                             measure.vars = c("total_pm25", "mortality_level", "cost_2019_PV", "cost_PV"),
+                             measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", "mortality_delta", "cost_2019_PV", "cost_PV"),
                              variable.name = "metric",
                              value.name = "value")
 
@@ -195,7 +184,7 @@ emp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_emp"), aes(x = yea
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Labor: Total employment",
        x = NULL,
-       y = "Total employment",
+       y = "Total employment, FTE job-years",
        color = NULL) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
@@ -235,9 +224,9 @@ embed_fonts(file.path(save_info_path, 'pathway/labor_comp_x_time_fig.pdf'),
 
 
 ## pm25
-pm25_pw_fig <- ggplot(state_levels %>% filter(metric == "total_pm25"), aes(x = year, y = value, color = target, lty = policy_intervention)) +
+pm25_pw_fig <- ggplot(state_levels %>% filter(metric == "mean_total_pm25"), aes(x = year, y = value, color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Health: Total pm2.5 exposure",
+  labs(title = "Health: Mean total pm2.5 exposure",
        x = NULL,
        y = "pm2.5 exposure (ug/m3)",
        color = NULL) +
@@ -286,11 +275,11 @@ embed_fonts(file.path(save_info_path, 'pathway/health_mortality_x_time_fig.pdf')
 ## select health outputs
 
 rel_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                       ccs_scenario, setback_scenario, excise_tax_scenario, year, delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
+                                       ccs_scenario, setback_scenario, excise_tax_scenario, year, mean_delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
 
 rel_health_levels <- melt(rel_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                              'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
-                            measure.vars = c("delta_total_pm25", "mortality_delta", "cost_2019", "cost", "cost_2019_PV", "cost_PV"),
+                            measure.vars = c("mean_delta_total_pm25", "mortality_delta", "cost_2019", "cost", "cost_2019_PV", "cost_PV"),
                             variable.name = "metric",
                             value.name = "value")
 
@@ -341,7 +330,7 @@ cost_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "cost_PV"), aes(x = y
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Health: Cost of premature deaths relative to BAU",
        x = NULL,
-       y = "Difference (USD million (present value)",
+       y = "Difference (USD million present value)",
        color = NULL) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
@@ -407,7 +396,7 @@ emp_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_emp"), aes(x = 
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Labor: Total employment relative to BAU",
        x = NULL,
-       y = "Difference in total employment",
+       y = "Difference in total employment, FTE job-years",
        color = NULL) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
@@ -447,11 +436,11 @@ embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_labor_comp_x_time_fig
 
 
 ## pm25
-pm25_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "delta_total_pm25"), aes(x = year, y = diff_bau, color = target, lty = policy_intervention)) +
+pm25_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "mean_delta_total_pm25"), aes(x = year, y = diff_bau, color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Health: Total pm2.5 exposure relative to BAU",
+  labs(title = "Health: Mean pm2.5 exposure relative to BAU",
        x = NULL,
-       y = "Difference in pm2.5 exposure (ug/m3)",
+       y = "Difference in mean pm2.5 exposure (ug/m3)",
        color = NULL) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
@@ -602,7 +591,7 @@ emp_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_emp"), aes(x = reord
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor: Cumulative total employment relative to 2019",
        x = NULL,
-       y = "Total employment)",
+       y = "Total employment, FTE job-years)",
        color = NULL) +
   theme_line +
   theme(legend.position = "right",
@@ -642,7 +631,7 @@ embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_compensationl_v1
 
 ## pm25
 
-pm25_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_pm25"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+pm25_cum1_fig <- ggplot(cumul_df %>% filter(metric == "mean_total_pm25"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Health: Cumulative pm2.5 exposure relative to 2019",
        x = NULL,
@@ -755,7 +744,7 @@ embed_fonts(file.path(save_info_path, 'cumulative_v2/cumulative_ghg_v2_fig.pdf')
 ## employment
 emp_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_emp"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total employment relative to 2019",
+  labs(title = "Labor: Cumulative total employment relative to 2019, FTE job-years",
        x = "GHG emissions (% of 2019)",
        y = "Total employment)",
        color = NULL) +
@@ -799,7 +788,7 @@ embed_fonts(file.path(save_info_path, 'cumulative_v2/cumulative_compensationl_v2
 
 ## pm25
 
-pm25_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_pm25"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+pm25_cum2_fig <- ggplot(cumul_df %>% filter(metric == "mean_total_pm25"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Health: Cumulative pm2.5 exposure relative to 2019",
        x = "GHG emissions (% of 2019)",
@@ -922,7 +911,7 @@ embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_ghg_v1b_fig.
 ## employment
 emp_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_emp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total employment relative to BAU",
+  labs(title = "Labor: Cumulative total employment relative to BAU, FTE job-years",
        x = NULL,
        y = "Total employment)",
        color = NULL) +
@@ -964,7 +953,7 @@ embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_compensation
 
 ## pm25
 
-pm25_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "delta_total_pm25"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+pm25_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mean_delta_total_pm25"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Health: Cumulative pm2.5 exposure relative to BAU",
        x = NULL,
@@ -1090,7 +1079,7 @@ embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_ghg_v2b_fig.
 ## employment
 emp_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_emp"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total employment relative to BAU",
+  labs(title = "Labor: Cumulative total employment relative to BAU, FTE job-years",
        x = "GHG emissions (% of 2019)",
        y = "Total employment)",
        color = NULL) +
@@ -1134,7 +1123,7 @@ embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_compensation
 
 ## pm25
 
-pm25_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "delta_total_pm25"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+pm25_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mean_delta_total_pm25"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Health: Cumulative pm2.5 exposure relative to BAU",
        x = "GHG emissions (% of 2019)",

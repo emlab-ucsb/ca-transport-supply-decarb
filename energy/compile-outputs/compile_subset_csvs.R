@@ -9,8 +9,10 @@ library(data.table)
 main_path         <- '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
 academic_out_path      <- file.path(main_path, 'outputs/academic-out/extraction/')
 
-## read in saved rds files
-extraction_folder = 'extraction_2021-10-12'
+## read in saved rds files - updates as needed
+extraction_folder = 'extraction_2021-10-20'
+
+## subfolders
 compiled_path  = paste0(academic_out_path, extraction_folder, '/')
 field_path     = paste0(compiled_path, 'field-results/')
 state_path     = paste0(compiled_path, 'state-results/')
