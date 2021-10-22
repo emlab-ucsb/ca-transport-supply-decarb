@@ -8,7 +8,7 @@
   scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
   inn_file          = 'innovation_scenarios.csv'
   carbon_file       = 'final_carbon_tax_scenarios.csv'
-  ccs_ref_file      = 'ccs_refining_scenarios.csv'
+  ccs_ref_file      = 'ccs_refining_scenarios_revised.csv'
   incentive_file    = 'CCS_LCFS_45Q.xlsx'
   
   
@@ -28,7 +28,7 @@
   ccs_scens = fread(file.path(scen_path, ccs_ref_file), header = T)
   ccs_scens[, ccs_price_usd_per_kg := ccs_price/1000] # convert from usd per metric ton to usd per kg
   ccs_scens = ccs_scens[, c('year', 'ccs_scenario', 'ccs_price_usd_per_kg')]
-  ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost'))]
+  ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('no ccs', 'high CCS cost', 'medium CCS cost', 'low CCS cost'))]
   
   # load ccs incentives file 
   incentives_scens = setDT(read.xlsx(file.path(data_path, incentive_file), sheet = 'scenarios', cols = c(1:3)))
@@ -36,6 +36,8 @@
   # create adjusted ccs costs ------
   
   ccs_scens_adj = ccs_scens[incentives_scens, on = .(year), allow.cartesian = T, nomatch = 0]
+  
+  
   ccs_scens_adj[, ccs_scenario_adj := fcase(incentive_scenario == 'no incentives', paste0(ccs_scenario),
                                             incentive_scenario == '45Q only', paste0(ccs_scenario, ' - 45Q'),
                                             incentive_scenario == '45Q + LCFS', paste0(ccs_scenario, ' - 45Q - LCFS'))]
