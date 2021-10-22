@@ -118,7 +118,7 @@ filter_run_scens = function(scenario_selection, scens) {
       
       carbon_subset_vec <- c("price floor", "price ceiling", "central SCC")
       carbon_scens_vec <- c("carbon_setback_1000ft", "carbon_setback_5280ft", "carbon_90_perc_reduction", "central SCC")
-      ccs_subset_vec <- c("medium CCS cost", "high CCS cost", "medium CCS cost - 45Q - LCFS", "high CCS cost - 45Q - LCFS")
+      ccs_subset_vec <- c("no ccs", "medium CCS cost", "high CCS cost", "medium CCS cost - 45Q - LCFS", "high CCS cost - 45Q - LCFS")
       tax_subset_vec <- c("tax_setback_1000ft", "tax_setback_2500ft", "tax_setback_5280ft", "tax_90_perc_reduction")
       
       setback_dt = sel_scenarios_dt[prod_quota_scenario == 'no quota']
