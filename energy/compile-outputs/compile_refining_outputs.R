@@ -572,7 +572,8 @@ for (i in 1:length(refining_sub_vec)) {
   ## (2.2) Merge demographic data to pollution scenarios
   
   deltas_refining <- deltas_refining %>%
-    left_join(ces3, by = c("census_tract" = "census_tract"))%>%
+    select(scen_id, census_tract, median_hh_income, year, total_pm25, bau_total_pm25, delta_total_pm25) %>%
+    left_join(ces3, by = c("census_tract" = "census_tract")) %>%
     right_join(ct_inc_pop_45_weighted, by = c("census_tract" = "ct_id", "year" = "year")) %>%
     # remove census tracts that are water area only tracts (no population)
     drop_na(scen_id)
@@ -629,7 +630,7 @@ setnames(health_state_pm25, c("total_pm25", "bau_total_pm25", "delta_total_pm25"
 
 
 health_state <- merge(health_state, health_state_pm25,
-                      by = "scen_id", "year",
+                      by = c("scen_id", "year"),
                       all.x = T)
 
 
