@@ -20,7 +20,7 @@ refining_out_path = 'predict-production/refining_2021-09-06/CUF0.6/outputs'
 oil_price_file    = 'oil_price_projections_revised.xlsx'
 inn_file          = 'innovation_scenarios.csv'
 carbon_file       = 'final_carbon_tax_scenarios.csv' ## includes equiv setback and 90%
-ccs_ext_file      = 'ccs_extraction_scenarios.csv'
+ccs_ext_file      = 'ccs_extraction_scenarios_revised.csv'
 setback_file      = 'setback_coverage_R.csv'
 prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
 excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback and 90%
@@ -56,7 +56,7 @@ carbonpx_scens_name <- distinct(carbonpx_scens[, .(carbon_price_scenario)])
 ccs_scens = fread(file.path(scen_path, ccs_ext_file), header = T)
 ccs_scens[, ccs_price_usd_per_kg := ccs_price/1000] # convert from usd per metric ton to usd per kg
 ccs_scens = ccs_scens[, c('year', 'ccs_scenario', 'ccs_price_usd_per_kg')]
-ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost'))]
+ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('no ccs', 'high CCS cost', 'medium CCS cost', 'low CCS cost'))]
 
 
 ## load setback scenarios
@@ -143,7 +143,7 @@ scen_sel[, BAU_scen := fifelse((oil_price_scenario == 'reference case' &
 ## find scen selection
 carbon_subset_vec <- c("price floor", "price ceiling", "central SCC")
 carbon_scens_vec <- c("carbon_setback_1000ft", "carbon_setback_5280ft", "carbon_90_perc_reduction", "central SCC")
-ccs_subset_vec <- c("medium CCS cost", "high CCS cost", "medium CCS cost - 45Q - LCFS", "high CCS cost - 45Q - LCFS")
+ccs_subset_vec <- c("no ccs", "medium CCS cost", "high CCS cost", "medium CCS cost - 45Q - LCFS", "high CCS cost - 45Q - LCFS")
 tax_subset_vec <- c("tax_setback_1000ft", "tax_setback_2500ft", "tax_setback_5280ft", "tax_90_perc_reduction")
 
 setback_dt = scen_sel[(innovation_scenario == 'low innovation' &
