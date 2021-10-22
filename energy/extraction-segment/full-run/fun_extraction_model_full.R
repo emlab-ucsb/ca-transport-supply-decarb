@@ -28,7 +28,7 @@ run_extraction_model <- function(scenario_selection) {
     inn_file          = 'innovation_scenarios.csv'
     # carbon_file       = 'carbon_prices_revised.csv'
     carbon_file       = 'final_carbon_tax_scenarios.csv' ## includes equiv setback and 90%
-    ccs_ext_file      = 'ccs_extraction_scenarios.csv'
+    ccs_ext_file      = 'ccs_extraction_scenarios_revised.csv' ## revised includes ccs cost = inf
     ccs_ref_file      = 'ccs_refining_scenarios.csv'
     ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
     setback_file      = 'setback_coverage_R.csv'
