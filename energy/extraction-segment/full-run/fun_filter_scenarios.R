@@ -1,6 +1,7 @@
 
-filter_run_scens = function(scenario_selection, scens) {
+filter_run_scens = function(scenario_selection, scens, scen_list) {
   
+  scen_id_list_sub <- scen_list
   
   sel_scenarios_dt <- scens
   
@@ -116,7 +117,7 @@ filter_run_scens = function(scenario_selection, scens) {
     
     if (scenario_selection == 'full_run_subset') {
       
-      subset_scens_df <- scen_id_list[BAU_scen == 1 | subset_scens == 1]
+      subset_scens_df <- scen_id_list_sub[BAU_scen == 1 | subset_scens == 1]
       
       sel_scenarios_dt = sel_scenarios_dt[scen_id %in% subset_scens_df[, scen_id]]
       

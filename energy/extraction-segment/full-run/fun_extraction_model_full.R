@@ -73,6 +73,8 @@ run_extraction_model <- function(scenario_selection) {
     
   # load data -----
     
+    browser()
+    
     ## scen id list
     scen_id_list = fread(file.path(academic_out, scen_id_file), header = T)
     
@@ -271,7 +273,7 @@ run_extraction_model <- function(scenario_selection) {
     
     
     ## filter scen_sel for appropriate set of scenarios
-    scen_sel = filter_run_scens(scenario_selection, scen_sel)
+    scen_sel = filter_run_scens(scenario_selection, scen_sel, scen_id_list)
     
     print(nrow(scen_sel))
     
