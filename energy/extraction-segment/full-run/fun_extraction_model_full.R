@@ -73,8 +73,6 @@ run_extraction_model <- function(scenario_selection) {
     
   # load data -----
     
-    browser()
-    
     ## scen id list
     scen_id_list = fread(file.path(academic_out, scen_id_file), header = T)
     
