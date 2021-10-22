@@ -7,7 +7,7 @@ run_extraction_model <- function(scenario_selection) {
     outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
     data_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
     scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
-    
+    academic_out      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/'
     
   # file names  
     entry_file        = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
@@ -38,6 +38,7 @@ run_extraction_model <- function(scenario_selection) {
     # excise_tax_file   = 'excise_tax_scenarios.csv'
     incentive_file    = 'CCS_LCFS_45Q.xlsx'
     n_wells_file      = 'n_wells_area.csv'
+    scen_id_file      = 'scenario_id_list.csv'
     
     
   # source from other scripts -----
@@ -72,6 +73,9 @@ run_extraction_model <- function(scenario_selection) {
     
   # load data -----
     
+    ## scen id list
+    scen_id_list = fread(file.path(academic_out, scen_id_file), header = T)
+    
     # load oil price data
     oilpx_scens = setDT(read.xlsx(file.path(data_path, oil_price_file), sheet = 'nominal', cols = c(1, 7:9)))
     colnames(oilpx_scens) = c('year', 'reference_case', 'high_oil_price', 'low_oil_price')
@@ -95,7 +99,7 @@ run_extraction_model <- function(scenario_selection) {
     ccs_scens = fread(file.path(scen_path, ccs_ext_file), header = T)
     ccs_scens[, ccs_price_usd_per_kg := ccs_price/1000] # convert from usd per metric ton to usd per kg
     ccs_scens = ccs_scens[, c('year', 'ccs_scenario', 'ccs_price_usd_per_kg')]
-    ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost'))]
+    ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('no ccs', 'high CCS cost', 'medium CCS cost', 'low CCS cost'))]
     
     ## load price data
     price_data = fread(file.path(outputs_path, 'stocks-flows', forecast_file), header = T)
