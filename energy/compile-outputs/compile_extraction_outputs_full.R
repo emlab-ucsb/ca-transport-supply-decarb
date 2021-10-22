@@ -20,7 +20,7 @@ cur_date              = Sys.Date()
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/predict-production/extraction_2021-09-21/'
+extraction_folder_path <- 'outputs/predict-production/extraction_2021-10-22/'
 data_path  <-'data/stocks-flows/processed/'
 
 ## health code paths
