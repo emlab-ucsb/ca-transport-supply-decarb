@@ -28,8 +28,8 @@
   
   ## 0.2, 0.3, 0.4, 0.5, 0.7, 0.8
 
-  # ref_threshold     = 0.6 ## main threshold
-  ref_threshold     = 0.3
+  ref_threshold     = 0.6 ## main threshold
+  # ref_threshold     = 0.3
   ren_threshold     = 0.9
   pred_years        = 2020:2045
   a                 = 4
@@ -41,8 +41,8 @@
 
   save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
   cur_date    = Sys.Date()
-  # run_name    = 'CUF0.6' ## main run
-  run_name    = 'CUF0.3'
+  run_name    = 'CUF0.6' ## main run
+  # run_name    = 'CUF0.3'
   save_path   = file.path(save_path, paste0('refining_', cur_date))
   dir.create(save_path)
   save_path   = file.path(save_path, run_name)
@@ -2286,9 +2286,9 @@
     # reorder factor levels
       ref_cons_prod_scens[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
       ref_cons_prod_scens[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
-      ref_cons_prod_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
-                                                                            'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
-                                                                            'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
+      ref_cons_prod_scens[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost', "no ccs",
+                                                                            'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q', "no ccs - 45Q",
+                                                                            'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS', "no ccs - 45Q - LCFS",
                                                                             'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)'))]
 
   # plot: refinery-ghg emissions under scenarios ----------
@@ -2418,9 +2418,9 @@
       indiv_prod[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       indiv_prod[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
       indiv_prod[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
-      indiv_prod[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
-                                                                   'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
-                                                                   'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
+      indiv_prod[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost', "no ccs",
+                                                                   'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q', "no ccs - 45Q",
+                                                                   'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS', "no ccs - 45Q - LCFS",
                                                                    'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)'))]
       
       setorder(indiv_prod, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, site_id, fuel)
@@ -2471,9 +2471,9 @@
       indiv_cons[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       indiv_cons[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
       indiv_cons[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
-      indiv_cons[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
-                                                                   'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
-                                                                   'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
+      indiv_cons[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost', "no ccs",
+                                                                   'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q', "no ccs - 45Q",
+                                                                   'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS', "no ccs - 45Q - LCFS",
                                                                    'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)'))]
       
       setorder(indiv_cons, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, site_id, fuel, source)
@@ -2519,9 +2519,9 @@
       indiv_ghg[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       indiv_ghg[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
       indiv_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
-      indiv_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
-                                                                  'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
-                                                                  'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
+      indiv_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost', "no ccs",
+                                                                  'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q', "no ccs - 45Q",
+                                                                  'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS', "no ccs - 45Q - LCFS",
                                                                   'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)'))]
       
       setorder(indiv_ghg, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, site_id, source)
@@ -2665,9 +2665,9 @@
     in_state_ghg[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable',  'total'))]
     in_state_ghg[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
     in_state_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
-    in_state_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
-                                                                   'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
-                                                                   'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
+    in_state_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost', "no ccs",
+                                                                   'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q', "no ccs - 45Q",
+                                                                   'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS', "no ccs - 45Q - LCFS",
                                                                    'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)'))]
     
     setorder(in_state_ghg, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, source)
@@ -2704,9 +2704,9 @@
     out_state_ghg[, source := factor(source, levels = c('traditional', 'residual renewable', 'main renewable',  'total'))]
     out_state_ghg[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
     out_state_ghg[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
-    out_state_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
-                                                                    'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
-                                                                    'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
+    out_state_ghg[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost', "no ccs",
+                                                                    'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q', "no ccs - 45Q",
+                                                                    'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS', "no ccs - 45Q - LCFS",
                                                                     'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)'))]
     
     setorder(out_state_ghg, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, source)
@@ -2806,9 +2806,9 @@
       dt[, cluster := factor(cluster, levels = c('Bay Area', 'Bakersfield', 'South'))]
       dt[, innovation_scenario := factor(innovation_scenario, levels = c('low innovation', 'high innovation'))]
       dt[, carbon_price_scenario := factor(carbon_price_scenario, levels = c('price floor', 'carbon_setback_1000ft', 'central SCC', 'carbon_setback_5280ft', 'price ceiling', 'carbon_90_perc_reduction'))]
-      dt[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost',
-                                                           'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q',
-                                                           'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS',
+      dt[, ccs_scenario := factor(ccs_scenario, levels = c('high CCS cost', 'medium CCS cost', 'low CCS cost', "no ccs",
+                                                           'high CCS cost - 45Q', 'medium CCS cost - 45Q', 'low CCS cost - 45Q', "no ccs - 45Q",
+                                                           'high CCS cost - 45Q - LCFS', 'medium CCS cost - 45Q - LCFS', 'low CCS cost - 45Q - LCFS', "no ccs - 45Q - LCFS",
                                                            'high CCS cost - 45Q - LCFS (constrained)', 'medium CCS cost - 45Q - LCFS (constrained)', 'low CCS cost - 45Q - LCFS (constrained)'))]
       setorder(dt, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, cluster, source)
       
