@@ -30,18 +30,24 @@ theme_line = theme_ipsum(base_family = 'Arial',
         strip.text = element_text(hjust = 0.5),
         plot.margin = unit(c(1,1,1,1), 'lines'))
 
-
-
-
-
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-10-20/'
-save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/exploratory-figs')
-
-
 state_save_path     = paste0(main_path, extraction_folder_path, 'state-results/')
 
+## create a folder to store outputs
+cur_date              = Sys.Date()
+save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/exploratory-figs/', paste0("figs_", cur_date))
+dir.create(save_info_path, showWarnings = FALSE)  
+dir.create(paste0(save_info_path, "/bau_cumulative_v1"), showWarnings = FALSE) 
+dir.create(paste0(save_info_path, "/bau_cumulative_v2"), showWarnings = FALSE)
+dir.create(paste0(save_info_path, "/cumulative_v1"), showWarnings = FALSE) 
+dir.create(paste0(save_info_path, "/cumulative_v2"), showWarnings = FALSE) 
+dir.create(paste0(save_info_path, "/labor_v_mortality"), showWarnings = FALSE) 
+dir.create(paste0(save_info_path, "/pathway"), showWarnings = FALSE) 
+dir.create(paste0(save_info_path, "/pathway_rel_bau"), showWarnings = FALSE) 
+
+## read inputs
 state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 
 ## filter for BAU macro (ref oil price, price floor, low innovation, and medium CCS cost)
