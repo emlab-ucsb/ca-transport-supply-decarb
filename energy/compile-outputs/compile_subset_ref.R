@@ -21,11 +21,17 @@ refining_file     = 'refining_scenario_outputs_refinery_net_exports_revised.csv'
 ## load refining outputs
 refining_out <- fread(file.path(outputs_path, refining_out_path, refining_file))
 
+## oil prices
+oil_price_scenario_vec <- c('reference case', 'high oil price', 'low oil price')
+
+
 ## select scenarios
 refining_scens <- unique(refining_out[, .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario)])
 
 ## add oil price
-refining_scens <- crossing(refining_scens, oilpx_scens_names)
+refining_scens <- crossing(refining_scens, oil_price_scenario_vec)
+
+setnames(refining_scens, "oil_price_scenario_vec", "oil_price_scenario")
 
 ## add scen_id
 refining_scens <- refining_scens %>%
