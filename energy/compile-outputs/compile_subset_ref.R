@@ -10,7 +10,7 @@ library(openxlsx)
 
 # paths -----
 outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
-refining_out_path = 'predict-production/refining_2021-10-22/CUF0.6/outputs'
+refining_out_path = 'predict-production/refining_2021-10-26/CUF0.6/outputs'
 
 ## file names
 refining_file     = 'refining_scenario_outputs_refinery_net_exports_revised.csv'

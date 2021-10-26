@@ -32,7 +32,7 @@ theme_line = theme_ipsum(base_family = 'Arial',
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-10-20/'
+extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-10-22/'
 state_save_path     = paste0(main_path, extraction_folder_path, 'state-results/')
 
 ## create a folder to store outputs
@@ -58,15 +58,15 @@ state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 state_scens <- state_out[(oil_price_scenario == "reference case" &
                             carbon_price_scenario %in% c("carbon_setback_1000ft", "carbon_setback_5280ft",
                                                          "carbon_90_perc_reduction", "central SCC") &
-                            ccs_scenario == "medium CCS cost" &
+                            ccs_scenario %in% c("medium CCS cost", "no ccs") &
                             setback_scenario == "no_setback" &
                             excise_tax_scenario == "no tax") |
                          (oil_price_scenario == "reference case" &
                          carbon_price_scenario == "price floor" &
-                         ccs_scenario == "medium CCS cost") |
+                         ccs_scenario %in% c("medium CCS cost", "no ccs")) |
                          (oil_price_scenario == "reference case" &
                           carbon_price_scenario == "price floor" &
-                          ccs_scenario == "medium CCS cost" &
+                          ccs_scenario %in% c("medium CCS cost", "no ccs") &
                           setback_scenario == "no_setback" &
                           excise_tax_scenario == "no tax")]
 
@@ -117,23 +117,38 @@ state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price fl
 ## targets
 target1000 <- c("reference case_no_setback_no quota_carbon_setback_1000ft_medium CCS cost_low innovation_no tax",
                 "reference case_setback_1000ft_no quota_price floor_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_1000ft")
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_1000ft",
+                "reference case_no_setback_no quota_carbon_setback_1000ft_no ccs_low innovation_no tax",
+                "reference case_setback_1000ft_no quota_price floor_no ccs_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_1000ft")
 
 target2500 <- c("reference case_no_setback_no quota_central SCC_medium CCS cost_low innovation_no tax",
                 "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_2500ft",
-                "reference case_setback_2500ft_no quota_price floor_medium CCS cost_low innovation_no tax")
+                "reference case_setback_2500ft_no quota_price floor_medium CCS cost_low innovation_no tax",
+                "reference case_setback_2500ft_no quota_price floor_no ccs_low innovation_no tax",
+                "reference case_no_setback_no quota_central SCC_no ccs_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_2500ft")
 
 target5280 <- c("reference case_no_setback_no quota_carbon_setback_5280ft_medium CCS cost_low innovation_no tax",
                 "reference case_setback_5280ft_no quota_price floor_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_5280ft")
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_5280ft",
+                "reference case_no_setback_no quota_carbon_setback_5280ft_no ccs_low innovation_no tax",
+                "reference case_setback_5280ft_no quota_price floor_no ccs_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_5280ft")
 
 target90 <- c("reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_90_perc_reduction",
-              "reference case_no_setback_no quota_carbon_90_perc_reduction_medium CCS cost_low innovation_no tax")
+              "reference case_no_setback_no quota_carbon_90_perc_reduction_medium CCS cost_low innovation_no tax",
+              "reference case_no_setback_no quota_carbon_90_perc_reduction_no ccs_low innovation_no tax",
+              "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_90_perc_reduction")
 
 state_levels[, target := fifelse(scen_id %in% target1000, "1000ft setback",
                                               fifelse(scen_id %in% target2500, "2500ft setback",
                                                       fifelse(scen_id %in% target5280, "5280ft setback",
                                                               fifelse(scen_id %in% target90, "90% reduction", "BAU"))))]
+
+state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no ccs", "ccs")]
+
+
 
 ## pathways
 ##--------------------
@@ -148,6 +163,7 @@ prod_pw_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl"), aes(
        x = NULL,
        y = "Production (million bbls)",
        color = NULL) +
+  facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line +
@@ -170,6 +186,7 @@ ghg_pw_fig <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO2"),
        x = NULL,
        y = "GHG emissions (MtCO2e)",
        color = NULL) +
+  facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line +
