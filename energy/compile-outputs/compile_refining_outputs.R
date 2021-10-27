@@ -143,7 +143,7 @@ ct_inc_pop_45 <- fread(paste0(main_path, "/data/benmap/processed/ct_inc_45.csv")
 
 ## census-tract level population-weighted incidence rate (for age>29)
 ct_inc_pop_45_weighted <- ct_inc_pop_45 %>%
-  filter(lower_age > 29)%>%
+  filter(lower_age > 29) %>%
   group_by(ct_id, year) %>%
   mutate(ct_pop = sum(pop, na.rm = T),
          share = pop/ct_pop,
@@ -558,7 +558,7 @@ for (i in 1:length(refining_sub_vec)) {
   scen_tmp <- refining_sub_vec[i]
   
   ## make sure to update this
-  ct_scen_out <- readRDS(paste0(main_path, "/outputs/academic-out/refining/refining_2021-10-20/census-tract-results/", scen_tmp, "_ct_results.rds"))
+  ct_scen_out <- readRDS(paste0(main_path, "/outputs/academic-out/refining/refining_2021-10-26/census-tract-results/", scen_tmp, "_ct_results.rds"))
   setDT(ct_scen_out)
   
   ## refining pm25 difference
@@ -661,8 +661,7 @@ setcolorder(state_out, c("scen_id", "oil_price_scenario", "innovation_scenario",
                          "demand_scenario", "refining_scenario", "year", "state_crude_eq_consumed_bbl", "total_state_revenue",
                          "c.dire_emp", "c.indi_emp",  "c.indu_emp", "c.dire_comp", "c.indi_comp", 
                          "c.indu_comp", "total_emp", "total_comp", "mean_total_pm25", "mean_bau_total_pm25", "mean_delta_total_mp25",
-                         "delta_total_pm25", "mortality_delta", 
-                         "mortality_level", "cost_2019", "cost",  "cost_2019_PV", "cost_PV"))
+                         "mortality_delta", "mortality_level", "cost_2019", "cost",  "cost_2019_PV", "cost_PV"))
 
 subset_state_out <- state_out[scen_id %in% refining_sub_vec]
 
