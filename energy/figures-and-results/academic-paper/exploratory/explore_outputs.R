@@ -221,6 +221,27 @@ ggsave(ghg_pw_fig,
        width = 8, 
        height = 5)
 
+
+## ghg
+ghg_pw_fig_ccs <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = year, y = value , color = target, lty = policy_intervention)) +
+  geom_line(size = 0.75, alpha = 0.8) +
+  labs(title = "GHG emissions",
+       x = NULL,
+       y = "GHG emissions (MtCO2e)",
+       color = NULL) +
+  facet_wrap(~ccs_option) +
+  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme_line +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm')) 
+
+ggsave(ghg_pw_fig_ccs, 
+       filename = file.path(save_info_path, 'pathway/ghg_x_time_fig_ccs.png'), 
+       width = 8, 
+       height = 5)
+
+
 # embed_fonts(file.path(save_info_path, 'pathway/ghg_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/ghg_x_time_fig.pdf'))
 
