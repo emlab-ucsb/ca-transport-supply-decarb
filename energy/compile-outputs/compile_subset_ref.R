@@ -45,7 +45,7 @@ refining_scens[, BAU_scen := fifelse((oil_price_scenario == 'reference case' &
                                         carbon_price_scenario == 'price floor' & 
                                         ccs_scenario == 'medium CCS cost' &
                                         demand_scenario == 'BAU' &
-                                        refining_scenario == 'historic exports'), 1, 0)]
+                                        refining_scenario == 'historic production'), 1, 0)]
 
 ## find scen selection
 carbon_subset_vec <- c("price floor", "price ceiling", "central SCC")
