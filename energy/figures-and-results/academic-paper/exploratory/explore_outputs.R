@@ -45,7 +45,7 @@ dir.create(paste0(save_info_path, "/cumulative_v1"), showWarnings = FALSE)
 dir.create(paste0(save_info_path, "/cumulative_v2"), showWarnings = FALSE) 
 dir.create(paste0(save_info_path, "/labor_v_mortality"), showWarnings = FALSE) 
 dir.create(paste0(save_info_path, "/pathway"), showWarnings = FALSE) 
-dir.create(paste0(save_info_path, "/pathway_rel_bau"), showWarnings = FALSE) 
+dir.create(paste0(save_info_path, "/pathway_rel_bau"), showWarnings = FALSE)
 
 ## read inputs
 state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
@@ -58,15 +58,15 @@ state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 state_scens <- state_out[(oil_price_scenario == "reference case" &
                             carbon_price_scenario %in% c("carbon_setback_1000ft", "carbon_setback_5280ft",
                                                          "carbon_90_perc_reduction", "central SCC") &
-                            ccs_scenario %in% c("medium CCS cost", "no ccs") &
+                            ccs_scenario %in% c("high CCS cost", "no ccs") &
                             setback_scenario == "no_setback" &
                             excise_tax_scenario == "no tax") |
                          (oil_price_scenario == "reference case" &
                          carbon_price_scenario == "price floor" &
-                         ccs_scenario %in% c("medium CCS cost", "no ccs")) |
+                         ccs_scenario %in% c("high CCS cost", "no ccs")) |
                          (oil_price_scenario == "reference case" &
                           carbon_price_scenario == "price floor" &
-                          ccs_scenario %in% c("medium CCS cost", "no ccs") &
+                          ccs_scenario %in% c("high CCS cost", "no ccs") &
                           setback_scenario == "no_setback" &
                           excise_tax_scenario == "no tax")]
 
@@ -115,29 +115,29 @@ state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price fl
                                                       fifelse(excise_tax_scenario != "no tax", "excise tax", "BAU")))]
 
 ## targets
-target1000 <- c("reference case_no_setback_no quota_carbon_setback_1000ft_medium CCS cost_low innovation_no tax",
-                "reference case_setback_1000ft_no quota_price floor_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_1000ft",
+target1000 <- c("reference case_no_setback_no quota_carbon_setback_1000ft_high CCS cost_low innovation_no tax",
+                "reference case_setback_1000ft_no quota_price floor_high CCS cost_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_high CCS cost_low innovation_tax_setback_1000ft",
                 "reference case_no_setback_no quota_carbon_setback_1000ft_no ccs_low innovation_no tax",
                 "reference case_setback_1000ft_no quota_price floor_no ccs_low innovation_no tax",
                 "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_1000ft")
 
-target2500 <- c("reference case_no_setback_no quota_central SCC_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_2500ft",
-                "reference case_setback_2500ft_no quota_price floor_medium CCS cost_low innovation_no tax",
+target2500 <- c("reference case_no_setback_no quota_central SCC_high CCS cost_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_high CCS cost_low innovation_tax_setback_2500ft",
+                "reference case_setback_2500ft_no quota_price floor_high CCS cost_low innovation_no tax",
                 "reference case_setback_2500ft_no quota_price floor_no ccs_low innovation_no tax",
                 "reference case_no_setback_no quota_central SCC_no ccs_low innovation_no tax",
                 "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_2500ft")
 
-target5280 <- c("reference case_no_setback_no quota_carbon_setback_5280ft_medium CCS cost_low innovation_no tax",
-                "reference case_setback_5280ft_no quota_price floor_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_5280ft",
+target5280 <- c("reference case_no_setback_no quota_carbon_setback_5280ft_high CCS cost_low innovation_no tax",
+                "reference case_setback_5280ft_no quota_price floor_high CCS cost_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_high CCS cost_low innovation_tax_setback_5280ft",
                 "reference case_no_setback_no quota_carbon_setback_5280ft_no ccs_low innovation_no tax",
                 "reference case_setback_5280ft_no quota_price floor_no ccs_low innovation_no tax",
                 "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_5280ft")
 
-target90 <- c("reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_90_perc_reduction",
-              "reference case_no_setback_no quota_carbon_90_perc_reduction_medium CCS cost_low innovation_no tax",
+target90 <- c("reference case_no_setback_no quota_price floor_high CCS cost_low innovation_tax_90_perc_reduction",
+              "reference case_no_setback_no quota_carbon_90_perc_reduction_high CCS cost_low innovation_no tax",
               "reference case_no_setback_no quota_carbon_90_perc_reduction_no ccs_low innovation_no tax",
               "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_90_perc_reduction")
 
