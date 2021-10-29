@@ -14,7 +14,7 @@ outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-p
 data_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
 scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
 academic_out      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/'
-refining_out_path = 'predict-production/refining_2021-09-06/CUF0.6/outputs'
+# refining_out_path = 'predict-production/refining_2021-09-06/CUF0.6/outputs'
 
 ## file names  
 oil_price_file    = 'oil_price_projections_revised.xlsx'
@@ -25,7 +25,7 @@ setback_file      = 'setback_coverage_R.csv'
 prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
 excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback and 90%
 incentive_file    = 'CCS_LCFS_45Q.xlsx'
-refining_file     = 'refining_scenario_outputs_refinery_net_exports_revised.csv'
+# refining_file     = 'refining_scenario_outputs_refinery_net_exports_revised.csv'
 
 # load data -----
 
@@ -130,6 +130,10 @@ setcolorder(scen_sel, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'pr
 
 ## filter scen_sel for appropriate set of scenarios
 scen_sel = scen_sel[prod_quota_scenario == 'no quota']
+
+## remove no ccs with incentives
+scen_sel = scen_sel[!ccs_scenario %in% c('no ccs - 45Q', 'no ccs - 45Q - LCFS')]
+
 
 ## bau scen ids
 scen_sel[, BAU_scen := fifelse((oil_price_scenario == 'reference case' & 
