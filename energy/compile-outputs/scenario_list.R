@@ -14,7 +14,6 @@ outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-p
 data_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
 scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
 academic_out      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/'
-# refining_out_path = 'predict-production/refining_2021-09-06/CUF0.6/outputs'
 
 ## file names  
 oil_price_file    = 'oil_price_projections_revised.xlsx'
@@ -25,7 +24,6 @@ setback_file      = 'setback_coverage_R.csv'
 prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
 excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback and 90%
 incentive_file    = 'CCS_LCFS_45Q.xlsx'
-# refining_file     = 'refining_scenario_outputs_refinery_net_exports_revised.csv'
 
 # load data -----
 
