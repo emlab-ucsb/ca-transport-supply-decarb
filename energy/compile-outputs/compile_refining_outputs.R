@@ -40,6 +40,7 @@ refining_file <- 'refining_scenario_outputs_refinery_net_exports_revised.csv'
 site_2019_file <- 'site_refining_outputs_2019.csv'
 county_2019_file <- 'county_refining_outputs_2019.csv'
 refin_file <- 'ref_scenario_id_list.csv'
+ghg_2019_file <- 'refining_emissions_state_2019.csv'
 
 ## read in files
 ## ---------------------------------------
@@ -68,6 +69,7 @@ setnames(county_income, "estimate", "median_hh_income")
 ## ------------------------------------------------
 refin_scens <- fread(paste0(ref_save_path, refin_file))
 refin_scens <- refin_scens[, .(scen_id, BAU_scen, subset_scens)]
+
 
 #  Load extraction source receptor matrix (srm) #######
 n_cores <- availableCores() - 1
@@ -196,6 +198,13 @@ site_2019 <- fread(file.path(main_path, outputs_path, site_2019_file))
 ## 2019 county level out
 county_2019 <- fread(file.path(main_path, outputs_path, county_2019_file))
 
+## ghg 2019
+ghg_2019 <- fread(paste0(main_path, "/model-development/scenario-plot/refinery-outputs/", ghg_2019_file))
+
+ghg_2019 <- ghg_2019[boundary == "in-state", .(year, value)]
+ghg_2019[, mtco2e := value / 1e9]
+ghg_2019[, value := NULL]
+
 ## site ids 
 site_id <- fread(paste0(main_path, "/data/stocks-flows/processed/refinery_loc_cap_manual.csv"), colClasses = c("site_id" = "character")) %>%
   select(site_id, county)
@@ -221,6 +230,19 @@ site_out_refining <- refining_out[type == "consumption" &
                                   source == "total" &
                                   boundary == "complete", .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario,
                                                             ccs_scenario, site_id, year, fuel, type, value)]
+
+## ghg values
+## ----------------------------------
+
+site_out_ghg <- refining_out[type == "ghg" & 
+                             source == "total" &
+                             boundary == "complete", .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario,
+                                                              ccs_scenario, site_id, year, fuel, type, value)]
+
+## bind
+site_out_refining <- rbind(site_out_refining, site_out_ghg)
+
+
 ## all scenario, refinery, year combinations
 all_scens <- unique(refining_out[, .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario)])
 
@@ -260,22 +282,45 @@ full_site_df_2019 <- merge(full_site_df_2019, site_2019,
 full_site_df_2019 <- full_site_df_2019[, .(scen_id, oil_price_scenario, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario,
                                            ccs_scenario, site_id, type, fuel, year, value_bbls)]
 
-setnames(full_site_df_2019, "value_bbls", "value")
+setnames(full_site_df_2019, "value_bbls", "bbls_consumed")
 
+full_site_df_2019[, fuel := NULL]
+full_site_df_2019[, type := NULL]
+full_site_df_2019[, ghg_kg := NA]
 
 ## now do projection
 ## -------------------------------------------------
 
 full_site_df_proj <- full_site_df[year > 2019]
 
+## metrics 
+metrics <- unique(site_out_refining[, .(type)])
+
+full_site_df_proj <- crossing(full_site_df_proj, metrics)
+
+setDT(full_site_df_proj)
+
 full_site_df_proj <- merge(full_site_df_proj, site_out_refining,
                            by = c('demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                                  'site_id', 'year'),
+                                  'site_id', 'year', 'type'),
                            all.x = T)
 
-full_site_df_proj[,':=' (value = fifelse(is.na(value), 0, value),
-                         type = fifelse(is.na(type), "consumption", type),
-                         fuel = fifelse(is.na(fuel), "crude", fuel))]
+full_site_df_proj[, fuel := NULL]
+
+## fill in NA
+full_site_df_proj[, value := fifelse(is.na(value), 0, value)]
+
+## dcast
+full_site_df_proj <- dcast(full_site_df_proj, scen_id + oil_price_scenario + demand_scenario + 
+                             refining_scenario + innovation_scenario + carbon_price_scenario +
+                             ccs_scenario + site_id + year ~ type, value.var = "value")
+
+setnames(full_site_df_proj, c("consumption", "ghg"), c("bbls_consumed", "ghg_kg"))
+
+
+# full_site_df_proj[,':=' (value = fifelse(is.na(value), 0, value),
+#                          type = fifelse(is.na(type), "consumption", type),
+#                          fuel = fifelse(is.na(fuel), "crude", fuel))]
 
 ## bind 2019 to projected
 full_site_out <- rbind(full_site_df_2019, full_site_df_proj)
@@ -287,8 +332,9 @@ full_site_out <- merge(full_site_out, refinery_names,
                        by = "site_id",
                        all.x = T)
 
-setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                             'site_id', 'refinery_name', 'type', 'fuel', 'year', 'value'))
+setcolorder(full_site_out, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 
+                             'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
+                             'site_id', 'refinery_name', 'year', 'bbls_consumed', 'ghg_kg'))
 
 setorder(full_site_out, "scen_id", "site_id", "year")
 
@@ -645,9 +691,10 @@ labor_state <- county_out_labor[, lapply(.SD, sum, na.rm = T), .SDcols = c("reve
 setnames(labor_state, c("revenue"), c("total_state_revenue"))
 
 ## bbls refined
-refined_state <- full_site_out[, lapply(.SD, sum, na.rm = T), .SDcols = c("value"), by = .(scen_id, year)]
+refined_state <- full_site_out[, lapply(.SD, sum, na.rm = T), .SDcols = c("bbls_consumed", "ghg_kg"), by = .(scen_id, year)]
 
-setnames(refined_state, c("value"), c("state_crude_eq_consumed_bbl"))
+refined_state[, ghg_kg := fifelse(year == 2019, ghg_2019[, mtco2e][1] * 1e9, ghg_kg)]
+
 
 state_out <- merge(labor_state, refined_state,
                    by = c("scen_id", "year"),
