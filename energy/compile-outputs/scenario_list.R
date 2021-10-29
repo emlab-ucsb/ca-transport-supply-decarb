@@ -132,6 +132,9 @@ scen_sel = scen_sel[prod_quota_scenario == 'no quota']
 ## remove no ccs with incentives
 scen_sel = scen_sel[!ccs_scenario %in% c('no ccs - 45Q', 'no ccs - 45Q - LCFS')]
 
+## refactor
+scen_sel$ccs_scenario <- droplevels(scen_sel$ccs_scenario)
+
 
 ## bau scen ids
 scen_sel[, BAU_scen := fifelse((oil_price_scenario == 'reference case' & 
