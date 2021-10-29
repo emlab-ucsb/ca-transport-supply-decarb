@@ -42,6 +42,8 @@
                                             incentive_scenario == '45Q only', paste0(ccs_scenario, ' - 45Q'),
                                             incentive_scenario == '45Q + LCFS', paste0(ccs_scenario, ' - 45Q - LCFS'))]
   
+  ## remove no ccs with incentives
+  ccs_scens_adj = ccs_scens_adj[!ccs_scenario_adj %in% c('no ccs - 45Q', 'no ccs - 45Q - LCFS')]
   
   # adjust ccs price with incentives
   ccs_scens_adj[, ccs_price_usd_per_kg_adj := ccs_price_usd_per_kg - (incentive_price/1e3)]
