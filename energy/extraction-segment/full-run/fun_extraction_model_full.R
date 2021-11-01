@@ -34,8 +34,8 @@ run_extraction_model <- function(scenario_selection) {
     setback_file      = 'setback_coverage_R.csv'
     # prod_quota_file   = 'prod_quota_scenarios.csv'
     prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
-    excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback and 90%
-    # excise_tax_file   = 'excise_tax_scenarios.csv'
+    # excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback and 90%
+    excise_tax_file   = 'all_excise_tax_scenarios.csv' ## for testing
     incentive_file    = 'CCS_LCFS_45Q.xlsx'
     n_wells_file      = 'n_wells_area.csv'
     scen_id_file      = 'scenario_id_list.csv'
@@ -1421,8 +1421,8 @@ run_extraction_model <- function(scenario_selection) {
       # fwrite(vintage_all, file.path(save_info_path, 'vintage-out', vintage_fname_z), row.names = F)
       
       ## field
-      field_fname_z = paste0(scenario_name_z, '_field.rds')
-      saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
+      # field_fname_z = paste0(scenario_name_z, '_field.rds')
+      # saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
       # 
       ## state
       state_fname_z = paste0(scenario_name_z, '_state.rds')
@@ -1472,23 +1472,23 @@ run_extraction_model <- function(scenario_selection) {
     # 
     # output_list = do.call(Map, c(f = rbind, res))
     # 
-    # end_time = Sys.time()
-    # time_diff = difftime(end_time, start_time, units='mins')
+    end_time = Sys.time()
+    time_diff = difftime(end_time, start_time, units='mins')
     # 
     # print(paste("Ended extraction model at ", end_time))
     # 
     # print(paste("Model took ", round(time_diff[[1]]), " minutes to complete. Now saving results ..."))
     # 
-    # # save info file
-    #   print(paste0("Saving run information file to ", save_info_path))
-    #   run_info = data.table(scenario_selection = scenario_selection,
-    #                         start_time = start_time,
-    #                         end_time = end_time,
-    #                         duration = paste0(round(time_diff[[1]]), ' minutes'))
-    #   fwrite(run_info, file.path(save_info_path, 'run_info.csv'), row.names = F)
-    # 
-    # # save outputs to csv -----
-    # 
+    # save info file
+      print(paste0("Saving run information file to ", save_info_path))
+      run_info = data.table(scenario_selection = scenario_selection,
+                            start_time = start_time,
+                            end_time = end_time,
+                            duration = paste0(round(time_diff[[1]]), ' minutes'))
+      fwrite(run_info, file.path(save_info_path, 'run_info.csv'), row.names = F)
+
+    # save outputs to csv -----
+
     # # create subdirectory of save_path, currently based on run_type ------
     # 
     # save_processed_path = file.path(save_path, run_type)
@@ -1506,14 +1506,14 @@ run_extraction_model <- function(scenario_selection) {
     # fwrite(output_list[[2]], file.path(save_processed_path, field_fname), row.names = F)
     # print(paste0('Saved field-level results to ', field_fname))
     # 
-    # # save state-level results ------
-    # 
-    # state_fname = paste0(scenario_selection, '-state-level-results.csv')
-    # fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
-    # print(paste0('Saved state-level results to ', state_fname))
-    # 
-    # rm(solve_b, solve_mean_b, ghg_all)
-    # 
+    # save state-level results ------
+
+    state_fname = paste0(scenario_selection, '-state-level-results.csv')
+    fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
+    print(paste0('Saved state-level results to ', state_fname))
+
+    rm(solve_b, solve_mean_b, ghg_all)
+
     # # save density results ------
     # 
     # density_fname = paste0(scenario_selection, '-density-results.csv')
