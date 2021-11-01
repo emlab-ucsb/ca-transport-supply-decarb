@@ -27,15 +27,16 @@ run_extraction_model <- function(scenario_selection) {
     oil_price_file    = 'oil_price_projections_revised.xlsx'
     inn_file          = 'innovation_scenarios.csv'
     # carbon_file       = 'carbon_prices_revised.csv'
-    carbon_file       = 'final_carbon_tax_scenarios.csv' ## includes equiv setback and 90%
+    # carbon_file       = 'final_carbon_tax_scenarios.csv' ## includes equiv setback and 90%
+    carbon_file       = 'carbon_px_scens_search.csv' ## carbon price search
     ccs_ext_file      = 'ccs_extraction_scenarios_revised.csv' ## revised includes ccs cost = inf
     ccs_ref_file      = 'ccs_refining_scenarios.csv'
     ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
     setback_file      = 'setback_coverage_R.csv'
     # prod_quota_file   = 'prod_quota_scenarios.csv'
     prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' ## two setback scenarios added
-    # excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback and 90%
-    excise_tax_file   = 'all_excise_tax_scenarios.csv' ## for testing
+    excise_tax_file   = 'final_excise_tax_scenarios.csv' ## includes equiv setback and 90%
+    # excise_tax_file   = 'all_excise_tax_scenarios.csv' ## for testing
     incentive_file    = 'CCS_LCFS_45Q.xlsx'
     n_wells_file      = 'n_wells_area.csv'
     scen_id_file      = 'scenario_id_list.csv'
