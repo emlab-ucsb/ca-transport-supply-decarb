@@ -17,7 +17,6 @@ load_scenarios_dt = function(scenario_selection) {
   # carbon_file       = 'carbon_prices_revised.csv'
   carbon_file       = 'carbon_px_scens_search.csv' ## search for carbon scens
   ccs_ext_file      = 'ccs_extraction_scenarios.csv'
-  ccs_ref_file      = 'ccs_refining_scenarios.csv'
   ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
   setback_file      = 'setback_coverage_R.csv'
   # prod_quota_file   = 'prod_quota_scenarios.csv'
@@ -153,6 +152,9 @@ load_scenarios_dt = function(scenario_selection) {
                                             incentive_scenario == '45Q + LCFS', paste0(ccs_scenario, ' - 45Q - LCFS'))]
   
   
+  ## remove redundant scenarios
+  ccs_scens_adj = ccs_scens_adj[!ccs_scenario_adj %in% c('no ccs - 45Q', 'no ccs - 45Q - LCFS')]
+  
   # adjust ccs price with incentives
   ccs_scens_adj[, ccs_price_usd_per_kg_adj := ccs_price_usd_per_kg - (incentive_price/1e3)]
   
@@ -186,7 +188,7 @@ load_scenarios_dt = function(scenario_selection) {
     scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' &
                                    innovation_scenario == 'low innovation' &
                                    # carbon_price_scenario == 'price floor' &
-                                   ccs_scenario == 'medium CCS cost' &
+                                   ccs_scenario %in% c('no ccs', 'medium CCS cost') &
                                    # excise_tax_scenario == 'no tax' & ## all tax
                                    # setback_scenario == 'no_setback' &
                                    prod_quota_scenario == 'no quota')] ## all quota
@@ -199,18 +201,38 @@ load_scenarios_dt = function(scenario_selection) {
     scenarios_dt = scenarios_dt[(oil_price_scenario == 'reference case' &
                                    innovation_scenario == 'low innovation' &
                                    # carbon_price_scenario == 'price floor' &
-                                   ccs_scenario == 'medium CCS cost' &
-                                   excise_tax_scenario == 'no tax' & ## all tax
+                                   ccs_scenario %in% c('no ccs', 'medium CCS cost') &
+                                   excise_tax_scenario == 'no tax' & 
                                    setback_scenario == 'no_setback' &
                                    prod_quota_scenario == 'no quota') |
                                   (oil_price_scenario == 'reference case' &
                                      innovation_scenario == 'low innovation' &
                                      carbon_price_scenario == 'price floor' &
-                                     ccs_scenario == 'medium CCS cost' &
+                                     ccs_scenario %in% c('no ccs', 'medium CCS cost') &
                                      excise_tax_scenario == 'no tax' &
                                      # setback_scenario == 'no_setback' & ## all setback
                                      prod_quota_scenario == 'no quota')]
     
+  }
+  
+  if (scenario_selection == 'tax_scens') {
+    
+    
+    
+    sel_scenarios_dt = sel_scenarios_dt[(oil_price_scenario == 'reference case' &
+                                           innovation_scenario == 'low innovation' &
+                                           carbon_price_scenario == 'price floor' &
+                                           ccs_scenario %in% c('no ccs', 'medium CCS cost') &
+                                           # excise_tax_scenario == 'no tax' & ## all tax
+                                           setback_scenario == 'no_setback' &
+                                           prod_quota_scenario == 'no quota') |
+                                          (oil_price_scenario == 'reference case' &
+                                             innovation_scenario == 'low innovation' &
+                                             carbon_price_scenario == 'price floor' &
+                                             ccs_scenario %in% c('no ccs', 'medium CCS cost') &
+                                             excise_tax_scenario == 'no tax' &
+                                             # setback_scenario == 'no_setback' & ## all setback
+                                             prod_quota_scenario == 'no quota')]
   }
   
   
