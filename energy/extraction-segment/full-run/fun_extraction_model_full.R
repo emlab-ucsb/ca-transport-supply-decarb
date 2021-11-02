@@ -27,8 +27,8 @@ run_extraction_model <- function(scenario_selection) {
     oil_price_file    = 'oil_price_projections_revised.xlsx'
     inn_file          = 'innovation_scenarios.csv'
     # carbon_file       = 'carbon_prices_revised.csv'
-    # carbon_file       = 'final_carbon_tax_scenarios.csv' ## includes equiv setback and 90%
-    carbon_file       = 'carbon_px_scens_search.csv' ## carbon price search
+    carbon_file       = 'final_carbon_tax_scenarios.csv' ## includes equiv setback and 90%
+    # carbon_file       = 'carbon_px_scens_search.csv' ## carbon price search
     ccs_ext_file      = 'ccs_extraction_scenarios_revised.csv' ## revised includes ccs cost = inf
     ccs_ref_file      = 'ccs_refining_scenarios.csv'
     ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
@@ -1509,11 +1509,11 @@ run_extraction_model <- function(scenario_selection) {
     # 
     # save state-level results ------
 
-    state_fname = paste0(scenario_selection, '-state-level-results.csv')
-    fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
-    print(paste0('Saved state-level results to ', state_fname))
-
-    rm(solve_b, solve_mean_b, ghg_all)
+    # state_fname = paste0(scenario_selection, '-state-level-results.csv')
+    # fwrite(output_list[[3]], file.path(save_processed_path, state_fname), row.names = F)
+    # print(paste0('Saved state-level results to ', state_fname))
+    # 
+    # rm(solve_b, solve_mean_b, ghg_all)
 
     # # save density results ------
     # 
