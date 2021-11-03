@@ -43,7 +43,7 @@ refining_scens <- refining_scens %>%
 refining_scens[, BAU_scen := fifelse((oil_price_scenario == 'reference case' & 
                                         innovation_scenario == 'low innovation' & 
                                         carbon_price_scenario == 'price floor' & 
-                                        ccs_scenario == 'medium CCS cost' &
+                                        ccs_scenario == 'no ccs' &
                                         demand_scenario == 'BAU' &
                                         refining_scenario == 'historic production'), 1, 0)]
 
