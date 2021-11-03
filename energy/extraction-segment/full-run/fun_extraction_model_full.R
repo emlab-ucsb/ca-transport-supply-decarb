@@ -275,6 +275,14 @@ run_extraction_model <- function(scenario_selection) {
                 'carbon_price_scenario', 'ccs_scenario', 'innovation_scenario', 'excise_tax_scenario'))
     
     
+    ## remove target carbon/excise tax scenarios that don't have matching ccs scenario
+    scen_sel[, carbon_ccs := sub(".*-", "", carbon_price_scenario)]
+    scen_sel[!carbon_ccs %in% c("medium CCS cost", "no ccs"), carbon_ccs := ccs_scenario]
+    scen_sel <- scen_sel[carbon_ccs == ccs_scenario]
+    scen_sel[, carbon_ccs := NULL]
+    
+    
+    
     ## filter scen_sel for appropriate set of scenarios
     scen_sel = filter_run_scens(scenario_selection, scen_sel, scen_id_list)
     

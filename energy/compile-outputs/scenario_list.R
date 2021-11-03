@@ -216,6 +216,12 @@ carbon_dt = unique(scen_sel[(innovation_scenario == 'low innovation' &
 selected_scens = rbind(setback_dt, tax_dt, carbon_dt)
 selected_scens = distinct(selected_scens)
 
+## filter so that carbon_price_scenario matches ccs_scenario
+scen_sel[, carbon_ccs := sub(".*-", "", carbon_price_scenario)]
+scen_sel[!carbon_ccs %in% c("medium CCS cost", "no ccs"), carbon_ccs := ccs_scenario]
+scen_sel <- scen_sel[carbon_ccs == ccs_scenario]
+scen_sel[, carbon_ccs := NULL]
+
 
 ## indicate scenarios
 scen_sel[, subset_scens := fifelse(scen_id %in% selected_scens[, scen_id], 1, 0)]
