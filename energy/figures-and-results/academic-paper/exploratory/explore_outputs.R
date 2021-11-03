@@ -47,6 +47,23 @@ dir.create(paste0(save_info_path, "/labor_v_mortality"), showWarnings = FALSE)
 dir.create(paste0(save_info_path, "/pathway"), showWarnings = FALSE) 
 dir.create(paste0(save_info_path, "/pathway_rel_bau"), showWarnings = FALSE)
 
+## Create population by year time series
+ct_population <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
+  mutate(ct_id = paste0(stringr::str_sub(gisjoin, 2, 3),
+                        stringr::str_sub(gisjoin, 5, 7),
+                        stringr::str_sub(gisjoin, 9, 14))) %>%
+  select(ct_id, lower_age, year, pop) %>%
+  as.data.table()
+
+state_population <- ct_population %>%
+  filter(lower_age > 29)%>%
+  group_by(year) %>%
+  mutate(state_pop = sum(pop, na.rm = T)) %>%
+  summarize(state_pop = unique(state_pop),
+            year = unique(year)) %>%
+  ungroup() %>%
+  as.data.table()
+
 ## read inputs
 state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 
@@ -70,15 +87,25 @@ state_scens <- state_out[(oil_price_scenario == "reference case" &
                           setback_scenario == "no_setback" &
                           excise_tax_scenario == "no tax")]
 
-state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                      ccs_scenario, excise_tax_scenario,  setback_scenario, year, total_emp, total_comp)]
+# merge with population series
+state_scens <- merge(state_scens, state_population,
+                            by = c("year"),
+                            all.x = T)
 
+state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
+                                      ccs_scenario, excise_tax_scenario,  setback_scenario, year, total_emp, total_comp, state_pop)]
+
+state_labor_levels <- state_labor_levels %>%
+  mutate(total_emp_norm = total_emp/state_pop,
+         total_comp_norm = total_comp/state_pop)
+  
 ## melt
 state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                            'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
-                           measure.vars = c("total_emp", "total_comp"),
+                           measure.vars = c("total_emp", "total_comp","total_emp_norm","total_comp_norm"),
                            variable.name = "metric",
                            value.name = "value")
+
 
 ## emissions and extraction
 ## ------------------------------
@@ -97,11 +124,14 @@ state_extract_levels <- melt(state_extract_levels, id.vars = c('scen_id', 'oil_p
 ## health
 ## ------------------------------
 state_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                        ccs_scenario, setback_scenario, excise_tax_scenario, year, mean_total_pm25, mean_delta_total_pm25, mortality_level, mortality_delta, cost_2019_PV, cost_PV)]
+                                        ccs_scenario, setback_scenario, excise_tax_scenario, year, mean_total_pm25, mean_delta_total_pm25, mortality_level, mortality_delta, cost_2019_PV, cost_PV, state_pop)]
+
+state_health_levels <- state_health_levels %>%
+  mutate(mortality_level_norm = mortality_level/state_pop*1000)
 
 state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                                'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
-                             measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", "mortality_delta", "cost_2019_PV", "cost_PV"),
+                             measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", "mortality_delta", "cost_2019_PV", "cost_PV", "mortality_level_norm"),
                              variable.name = "metric",
                              value.name = "value")
 
@@ -171,7 +201,6 @@ prod_pw_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl",
   theme_line +
   theme(legend.position = "right",
         legend.key.width= unit(1, 'cm')) 
-
 ggsave(prod_pw_fig, 
        filename = file.path(save_info_path, 'pathway/prod_x_time_fig.png'), 
        width = 8, 
@@ -291,6 +320,44 @@ ggsave(comp_pw_fig,
 # embed_fonts(file.path(save_info_path, 'pathway/labor_comp_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/labor_comp_x_time_fig.pdf'))
 
+## employment normalized by population
+emp_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "total_emp_norm",
+                                             ccs_option == "ccs"), aes(x = year, y = value , color = target, lty = policy_intervention)) +
+  geom_line(size = 0.75, alpha = 0.8) +
+  labs(title = "Labor: employment per person in state",
+       x = NULL,
+       y = "Employment per person, FTE job-years",
+       color = NULL) +
+  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme_line +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm')) 
+
+ggsave(emp_norm_pw_fig, 
+       filename = file.path(save_info_path, 'pathway/labor_empl_norm_x_time_fig.png'), 
+       width = 8, 
+       height = 5)
+
+## compensation normalized by population
+comp_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "total_comp_norm",
+                                              ccs_option == "ccs"), aes(x = year, y = value / 1e9 , color = target, lty = policy_intervention)) +
+  geom_line(size = 0.75, alpha = 0.8) +
+  labs(title = "Labor: compensation per person in state",
+       x = NULL,
+       y = "Compensation per person (USD billion)",
+       color = NULL) +
+  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme_line +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm')) 
+
+ggsave(comp_norm_pw_fig, 
+       filename = file.path(save_info_path, 'pathway/labor_comp_norm_x_time_fig.png'), 
+       width = 8, 
+       height = 5)
+
 
 ## pm25
 pm25_pw_fig <- ggplot(state_levels %>% filter(metric == "mean_total_pm25",
@@ -336,8 +403,36 @@ ggsave(mortality_pw_fig,
 # embed_fonts(file.path(save_info_path, 'pathway/health_mortality_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/health_mortality_x_time_fig.pdf'))
 
+## mortality normalized by population
+mortality_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "mortality_level",
+                                                   ccs_option == "ccs"), aes(x = year, y = value, color = target, lty = policy_intervention)) +
+  geom_line(size = 0.75, alpha = 0.8) +
+  labs(title = "Health: Mortality per 1000 persons in state",
+       x = NULL,
+       y = "# premature deaths per 1000 persons",
+       color = NULL) +
+  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme_line +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm')) 
 
+ggsave(mortality_norm_pw_fig, 
+       filename = file.path(save_info_path, 'pathway/health_mortality_norm_x_time_fig.png'), 
+       width = 8, 
+       height = 5)
 
+## population series
+pop_fig <- ggplot(state_population, aes(x = year, y = state_pop)) +
+  geom_line(size = 0.75, alpha = 0.8) +
+  labs(title = "State population",
+       x = NULL,
+       y = "# persons",
+       color = NULL) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme_line +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm')) 
 
 
 ## V2 -- relative to BAU
