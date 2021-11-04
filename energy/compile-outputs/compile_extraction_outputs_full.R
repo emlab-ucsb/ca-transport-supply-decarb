@@ -20,7 +20,10 @@ cur_date              = Sys.Date()
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/predict-production/extraction_2021-10-22/'
+
+## UPDATE THIS WITH NEW RUNS!!!!!
+extraction_folder_path <- 'outputs/predict-production/extraction_2021-11-03/'
+extraction_folder_name <- 'subset_updated_ccs/'
 data_path  <-'data/stocks-flows/processed/'
 
 ## health code paths
@@ -32,6 +35,7 @@ main_path_external <- '/Volumes/calepa/'
 
 if(save_external == 1) {
   
+  ## UPDATE THIS WITH NEW RUNS!!!!!
   extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2021-09-02/full_run/')
   
   dir.create(paste0(main_path_external, 'academic-out/'), showWarnings = FALSE)
@@ -39,7 +43,7 @@ if(save_external == 1) {
 
 } else {
   
-  extraction_path <- paste0(main_path, extraction_folder_path, 'full_run_subset/')
+  extraction_path <- paste0(main_path, extraction_folder_path, extraction_folder_name)
 
   compiled_save_path  <- paste0(main_path, 'outputs/academic-out/extraction/extraction_', cur_date, '/')
 
@@ -298,6 +302,17 @@ ct_inc_pop_45_weighted <- ct_inc_pop_45 %>%
   ungroup() %>%
   as.data.table()
 
+
+
+## county pop
+county_pop <- ct_inc_pop_45_weighted %>%
+  left_join(ces_county, by = c('ct_id' = 'census_tract')) %>%
+  group_by(county, year) %>%
+  summarise(county_pop = sum(pop)) %>%
+  ungroup() %>%
+  filter(!is.na(county))
+
+
 ## Coefficients from Krewski et al (2009) for mortality impact
 beta <- 0.00582
 se <- 0.0009628
@@ -513,10 +528,14 @@ for (i in 1:length(field_files_to_process)) {
                       by = "county",
                       all.x = T)
   
+  county_out <- merge(county_out, county_pop,
+                      by = c("county", "year"),
+                      all.x = T)
+  
   ## 
   county_out <- county_out[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
                                setback_scenario, prod_quota_scenario, excise_tax_scenario, county, dac_share, median_hh_income,
-                               year, total_county_bbl, total_county_ghg_kgCO2e, revenue,
+                               year, county_pop, total_county_bbl, total_county_ghg_kgCO2e, revenue,
                                c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp, c.indu_comp, total_emp, total_comp)]
   
  
@@ -577,6 +596,7 @@ for (i in 1:length(field_files_to_process)) {
                        by = c("census_tract"),
                        all.x = T)
   
+  
   setorder(ct_exposure, "census_tract", "year")
   
   setcolorder(ct_exposure, c("scen_id", "census_tract", "population", "disadvantaged", "CES3_score", "median_hh_income", "year", "total_pm25"))
@@ -589,7 +609,7 @@ for (i in 1:length(field_files_to_process)) {
   ## state outputs
   ## -------------------------------------
   
-  state_out <- county_out[, lapply(.SD, sum, na.rm = T), .SDcols = c("total_county_bbl", "revenue",
+  state_out <- county_out[, lapply(.SD, sum, na.rm = T), .SDcols = c("county_pop", "total_county_bbl", "revenue",
                                                                      "total_county_ghg_kgCO2e",
                                                                      "c.dire_emp", "c.indi_emp", 
                                                                      "c.indu_emp", "c.dire_comp", 
@@ -616,7 +636,7 @@ print(elapsed_time)
 ## -------------------------------------------------------------
 
 ## extraction pm25 BAU
-extraction_BAU <- readRDS(paste0(ct_save_path, "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_no tax_ct_results.rds")) %>%
+extraction_BAU <- readRDS(paste0(ct_save_path, "reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_ct_results.rds")) %>%
   rename(bau_total_pm25 = total_pm25) %>%
   select(census_tract, year, bau_total_pm25) %>% 
   as.data.table()
