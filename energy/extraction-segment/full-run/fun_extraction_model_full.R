@@ -1425,30 +1425,30 @@ run_extraction_model <- function(scenario_selection) {
       ## save rds for each scenario
       ## -------------------------------------------
       
-      # ## vintage
-      # vintage_fname_z = paste0(scenario_name_z, '_vintage.csv')
-      # fwrite(vintage_all, file.path(save_info_path, 'vintage-out', vintage_fname_z), row.names = F)
-      
-      ## field
-      # field_fname_z = paste0(scenario_name_z, '_field.rds')
-      # saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
-      # 
+      ## vintage
+      vintage_fname_z = paste0(scenario_name_z, '_vintage.csv')
+      fwrite(vintage_all, file.path(save_info_path, 'vintage-out', vintage_fname_z), row.names = F)
+
+      # field
+      field_fname_z = paste0(scenario_name_z, '_field.rds')
+      saveRDS(field_all, file.path(save_info_path, 'field-out', field_fname_z))
+
       ## state
       state_fname_z = paste0(scenario_name_z, '_state.rds')
       saveRDS(state_all, file.path(save_info_path, 'state-out', state_fname_z))
       
-      # ## density
-      # density_fname_z = paste0(scenario_name_z, '_density.csv')
-      # fwrite(density_dt, file.path(save_info_path, 'density-out', density_fname_z), row.names = F)
-      # 
-      # ## exit
-      # exit_fname_z = paste0(scenario_name_z, '_exit.csv')
-      # fwrite(exit_out, file.path(save_info_path, 'exit-out', exit_fname_z), row.names = F)
-      # 
-      # ## depletion
-      # depl_fname_z = paste0(scenario_name_z, '_depletion.csv')
-      # fwrite(dt_depl_z, file.path(save_info_path, 'depl-out', depl_fname_z), row.names = F)
-      
+      ## density
+      density_fname_z = paste0(scenario_name_z, '_density.csv')
+      fwrite(density_dt, file.path(save_info_path, 'density-out', density_fname_z), row.names = F)
+
+      ## exit
+      exit_fname_z = paste0(scenario_name_z, '_exit.csv')
+      fwrite(exit_out, file.path(save_info_path, 'exit-out', exit_fname_z), row.names = F)
+
+      ## depletion
+      depl_fname_z = paste0(scenario_name_z, '_depletion.csv')
+      fwrite(dt_depl_z, file.path(save_info_path, 'depl-out', depl_fname_z), row.names = F)
+
       
       # output_scen = list(vintage_all,
       #                    field_all,
@@ -1542,7 +1542,7 @@ run_extraction_model <- function(scenario_selection) {
     # print(paste0('Depletion results to ', exit_fname))
     
     
-    rm(solve_b, solve_mean_b, ghg_all)
+    # rm(solve_b, solve_mean_b, ghg_all)
     
     # return(output_list)
     
