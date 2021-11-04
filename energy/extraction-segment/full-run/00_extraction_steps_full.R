@@ -22,12 +22,12 @@
   save_info_path = file.path(save_path, run_type)
   dir.create(save_info_path)
   
-  # dir.create(file.path(save_path, run_type, 'vintage-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'vintage-out'), showWarnings = FALSE)
   dir.create(file.path(save_path, run_type, 'field-out'), showWarnings = FALSE)
   dir.create(file.path(save_path, run_type, 'state-out'), showWarnings = FALSE)
-  # dir.create(file.path(save_path, run_type, 'density-out'), showWarnings = FALSE)
-  # dir.create(file.path(save_path, run_type, 'depl-out'), showWarnings = FALSE)
-  # dir.create(file.path(save_path, run_type, 'exit-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'density-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'depl-out'), showWarnings = FALSE)
+  dir.create(file.path(save_path, run_type, 'exit-out'), showWarnings = FALSE)
   
 # set seed
   set.seed(228)
