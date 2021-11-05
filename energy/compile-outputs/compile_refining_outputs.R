@@ -446,6 +446,7 @@ setcolorder(county_out_refining_all, c('scen_id', 'oil_price_scenario', 'demand_
 
 setorder(county_out_refining_all, "scen_id", "county", "year")
 
+
 county_out_refining_all[, county := fifelse(county == "Solano County", "Solano", county)]
 
 
@@ -484,7 +485,35 @@ county_out_labor <- merge(county_out_labor, refin_scens,
                        by = "scen_id",
                        all.x = T)
 
+## add ghg emissions by county
 
+county_energy <- merge(full_site_out, site_id,
+                       by = "site_id",
+                       all.x = T)
+
+## fill in missing counties
+county_energy[, county := fifelse(site_id == "342-2", "Contra Costa",
+                                        fifelse(site_id == "99999", "Kern",
+                                                fifelse(site_id == "t-800", "Los Angeles", county)))]
+
+
+county_energy <- county_energy[, lapply(.SD, sum, na.rm = T), .SDcols = c("bbls_consumed", "ghg_kg"), by = .(scen_id, county, year)]
+
+county_energy <- county_energy %>%
+  mutate(ghg_kg = ifelse(year == 2019, NA, ghg_kg))
+
+county_energy[, county := fifelse(county == "Solano County", "Solano", county)]
+
+## merge with county job outputs
+county_out_labor <- merge(county_out_labor, county_energy,
+                          by = c("scen_id", "county", "year"),
+                          all.x = T)
+
+
+setcolorder(county_out_labor, c('scen_id', 'oil_price_scenario', 'demand_scenario', 'refining_scenario', 'innovation_scenario', 
+                                'carbon_price_scenario', 'ccs_scenario', 'county', 'dac_share', 'median_hh_income',
+                                'year', 'revenue', 'bbls_consumed', 'ghg_kg', 'c.dire_emp', 'c.indi_emp', 'c.indu_emp', 'c.dire_comp', 
+                                'c.indi_comp', 'c.indu_comp', 'total_emp', 'total_comp', 'BAU_scen', 'subset_scens'))
 
 
 ## save outputs for health and labor
@@ -681,7 +710,8 @@ health_state <- merge(health_state, health_state_pm25,
 
 
 ## labor
-labor_state <- county_out_labor[, lapply(.SD, sum, na.rm = T), .SDcols = c("revenue", "c.dire_emp", "c.indi_emp", 
+labor_state <- county_out_labor[, lapply(.SD, sum, na.rm = T), .SDcols = c("revenue",
+                                                                           "c.dire_emp", "c.indi_emp", 
                                                                            "c.indu_emp", "c.dire_comp", 
                                                                            "c.indi_comp", "c.indu_comp", 
                                                                            "total_emp", "total_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
@@ -705,7 +735,7 @@ state_out <- merge(state_out, health_state,
                    all.x = T)
   
 setcolorder(state_out, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
-                         "demand_scenario", "refining_scenario", "year", "state_crude_eq_consumed_bbl", "total_state_revenue",
+                         "demand_scenario", "refining_scenario", "year", "bbls_consumed", "total_state_revenue", "ghg_kg",
                          "c.dire_emp", "c.indi_emp",  "c.indu_emp", "c.dire_comp", "c.indi_comp", 
                          "c.indu_comp", "total_emp", "total_comp", "mean_total_pm25", "mean_bau_total_pm25", "mean_delta_total_mp25",
                          "mortality_delta", "mortality_level", "cost_2019", "cost",  "cost_2019_PV", "cost_PV"))
