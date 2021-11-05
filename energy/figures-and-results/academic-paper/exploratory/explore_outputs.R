@@ -32,7 +32,7 @@ theme_line = theme_ipsum(base_family = 'Arial',
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-10-22/'
+extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-11-04/'
 state_save_path     = paste0(main_path, extraction_folder_path, 'state-results/')
 
 ## create a folder to store outputs

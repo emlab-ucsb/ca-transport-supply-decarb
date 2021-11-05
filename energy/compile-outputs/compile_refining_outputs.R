@@ -23,7 +23,7 @@ dir.create(paste0(compiled_save_path_refining, '/subset-census-tract-results'), 
 main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
 data_path  <-'data/stocks-flows/processed'
 outputs_path <- 'model-development/scenario-plot/refinery-outputs'
-model_outputs_path <- 'outputs/predict-production/refining_2021-10-26/CUF0.6/outputs'
+model_outputs_path <- 'outputs/predict-production/refining_2021-11-03/CUF0.6/outputs'
 inmap_re_files  <- paste0(main_path, "/data/health/source_receptor_matrix/inmap_processed_srm/refining")
 ref_save_path <- paste0(main_path, '/outputs/academic-out/refining/')
 
