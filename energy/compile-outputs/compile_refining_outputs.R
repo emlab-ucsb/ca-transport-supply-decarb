@@ -531,11 +531,11 @@ refining_outputs_health <- full_site_out %>%
   mutate(site_id = ifelse(site_id == "t-800", "800", site_id),
          site_id = ifelse(site_id == "342-2", "34222", site_id),
          site_id = as.numeric(site_id))%>%
-  mutate(nh3=value*0.00056/1000,
-         nox=value*0.01495/1000,
-         pm25=value*0.00402/1000,
-         sox=value*0.00851/1000,
-         voc=value*0.01247/1000) %>%
+  mutate(nh3=bbls_consumed*0.00056/1000,
+         nox=bbls_consumed*0.01495/1000,
+         pm25=bbls_consumed*0.00402/1000,
+         sox=bbls_consumed*0.00851/1000,
+         voc=bbls_consumed*0.01247/1000) %>%
   as.data.table()
 
 
