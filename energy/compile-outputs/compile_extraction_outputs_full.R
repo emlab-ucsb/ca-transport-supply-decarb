@@ -618,7 +618,7 @@ for (i in 1:length(field_files_to_process)) {
                                                                                                            carbon_price_scenario, ccs_scenario,
                                                                                                            setback_scenario, prod_quota_scenario, excise_tax_scenario, year)]
   
-  setnames(state_out, c("total_county_bbl", "revenue",  "total_county_ghg_kgCO2e"), c("total_state_bbl", "total_state_revenue", "total_state_ghg_kgCO2"))
+  setnames(state_out, c("county_pop", "total_county_bbl", "revenue",  "total_county_ghg_kgCO2e"), c("state_pop", "total_state_bbl", "total_state_revenue", "total_state_ghg_kgCO2"))
                                                 
   
   ## save state outputs (labor, production, and revenue)
