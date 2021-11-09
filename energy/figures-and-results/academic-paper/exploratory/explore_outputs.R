@@ -5,6 +5,7 @@ library(data.table)
 library(tidyverse)
 library(hrbrthemes)
 library(extrafont)
+library(scales)
 
 ## figure themes
 theme_line = theme_ipsum(base_family = 'Arial',
@@ -35,17 +36,23 @@ main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects
 extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-11-04/'
 state_save_path     = paste0(main_path, extraction_folder_path, 'state-results/')
 
+
 ## create a folder to store outputs
 cur_date              = Sys.Date()
 save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/exploratory-figs/', paste0("figs_", cur_date))
 dir.create(save_info_path, showWarnings = FALSE)  
-dir.create(paste0(save_info_path, "/bau_cumulative_v1"), showWarnings = FALSE) 
-dir.create(paste0(save_info_path, "/bau_cumulative_v2"), showWarnings = FALSE)
-dir.create(paste0(save_info_path, "/cumulative_v1"), showWarnings = FALSE) 
+# dir.create(paste0(save_info_path, "/bau_cumulative_v1"), showWarnings = FALSE) 
+# dir.create(paste0(save_info_path, "/bau_cumulative_v2"), showWarnings = FALSE)
+# dir.create(paste0(save_info_path, "/cumulative_v1"), showWarnings = FALSE) 
 dir.create(paste0(save_info_path, "/cumulative_v2"), showWarnings = FALSE) 
 dir.create(paste0(save_info_path, "/labor_v_mortality"), showWarnings = FALSE) 
 dir.create(paste0(save_info_path, "/pathway"), showWarnings = FALSE) 
-dir.create(paste0(save_info_path, "/pathway_rel_bau"), showWarnings = FALSE)
+dir.create(paste0(save_info_path, "/dac-share"), showWarnings = FALSE)
+# dir.create(paste0(save_info_path, "/pathway_rel_bau"), showWarnings = FALSE)
+
+## files
+ghg_file <- 'indust_emissions_2000-2019.csv'
+
 
 ## Create population by year time series
 ct_population <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
@@ -58,46 +65,67 @@ ct_population <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"),
 state_population <- ct_population %>%
   filter(lower_age > 29)%>%
   group_by(year) %>%
-  mutate(state_pop = sum(pop, na.rm = T)) %>%
-  summarize(state_pop = unique(state_pop),
-            year = unique(year)) %>%
+  summarize(total_state_pop = sum(pop, na.rm = T)) %>%
   ungroup() %>%
   as.data.table()
+
+## 2019 GHG emissions
+## --------------------------
+hist_ghg <- fread(paste0(main_path, 'data/stocks-flows/processed/', ghg_file), header = T)
+
+hist_ghg <- hist_ghg[segment %chin% c('Oil & Gas: Production & Processing') &
+                       year == 2019, .(segment, unit, year, value)]
+
+ghg_2019 <- as.numeric(hist_ghg[, value][1])
+
+
 
 ## read inputs
 state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 
-## filter for BAU macro (ref oil price, price floor, low innovation, and medium CCS cost)
+setnames(state_out, "county_pop", "state_pop")
+
+## filter for BAU macro (ref oil price, price floor, low innovation, and no CCS cost)
 ## keep all setback scenarios (no tax, carbon price floor)
 ## keep all four excise tax scenarios (no setback, carbon price floor)
 ## keep all carbon taxes match the setback scenarios (no setback, no excise tax)
 
 state_scens <- state_out[(oil_price_scenario == "reference case" &
-                            carbon_price_scenario %in% c("carbon_setback_1000ft", "carbon_setback_5280ft",
-                                                         "carbon_90_perc_reduction", "central SCC") &
-                            ccs_scenario %in% c("high CCS cost", "no ccs") &
-                            setback_scenario == "no_setback" &
-                            excise_tax_scenario == "no tax") |
+                          carbon_price_scenario %in% c("carbon_setback_1000ft-no ccs", "carbon_setback_2500ft-no ccs",
+                                                       "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs") &
+                          ccs_scenario %in% c("no ccs") &
+                          setback_scenario == "no_setback" &
+                          excise_tax_scenario == "no tax") |
                          (oil_price_scenario == "reference case" &
-                         carbon_price_scenario == "price floor" &
-                         ccs_scenario %in% c("high CCS cost", "no ccs")) |
+                          carbon_price_scenario %in% c("carbon_setback_1000ft-medium CCS cost", "carbon_setback_2500ft-medium CCS cost",
+                                                       "carbon_setback_5280ft-medium CCS cost", "carbon_90_perc_reduction-medium CCS cost") &
+                              ccs_scenario %in% c("medium CCS cost") &
+                              setback_scenario == "no_setback" &
+                              excise_tax_scenario == "no tax") |   
                          (oil_price_scenario == "reference case" &
                           carbon_price_scenario == "price floor" &
-                          ccs_scenario %in% c("high CCS cost", "no ccs") &
+                          ccs_scenario %in% c("medium CCS cost", "no ccs")) |
+                         (oil_price_scenario == "reference case" &
+                          carbon_price_scenario == "price floor" &
+                          ccs_scenario %in% c("medium CCS cost", "no ccs") &
                           setback_scenario == "no_setback" &
                           excise_tax_scenario == "no tax")]
 
-# merge with population series
+## note that the values in the state_pop column are different than the state_population df created
+## in this script. The former only includes census tracts affected by oil production, while the latter
+## includes all census tracts.
+
+## merge with population series
 state_scens <- merge(state_scens, state_population,
-                            by = c("year"),
-                            all.x = T)
+                     by = c("year"),
+                     all.x = T)
 
 state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                      ccs_scenario, excise_tax_scenario,  setback_scenario, year, total_emp, total_comp, state_pop)]
+                                      ccs_scenario, excise_tax_scenario,  setback_scenario, year, total_emp, total_comp, state_pop, total_state_pop)]
 
 state_labor_levels <- state_labor_levels %>%
-  mutate(total_emp_norm = total_emp/state_pop,
-         total_comp_norm = total_comp/state_pop)
+  mutate(total_emp_norm = total_emp / (total_state_pop / 1000),
+         total_comp_norm = total_comp / (total_state_pop / 1000))
   
 ## melt
 state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
@@ -124,14 +152,20 @@ state_extract_levels <- melt(state_extract_levels, id.vars = c('scen_id', 'oil_p
 ## health
 ## ------------------------------
 state_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                        ccs_scenario, setback_scenario, excise_tax_scenario, year, mean_total_pm25, mean_delta_total_pm25, mortality_level, mortality_delta, cost_2019_PV, cost_PV, state_pop)]
+                                       ccs_scenario, setback_scenario, excise_tax_scenario, year, mean_total_pm25, mean_delta_total_pm25, 
+                                       mortality_level, mortality_delta, cost_2019_PV, cost_PV, state_pop)]
 
 state_health_levels <- state_health_levels %>%
-  mutate(mortality_level_norm = mortality_level/state_pop*1000)
+  left_join(state_population) %>%
+  mutate(mortality_level_norm = mortality_level / (total_state_pop * 1000),
+         cost_2019_PV_norm = cost_2019_PV / (total_state_pop * 1000))
+
+
 
 state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                                'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
-                             measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", "mortality_delta", "cost_2019_PV", "cost_PV", "mortality_level_norm"),
+                             measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", "mortality_delta", "cost_2019_PV", "cost_PV", "mortality_level_norm",
+                                              "cost_2019_PV_norm"),
                              variable.name = "metric",
                              value.name = "value")
 
@@ -145,30 +179,30 @@ state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price fl
                                                       fifelse(excise_tax_scenario != "no tax", "excise tax", "BAU")))]
 
 ## targets
-target1000 <- c("reference case_no_setback_no quota_carbon_setback_1000ft_high CCS cost_low innovation_no tax",
-                "reference case_setback_1000ft_no quota_price floor_high CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_high CCS cost_low innovation_tax_setback_1000ft",
-                "reference case_no_setback_no quota_carbon_setback_1000ft_no ccs_low innovation_no tax",
+target1000 <- c("reference case_no_setback_no quota_carbon_setback_1000ft-no ccs_no ccs_low innovation_no tax",
+                "reference case_setback_1000ft_no quota_price floor_medium CCS cost_low innovation_no tax",
+                "reference case_no_setback_no quota_carbon_setback_1000ft-medium CCS cost_medium CCS cost_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_1000ft",
                 "reference case_setback_1000ft_no quota_price floor_no ccs_low innovation_no tax",
                 "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_1000ft")
 
-target2500 <- c("reference case_no_setback_no quota_central SCC_high CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_high CCS cost_low innovation_tax_setback_2500ft",
-                "reference case_setback_2500ft_no quota_price floor_high CCS cost_low innovation_no tax",
+target2500 <- c("reference case_no_setback_no quota_carbon_setback_2500ft-medium CCS cost_medium CCS cost_low innovation_no tax",
+                "reference case_setback_2500ft_no quota_price floor_medium CCS cost_low innovation_no tax",
+                "reference case_no_setback_no quota_carbon_setback_2500ft-no ccs_no ccs_low innovation_no tax",
                 "reference case_setback_2500ft_no quota_price floor_no ccs_low innovation_no tax",
-                "reference case_no_setback_no quota_central SCC_no ccs_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_2500ft",
                 "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_2500ft")
 
-target5280 <- c("reference case_no_setback_no quota_carbon_setback_5280ft_high CCS cost_low innovation_no tax",
-                "reference case_setback_5280ft_no quota_price floor_high CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_high CCS cost_low innovation_tax_setback_5280ft",
-                "reference case_no_setback_no quota_carbon_setback_5280ft_no ccs_low innovation_no tax",
+target5280 <- c("reference case_no_setback_no quota_carbon_setback_5280ft-medium CCS cost_medium CCS cost_low innovation_no tax",
+                "reference case_setback_5280ft_no quota_price floor_medium CCS cost_low innovation_no tax",
+                "reference case_no_setback_no quota_carbon_setback_5280ft-no ccs_no ccs_low innovation_no tax",
                 "reference case_setback_5280ft_no quota_price floor_no ccs_low innovation_no tax",
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_5280ft",
                 "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_5280ft")
 
-target90 <- c("reference case_no_setback_no quota_price floor_high CCS cost_low innovation_tax_90_perc_reduction",
-              "reference case_no_setback_no quota_carbon_90_perc_reduction_high CCS cost_low innovation_no tax",
-              "reference case_no_setback_no quota_carbon_90_perc_reduction_no ccs_low innovation_no tax",
+target90 <- c("reference case_no_setback_no quota_carbon_90_perc_reduction-medium CCS cost_medium CCS cost_low innovation_no tax",
+              "reference case_no_setback_no quota_carbon_90_perc_reduction-no ccs_no ccs_low innovation_no tax",
+              "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_90_perc_reduction",
               "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_90_perc_reduction")
 
 state_levels[, target := fifelse(scen_id %in% target1000, "1000ft setback",
@@ -176,9 +210,10 @@ state_levels[, target := fifelse(scen_id %in% target1000, "1000ft setback",
                                                       fifelse(scen_id %in% target5280, "5280ft setback",
                                                               fifelse(scen_id %in% target90, "90% reduction", "BAU"))))]
 
-state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no ccs", "ccs")]
+state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
 
-
+state_levels[, normalized := fifelse(metric %in% c("total_emp_norm", "total_comp_norm", "mortality_level_norm", "cost_2019_PV_norm"),
+                                     "Normalized per 1000 people (>= 30 yo)", "Not normalized")]
 
 ## pathways
 ##--------------------
@@ -187,34 +222,14 @@ state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no ccs", "ccs")]
 ## make a series of plots 2019 - 2045
 ## (bbls, emissions, labor employment, labor compensation, mortality_level)
 
-prod_pw_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl",
-                                              ccs_option == "ccs"), aes(x = year, y = value / 1e6, color = target, lty = policy_intervention)) +
+prod_ccs_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl",
+                                               year > 2019), aes(x = year, y = value / 1e6, color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Oil production",
        x = NULL,
        y = "Production (million bbls)",
-       color = NULL) +
-  # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
-  # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-ggsave(prod_pw_fig, 
-       filename = file.path(save_info_path, 'pathway/prod_x_time_fig.png'), 
-       width = 8, 
-       height = 5)
-
-# embed_fonts(file.path(save_info_path, 'pathway/prod_x_time_fig.png'),
-#             outfile = file.path(save_info_path, 'pathway/prod_x_time_fig.png'))
-
-prod_pw_ccs_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl"), aes(x = year, y = value / 1e6, color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Oil production",
-       x = NULL,
-       y = "Production (million bbls)",
-       color = NULL) +
+       color = "GHG emission target",
+       lty = "Policy intervention") +
   facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
@@ -223,8 +238,35 @@ prod_pw_ccs_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl"), 
   theme(legend.position = "right",
         legend.key.width= unit(1, 'cm')) 
 
-ggsave(prod_pw_ccs_fig, 
-       filename = file.path(save_info_path, 'pathway/prod_x_time_fig_ccs.png'), 
+
+ggsave(prod_ccs_fig, 
+       filename = file.path(save_info_path, 'pathway/prod_x_time_ccs_fig.png'), 
+       width = 11, 
+       height = 5)
+
+# embed_fonts(file.path(save_info_path, 'pathway/prod_x_time_fig.png'),
+#             outfile = file.path(save_info_path, 'pathway/prod_x_time_fig.png'))
+
+prod_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl",
+                                           ccs_option == "no CCS",
+                                           year > 2019), aes(x = year, y = value / 1e6, color = target, lty = policy_intervention)) +
+  geom_line(size = 0.75, alpha = 0.8) +
+  labs(title = "Oil production",
+       subtitle = "no CCS",
+       x = NULL,
+       y = "Production (million bbls)",
+       color = "GHG emission target",
+       lty = "Policy intervention") +
+  # facet_wrap(~ccs_option) +
+  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+  theme_line +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm')) 
+
+ggsave(prod_fig, 
+       filename = file.path(save_info_path, 'pathway/prod_x_time_fig.png'), 
        width = 8, 
        height = 5)
 
@@ -232,12 +274,15 @@ ggsave(prod_pw_ccs_fig,
   
 ## ghg
 ghg_pw_fig <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO2",
-                                             ccs_option == "ccs"), aes(x = year, y = value , color = target, lty = policy_intervention)) +
+                                             ccs_option == "no CCS",
+                                             year > 2019), aes(x = year, y = value , color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "GHG emissions",
+       subtitle = "no CCS",
        x = NULL,
        y = "GHG emissions (MtCO2e)",
-       color = NULL) +
+       color = "GHG emission target",
+       lty = "Policy intervention") +
   # facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
@@ -252,12 +297,15 @@ ggsave(ghg_pw_fig,
 
 
 ## ghg
-ghg_pw_fig_ccs <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = year, y = value , color = target, lty = policy_intervention)) +
+ghg_pw_fig_ccs <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO2",
+                                                 year > 2019), aes(x = year, y = value , color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "GHG emissions",
+       subtitle = "no CCS",
        x = NULL,
        y = "GHG emissions (MtCO2e)",
-       color = NULL) +
+       color = "GHG emission target",
+       lty = "Policy intervention") +
   facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
@@ -267,7 +315,7 @@ ghg_pw_fig_ccs <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO
 
 ggsave(ghg_pw_fig_ccs, 
        filename = file.path(save_info_path, 'pathway/ghg_x_time_fig_ccs.png'), 
-       width = 8, 
+       width = 11, 
        height = 5)
 
 
@@ -276,13 +324,17 @@ ggsave(ghg_pw_fig_ccs,
 
 
 ## employment
-emp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_emp",
-                                             ccs_option == "ccs"), aes(x = year, y = value , color = target, lty = policy_intervention)) +
+emp_pw_fig <- ggplot(state_levels %>% filter(metric %in% c("total_emp", "total_emp_norm"),
+                                             ccs_option == "no CCS",
+                                             year > 2019), aes(x = year, y = value , color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Labor: Total employment",
+       subtitle = "no CCS",
        x = NULL,
        y = "Total employment, FTE job-years",
-       color = NULL) +
+       color = "GHG emission target",
+       lty = "Policy intervention") +
+  facet_wrap(~normalized, scales = "free_y") +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
@@ -291,7 +343,7 @@ emp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_emp",
 
 ggsave(emp_pw_fig, 
        filename = file.path(save_info_path, 'pathway/labor_empl_x_time_fig.png'), 
-       width = 8, 
+       width = 11, 
        height = 5)
 # 
 # embed_fonts(file.path(save_info_path, 'pathway/labor_empl_x_time_fig.pdf'),
@@ -299,13 +351,17 @@ ggsave(emp_pw_fig,
 
 
 ## compensation
-comp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_comp",
-                                              ccs_option == "ccs"), aes(x = year, y = value / 1e9 , color = target, lty = policy_intervention)) +
+comp_pw_fig <- ggplot(state_levels %>% filter(metric %in% c("total_comp", "total_comp_norm"),
+                                              ccs_option == "no CCS",
+                                              year > 2019), aes(x = year, y = value / 1e6 , color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Labor: Total compensation",
+       subtitle = "no CCS",
        x = NULL,
-       y = "Total compensation (USD billion)",
-       color = NULL) +
+       y = "Total compensation (USD million)",
+       color = "GHG emission target",
+       lty = "Policy intervention") +
+  facet_wrap(~normalized, scales = "free_y") +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
@@ -314,59 +370,62 @@ comp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_comp",
 
 ggsave(comp_pw_fig, 
        filename = file.path(save_info_path, 'pathway/labor_comp_x_time_fig.png'), 
-       width = 8, 
+       width = 11, 
        height = 5)
 
 # embed_fonts(file.path(save_info_path, 'pathway/labor_comp_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/labor_comp_x_time_fig.pdf'))
 
 ## employment normalized by population
-emp_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "total_emp_norm",
-                                             ccs_option == "ccs"), aes(x = year, y = value , color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Labor: employment per person in state",
-       x = NULL,
-       y = "Employment per person, FTE job-years",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(emp_norm_pw_fig, 
-       filename = file.path(save_info_path, 'pathway/labor_empl_norm_x_time_fig.png'), 
-       width = 8, 
-       height = 5)
+# emp_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "total_emp_norm",
+#                                              ccs_option == "ccs"), aes(x = year, y = value , color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Labor: employment per person in state",
+#        x = NULL,
+#        y = "Employment per person, FTE job-years",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(emp_norm_pw_fig, 
+#        filename = file.path(save_info_path, 'pathway/labor_empl_norm_x_time_fig.png'), 
+#        width = 8, 
+#        height = 5)
 
 ## compensation normalized by population
-comp_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "total_comp_norm",
-                                              ccs_option == "ccs"), aes(x = year, y = value / 1e9 , color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Labor: compensation per person in state",
-       x = NULL,
-       y = "Compensation per person (USD billion)",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(comp_norm_pw_fig, 
-       filename = file.path(save_info_path, 'pathway/labor_comp_norm_x_time_fig.png'), 
-       width = 8, 
-       height = 5)
+# comp_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "total_comp_norm",
+#                                               ccs_option == "ccs"), aes(x = year, y = value / 1e9 , color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Labor: compensation per person in state",
+#        x = NULL,
+#        y = "Compensation per person (USD billion)",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(comp_norm_pw_fig, 
+#        filename = file.path(save_info_path, 'pathway/labor_comp_norm_x_time_fig.png'), 
+#        width = 8, 
+#        height = 5)
 
 
 ## pm25
 pm25_pw_fig <- ggplot(state_levels %>% filter(metric == "mean_total_pm25",
-                                              ccs_option == "ccs"), aes(x = year, y = value, color = target, lty = policy_intervention)) +
+                                              ccs_option == "no CCS",
+                                              year > 2019), aes(x = year, y = value, color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Health: Mean total pm2.5 exposure",
+       subtitle = "no CCS",
        x = NULL,
        y = "pm2.5 exposure (ug/m3)",
-       color = NULL) +
+       color = "GHG emission target",
+       lty = "Policy intervention") +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
@@ -382,13 +441,17 @@ ggsave(pm25_pw_fig,
 #             outfile = file.path(save_info_path, 'pathway/health_pm25_x_time_fig.pdf'))
 
 ## mortality
-mortality_pw_fig <- ggplot(state_levels %>% filter(metric == "mortality_level",
-                                                   ccs_option == "ccs"), aes(x = year, y = value, color = target, lty = policy_intervention)) +
+mortality_pw_fig <- ggplot(state_levels %>% filter(metric %in% c("mortality_level", "mortality_level_norm"),
+                                                   ccs_option == "no CCS",
+                                                   year > 2019), aes(x = year, y = value, color = target, lty = policy_intervention)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Health: Mortality level",
+       subtitle = "no CCS",
        x = NULL,
        y = "# premature deaths",
-       color = NULL) +
+       color = "GHG emission target",
+       lty = "Policy intervention") +
+  facet_wrap(~normalized, scales = "free_y") +
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
@@ -397,30 +460,30 @@ mortality_pw_fig <- ggplot(state_levels %>% filter(metric == "mortality_level",
 
 ggsave(mortality_pw_fig, 
        filename = file.path(save_info_path, 'pathway/health_mortality_x_time_fig.png'), 
-       width = 8, 
+       width = 11, 
        height = 5)
 
 # embed_fonts(file.path(save_info_path, 'pathway/health_mortality_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/health_mortality_x_time_fig.pdf'))
 
 ## mortality normalized by population
-mortality_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "mortality_level",
-                                                   ccs_option == "ccs"), aes(x = year, y = value, color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Health: Mortality per 1000 persons in state",
-       x = NULL,
-       y = "# premature deaths per 1000 persons",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(mortality_norm_pw_fig, 
-       filename = file.path(save_info_path, 'pathway/health_mortality_norm_x_time_fig.png'), 
-       width = 8, 
-       height = 5)
+# mortality_norm_pw_fig <- ggplot(state_levels %>% filter(metric == "mortality_level",
+#                                                    ccs_option == "ccs"), aes(x = year, y = value, color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Health: Mortality per 1000 persons in state",
+#        x = NULL,
+#        y = "# premature deaths per 1000 persons",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(mortality_norm_pw_fig, 
+#        filename = file.path(save_info_path, 'pathway/health_mortality_norm_x_time_fig.png'), 
+#        width = 8, 
+#        height = 5)
 
 ## population series
 pop_fig <- ggplot(state_population, aes(x = year, y = state_pop)) +
@@ -441,9 +504,11 @@ pop_fig <- ggplot(state_population, aes(x = year, y = state_pop)) +
 ## select health outputs
 
 rel_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                       ccs_scenario, setback_scenario, excise_tax_scenario, year, mean_delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
+                                     ccs_scenario, setback_scenario, excise_tax_scenario, year,
+                                     mean_delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
 
-rel_health_levels <- melt(rel_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
+
+rel_health_levels <- melt(rel_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario',
                                                              'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
                             measure.vars = c("mean_delta_total_pm25", "mortality_delta", "cost_2019", "cost", "cost_2019_PV", "cost_PV"),
                             variable.name = "metric",
@@ -462,7 +527,7 @@ rel_health_levels[, policy_intervention := fifelse(carbon_price_scenario != "pri
 setnames(rel_health_levels, "value", "diff_bau")
 
 
-rel_health_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no ccs", "ccs")]
+rel_health_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
 
 rel_health_levels <- rel_health_levels[, .(scen_id, ccs_option, year, metric, policy_intervention, target, diff_bau)]
 
@@ -489,7 +554,7 @@ rel_vals <- merge(rel_vals, bau_out,
 
 rel_vals[, diff_bau := value - bau_value]
 
-rel_vals[, ccs_option := fifelse(ccs_scenario == "no ccs", "no ccs", "ccs")]
+rel_vals[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
 
 rel_vals <- rel_vals[, .(scen_id, ccs_option, year, metric, policy_intervention, target, diff_bau)]
 
@@ -499,157 +564,159 @@ state_rel_vals <- rbind(rel_vals, rel_health_levels)
 ## figs
 
 ## cost
-cost_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "cost_PV"), aes(x = year, y = diff_bau / 1e6, color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Health: Cost of premature deaths relative to BAU",
-       x = NULL,
-       y = "Difference (USD million present value)",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
+# cost_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "cost_PV",
+#                                                  ccs_option == "no CCS"), aes(x = year, y = diff_bau / 1e6, color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Health: Cost of premature deaths relative to BAU",
+#        x = NULL,
+#        y = "Difference (USD million present value)",
+#        color = "GHG emission target",
+#        lty = "Policy intervention") +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'))
+# 
+# ggsave(cost_rel_fig,
+#        filename = file.path(save_info_path, 'pathway_rel_bau/rel_health_cost_x_time_fig.pdf'),
+#        width = 11,
+#        height = 8)
 
-ggsave(cost_rel_fig, 
-       filename = file.path(save_info_path, 'pathway_rel_bau/rel_health_cost_x_time_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_health_cost_x_time_fig.pdf'),
-            outfile = file.path(save_info_path, 'pathway_rel_bau/rel_health_cost_x_time_fig.pdf'))
-
-
-## prod
-prod_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_state_bbl"), aes(x = year, y = diff_bau / 1e6, color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Oil production relative to BAU",
-       x = NULL,
-       y = "Difference in production (million bbls)",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(prod_rel_fig, 
-       filename = file.path(save_info_path, 'pathway_rel_bau/rel_prod_x_time_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_prod_x_time_fig.pdf'),
-            outfile = file.path(save_info_path, 'pathway_rel_bau/rel_prod_x_time_fig.pdf'))
-
-
-## ghg
-ghg_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = year, y = diff_bau , color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "GHG emissions relative to BAU",
-       x = NULL,
-       y = "Difference in GHG emissions (MtCO2e)",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(ghg_rel_fig, 
-       filename = file.path(save_info_path, 'pathway_rel_bau/rel_ghg_x_time_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_ghg_x_time_fig.pdf'),
-            outfile = file.path(save_info_path, 'pathway_rel_bau/rel_ghg_x_time_fig.pdf'))
-
-
-## employment
-emp_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_emp"), aes(x = year, y = diff_bau , color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Labor: Total employment relative to BAU",
-       x = NULL,
-       y = "Difference in total employment, FTE job-years",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(emp_rel_fig, 
-       filename = file.path(save_info_path, 'pathway_rel_bau/rel_labor_empl_x_time_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_labor_empl_x_time_fig.pdf'),
-            outfile = file.path(save_info_path, 'pathway_rel_bau/rel_labor_empl_x_time_fig.pdf'))
-
-
-## compensation
-comp_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_comp"), aes(x = year, y = diff_bau / 1e9 , color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Labor: Total compensation relative to BAU",
-       x = NULL,
-       y = "Difference in total compensation (USD billion)",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(comp_rel_fig, 
-       filename = file.path(save_info_path, 'pathway_rel_bau/rel_labor_comp_x_time_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_labor_comp_x_time_fig.pdf'),
-            outfile = file.path(save_info_path, 'pathway_rel_bau/rel_labor_comp_x_time_fig.pdf'))
-
-
-## pm25
-pm25_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "mean_delta_total_pm25"), aes(x = year, y = diff_bau, color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Health: Mean pm2.5 exposure relative to BAU",
-       x = NULL,
-       y = "Difference in mean pm2.5 exposure (ug/m3)",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(pm25_rel_fig, 
-       filename = file.path(save_info_path, 'pathway_rel_bau/rel_health_pm25_x_time_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_health_pm25_x_time_fig.pdf'),
-            outfile = file.path(save_info_path, 'pathway_rel_bau/rel_health_pm25_x_time_fig.pdf'))
-
-## mortality
-mortality_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "mortality_delta"), aes(x = year, y = diff_bau, color = target, lty = policy_intervention)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Health: Mortality level",
-       x = NULL,
-       y = "# premature deaths",
-       color = NULL) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
-  scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm')) 
-
-ggsave(mortality_rel_fig, 
-       filename = file.path(save_info_path, 'pathway_rel_bau/rel_health_mortality_x_time_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_health_mortality_x_time_fig.pdf'),
-            outfile = file.path(save_info_path, 'pathway_rel_bau/rel_health_mortality_x_time_fig.pdf'))
-
+# embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_health_cost_x_time_fig.pdf'),
+#             outfile = file.path(save_info_path, 'pathway_rel_bau/rel_health_cost_x_time_fig.pdf'))
+# 
+# 
+# ## prod
+# prod_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_state_bbl"), aes(x = year, y = diff_bau / 1e6, color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Oil production relative to BAU",
+#        x = NULL,
+#        y = "Difference in production (million bbls)",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(prod_rel_fig, 
+#        filename = file.path(save_info_path, 'pathway_rel_bau/rel_prod_x_time_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_prod_x_time_fig.pdf'),
+#             outfile = file.path(save_info_path, 'pathway_rel_bau/rel_prod_x_time_fig.pdf'))
+# 
+# 
+# ## ghg
+# ghg_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = year, y = diff_bau , color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "GHG emissions relative to BAU",
+#        x = NULL,
+#        y = "Difference in GHG emissions (MtCO2e)",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(ghg_rel_fig, 
+#        filename = file.path(save_info_path, 'pathway_rel_bau/rel_ghg_x_time_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_ghg_x_time_fig.pdf'),
+#             outfile = file.path(save_info_path, 'pathway_rel_bau/rel_ghg_x_time_fig.pdf'))
+# 
+# 
+# ## employment
+# emp_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_emp"), aes(x = year, y = diff_bau , color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Labor: Total employment relative to BAU",
+#        x = NULL,
+#        y = "Difference in total employment, FTE job-years",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(emp_rel_fig, 
+#        filename = file.path(save_info_path, 'pathway_rel_bau/rel_labor_empl_x_time_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_labor_empl_x_time_fig.pdf'),
+#             outfile = file.path(save_info_path, 'pathway_rel_bau/rel_labor_empl_x_time_fig.pdf'))
+# 
+# 
+# ## compensation
+# comp_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "total_comp"), aes(x = year, y = diff_bau / 1e9 , color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Labor: Total compensation relative to BAU",
+#        x = NULL,
+#        y = "Difference in total compensation (USD billion)",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(comp_rel_fig, 
+#        filename = file.path(save_info_path, 'pathway_rel_bau/rel_labor_comp_x_time_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_labor_comp_x_time_fig.pdf'),
+#             outfile = file.path(save_info_path, 'pathway_rel_bau/rel_labor_comp_x_time_fig.pdf'))
+# 
+# 
+# ## pm25
+# pm25_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "mean_delta_total_pm25"), aes(x = year, y = diff_bau, color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Health: Mean pm2.5 exposure relative to BAU",
+#        x = NULL,
+#        y = "Difference in mean pm2.5 exposure (ug/m3)",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(pm25_rel_fig, 
+#        filename = file.path(save_info_path, 'pathway_rel_bau/rel_health_pm25_x_time_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_health_pm25_x_time_fig.pdf'),
+#             outfile = file.path(save_info_path, 'pathway_rel_bau/rel_health_pm25_x_time_fig.pdf'))
+# 
+# ## mortality
+# mortality_rel_fig <- ggplot(state_rel_vals %>% filter(metric == "mortality_delta"), aes(x = year, y = diff_bau, color = target, lty = policy_intervention)) +
+#   geom_line(size = 0.75, alpha = 0.8) +
+#   labs(title = "Health: Mortality level",
+#        x = NULL,
+#        y = "# premature deaths",
+#        color = NULL) +
+#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+#   scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm')) 
+# 
+# ggsave(mortality_rel_fig, 
+#        filename = file.path(save_info_path, 'pathway_rel_bau/rel_health_mortality_x_time_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_health_mortality_x_time_fig.pdf'),
+#             outfile = file.path(save_info_path, 'pathway_rel_bau/rel_health_mortality_x_time_fig.pdf'))
+# 
 
 
 ## cumulative
@@ -658,15 +725,12 @@ embed_fonts(file.path(save_info_path, 'pathway_rel_bau/rel_health_mortality_x_ti
 ## labor compensation, labor job years, emissions, bbls, mortality: 
 
 ## 2045 emissions
-ghg_2019 <- unique(state_levels[metric == "total_state_ghg_MtCO2" &
-                           year == 2019, .(year, value)])
-
 ghg_2045 <- state_levels[metric == "total_state_ghg_MtCO2" &
                          year == 2045, .(scen_id, policy_intervention, target, year, value)]
 
 setnames(ghg_2045, "value", "ghg_2045")
 
-ghg_2045[, ghg_2045_perc := (ghg_2045 - ghg_2019$value[1]) / ghg_2019$value[1]]
+ghg_2045[, ghg_2045_perc := (ghg_2045 - ghg_2019) / ghg_2019]
 
 ghg_2045[, ghg_2045 := NULL]
 ghg_2045[, year := NULL]
@@ -676,6 +740,8 @@ ghg_2045[, target := NULL]
 ## 2019 values
 vals_2019 <- unique(state_levels[year == 2019, .(metric, value)])
 setnames(vals_2019, "value", "value_2019")
+vals_2019[, value_2019 := fifelse(metric == "total_state_ghg_MtCO2", ghg_2019, value_2019)]
+
 
 ## calculate relative values
 cumul_df <- merge(state_levels, vals_2019,
@@ -684,9 +750,9 @@ cumul_df <- merge(state_levels, vals_2019,
 
 cumul_df[, diff_2019 := value - value_2019]
 
-cumul_df[, ccs_option := fifelse(ccs_scenario == "no ccs", "no ccs", "ccs")]
+cumul_df[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
 
-cumul_df <- cumul_df[, .(sum_metric = sum(diff_2019)), by = .(scen_id, ccs_option, policy_intervention, target, metric)]
+cumul_df <- cumul_df[year > 2019, .(sum_metric = sum(diff_2019)), by = .(scen_id, ccs_option, policy_intervention, target, metric)]
 
 cumul_df <- merge(cumul_df, ghg_2045,
                   by = c("scen_id"),
@@ -698,166 +764,168 @@ cumul_df[, scen_name := paste(policy_intervention, target, sep = " - ")]
 ## V1a: take the difference between 2019 and year t, add all years for cumulative impact, x axis == scenario name
 ## -----------------------------------------------------------------------
 
-## cost
-cost_cum1_fig <- ggplot(cumul_df %>% filter(metric == "cost_PV"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative cost of premature deaths relative to 2019 ",
-       x = NULL,
-       y = "USD million (present value)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(cost_cum1_fig, 
-       filename = file.path(save_info_path, 'cumulative_v1/cumulative_health_cost_v1_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_health_cost_v1_fig.pdf'),
-            outfile = file.path(save_info_path, 'cumulative_v1/cumulative_health_cost_v1_fig.pdf'))
-
-
-## prod
-prod_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_state_bbl"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Cumulative oil production",
-       x = NULL,
-       y = "Production (million of bbls)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(prod_cum1_fig, 
-       filename = file.path(save_info_path, 'cumulative_v1/cumulative_prod_v1_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_prod_v1_fig.pdf'),
-            outfile = file.path(save_info_path, 'cumulative_v1/cumulative_prod_v1_fig.pdf'))
-
-
-## ghg
-ghg_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Cumulative GHG emissions relative to 2019",
-       x = NULL,
-       y = "GHG emissions (MtCO2e)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(ghg_cum1_fig, 
-       filename = file.path(save_info_path, 'cumulative_v1/cumulative_ghg_v1_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_ghg_v1_fig.pdf'),
-            outfile = file.path(save_info_path, 'cumulative_v1/cumulative_ghg_v1_fig.pdf'))
-
-
-## employment
-emp_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_emp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total employment relative to 2019",
-       x = NULL,
-       y = "Total employment, FTE job-years)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(emp_cum1_fig, 
-       filename = file.path(save_info_path, 'cumulative_v1/cumulative_empl_v1_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_empl_v1_fig.pdf'),
-            outfile = file.path(save_info_path, 'cumulative_v1/cumulative_empl_v1_fig.pdf'))
-
-
-## compensation
-comp_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_comp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total compensation relative to 2019",
-       x = NULL,
-       y = "Compensation",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(comp_cum1_fig, 
-       filename = file.path(save_info_path, 'cumulative_v1/cumulative_compensationl_v1_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_compensationl_v1_fig.pdf'),
-            outfile = file.path(save_info_path, 'cumulative_v1/cumulative_compensationl_v1_fig.pdf'))
-
-
-
-## pm25
-
-pm25_cum1_fig <- ggplot(cumul_df %>% filter(metric == "mean_total_pm25"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative pm2.5 exposure relative to 2019",
-       x = NULL,
-       y = "pm2.5 exposure (ug/m3)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(pm25_cum1_fig, 
-       filename = file.path(save_info_path, 'cumulative_v1/cumulative_pm25_v1_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_pm25_v1_fig.pdf'),
-            outfile = file.path(save_info_path, 'cumulative_v1/cumulative_pm25_v1_fig.pdf'))
-
-
-## mortality
-
-mortality_cum1_fig <- ggplot(cumul_df %>% filter(metric == "mortality_level"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative mortality level relative to 2019",
-       x = NULL,
-       y = "mortality",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(mortality_cum1_fig, 
-       filename = file.path(save_info_path, 'cumulative_v1/cumulative_mortality_v1_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_mortality_v1_fig.pdf'),
-            outfile = file.path(save_info_path, 'cumulative_v1/cumulative_mortality_v1_fig.pdf'))
-
+# ## cost
+# cost_cum1_fig <- ggplot(cumul_df %>% filter(metric == "cost_PV"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative cost of premature deaths relative to 2019 ",
+#        x = NULL,
+#        y = "USD million (present value)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(cost_cum1_fig, 
+#        filename = file.path(save_info_path, 'cumulative_v1/cumulative_health_cost_v1_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_health_cost_v1_fig.pdf'),
+#             outfile = file.path(save_info_path, 'cumulative_v1/cumulative_health_cost_v1_fig.pdf'))
+# 
+# 
+# ## prod
+# prod_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_state_bbl"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Cumulative oil production",
+#        x = NULL,
+#        y = "Production (million of bbls)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(prod_cum1_fig, 
+#        filename = file.path(save_info_path, 'cumulative_v1/cumulative_prod_v1_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_prod_v1_fig.pdf'),
+#             outfile = file.path(save_info_path, 'cumulative_v1/cumulative_prod_v1_fig.pdf'))
+# 
+# 
+# ## ghg
+# ghg_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Cumulative GHG emissions relative to 2019",
+#        x = NULL,
+#        y = "GHG emissions (MtCO2e)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(ghg_cum1_fig, 
+#        filename = file.path(save_info_path, 'cumulative_v1/cumulative_ghg_v1_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_ghg_v1_fig.pdf'),
+#             outfile = file.path(save_info_path, 'cumulative_v1/cumulative_ghg_v1_fig.pdf'))
+# 
+# 
+# ## employment
+# emp_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_emp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Labor: Cumulative total employment relative to 2019",
+#        x = NULL,
+#        y = "Total employment, FTE job-years)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(emp_cum1_fig, 
+#        filename = file.path(save_info_path, 'cumulative_v1/cumulative_empl_v1_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_empl_v1_fig.pdf'),
+#             outfile = file.path(save_info_path, 'cumulative_v1/cumulative_empl_v1_fig.pdf'))
+# 
+# 
+# ## compensation
+# comp_cum1_fig <- ggplot(cumul_df %>% filter(metric == "total_comp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Labor: Cumulative total compensation relative to 2019",
+#        x = NULL,
+#        y = "Compensation",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(comp_cum1_fig, 
+#        filename = file.path(save_info_path, 'cumulative_v1/cumulative_compensationl_v1_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_compensationl_v1_fig.pdf'),
+#             outfile = file.path(save_info_path, 'cumulative_v1/cumulative_compensationl_v1_fig.pdf'))
+# 
+# 
+# 
+# ## pm25
+# 
+# pm25_cum1_fig <- ggplot(cumul_df %>% filter(metric == "mean_total_pm25"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative pm2.5 exposure relative to 2019",
+#        x = NULL,
+#        y = "pm2.5 exposure (ug/m3)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(pm25_cum1_fig, 
+#        filename = file.path(save_info_path, 'cumulative_v1/cumulative_pm25_v1_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_pm25_v1_fig.pdf'),
+#             outfile = file.path(save_info_path, 'cumulative_v1/cumulative_pm25_v1_fig.pdf'))
+# 
+# 
+# ## mortality
+# 
+# mortality_cum1_fig <- ggplot(cumul_df %>% filter(metric == "mortality_level"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative mortality level relative to 2019",
+#        x = NULL,
+#        y = "mortality",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(mortality_cum1_fig, 
+#        filename = file.path(save_info_path, 'cumulative_v1/cumulative_mortality_v1_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'cumulative_v1/cumulative_mortality_v1_fig.pdf'),
+#             outfile = file.path(save_info_path, 'cumulative_v1/cumulative_mortality_v1_fig.pdf'))
+# 
 
 
 ## V1b: same as above, x axis == 2045 emissions as a percentage of 2019 emissions
 ## cost
 cost_cum2_fig <- ggplot(cumul_df %>% filter(metric == "cost_PV",
-                                            ccs_option == "ccs"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+                                            ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Health: Cumulative cost of premature deaths relative to 2019 ",
+       subtitle = "no CCS; PV value is relative to BAU",
        x = "GHG emissions (% of 2019)",
        y = "USD million (present value)",
-       color = NULL) +
+       color = "GHG emission target",
+       shape = "Policy intervention") +
   scale_x_continuous(limits = c(NA, 0)) +
   theme_line +
   theme(legend.position = "right",
@@ -875,13 +943,16 @@ ggsave(cost_cum2_fig,
 
 ## prods
 prod_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_state_bbl",
-                                            ccs_option == "ccs"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+                                            ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Cumulative oil production",
+       subtitle = "no CCS",
        x = "GHG emissions (% of 2019)",
        y = "Production (million of bbls)",
-       color = NULL) +
+       color = "GHG emission target",
+       shape = "Policy intervention") +
   scale_x_continuous(limits = c(NA, 0)) +
+  # scale_y_continuous(limits = c(NA, 0)) +
   theme_line +
   theme(legend.position = "right",
         legend.key.width= unit(1, 'cm'),
@@ -898,12 +969,14 @@ ggsave(prod_cum2_fig,
 
 ## ghg
 ghg_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_state_ghg_MtCO2",
-                                           ccs_option == "ccs"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+                                           ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Cumulative GHG emissions relative to 2019",
+       subtitle = "no CCS",
        x = "GHG emissions (% of 2019)",
        y = "GHG emissions (MtCO2e)",
-       color = NULL) +
+       color = "GHG emission target",
+       shape = "Policy intervention") +
   theme_line +
   scale_x_continuous(limits = c(NA, 0)) +
   theme(legend.position = "right",
@@ -921,12 +994,14 @@ ggsave(ghg_cum2_fig,
 
 ## employment
 emp_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_emp",
-                                           ccs_option == "ccs"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+                                           ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor: Cumulative total employment relative to 2019, FTE job-years",
+       subtitle = "no CCS",
        x = "GHG emissions (% of 2019)",
        y = "Total employment)",
-       color = NULL) +
+       color = "GHG emission target",
+       shape = "Policy intervention") +
   theme_line +
   scale_x_continuous(limits = c(NA, 0)) +
   theme(legend.position = "right",
@@ -944,12 +1019,14 @@ ggsave(emp_cum2_fig,
 
 ## compensation
 comp_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_comp",
-                                            ccs_option == "ccs"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
+                                            ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor: Cumulative total compensation relative to 2019",
+       subtitle = "no CCS",
        x = "GHG emissions (% of 2019)",
        y = "Compensation",
-       color = NULL) +
+       color = "GHG emission target",
+       shape = "Policy intervention") +
   theme_line +
   scale_x_continuous(limits = c(NA, 0)) +
   theme(legend.position = "right",
@@ -968,23 +1045,25 @@ ggsave(comp_cum2_fig,
 
 ## pm25
 
-pm25_cum2_fig <- ggplot(cumul_df %>% filter(metric == "mean_total_pm25",
-                                            ccs_option == "ccs"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative pm2.5 exposure relative to 2019",
-       x = "GHG emissions (% of 2019)",
-       y = "pm2.5 exposure (ug/m3)",
-       color = NULL) +
-  theme_line +
-  scale_x_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(pm25_cum2_fig, 
-       filename = file.path(save_info_path, 'cumulative_v2/cumulative_pm25_v2_fig.png'), 
-       width = 6, 
-       height = 5)
+# pm25_cum2_fig <- ggplot(cumul_df %>% filter(metric == "mean_total_pm25",
+#                                             ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative pm2.5 exposure relative to 2019",
+#        subtitle = "no CCS",
+#        x = "GHG emissions (% of 2019)",
+#        y = "pm2.5 exposure (ug/m3)",
+#        color = "GHG emission target",
+#        shape = "Policy intervention") +
+#   theme_line +
+#   scale_x_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(pm25_cum2_fig, 
+#        filename = file.path(save_info_path, 'cumulative_v2/cumulative_pm25_v2_fig.png'), 
+#        width = 6, 
+#        height = 5)
 
 # embed_fonts(file.path(save_info_path, 'cumulative_v2/cumulative_pm25_v2_fig.pdf'),
 #             outfile = file.path(save_info_path, 'cumulative_v2/cumulative_pm25_v2_fig.pdf'))
@@ -993,12 +1072,14 @@ ggsave(pm25_cum2_fig,
 ## mortality
 
 mortality_cum2_fig <- ggplot(cumul_df %>% filter(metric == "mortality_level",
-                                                 ccs_option == "ccs"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+                                                 ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Health: Cumulative mortality level relative to 2019",
+       subtitle = "no CCS",
        x = "GHG emissions (% of 2019)",
        y = "mortality",
-       color = NULL) +
+       color = "GHG emission target",
+       shape = "Policy intervention") +
   theme_line +
   scale_x_continuous(limits = c(NA, 0)) +
   theme(legend.position = "right",
@@ -1016,7 +1097,7 @@ ggsave(mortality_cum2_fig,
 
 
 ## V2a: take the difference between BAU year t and scenario year t, add all years for cumulative impact, x axis == scenario name
-bau_cumulative_df <- state_rel_vals[, .(sum_diff_bau = sum(diff_bau)), by = .(scen_id, ccs_option, metric, policy_intervention, target)]
+bau_cumulative_df <- state_rel_vals[year > 2019, .(sum_diff_bau = sum(diff_bau)), by = .(scen_id, ccs_option, metric, policy_intervention, target)]
 
 bau_cumulative_df <- merge(bau_cumulative_df, ghg_2045,
                            by = c("scen_id"),
@@ -1026,157 +1107,157 @@ bau_cumulative_df[, scen_name := paste(policy_intervention, target, sep = " - ")
 
 setnames(bau_cumulative_df, "sum_diff_bau", "sum_metric")
 
-## v1 bau
-## cost
-cost_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "cost_PV",
-                                                      ccs_option == "ccs"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative cost of premature deaths relative to BAU ",
-       x = NULL,
-       y = "USD million (present value)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(cost_cum1b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_health_cost_v1b_fig.png'), 
-       width = 6, 
-       height = 5)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_health_cost_v1b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_health_cost_v1b_fig.pdf'))
-
-
-## prod
-prod_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_state_bbl"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Cumulative oil production relative to BAU",
-       x = NULL,
-       y = "Production (million of bbls)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(prod_cum1b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_prod_v1b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_prod_v1b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_prod_v1b_fig.pdf'))
-
-
-## ghg
-ghg_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Cumulative GHG emissions relative to BAU",
-       x = NULL,
-       y = "GHG emissions (MtCO2e)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(ghg_cum1b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_ghg_v1b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_ghg_v1b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_ghg_v1b_fig.pdf'))
-
-
-## employment
-emp_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_emp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total employment relative to BAU, FTE job-years",
-       x = NULL,
-       y = "Total employment)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(emp_cum1b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_empl_v1b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_empl_v1b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_empl_v1b_fig.pdf'))
-
-
-## compensation
-comp_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_comp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total compensation relative to BAU",
-       x = NULL,
-       y = "Compensation",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(comp_cum1b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_compensationl_v1b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_compensationl_v1b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_compensationl_v1b_fig.pdf'))
-
-
-
-## pm25
-
-pm25_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mean_delta_total_pm25"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative pm2.5 exposure relative to BAU",
-       x = NULL,
-       y = "pm2.5 exposure (ug/m3)",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(pm25_cum1b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_pm25_v1b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_pm25_v1b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_pm25_v1b_fig.pdf'))
-
-
-## mortality
-
-mortality_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mortality_delta"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative mortality level relative to BAU",
-       x = NULL,
-       y = "mortality",
-       color = NULL) +
-  theme_line +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(mortality_cum1b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_mortality_v1b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_mortality_v1b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_mortality_v1b_fig.pdf'))
-
+# ## v1 bau
+# ## cost
+# cost_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "cost_PV",
+#                                                       ccs_option == "ccs"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative cost of premature deaths relative to BAU ",
+#        x = NULL,
+#        y = "USD million (present value)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(cost_cum1b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_health_cost_v1b_fig.png'), 
+#        width = 6, 
+#        height = 5)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_health_cost_v1b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_health_cost_v1b_fig.pdf'))
+# 
+# 
+# ## prod
+# prod_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_state_bbl"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Cumulative oil production relative to BAU",
+#        x = NULL,
+#        y = "Production (million of bbls)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(prod_cum1b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_prod_v1b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_prod_v1b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_prod_v1b_fig.pdf'))
+# 
+# 
+# ## ghg
+# ghg_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Cumulative GHG emissions relative to BAU",
+#        x = NULL,
+#        y = "GHG emissions (MtCO2e)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(ghg_cum1b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_ghg_v1b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_ghg_v1b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_ghg_v1b_fig.pdf'))
+# 
+# 
+# ## employment
+# emp_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_emp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Labor: Cumulative total employment relative to BAU, FTE job-years",
+#        x = NULL,
+#        y = "Total employment)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(emp_cum1b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_empl_v1b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_empl_v1b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_empl_v1b_fig.pdf'))
+# 
+# 
+# ## compensation
+# comp_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_comp"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Labor: Cumulative total compensation relative to BAU",
+#        x = NULL,
+#        y = "Compensation",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(comp_cum1b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_compensationl_v1b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_compensationl_v1b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_compensationl_v1b_fig.pdf'))
+# 
+# 
+# 
+# ## pm25
+# 
+# pm25_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mean_delta_total_pm25"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative pm2.5 exposure relative to BAU",
+#        x = NULL,
+#        y = "pm2.5 exposure (ug/m3)",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(pm25_cum1b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_pm25_v1b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_pm25_v1b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_pm25_v1b_fig.pdf'))
+# 
+# 
+# ## mortality
+# 
+# mortality_cum1b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mortality_delta"), aes(x = reorder(scen_name, -sum_metric), y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative mortality level relative to BAU",
+#        x = NULL,
+#        y = "mortality",
+#        color = NULL) +
+#   theme_line +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(mortality_cum1b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v1/cumulative_mortality_v1b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_mortality_v1b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v1/cumulative_mortality_v1b_fig.pdf'))
+# 
 
 ## V2b: same as above, x axis == 2045 emissions as a percentage of 2019 emissions
 ## cost
@@ -1194,174 +1275,176 @@ embed_fonts(file.path(save_info_path, 'bau_cumulative_v1/cumulative_mortality_v1
 #         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
-cost_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "cost_PV"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative cost of premature deaths relative to BAU ",
-       x = "GHG emissions (% of 2019)",
-       y = "USD million (present value)",
-       color = NULL) +
-  theme_line +
-  scale_x_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(cost_cum2b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_health_cost_v2b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_health_cost_v2b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_health_cost_v2b_fig.pdf'))
-
-
-## prod
-prod_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_state_bbl"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Cumulative oil production relative to BAU",
-       x = "GHG emissions (% of 2019)",
-       y = "Production (million of bbls)",
-       color = NULL) +
-  theme_line +
-  scale_x_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(prod_cum2b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_prod_v2b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_prod_v2b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_prod_v2b_fig.pdf'))
-
-
-## ghg
-ghg_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Cumulative GHG emissions relative to BAU",
-       x = "GHG emissions (% of 2019)",
-       y = "GHG emissions (MtCO2e)",
-       color = NULL) +
-  theme_line +
-  scale_x_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(ghg_cum2b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_ghg_v2b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_ghg_v2b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_ghg_v2b_fig.pdf'))
-
-
-## employment
-emp_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_emp"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total employment relative to BAU, FTE job-years",
-       x = "GHG emissions (% of 2019)",
-       y = "Total employment)",
-       color = NULL) +
-  theme_line +
-  scale_x_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(emp_cum2b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_empl_v2b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_empl_v2b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_empl_v2b_fig.pdf'))
-
-
-## compensation
-comp_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_comp"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative total compensation relative to BAU",
-       x = "GHG emissions (% of 2019)",
-       y = "Compensation",
-       color = NULL) +
-  theme_line +
-  scale_x_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(comp_cum2b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_compensationl_v2b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_compensationl_v2b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_compensationl_v2b_fig.pdf'))
-
-
-
-## pm25
-
-pm25_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mean_delta_total_pm25"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative pm2.5 exposure relative to BAU",
-       x = "GHG emissions (% of 2019)",
-       y = "pm2.5 exposure (ug/m3)",
-       color = NULL) +
-  theme_line +
-  scale_x_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(pm25_cum2b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_pm25_v2b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_pm25_v2b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_pm25_v2b_fig.pdf'))
-
-
-## mortality
-
-mortality_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mortality_delta"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative mortality level relative to BAU",
-       x = "GHG emissions (% of 2019)",
-       y = "mortality",
-       color = NULL) +
-  theme_line +
-  scale_x_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-ggsave(mortality_cum2b_fig, 
-       filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_mortality_v2b_fig.pdf'), 
-       width = 11, 
-       height = 8)
-
-embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_mortality_v2b_fig.pdf'),
-            outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_mortality_v2b_fig.pdf'))
+# cost_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "cost_PV"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative cost of premature deaths relative to BAU ",
+#        x = "GHG emissions (% of 2019)",
+#        y = "USD million (present value)",
+#        color = NULL) +
+#   theme_line +
+#   scale_x_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(cost_cum2b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_health_cost_v2b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_health_cost_v2b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_health_cost_v2b_fig.pdf'))
+# 
+# 
+# ## prod
+# prod_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_state_bbl"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Cumulative oil production relative to BAU",
+#        x = "GHG emissions (% of 2019)",
+#        y = "Production (million of bbls)",
+#        color = NULL) +
+#   theme_line +
+#   scale_x_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(prod_cum2b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_prod_v2b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_prod_v2b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_prod_v2b_fig.pdf'))
+# 
+# 
+# ## ghg
+# ghg_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_state_ghg_MtCO2"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Cumulative GHG emissions relative to BAU",
+#        x = "GHG emissions (% of 2019)",
+#        y = "GHG emissions (MtCO2e)",
+#        color = NULL) +
+#   theme_line +
+#   scale_x_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(ghg_cum2b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_ghg_v2b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_ghg_v2b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_ghg_v2b_fig.pdf'))
+# 
+# 
+# ## employment
+# emp_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_emp"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Labor: Cumulative total employment relative to BAU, FTE job-years",
+#        x = "GHG emissions (% of 2019)",
+#        y = "Total employment)",
+#        color = NULL) +
+#   theme_line +
+#   scale_x_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(emp_cum2b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_empl_v2b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_empl_v2b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_empl_v2b_fig.pdf'))
+# 
+# 
+# ## compensation
+# comp_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "total_comp"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Labor: Cumulative total compensation relative to BAU",
+#        x = "GHG emissions (% of 2019)",
+#        y = "Compensation",
+#        color = NULL) +
+#   theme_line +
+#   scale_x_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(comp_cum2b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_compensationl_v2b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_compensationl_v2b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_compensationl_v2b_fig.pdf'))
+# 
+# 
+# 
+# ## pm25
+# 
+# pm25_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mean_delta_total_pm25"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative pm2.5 exposure relative to BAU",
+#        x = "GHG emissions (% of 2019)",
+#        y = "pm2.5 exposure (ug/m3)",
+#        color = NULL) +
+#   theme_line +
+#   scale_x_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(pm25_cum2b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_pm25_v2b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_pm25_v2b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_pm25_v2b_fig.pdf'))
+# 
+# 
+# ## mortality
+# 
+# mortality_cum2b_fig <- ggplot(bau_cumulative_df %>% filter(metric == "mortality_delta"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Health: Cumulative mortality level relative to BAU",
+#        x = "GHG emissions (% of 2019)",
+#        y = "mortality",
+#        color = NULL) +
+#   theme_line +
+#   scale_x_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = "right",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# ggsave(mortality_cum2b_fig, 
+#        filename = file.path(save_info_path, 'bau_cumulative_v2/cumulative_mortality_v2b_fig.pdf'), 
+#        width = 11, 
+#        height = 8)
+# 
+# embed_fonts(file.path(save_info_path, 'bau_cumulative_v2/cumulative_mortality_v2b_fig.pdf'),
+#             outfile = file.path(save_info_path, 'bau_cumulative_v2/cumulative_mortality_v2b_fig.pdf'))
 
 ## labor vs mortality
 
-labor_health_df <- bau_cumulative_df[metric %in% c('cost_PV', 'total_comp', 'total_emp')]
+labor_health_df <- bau_cumulative_df[metric %in% c('cost_PV', 'mortality_delta', 'total_comp', 'total_emp')]
 
 labor_health_df <- dcast(labor_health_df, scen_id + ccs_option + policy_intervention + target ~ metric, value.var = "sum_metric")
 
 ## labor compensation vs. mortality ($) (relative to BAU for both)
-labor_health_fig1 <- ggplot(labor_health_df %>% filter(ccs_option == "ccs"), aes(x = total_comp /1e9, y = cost_PV / 1e9, color = target, shape = policy_intervention, group = scen_id)) +
+labor_health_fig1 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_comp /1e9, y = cost_PV / 1e9, color = target, shape = policy_intervention, group = scen_id)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor compensation vs. health mortality cost (relative to BAU)",
+       subtitle = "no CCS",
        x = "Cumulative compensation relative to BAU (billion)",
        y = "Cumulative mortality cost relative to BAU (present value) (billion)",
-       color = NULL) +
+       color = "GHG emission target",
+       shape = "Policy intervention") +
   theme_line +
   # scale_x_continuous(limits = c(NA, 0)) +
   theme(legend.position = "right",
@@ -1370,20 +1453,22 @@ labor_health_fig1 <- ggplot(labor_health_df %>% filter(ccs_option == "ccs"), aes
 
 ggsave(labor_health_fig1, 
        filename = file.path(save_info_path, 'labor_v_mortality/compensation_v_mortality_cost.png'), 
-       width = 8, 
-       height = 8)
+       width = 5, 
+       height = 5)
 
 # embed_fonts(file.path(save_info_path, 'labor_v_mortality/compensation_v_mortality_cost.pdf'),
 #             outfile = file.path(save_info_path, 'labor_v_mortality/compensation_v_mortality_cost.pdf'))
 
 
 ## labor job years vs. mortality ($) (relative to BAU for both)
-labor_health_fig2 <- ggplot(labor_health_df %>% filter(ccs_option == "ccs"), aes(x = total_emp / 1000, y = cost_PV / 1e9, color = target, shape = policy_intervention, group = scen_id)) +
+labor_health_fig2 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp / 1000, y = cost_PV / 1e9, color = target, shape = policy_intervention, group = scen_id)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor employment vs. health mortality cost (relative to BAU)",
+       subtitle = "no CCS",
        x = "Cumulative employment relative to BAU (thousand)",
        y = "Cumulative mortality cost relative to BAU (present value) (billion)",
-       color = NULL) +
+       color = "GHG emission target",
+       shape = "Policy intervention") +
   theme_line +
   # scale_x_continuous(limits = c(NA, 0)) +
   theme(legend.position = "right",
@@ -1392,15 +1477,186 @@ labor_health_fig2 <- ggplot(labor_health_df %>% filter(ccs_option == "ccs"), aes
 
 ggsave(labor_health_fig2, 
        filename = file.path(save_info_path, 'labor_v_mortality/employment_v_mortality_cost.png'), 
-       width = 8, 
-       height = 8)
+       width = 5, 
+       height = 5)
 
 # embed_fonts(file.path(save_info_path, 'labor_v_mortality/employment_v_mortality_cost.pdf'),
 #             outfile = file.path(save_info_path, 'labor_v_mortality/employment_v_mortality_cost.pdf'))
 
 
-## color lines based on emissions reduction categories, shape for policy intervention
+## labor job years vs. mortality ($) (relative to BAU for both)
+labor_health_fig3 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta, color = target, shape = policy_intervention, group = scen_id)) +
+  geom_point(size = 2, alpha = 0.8) +
+  labs(title = "Labor employment vs. health mortality # (relative to BAU)",
+       subtitle = "no CCS",
+       x = "Cumulative employment relative to BAU",
+       y = "Cumulative mortality relative to BAU",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  theme_line +
+  scale_y_continuous(limits = c(NA, 0)) +
+  scale_x_continuous(label = comma) +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
+ggsave(labor_health_fig3, 
+       filename = file.path(save_info_path, 'labor_v_mortality/employment_v_mortality_num.png'), 
+       width = 5, 
+       height = 5)
+
+## add lines
+
+# prep_slope <- labor_health_df %>%
+#   filter(ccs_option == "no CCS", policy_intervention != "BAU") %>%
+#   group_by(policy_intervention) %>%
+#   mutate(
+#     slope = lm(mortality_delta ~ total_emp)$coefficients[2],
+#     significance = summary(lm(mortality_delta ~ total_emp))$coefficients[2, 4],
+#     x = mean(mortality_delta),   # x coordinate for slope label
+#     y = mean(total_emp)     # y coordinate for slope label
+#   ) 
+
+labor_health_fig4 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta, color = target, shape = policy_intervention, group = scen_id)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_smooth(data = labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta, shape = policy_intervention), inherit.aes = F, method = "lm", color = "black", size = 0.5, se = F) +
+  labs(title = "Labor employment vs. health mortality # (relative to BAU)",
+       subtitle = "no CCS",
+       x = "Cumulative employment relative to BAU",
+       y = "Cumulative mortality relative to BAU",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  theme_line +
+  scale_y_continuous(limits = c(NA, 0)) +
+  scale_x_continuous(label = comma) +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(labor_health_fig4, 
+       filename = file.path(save_info_path, 'labor_v_mortality/employment_v_mortality_fit.png'), 
+       width = 5, 
+       height = 5)
+
+
+## ------------------------------------------------------------
+## DAC share
+## -------------------------------------------------------------
+
+## labor, county
+
+labor_out <- fread(paste0(main_path, extraction_folder_path, 'county-results/subset_county_results.csv'))
+
+
+labor_scens <- labor_out[(oil_price_scenario == "reference case" &
+                            carbon_price_scenario %in% c("carbon_setback_1000ft-no ccs", "carbon_setback_2500ft-no ccs",
+                                                         "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs") &
+                            ccs_scenario %in% c("no ccs") &
+                            setback_scenario == "no_setback" &
+                            excise_tax_scenario == "no tax") |
+                           (oil_price_scenario == "reference case" &
+                              carbon_price_scenario %in% c("carbon_setback_1000ft-medium CCS cost", "carbon_setback_2500ft-medium CCS cost",
+                                                           "carbon_setback_5280ft-medium CCS cost", "carbon_90_perc_reduction-medium CCS cost") &
+                              ccs_scenario %in% c("medium CCS cost") &
+                              setback_scenario == "no_setback" &
+                              excise_tax_scenario == "no tax") |   
+                           (oil_price_scenario == "reference case" &
+                              carbon_price_scenario == "price floor" &
+                              ccs_scenario %in% c("medium CCS cost", "no ccs")) |
+                           (oil_price_scenario == "reference case" &
+                              carbon_price_scenario == "price floor" &
+                              ccs_scenario %in% c("medium CCS cost", "no ccs") &
+                              setback_scenario == "no_setback" &
+                              excise_tax_scenario == "no tax")]
+
+labor_scens[, target := fifelse(scen_id %in% target1000, "1000ft setback",
+                                fifelse(scen_id %in% target2500, "2500ft setback",
+                                        fifelse(scen_id %in% target5280, "5280ft setback",
+                                                fifelse(scen_id %in% target90, "90% reduction", "BAU"))))]
+
+labor_scens[, policy_intervention := fifelse(carbon_price_scenario != "price floor", "carbon tax",
+                                                   fifelse(setback_scenario != "no_setback", "setback",
+                                                           fifelse(excise_tax_scenario != "no tax", "excise tax", "BAU")))]
+
+labor_scens[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
+
+## calculate dac share, labor FTE
+labor_scens[, dac_share_emp := dac_share * total_emp]
+labor_scens <- labor_scens[, .(scen_id, oil_price_scenario, county, dac_share, median_hh_income, year, dac_share_emp, total_emp,
+                target, policy_intervention, ccs_option)]
+
+labor_dac <- labor_scens[, .(cumul_dac_emp = sum(dac_share_emp), 
+                             cumul_total_emp = sum(total_emp)), by = .(scen_id, oil_price_scenario, county, median_hh_income,
+                                                                       target, policy_intervention, ccs_option)]
+
+
+labor_dac_state <- labor_dac[, .(cumul_dac_emp = sum(cumul_dac_emp), 
+                                 cumul_total_emp = sum(cumul_total_emp)), by = .(scen_id, oil_price_scenario,
+                                                                           target, policy_intervention, ccs_option)]
+
+labor_dac_state[, dac_share_emp := cumul_dac_emp / cumul_total_emp]
+
+## plot by target and against GHGs
+
+
+labor_dac_state$target <- factor(labor_dac_state$target, levels = c('BAU', '1000ft setback', '2500ft setback', '5280ft setback', '90% reduction'))
+
+
+fig_labor_dac <- ggplot(labor_dac_state %>% filter(ccs_option == "no CCS"), aes(x = target, y = dac_share_emp, color = target, shape = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  labs(title = "Labor: DAC share of cumulative employment (FTE-jobs)",
+       subtitle = "no CCS",
+       x = NULL,
+       y = "DAC share",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  theme_line +
+  scale_y_continuous(limits = c(0, NA)) +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(fig_labor_dac, 
+       filename = file.path(save_info_path, 'dac-share/dac_share_labor_fig.png'), 
+       width = 6, 
+       height = 6)
+
+
+## health, dac
+
+health_out <- fread(paste0(main_path, extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
+
+
+health_scens <- health_out[(scen_id %in% c(target1000, target2500, target5280, target90) |
+                             scen_id == "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_no tax" |
+                              scen_id == "reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax")]
+
+health_scens[, target := fifelse(scen_id %in% target1000, "1000ft setback",
+                                fifelse(scen_id %in% target2500, "2500ft setback",
+                                        fifelse(scen_id %in% target5280, "5280ft setback",
+                                                fifelse(scen_id %in% target90, "90% reduction", "BAU"))))]
+
+health_scens[, policy_intervention := fifelse(carbon_price_scenario != "price floor", "carbon tax",
+                                             fifelse(setback_scenario != "no_setback", "setback",
+                                                     fifelse(excise_tax_scenario != "no tax", "excise tax", "BAU")))]
+
+health_scens[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
+
+## calculate dac share, labor FTE
+health_scens[, dac_share_emp := dac_share * total_emp]
+health_scens <- health_scens[, .(scen_id, oil_price_scenario, county, dac_share, median_hh_income, year, dac_share_emp, total_emp,
+                               target, policy_intervention, ccs_option)]
+
+labor_dac <- labor_scens[, .(cumul_dac_emp = sum(dac_share_emp), 
+                             cumul_total_emp = sum(total_emp)), by = .(scen_id, oil_price_scenario, county, median_hh_income,
+                                                                       target, policy_intervention, ccs_option)]
+
+
+labor_dac_state <- labor_dac[, .(cumul_dac_emp = sum(cumul_dac_emp), 
+                                 cumul_total_emp = sum(cumul_total_emp)), by = .(scen_id, oil_price_scenario,
+                                                                                 target, policy_intervention, ccs_option)]
+
+labor_dac_state[, dac_share_emp := cumul_dac_emp / cumul_total_emp]
 
 
 
