@@ -63,6 +63,7 @@ ct_save_path        = paste0(compiled_save_path, 'census-tract-results/')
 prod_file       <- "well_prod_m_processed.csv"
 oil_price_file  <- 'oil_price_projections_revised.xlsx'
 ghg_file        <- 'ghg_emissions_x_field_2018-2045.csv'
+ghg_hist_file   <- 'indust_emissions_2000-2019.csv'
 
 ## create folder for outputs
 dir.create(compiled_save_path, showWarnings = FALSE)
@@ -103,6 +104,18 @@ setnames(county_income, "estimate", "median_hh_income")
 ## monthly well production
 well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                                                  'doc_field_code' = 'character'))
+
+## historical GHG emissions, 2019
+## --------------------------
+hist_ghg <- fread(paste0(main_path, 'data/stocks-flows/processed/', ghg_hist_file), header = T)
+
+hist_ghg <- hist_ghg[segment %chin% c('Oil & Gas: Production & Processing') &
+                       year == 2019, .(segment, unit, year, value)]
+
+ghg_2019 <- as.numeric(hist_ghg[, value][1])
+
+
+
 ## ghg factors
 ghg_factors = fread(file.path(main_path, 'outputs/stocks-flows', ghg_file), header = T, colClasses = c('doc_field_code' = 'character'))
 ghg_factors_2019 = ghg_factors[year == 2019, c('doc_field_code', 'year', 'upstream_kgCO2e_bbl')]
@@ -267,20 +280,8 @@ ces3 <- read.csv(paste0(main_path, "data/health/processed/ces3_data.csv"), strin
 ces3 <- merge(ces3, ces_county, 
               by = "census_tract")
 
-## DAC proportion
-county_dac <- dcast(ces3, county + census_tract ~ disadvantaged, value.var = "population")
-county_dac[, Yes := fifelse(is.na(Yes), 0, Yes)]
-county_dac[, No := fifelse(is.na(No), 0, No)]
-county_dac[, total_pop := No + Yes]
-county_dac[, dac_share := Yes / total_pop]
-county_dac <- county_dac[, .(dac_share = weighted.mean(dac_share, total_pop, na.rm = T)), by = .(county)]
-
-# test_dac <- ces3[, .(population = sum(population, na.rm = T)), by = .(disadvantaged, county)]
-# test_dac <- dcast(test_dac, county ~ disadvantaged, value.var = "population")
-# test_dac[, Yes := fifelse(is.na(Yes), 0, Yes)]
-# test_dac[, dac_share_test := Yes / (No + Yes)]
-# test_dac[, No := NULL]
-# test_dac[, Yes := NULL]
+## remove population
+ces3[, population := NULL]
 
 # Population and incidence
 ct_inc_pop_45 <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
@@ -290,9 +291,23 @@ ct_inc_pop_45 <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"),
   select(ct_id, lower_age, upper_age, year, pop, incidence_2015) %>%
   as.data.table()
 
+## census tract, population > 29
+ct_pop_time <- ct_inc_pop_45 %>%
+  filter(lower_age > 29) %>%
+  group_by(ct_id, year) %>%
+  summarize(ct_pop = sum(pop, na.rm = T)) %>%
+  ungroup() %>%
+  rename(census_tract = ct_id) %>%
+  as.data.table()
+
+## dac share over time
+ct_pop_time <- merge(ct_pop_time, ces3, 
+                   by = c("census_tract"),
+                   all.x = T)
+
 ## census-tract level population-weighted incidence rate (for age>29)
 ct_inc_pop_45_weighted <- ct_inc_pop_45 %>%
-  filter(lower_age > 29)%>%
+  filter(lower_age > 29) %>%
   group_by(ct_id, year) %>%
   mutate(ct_pop = sum(pop, na.rm = T),
          share = pop/ct_pop,
@@ -302,8 +317,6 @@ ct_inc_pop_45_weighted <- ct_inc_pop_45 %>%
   ungroup() %>%
   as.data.table()
 
-
-
 ## county pop
 county_pop <- ct_inc_pop_45_weighted %>%
   left_join(ces_county, by = c('ct_id' = 'census_tract')) %>%
@@ -311,6 +324,15 @@ county_pop <- ct_inc_pop_45_weighted %>%
   summarise(county_pop = sum(pop)) %>%
   ungroup() %>%
   filter(!is.na(county))
+
+## DAC proportion
+county_dac <- dcast(ct_pop_time, county + census_tract + year ~ disadvantaged, value.var = "ct_pop")
+county_dac <- county_dac[!is.na(county)]
+county_dac[, Yes := fifelse(is.na(Yes), 0, Yes)]
+county_dac[, No := fifelse(is.na(No), 0, No)]
+county_dac[, total_pop := No + Yes]
+county_dac[, dac_share := Yes / total_pop]
+county_dac <- county_dac[, .(dac_share = weighted.mean(dac_share, total_pop, na.rm = T)), by = .(county, year)]
 
 
 ## Coefficients from Krewski et al (2009) for mortality impact
@@ -521,7 +543,7 @@ for (i in 1:length(field_files_to_process)) {
   
   ## merge with county dac proportion
   county_out <- merge(county_out, county_dac,
-                      by = "county",
+                      by = c("county", "year"),
                       all.x = T)
   
   county_out <- merge(county_out, county_income,
@@ -555,7 +577,9 @@ for (i in 1:length(field_files_to_process)) {
                            all.x = T)
   
   ## summarize extraction production per cluster
-  total_clusters <- health_site_out[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(id, year, scen_id)] 
+  total_clusters <- health_site_out[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(id, year, scen_id, oil_price_scenario,
+                                                                                      carbon_price_scenario, ccs_scenario, setback_scenario,
+                                                                                      excise_tax_scenario)] 
   
   ## calculate air pollution using emission factors
   total_clusters <- total_clusters %>%
@@ -579,15 +603,16 @@ for (i in 1:length(field_files_to_process)) {
     ## Adjust mismatch of census tract ids between inmap and benmap (census ID changed in 2012 
     ## http://www.diversitydatakids.org/sites/default/files/2020-02/ddk_coi2.0_technical_documentation_20200212.pdf)
     mutate(GEOID = ifelse(GEOID == "06037137000", "06037930401", GEOID)) %>%
-    group_by(GEOID, year, scen_id) %>%
+    group_by(GEOID, year, scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, excise_tax_scenario) %>%
     summarize(total_pm25 = sum(total_pm25, na.rm = T), 
               prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
     ungroup() %>%
     rename(census_tract = GEOID) %>%
-    select(scen_id, census_tract, year, total_pm25)
+    select(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, excise_tax_scenario,
+           census_tract, year, total_pm25)
   
   ## add ces score, income, and dac
-  ct_exposure <- merge(ct_exposure, ces3[, .(census_tract, population, CES3_score, disadvantaged)],
+  ct_exposure <- merge(ct_exposure, ces3[, .(census_tract, CES3_score, disadvantaged)],
                        by = c("census_tract"),
                        all.x = T)
   
@@ -599,7 +624,11 @@ for (i in 1:length(field_files_to_process)) {
   
   setorder(ct_exposure, "census_tract", "year")
   
-  setcolorder(ct_exposure, c("scen_id", "census_tract", "population", "disadvantaged", "CES3_score", "median_hh_income", "year", "total_pm25"))
+  setcolorder(ct_exposure, c("scen_id", "oil_price_scenario", "carbon_price_scenario", "ccs_scenario", "setback_scenario",
+                             "excise_tax_scenario", "census_tract", "disadvantaged", "CES3_score", "median_hh_income", "year", "total_pm25"))
+  
+  
+  
   
   ## save census tract outputs (pm2.5 levels, mortality level, cost)
   saveRDS(ct_exposure, paste0(ct_save_path, scenario_id_tmp, "_ct_results.rds"))
@@ -657,7 +686,7 @@ for (i in 1:length(field_files_to_process)) {
                             by = c("census_tract", "year"),
                             all = T)
   
-  delta_extraction[, delta_total_pm25 := total_pm25- bau_total_pm25]
+  delta_extraction[, delta_total_pm25 := total_pm25 - bau_total_pm25]
   
   
   ## Merge demographic data to pollution scenarios
