@@ -1597,8 +1597,6 @@ labor_dac_state <- labor_dac[, .(cumul_dac_emp = sum(cumul_dac_emp),
 labor_dac_state[, dac_share_emp := cumul_dac_emp / cumul_total_emp]
 
 ## plot by target and against GHGs
-
-
 labor_dac_state$target <- factor(labor_dac_state$target, levels = c('BAU', '1000ft setback', '2500ft setback', '5280ft setback', '90% reduction'))
 
 
@@ -1627,7 +1625,7 @@ ggsave(fig_labor_dac,
 health_out <- fread(paste0(main_path, extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
 
 
-health_scens <- health_out[(scen_id %in% c(target1000, target2500, target5280, target90) |
+health_scens <- health_out[(scen_id %>% c(target1000, target2500, target5280, target90) |
                              scen_id == "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_no tax" |
                               scen_id == "reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax")]
 
@@ -1636,27 +1634,79 @@ health_scens[, target := fifelse(scen_id %in% target1000, "1000ft setback",
                                         fifelse(scen_id %in% target5280, "5280ft setback",
                                                 fifelse(scen_id %in% target90, "90% reduction", "BAU"))))]
 
-health_scens[, policy_intervention := fifelse(carbon_price_scenario != "price floor", "carbon tax",
-                                             fifelse(setback_scenario != "no_setback", "setback",
-                                                     fifelse(excise_tax_scenario != "no tax", "excise tax", "BAU")))]
+## policy interventions
+carbon_tax_vec <- c("reference case_no_setback_no quota_carbon_setback_1000ft-medium CCS cost_medium CCS cost_low innovation_no tax",   
+                    "reference case_no_setback_no quota_carbon_setback_2500ft-medium CCS cost_medium CCS cost_low innovation_no tax",   
+                    "reference case_no_setback_no quota_carbon_setback_5280ft-medium CCS cost_medium CCS cost_low innovation_no tax",   
+                    "reference case_no_setback_no quota_carbon_90_perc_reduction-medium CCS cost_medium CCS cost_low innovation_no tax",
+                    "reference case_no_setback_no quota_carbon_setback_1000ft-no ccs_no ccs_low innovation_no tax",                     
+                    "reference case_no_setback_no quota_carbon_setback_2500ft-no ccs_no ccs_low innovation_no tax",                     
+                    "reference case_no_setback_no quota_carbon_setback_5280ft-no ccs_no ccs_low innovation_no tax",                     
+                    "reference case_no_setback_no quota_carbon_90_perc_reduction-no ccs_no ccs_low innovation_no tax")
 
-health_scens[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
+excise_vec <- c("reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_90_perc_reduction",
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_90_perc_reduction",
+                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_5280ft",
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_5280ft",
+                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_2500ft",
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_2500ft",
+                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_1000ft",
+                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_1000ft")
 
-## calculate dac share, labor FTE
-health_scens[, dac_share_emp := dac_share * total_emp]
-health_scens <- health_scens[, .(scen_id, oil_price_scenario, county, dac_share, median_hh_income, year, dac_share_emp, total_emp,
-                               target, policy_intervention, ccs_option)]
+setback_vec <- c("reference case_setback_5280ft_no quota_price floor_no ccs_low innovation_no tax",
+                 "reference case_setback_2500ft_no quota_price floor_no ccs_low innovation_no tax",
+                 "reference case_setback_1000ft_no quota_price floor_no ccs_low innovation_no tax",
+                 "reference case_setback_5280ft_no quota_price floor_medium CCS cost_low innovation_no tax",
+                 "reference case_setback_2500ft_no quota_price floor_medium CCS cost_low innovation_no tax",
+                 "reference case_setback_1000ft_no quota_price floor_medium CCS cost_low innovation_no tax")
 
-labor_dac <- labor_scens[, .(cumul_dac_emp = sum(dac_share_emp), 
-                             cumul_total_emp = sum(total_emp)), by = .(scen_id, oil_price_scenario, county, median_hh_income,
+
+
+
+health_scens[, policy_intervention := fifelse(scen_id %in% carbon_tax_vec, "carbon tax",
+                                             fifelse(scen_id %in% excise_vec, "excise tax",
+                                                     fifelse(scen_id %in% setback_vec, "setback", "BAU")))]
+
+health_scens[, ccs_option := fifelse(isTRUE(str_detect(scen_id, "no ccs")), "no CCS", "medium CCS cost")]
+
+## calculate dac share, mortality
+health_scens[, dac_multiplier := fifelse(disadvantaged == "Yes", 1, 0)]
+
+health_scens[, dac_share_mortality := dac_multiplier * mortality_delta]
+
+health_dac <- health_scens[, .(cumul_dac_mortality = sum(dac_share_mortality), 
+                              cumul_total_mortality = sum(mortality_delta)), by = .(scen_id, census_tract, disadvantaged, median_hh_income,
                                                                        target, policy_intervention, ccs_option)]
 
 
-labor_dac_state <- labor_dac[, .(cumul_dac_emp = sum(cumul_dac_emp), 
-                                 cumul_total_emp = sum(cumul_total_emp)), by = .(scen_id, oil_price_scenario,
-                                                                                 target, policy_intervention, ccs_option)]
+health_dac_state <- health_dac[, .(cumul_dac_mortality = sum(cumul_dac_mortality), 
+                                   cumul_total_mortality = sum(cumul_total_mortality)), by = .(scen_id, target, policy_intervention, ccs_option)]
 
-labor_dac_state[, dac_share_emp := cumul_dac_emp / cumul_total_emp]
+health_dac_state[, dac_share_health := cumul_dac_mortality / cumul_total_mortality]
+
+## make figure
+health_dac_state$target <- factor(health_dac_state$target, levels = c('BAU', '1000ft setback', '2500ft setback', '5280ft setback', '90% reduction'))
+
+
+fig_health_dac <- ggplot(health_dac_state %>% filter(ccs_option == "no CCS"), aes(x = target, y = dac_share_health, color = target, shape = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  labs(title = "Health: DAC share of avoided mortality relative to BAU",
+       subtitle = "no CCS",
+       x = NULL,
+       y = "DAC share",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  theme_line +
+  scale_y_continuous(limits = c(0, NA)) +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(fig_labor_dac, 
+       filename = file.path(save_info_path, 'dac-share/dac_share_labor_fig.png'), 
+       width = 6, 
+       height = 6)
+
 
 
 
