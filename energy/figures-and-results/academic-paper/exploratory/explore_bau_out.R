@@ -85,7 +85,6 @@ state_population <- ct_population %>%
   as.data.table()
 
 
-
 ## read inputs
 state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 
