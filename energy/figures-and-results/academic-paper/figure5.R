@@ -35,12 +35,32 @@ theme_line = theme_ipsum(base_family = 'Arial',
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 source_path   <- paste0(main_path, 'data/health/source_receptor_matrix/')
 inmap_ex_path  <- paste0(main_path, "data/health/source_receptor_matrix/inmap_processed_srm/extraction")
+save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/exploratory-figs/figs_2021-11-09/srm')
 
 ## files
 bau_file <- 'reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_field_results.rds'
+forecast_file     <- 'field_capex_opex_forecast_revised.csv'
+ghg_file          <- 'ghg_emissions_x_field_2018-2045.csv'
+setback_file      <- 'setback_coverage_R.csv'
 
 ## read in bau field out
 bau_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2021-11-09/field-results/', bau_file))
+
+## load opex/ capex
+price_data = fread(file.path(main_path, 'outputs/stocks-flows', forecast_file), header = T)
+price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
+price_data[, sum_cost := m_opex_imputed + m_capex_imputed]
+price_data <- price_data[year == 2020, .(doc_field_code, sum_cost)]
+
+## emissions factors
+ghg_factors = fread(file.path(main_path, 'outputs/stocks-flows', ghg_file), header = T)
+ghg_factors[, doc_field_code := sprintf("%03d", doc_field_code)]
+ghg_factors <- ghg_factors[year == 2019, .(doc_field_code, upstream_kgCO2e_bbl)]
+
+## setback coverage
+setback_scens = fread(file.path(main_path, 'outputs/setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
+setnames(setback_scens, 'rel_coverage', 'area_coverage')
+setback_scens <- setback_scens[setback_scenario == "setback_5280", .(doc_field_code, area_coverage)]
 
 ## dac 
 ces3 <- read.csv(paste0(main_path, "data/health/processed/ces3_data.csv"), stringsAsFactors = FALSE) %>%
@@ -182,13 +202,76 @@ srm_extraction_field <- srm_extraction %>%
   ungroup() %>%
   left_join(prod_2019) %>%
   mutate(dac_share_pm25 = dac_pm25 / total_pm25) %>%
-  select(doc_field_code, doc_fieldname, dac_pm25, total_pm25, dac_share_pm25, bbl_2019)
+  ## Add 2019 capex + opex; carbon emissions; setback area closed
+  left_join(price_data) %>%
+  left_join(ghg_factors) %>%
+  left_join(setback_scens) %>%
+  select(doc_field_code, doc_fieldname, dac_pm25, total_pm25, dac_share_pm25, bbl_2019, sum_cost, upstream_kgCO2e_bbl, area_coverage_mile = area_coverage)
 
-## Add 2019 capex + opex; carbon emissions; setback area closed
+## figure
+fig_srm_cost <- ggplot(srm_extraction_field, aes(x = sum_cost, y = dac_share_pm25, size = bbl_2019 / 1e6)) +
+  geom_point(alpha = 0.4) +
+  labs(title = "DAC share pm2.5 by field",
+       subtitle = "no CCS",
+       size = "2019 oil production (million bbls)",
+       x = "2020 opex + capex (USD)",
+       y = "DAC share total pm2.5 pollution") +
+       # color = "GHG emission target",
+       # shape = "Policy intervention") +
+  theme_line +
+  scale_y_continuous(limits = c(0, NA)) +
+    # scale_x_continuous(limits = c(0, NA)) +
+  theme(legend.position = "bottom",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(fig_srm_cost, 
+       filename = file.path(save_info_path, 'srm_opex_capex.png'), 
+       width = 6, 
+       height = 6)
 
 
 ## figure
-# fig_srm <- ggploe(srm_extraction_field, aes(x = ))
+fig_srm_ghg <- ggplot(srm_extraction_field, aes(x = upstream_kgCO2e_bbl, y = dac_share_pm25, size = bbl_2019 / 1e6)) +
+  geom_point(alpha = 0.4) +
+  labs(title = "DAC share pm2.5 by field",
+       subtitle = "no CCS",
+       size = "2019 oil production (million bbls)",
+       x = "2019 GHG emissions factor (kgCO2e per bbl)",
+       y = "DAC share total pm2.5 pollution") +
+  # color = "GHG emission target",
+  # shape = "Policy intervention") +
+  theme_line +
+  scale_y_continuous(limits = c(0, NA)) +
+  # scale_x_continuous(limits = c(0, NA)) +
+  theme(legend.position = "bottom",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
+ggsave(fig_srm_ghg, 
+       filename = file.path(save_info_path, 'srm_ghg_factor.png'), 
+       width = 6, 
+       height = 6)
 
+## figure
+fig_srm_setback <- ggplot(srm_extraction_field, aes(x = area_coverage_mile, y = dac_share_pm25, size = bbl_2019 / 1e6)) +
+  geom_point(alpha = 0.4) +
+  labs(title = "DAC share pm2.5 by field",
+       subtitle = "no CCS",
+       size = "2019 oil production (million bbls)",
+       x = "1 mile setback relative area coverage",
+       y = "DAC share total pm2.5 pollution") +
+  # color = "GHG emission target",
+  # shape = "Policy intervention") +
+  theme_line +
+  scale_y_continuous(limits = c(0, NA)) +
+  # scale_x_continuous(limits = c(0, NA)) +
+  theme(legend.position = "bottom",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(fig_srm_setback, 
+       filename = file.path(save_info_path, 'srm_setback.png'), 
+       width = 6, 
+       height = 6)
 

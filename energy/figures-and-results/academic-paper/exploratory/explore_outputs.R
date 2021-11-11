@@ -1792,17 +1792,19 @@ labor_scens[, dac_emp := diff * dac_share]
 
 ## calculate dac share, labor FTE
 labor_dac <- labor_scens[, .(cumul_dac_emp_loss = sum(dac_emp), 
-                             cumul_total_emp_loss = sum(diff)), by = .(scen_id, oil_price_scenario, county, median_hh_income,
+                             cumul_total_emp_loss = sum(diff)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
+                                                                       setback_scenario, excise_tax_scenario, county, median_hh_income,
                                                                        target, policy_intervention, ccs_option)]
 
 
 labor_dac_state <- labor_dac[, .(cumul_dac_emp_loss = sum(cumul_dac_emp_loss), 
-                                 cumul_total_emp_loss = sum(cumul_total_emp_loss)), by = .(scen_id, oil_price_scenario,
-                                                                           target, policy_intervention, ccs_option)]
+                                 cumul_total_emp_loss = sum(cumul_total_emp_loss)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
+                                                                                           setback_scenario, excise_tax_scenario,
+                                                                                            target, policy_intervention, ccs_option)]
 
 labor_dac_state[, dac_share_emp := cumul_dac_emp_loss / cumul_total_emp_loss]
 
-labor_dac_state[, dac_share_emp := fifelse(is.na(dac_share_emp), 0, dac_share_emp)]
+
 
 ## plot by target and against GHGs
 labor_dac_state$target <- factor(labor_dac_state$target, levels = c('1000ft setback', '2500ft setback', '5280ft setback', '90% reduction', 'BAU'))
@@ -1810,7 +1812,7 @@ labor_dac_state$target <- factor(labor_dac_state$target, levels = c('1000ft setb
 
 fig_labor_dac <- ggplot(labor_dac_state %>% filter(ccs_option == "no CCS"), aes(x = target, y = dac_share_emp, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: DAC share of cumulative job loss relative to BAU (FTE-jobs)",
+  labs(title = "Labor: DAC share of cumulative job-year loss relative to BAU (FTE jobs-years)",
        subtitle = "no CCS",
        x = NULL,
        y = "DAC share",
@@ -1835,6 +1837,48 @@ ggsave(fig_labor_dac,
 cumul_ghg_df <- bau_cumulative_df[metric == "total_state_ghg_MtCO2", .(scen_id, sum_metric)]
 setnames(cumul_ghg_df, "sum_metric", "cumul_ghg_savings")
 
+## labor ghg
+labor_ghg_df <- merge(labor_dac_state, cumul_ghg_df,
+                      by = "scen_id",
+                      all.x = T)
+
+labor_ghg_df[, dac_loss_ghg := cumul_dac_emp_loss / cumul_ghg_savings]
+labor_ghg_df[, total_loss_ghg := cumul_total_emp_loss / cumul_ghg_savings]
+labor_ghg_df[, dac_share_loss_ghg := dac_loss_ghg / total_loss_ghg]
+
+labor_ghg_df <- melt(labor_ghg_df, id.vars = c("scen_id", "oil_price_scenario",
+                                              "target", "policy_intervention", "ccs_option", "cumul_ghg_savings"),
+                     measure.vars = c("dac_loss_ghg", "total_loss_ghg", "dac_share_loss_ghg"),
+                     variable.name = "type", value.name = "emp_loss_ghg")
+
+labor_ghg_df[, type := fifelse(type == "dac_loss_ghg", "DAC population",
+                               fifelse(type == "total_loss_ghg", "Total population", "DAC share"))]
+
+labor_ghg_df$type <- factor(labor_ghg_df$type, levels = c("Total population", "DAC population", "DAC share"))
+
+
+## figure
+fig_emp_ghg <- ggplot(labor_ghg_df %>% filter(ccs_option == "no CCS"), aes(x = target, y = emp_loss_ghg, color = target, shape = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  labs(title = "Labor: Cumulative job-year loss relative to BAU per\ncumulative avoided GHG MtCO2e (FTE job-year loss/MtCO2e)",
+       subtitle = "no CCS",
+       x = NULL,
+       y = "FTE job-year loss/MtCO2e",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  facet_wrap(~type, ncol = 3, scales = "free_y") +
+  theme_line +
+  scale_y_continuous(limits = c()) +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(fig_emp_ghg, 
+       filename = file.path(save_info_path, 'dac-share/labor_ghg_fig.png'), 
+       width = 10, 
+       height = 8)
+
 
 ## bau
 bau_prod <- labor_scens[policy_intervention == "BAU", .(ccs_scenario, ccs_option, county, year, total_county_bbl, revenue)]
@@ -1858,27 +1902,38 @@ labor_energy <- labor_energy[, lapply(.SD, sum, na.rm = T), .SDcols = c("diff_bb
                                                                                                            ccs_option, target, policy_intervention)]
 
 labor_energy <- merge(labor_energy, cumul_ghg_df,
-                         by = "scen_id",
-                         all.x = T)
+                      by = "scen_id",
+                      all.x = T)
 
+labor_energy[, cumul_ghg_savings := cumul_ghg_savings * -1]
+
+## calculate metrics
 labor_energy[, dac_bbl_ghg := dac_bbls / cumul_ghg_savings]
 labor_energy[, total_bbl_ghg := diff_bbls / cumul_ghg_savings]
+labor_energy[, dac_share_bbl := dac_bbl_ghg / total_bbl_ghg]
 labor_energy[, dac_rev_ghg := dac_revenue / cumul_ghg_savings]
 labor_energy[, total_rev_ghg := diff_rev / cumul_ghg_savings]
-
+labor_energy[, dac_share_rev := dac_rev_ghg / total_rev_ghg]
 
 energy_metric <- melt(labor_energy, id.vars = c("scen_id", "carbon_price_scenario", "setback_scenario", "excise_tax_scenario",
                                                 "target", "policy_intervention", "ccs_option"),
-                           measure.vars = c("dac_bbl_ghg", "total_bbl_ghg", "dac_rev_ghg", "total_rev_ghg"),
+                           measure.vars = c("dac_bbl_ghg", "total_bbl_ghg", "dac_share_bbl", "dac_rev_ghg", "total_rev_ghg", "dac_share_rev"),
                            variable.name = "type", value.name = "metric_per_ghg")
 
-energy_metric[, pop_type := fifelse(type %in% c("dac_bbl_ghg", "dac_rev_ghg"), "DAC population", "Total population")]
-energy_metric[, metric := fifelse(type %in% c("dac_bbl_ghg", "total_bbl_ghg"), "bbl production", "revenue")]
+energy_metric[, pop_type := fifelse(type %in% c("dac_bbl_ghg", "dac_rev_ghg"), "DAC population",
+                                    fifelse(type %in% c("total_bbl_ghg", "total_rev_ghg"), "Total population", "DAC share"))]
+
+energy_metric[, metric := fifelse(type %in% c("dac_bbl_ghg", "total_bbl_ghg", "dac_share_bbl"), "bbl production", "revenue")]
+
+
+energy_metric$pop_type <- factor(energy_metric$pop_type, levels = c("Total population", "DAC population", "DAC share"))
+
+energy_metric[, metric_per_ghg := fifelse(pop_type %in% c("Total population", "DAC population"), metric_per_ghg / 1e6, metric_per_ghg)]
 
 
 ## figure
 fig_bbl_ghg <- ggplot(energy_metric %>% filter(ccs_option == "no CCS",
-                                               metric == "bbl production"), aes(x = target, y = metric_per_ghg / -1e6, color = target, shape = policy_intervention)) +
+                                               metric == "bbl production"), aes(x = target, y = metric_per_ghg, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Cumulative production relative to BAU per\ncumulative avoided GHG MtCO2e (million bbls/MtCO2e)",
        subtitle = "no CCS",
@@ -1888,19 +1943,20 @@ fig_bbl_ghg <- ggplot(energy_metric %>% filter(ccs_option == "no CCS",
        shape = "Policy intervention") +
   facet_wrap(~pop_type, scales = "free_y") +
   theme_line +
-  scale_y_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
+  # scale_y_continuous(limits = c(NA, 1),) +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 ggsave(fig_bbl_ghg, 
        filename = file.path(save_info_path, 'dac-share/bbls_ghg_fig.png'), 
-       width = 8, 
-       height = 6)
+       width = 10, 
+       height = 8)
 
 ## revenue 
 fig_rev_ghg <- ggplot(energy_metric %>% filter(ccs_option == "no CCS",
-                                               metric == "revenue"), aes(x = target, y = metric_per_ghg / -1e6, color = target, shape = policy_intervention)) +
+                                               metric == "revenue"), aes(x = target, y = metric_per_ghg, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Cumulative revenue relative to BAU per\ncumulative avoided GHG MtCO2e (million USD/MtCO2e)",
        subtitle = "no CCS",
@@ -1910,15 +1966,16 @@ fig_rev_ghg <- ggplot(energy_metric %>% filter(ccs_option == "no CCS",
        shape = "Policy intervention") +
   facet_wrap(~pop_type, scales = "free_y") +
   theme_line +
-  scale_y_continuous(limits = c(NA, 0)) +
-  theme(legend.position = "right",
+  # scale_y_continuous(limits = c(NA, 0)) +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 ggsave(fig_rev_ghg, 
        filename = file.path(save_info_path, 'dac-share/rev_ghg_fig.png'), 
-       width = 8, 
-       height = 6)
+       width = 10, 
+       height = 8)
 
 
 
@@ -2019,24 +2076,29 @@ ggsave(fig_health_dac,
 
 ## add cumulative ghg savings relative to bau
 
-health_dac_state <- merge(health_dac_state, cumul_ghg_df,
+health_dac_ghg <- merge(health_dac_state, cumul_ghg_df,
                          by = "scen_id",
                          all.x = T)
 
-health_dac_state[, dac_av_mort_ghg := cumul_dac_mortality / cumul_ghg_savings]
-health_dac_state[, total_av_mort_ghg := cumul_total_mortality / cumul_ghg_savings]
+health_dac_ghg[, dac_av_mort_ghg := cumul_dac_mortality / cumul_ghg_savings]
+health_dac_ghg[, total_av_mort_ghg := cumul_total_mortality / cumul_ghg_savings]
+health_dac_ghg[, DAC_share_av_mort_ghg := dac_av_mort_ghg / total_av_mort_ghg]
 
-health_cumul_metric <- melt(health_dac_state, id.vars = c("scen_id", "target", "policy_intervention",
+health_cumul_metric <- melt(health_dac_ghg, id.vars = c("scen_id", "target", "policy_intervention",
                                                         "ccs_option"),
-                           measure.vars = c("dac_av_mort_ghg", "total_av_mort_ghg"),
+                           measure.vars = c("dac_av_mort_ghg", "total_av_mort_ghg", "DAC_share_av_mort_ghg"),
                            variable.name = "pop_type", value.name = "avoided_mort_per_ghg")
 
-health_cumul_metric[, pop_type := fifelse(pop_type == "dac_av_mort_ghg", "DAC population", "Total population")]
+health_cumul_metric[, pop_type := fifelse(pop_type == "dac_av_mort_ghg", "DAC population", 
+                                          fifelse(pop_type == "total_av_mort_ghg", "Total population", "DAC share"))]
+
+health_cumul_metric$pop_type <- factor(health_cumul_metric$pop_type, levels = c("Total population", "DAC population", "DAC share"))
+
 
 ## figure
 fig_health_ghg <- ggplot(health_cumul_metric %>% filter(ccs_option == "no CCS"), aes(x = target, y = avoided_mort_per_ghg, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Health: Cumulative avoided mortality relative to BAU per\ncumulative avoided GHG MtCO2e (FTE-job loss/MtCO2e)",
+  labs(title = "Health: Cumulative avoided mortality relative to BAU per\ncumulative avoided GHG MtCO2e (avoided mortalities/MtCO2e)",
        subtitle = "no CCS",
        x = NULL,
        y = "Avoided mortalities / MtCO2e",
@@ -2044,8 +2106,9 @@ fig_health_ghg <- ggplot(health_cumul_metric %>% filter(ccs_option == "no CCS"),
        shape = "Policy intervention") +
   facet_wrap(~pop_type, scales = "free_y") +
   theme_line +
-  scale_y_continuous(limits = c(0, NA)) +
-  theme(legend.position = "right",
+  # scale_y_continuous(limits = c(0, NA)) +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
