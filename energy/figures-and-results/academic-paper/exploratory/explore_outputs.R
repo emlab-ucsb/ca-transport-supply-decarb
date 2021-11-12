@@ -540,7 +540,7 @@ bau_out <- state_levels[target == "BAU" & policy_intervention == "BAU" & metric 
                                                                                        "total_comp")]
 
 setnames(bau_out, "value", "bau_value")
-bau_out <- bau_out[, .(year, metric, bau_value)]
+bau_out <- bau_out[, .(ccs_option, year, metric, bau_value)]
 
 ## combine bau with scenario outputs
 rel_vals <- state_levels[metric %in% c("total_state_bbl",
@@ -549,9 +549,8 @@ rel_vals <- state_levels[metric %in% c("total_state_bbl",
                                        "total_comp")]
 
 rel_vals <- merge(rel_vals, bau_out,
-                  by = c("year", "metric"),
-                  all.x = T,
-                  allow.cartesian = T)
+                  by = c("ccs_option", "year", "metric"),
+                  all.x = T)
 
 rel_vals[, diff_bau := value - bau_value]
 
@@ -1978,6 +1977,65 @@ ggsave(fig_rev_ghg,
        height = 8)
 
 
+## labor diff / avoided ghg each year
+## --------------------------------------------------
+
+labor_ghg_annual <- labor_scens[, .(annual_dac_emp_loss = sum(dac_emp), 
+                                    annual_total_emp_loss = sum(diff)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
+                                                                              setback_scenario, excise_tax_scenario,
+                                                                              target, policy_intervention, ccs_option, year)]
+
+rel_ghg_annaul <- state_rel_vals[metric == "total_state_ghg_MtCO2", .(scen_id, year, diff_bau)]
+
+setnames(rel_ghg_annaul, "diff_bau", "diff_bau_ghgs")
+
+labor_ghg_annual <- merge(labor_ghg_annual, rel_ghg_annaul,
+                          by = c("scen_id", "year"),
+                          all.x = T)
+
+
+labor_ghg_annual[, dac_loss_ghg := annual_dac_emp_loss / diff_bau_ghgs]
+labor_ghg_annual[, total_loss_ghg := annual_total_emp_loss / diff_bau_ghgs]
+labor_ghg_annual[, dac_share_loss_ghg := annual_dac_emp_loss / annual_total_emp_loss]
+
+labor_ghg_annual <- labor_ghg_annual[year > 2019]
+labor_ghg_annual[, dac_share_loss_ghg := fifelse(dac_loss_ghg == 0 & total_loss_ghg == 0, 0, dac_share_loss_ghg)]
+
+## melt
+labor_ghg_annual <- melt(labor_ghg_annual, id.vars = c("scen_id", "carbon_price_scenario", "setback_scenario", "excise_tax_scenario",
+                                                "target", "policy_intervention", "ccs_option", "year"),
+                      measure.vars = c("dac_loss_ghg", "total_loss_ghg", "dac_share_loss_ghg"),
+                      variable.name = "type", value.name = "metric_per_ghg")
+
+labor_ghg_annual[, type := fifelse(type %in% c("dac_loss_ghg"), "DAC population",
+                                   fifelse(type %in% c("total_loss_ghg"), "Total population", "DAC share"))]
+
+labor_ghg_annual$type <- factor(labor_ghg_annual$type, levels = c("Total population", "DAC population", "DAC share"))
+
+
+## figure
+fig_annual_emp_ghg <- ggplot(labor_ghg_annual %>% filter(ccs_option == "no CCS",
+                                                         policy_intervention != "BAU"), aes(x = year, y = metric_per_ghg, color = target, lty = policy_intervention)) +
+  geom_line(size = 1, alpha = 0.8) +
+  labs(title = "Labor: Annual job-year loss relative to BAU per\nannual avoided GHG MtCO2e (FTE job-year loss/MtCO2e)",
+       subtitle = "no CCS",
+       x = NULL,
+       y = "FTE job-year loss/MtCO2e",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  facet_wrap(~type, ncol = 3, scales = "free_y") +
+  theme_line +
+  scale_y_continuous(limits = c()) +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(fig_annual_emp_ghg, 
+       filename = file.path(save_info_path, 'dac-share/labor_annual_ghg_fig.png'), 
+       width = 10, 
+       height = 8)
+
 
 ## health, dac
 
@@ -2118,6 +2176,56 @@ ggsave(fig_health_ghg,
        height = 6)
 
 
+## health per year
+health_ghg_annual <- health_scens[, .(annual_dac_mortality = sum(dac_share_mortality), 
+                                   annual_total_mortality = sum(mortality_delta)), by = .(scen_id, target, policy_intervention, ccs_option, year)]
+
+
+health_ghg_annual <- merge(health_ghg_annual, rel_ghg_annaul,
+                          by = c("scen_id", "year"),
+                          all.x = T)
+
+
+health_ghg_annual[, dac_mort_ghg := annual_dac_mortality / diff_bau_ghgs]
+health_ghg_annual[, total_mort_ghg := annual_total_mortality / diff_bau_ghgs]
+health_ghg_annual[, dac_share_mort_ghg := annual_dac_mortality / annual_total_mortality]
+
+health_ghg_annual <- health_ghg_annual[year > 2019]
+health_ghg_annual[, dac_share_mort_ghg := fifelse(dac_mort_ghg == 0 & total_mort_ghg == 0, 0, dac_share_mort_ghg)]
+
+## melt
+health_ghg_annual <- melt(health_ghg_annual, id.vars = c("scen_id", "target", "policy_intervention", "ccs_option", "year"),
+                         measure.vars = c("dac_mort_ghg", "total_mort_ghg", "dac_share_mort_ghg"),
+                         variable.name = "type", value.name = "metric_per_ghg")
+
+health_ghg_annual[, type := fifelse(type %in% c("dac_mort_ghg"), "DAC population",
+                                   fifelse(type %in% c("total_mort_ghg"), "Total population", "DAC share"))]
+
+health_ghg_annual$type <- factor(health_ghg_annual$type, levels = c("Total population", "DAC population", "DAC share"))
+
+
+## figure
+fig_annual_mort_ghg <- ggplot(health_ghg_annual %>% filter(ccs_option == "no CCS",
+                                                         policy_intervention != "BAU"), aes(x = year, y = metric_per_ghg, color = target, lty = policy_intervention)) +
+  geom_line(size = 1, alpha = 0.8) +
+  labs(title = "Health: Annual avoided mortality relative to BAU per\navoided GHG MtCO2e (avoided mortalities/MtCO2e)",
+       subtitle = "no CCS",
+       x = NULL,
+       y = "avoided mortalities/MtCO2e",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  facet_wrap(~type, ncol = 3, scales = "free_y") +
+  theme_line +
+  scale_y_continuous(limits = c()) +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(fig_annual_mort_ghg, 
+       filename = file.path(save_info_path, 'dac-share/health_annual_ghg_fig.png'), 
+       width = 10, 
+       height = 8)
 
 
 
