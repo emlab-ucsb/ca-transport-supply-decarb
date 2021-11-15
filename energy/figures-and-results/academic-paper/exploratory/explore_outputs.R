@@ -84,7 +84,7 @@ ghg_2019 <- as.numeric(hist_ghg[, value][1])
 ## read inputs
 state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 
-setnames(state_out, "county_pop", "state_pop")
+# setnames(state_out, "county_pop", "state_pop")
 
 ## filter for BAU macro (ref oil price, price floor, low innovation, and no CCS cost)
 ## keep all setback scenarios (no tax, carbon price floor)
@@ -918,7 +918,7 @@ cumul_df[, scen_name := paste(policy_intervention, target, sep = " - ")]
 ## V1b: same as above, x axis == 2045 emissions as a percentage of 2019 emissions
 ## cost
 cost_cum2_fig <- ggplot(cumul_df %>% filter(metric == "cost_PV",
-                                            ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+                                            ccs_option == "no CCS"), aes(x = ghg_2045_perc * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Health: Cumulative cost of premature deaths relative to 2019 ",
        subtitle = "no CCS; PV value is relative to BAU",
@@ -926,7 +926,7 @@ cost_cum2_fig <- ggplot(cumul_df %>% filter(metric == "cost_PV",
        y = "USD million (present value)",
        color = "GHG emission target",
        shape = "Policy intervention") +
-  scale_x_continuous(limits = c(NA, 0)) +
+  scale_x_continuous(limits = c(-100, 0)) +
   theme_line +
   theme(legend.position = "right",
         legend.key.width= unit(1, 'cm'),
@@ -943,7 +943,7 @@ ggsave(cost_cum2_fig,
 
 ## prods
 prod_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_state_bbl",
-                                            ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
+                                            ccs_option == "no CCS"), aes(x = ghg_2045_perc * 100, y = sum_metric / 1e6, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Cumulative oil production",
        subtitle = "no CCS",
@@ -969,7 +969,7 @@ ggsave(prod_cum2_fig,
 
 ## ghg
 ghg_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_state_ghg_MtCO2",
-                                           ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+                                           ccs_option == "no CCS"), aes(x = ghg_2045_perc * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Cumulative GHG emissions relative to 2019",
        subtitle = "no CCS",
@@ -994,7 +994,7 @@ ggsave(ghg_cum2_fig,
 
 ## employment
 emp_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_emp",
-                                           ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+                                           ccs_option == "no CCS"), aes(x = ghg_2045_perc * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor: Cumulative total employment relative to 2019, FTE job-years",
        subtitle = "no CCS",
@@ -1019,7 +1019,7 @@ ggsave(emp_cum2_fig,
 
 ## compensation
 comp_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_comp",
-                                            ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
+                                            ccs_option == "no CCS"), aes(x = ghg_2045_perc * 100, y = sum_metric / 1e9, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor: Cumulative total compensation relative to 2019",
        subtitle = "no CCS",
@@ -1072,7 +1072,7 @@ ggsave(comp_cum2_fig,
 ## mortality
 
 mortality_cum2_fig <- ggplot(cumul_df %>% filter(metric == "mortality_level",
-                                                 ccs_option == "no CCS"), aes(x = round(ghg_2045_perc, digits = 2) * 100, y = sum_metric, color = target, shape = policy_intervention)) +
+                                                 ccs_option == "no CCS"), aes(x = ghg_2045_perc * 100, y = sum_metric, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Health: Cumulative mortality level relative to 2019",
        subtitle = "no CCS",
@@ -2015,8 +2015,10 @@ labor_ghg_annual$type <- factor(labor_ghg_annual$type, levels = c("Total populat
 
 ## figure
 fig_annual_emp_ghg <- ggplot(labor_ghg_annual %>% filter(ccs_option == "no CCS",
-                                                         policy_intervention != "BAU"), aes(x = year, y = metric_per_ghg, color = target, lty = policy_intervention)) +
-  geom_line(size = 1, alpha = 0.8) +
+                                                         # policy_intervention != "BAU",
+                                                         year %in% c(2020, 2045)), aes(x = year, y = metric_per_ghg, color = target, shape = policy_intervention)) +
+  geom_point(size = 2) +
+  geom_line(alpha = 0.7) +
   labs(title = "Labor: Annual job-year loss relative to BAU per\nannual avoided GHG MtCO2e (FTE job-year loss/MtCO2e)",
        subtitle = "no CCS",
        x = NULL,
@@ -2206,8 +2208,10 @@ health_ghg_annual$type <- factor(health_ghg_annual$type, levels = c("Total popul
 
 ## figure
 fig_annual_mort_ghg <- ggplot(health_ghg_annual %>% filter(ccs_option == "no CCS",
-                                                         policy_intervention != "BAU"), aes(x = year, y = metric_per_ghg, color = target, lty = policy_intervention)) +
-  geom_line(size = 1, alpha = 0.8) +
+                                                         # policy_intervention != "BAU",
+                                                         year %in% c(2020, 2045)), aes(x = year, y = metric_per_ghg, color = target, shape = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_line(alpha = 0.7) +
   labs(title = "Health: Annual avoided mortality relative to BAU per\navoided GHG MtCO2e (avoided mortalities/MtCO2e)",
        subtitle = "no CCS",
        x = NULL,
