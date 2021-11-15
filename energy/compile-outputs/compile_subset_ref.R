@@ -10,7 +10,7 @@ library(openxlsx)
 
 # paths -----
 outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
-refining_out_path = 'predict-production/refining_2021-10-26/CUF0.6/outputs'
+refining_out_path = 'predict-production/refining_2021-11-03/CUF0.6/outputs'
 
 ## file names
 refining_file     = 'refining_scenario_outputs_refinery_net_exports_revised.csv'
@@ -56,7 +56,7 @@ tax_subset_vec <- c("tax_setback_1000ft", "tax_setback_2500ft", "tax_setback_528
 ## find subset scenarios
 ref_carbon_dt = refining_scens[(innovation_scenario == 'low innovation' &
                                   carbon_price_scenario %in% c(carbon_subset_vec, carbon_scens_vec) &
-                                  ccs_scenario == 'medium CCS cost') |
+                                  ccs_scenario %in% c('medium CCS cost', "no ccs")) |
                                  (innovation_scenario == 'low innovation' &
                                     carbon_price_scenario %in% c(carbon_subset_vec, carbon_scens_vec) &
                                     ccs_scenario %in% ccs_subset_vec & 
