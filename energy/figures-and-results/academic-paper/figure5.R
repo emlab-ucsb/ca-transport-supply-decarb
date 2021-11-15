@@ -35,7 +35,12 @@ theme_line = theme_ipsum(base_family = 'Arial',
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 source_path   <- paste0(main_path, 'data/health/source_receptor_matrix/')
 inmap_ex_path  <- paste0(main_path, "data/health/source_receptor_matrix/inmap_processed_srm/extraction")
+inmap_ref_path  <- paste0(main_path, "data/health/source_receptor_matrix/inmap_processed_srm/refining")
+
+
+## update these as needed
 save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/exploratory-figs/figs_2021-11-09/srm')
+ref_save_info_path <- paste0(main_path, 'outputs/academic-out/refining/exploratory-figs/figs_2021-11-15/srm')
 
 ## files
 bau_file <- 'reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_field_results.rds'
@@ -274,4 +279,8 @@ ggsave(fig_srm_setback,
        filename = file.path(save_info_path, 'srm_setback.png'), 
        width = 6, 
        height = 6)
+
+## ------------------------------------------------------------------------------
+## repeat for refining
+## ------------------------------------------------------------------------------
 
