@@ -60,8 +60,6 @@ state_scens <- state_out[(oil_price_scenario == "reference case" &
                           demand_scenario == "BAU" &
                           refining_scenario == "historic production") |
                          (oil_price_scenario == "reference case" &
-                          carbon_price_scenario %in% c("carbon_setback_1000ft", "carbon_setback_5280ft",
-                                                       "carbon_90_perc_reduction", "central SCC") &
                           ccs_scenario %in% c("medium CCS cost", "no ccs") &
                           demand_scenario == "BAU" &
                           refining_scenario == "historic production") |
@@ -111,9 +109,12 @@ state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_pri
 
 state_levels <- rbind(state_energy_levels, state_labor_levels, state_health_levels)
 
-state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price floor", "carbon tax",
-                                              fifelse(refining_scenario != "historic production", paste0(refining_scenario, " - ", demand_scenario),
-                                                      fifelse(demand_scenario != "BAU", paste0(refining_scenario, " - ", demand_scenario), "BAU")))]
+state_levels[, policy_intervention := paste0(refining_scenario, " - ", demand_scenario, " demand")]
+
+state_levels[, policy_intervention := fifelse(policy_intervention == "historic production - BAU demand" &
+                                                carbon_price_scenario == "price floor", "BAU", policy_intervention)]
+
+
 
 ## targets
 target1000 <- c("BAU historic production low innovation carbon_setback_1000ft medium CCS cost reference case",
