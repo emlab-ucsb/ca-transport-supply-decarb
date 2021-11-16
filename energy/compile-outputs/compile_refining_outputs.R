@@ -19,11 +19,14 @@ dir.create(compiled_save_path_refining, showWarnings = FALSE)
 dir.create(paste0(compiled_save_path_refining, '/census-tract-results'), showWarnings = FALSE)
 dir.create(paste0(compiled_save_path_refining, '/subset-census-tract-results'), showWarnings = FALSE)
 
+## date of results
+result_date <- "2021-11-03"
+
 ## paths
 main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
 data_path  <-'data/stocks-flows/processed'
 outputs_path <- 'model-development/scenario-plot/refinery-outputs'
-model_outputs_path <- 'outputs/predict-production/refining_2021-11-03/CUF0.6/outputs'
+model_outputs_path <- paste0('outputs/predict-production/refining_', result_date, '/CUF0.6/outputs')
 inmap_re_files  <- paste0(main_path, "/data/health/source_receptor_matrix/inmap_processed_srm/refining")
 ref_save_path <- paste0(main_path, '/outputs/academic-out/refining/')
 
@@ -531,11 +534,11 @@ refining_outputs_health <- full_site_out %>%
   mutate(site_id = ifelse(site_id == "t-800", "800", site_id),
          site_id = ifelse(site_id == "342-2", "34222", site_id),
          site_id = as.numeric(site_id))%>%
-  mutate(nh3=bbls_consumed*0.00056/1000,
-         nox=bbls_consumed*0.01495/1000,
-         pm25=bbls_consumed*0.00402/1000,
-         sox=bbls_consumed*0.00851/1000,
-         voc=bbls_consumed*0.01247/1000) %>%
+  mutate(nh3=bbls_consumed * 0.00056 / 1000,
+         nox=bbls_consumed * 0.01495 / 1000,
+         pm25=bbls_consumed * 0.00402 / 1000,
+         sox=bbls_consumed * 0.00851 / 1000,
+         voc=bbls_consumed * 0.01247 / 1000) %>%
   as.data.table()
 
 
@@ -633,7 +636,7 @@ for (i in 1:length(refining_sub_vec)) {
   scen_tmp <- refining_sub_vec[i]
   
   ## make sure to update this
-  ct_scen_out <- readRDS(paste0(main_path, "/outputs/academic-out/refining/refining_2021-10-26/census-tract-results/", scen_tmp, "_ct_results.rds"))
+  ct_scen_out <- readRDS(paste0(compiled_save_path_refining, "/census-tract-results/", scen_tmp, "_ct_results.rds"))
   setDT(ct_scen_out)
   
   ## refining pm25 difference
@@ -701,7 +704,7 @@ health_state_pm25 <- subset_health_impacts[, lapply(.SD, mean, na.rm = T), .SDco
                                                                                        "delta_total_pm25"), by = .(scen_id, year)]
 
 
-setnames(health_state_pm25, c("total_pm25", "bau_total_pm25", "delta_total_pm25"), c("mean_total_pm25", "mean_bau_total_pm25", "mean_delta_total_mp25"))
+setnames(health_state_pm25, c("total_pm25", "bau_total_pm25", "delta_total_pm25"), c("mean_total_pm25", "mean_bau_total_pm25", "mean_delta_total_pm25"))
 
 
 health_state <- merge(health_state, health_state_pm25,
@@ -737,7 +740,7 @@ state_out <- merge(state_out, health_state,
 setcolorder(state_out, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
                          "demand_scenario", "refining_scenario", "year", "bbls_consumed", "total_state_revenue", "ghg_kg",
                          "c.dire_emp", "c.indi_emp",  "c.indu_emp", "c.dire_comp", "c.indi_comp", 
-                         "c.indu_comp", "total_emp", "total_comp", "mean_total_pm25", "mean_bau_total_pm25", "mean_delta_total_mp25",
+                         "c.indu_comp", "total_emp", "total_comp", "mean_total_pm25", "mean_bau_total_pm25", "mean_delta_total_pm25",
                          "mortality_delta", "mortality_level", "cost_2019", "cost",  "cost_2019_PV", "cost_PV"))
 
 subset_state_out <- state_out[scen_id %in% refining_sub_vec]

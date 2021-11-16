@@ -49,16 +49,17 @@ refining_scens[, BAU_scen := fifelse((oil_price_scenario == 'reference case' &
 
 ## find scen selection
 carbon_subset_vec <- c("price floor", "price ceiling", "central SCC")
-carbon_scens_vec <- c("carbon_setback_1000ft", "carbon_setback_5280ft", "carbon_90_perc_reduction", "central SCC")
+carbon_scens_vec <- c("carbon_setback_1000ft-medium CCS cost", "carbon_setback_5280ft-medium CCS cost", "carbon_90_perc_reduction-medium CCS cost", "carbon_setback_2500ft-medium CCS cost",
+                      "carbon_setback_1000ft-no ccs", "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs", "carbon_setback_2500ft-no ccs")
 ccs_subset_vec <- c("no ccs", "medium CCS cost", "high CCS cost", "medium CCS cost - 45Q - LCFS", "high CCS cost - 45Q - LCFS")
 tax_subset_vec <- c("tax_setback_1000ft", "tax_setback_2500ft", "tax_setback_5280ft", "tax_90_perc_reduction")
 
 ## find subset scenarios
 ref_carbon_dt = refining_scens[(innovation_scenario == 'low innovation' &
-                                  carbon_price_scenario %in% c(carbon_subset_vec, carbon_scens_vec) &
+                                  carbon_price_scenario %in% c(carbon_scens_vec) &
                                   ccs_scenario %in% c('medium CCS cost', "no ccs")) |
                                  (innovation_scenario == 'low innovation' &
-                                    carbon_price_scenario %in% c(carbon_subset_vec, carbon_scens_vec) &
+                                    carbon_price_scenario %in% c(carbon_scens_vec) &
                                     ccs_scenario %in% ccs_subset_vec & 
                                     oil_price_scenario == 'reference case')]
 

@@ -30,7 +30,7 @@ theme_line = theme_ipsum(base_family = 'Arial',
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-refining_folder_path <- 'outputs/academic-out/refining/refining_2021-10-27/'
+refining_folder_path <- 'outputs/academic-out/refining/refining_2021-11-15/'
 state_save_path     = paste0(main_path, refining_folder_path)
 
 ## create a folder to store outputs
@@ -55,10 +55,10 @@ site_out <- fread(paste0(main_path, refining_folder_path, "site_refining_outputs
 
 ## state scens
 state_scens <- state_out[(oil_price_scenario == "reference case" &
-                           carbon_price_scenario %in% c("price floor") &
-                           ccs_scenario %in% c("medium CCS cost", "no ccs") &
-                           demand_scenario == "BAU" &
-                           refining_scenario == "historic production") |
+                          carbon_price_scenario %in% c("price floor") &
+                          ccs_scenario %in% c("medium CCS cost", "no ccs") &
+                          demand_scenario == "BAU" &
+                          refining_scenario == "historic production") |
                          (oil_price_scenario == "reference case" &
                           carbon_price_scenario %in% c("carbon_setback_1000ft", "carbon_setback_5280ft",
                                                        "carbon_90_perc_reduction", "central SCC") &
@@ -81,35 +81,35 @@ state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price
                            variable.name = "metric",
                            value.name = "value")
 
-## emissions and extraction
+## emissions and consumption
 ## ------------------------------
-state_extract_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                        ccs_scenario, demand_scenario, refining_scenario, year, state_crude_eq_consumed_bbl)]
+state_energy_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
+                                        ccs_scenario, demand_scenario, refining_scenario, year, bbls_consumed, ghg_kg)]
 
-# state_extract_levels[, total_state_ghg_MtCO2 := total_state_ghg_kgCO2 / (1000 * 1e6)]
-# state_extract_levels[, total_state_ghg_kgCO2 := NULL]
+state_energy_levels[, total_state_ghg_MtCO2 := ghg_kg / (1000 * 1e6)]
+state_energy_levels[, ghg_kg := NULL]
 
-state_extract_levels <- melt(state_extract_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
+state_energy_levels <- melt(state_energy_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                                'carbon_price_scenario', 'ccs_scenario', 'demand_scenario', 'refining_scenario',  'year'),
-                             measure.vars = c("state_crude_eq_consumed_bbl"),
+                             measure.vars = c("bbls_consumed", "total_state_ghg_MtCO2"),
                              variable.name = "metric",
                              value.name = "value")
 
 ## health
 ## ------------------------------
 state_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                       ccs_scenario, demand_scenario,  refining_scenario, year, mean_total_pm25, mean_delta_total_mp25, mortality_level, mortality_delta, cost_2019_PV, cost_PV)]
+                                       ccs_scenario, demand_scenario,  refining_scenario, year, mean_total_pm25, mean_delta_total_pm25, mortality_level, mortality_delta, cost_2019_PV, cost_PV)]
 
 state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                              'carbon_price_scenario', 'ccs_scenario', 'demand_scenario', 'refining_scenario', 'year'),
-                            measure.vars = c("mean_total_pm25", "mean_delta_total_mp25", "mortality_level", "mortality_delta", "cost_2019_PV", "cost_PV"),
+                            measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", "mortality_delta", "cost_2019_PV", "cost_PV"),
                             variable.name = "metric",
                             value.name = "value")
 
 ## combine
 ##----------------------------------
 
-state_levels <- rbind(state_extract_levels, state_labor_levels, state_health_levels)
+state_levels <- rbind(state_energy_levels, state_labor_levels, state_health_levels)
 
 state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price floor", "carbon tax",
                                               fifelse(refining_scenario != "historic production", paste0(refining_scenario, " - ", demand_scenario),
