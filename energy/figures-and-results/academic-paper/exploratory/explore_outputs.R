@@ -6,6 +6,7 @@ library(tidyverse)
 library(hrbrthemes)
 library(extrafont)
 library(scales)
+library(broom)
 
 ## figure themes
 theme_line = theme_ipsum(base_family = 'Arial',
@@ -1024,7 +1025,7 @@ comp_cum2_fig <- ggplot(cumul_df %>% filter(metric == "total_comp",
   labs(title = "Labor: Cumulative total compensation relative to 2019",
        subtitle = "no CCS",
        x = "GHG emissions (% of 2019)",
-       y = "Compensation",
+       y = "Cumulative compensation compared to 2019 (USD billion)",
        color = "GHG emission target",
        shape = "Policy intervention") +
   theme_line +
@@ -1633,12 +1634,12 @@ labor_health_df <- bau_cumulative_df[metric %in% c('cost_PV', 'mortality_delta',
 labor_health_df <- dcast(labor_health_df, scen_id + ccs_option + policy_intervention + target ~ metric, value.var = "sum_metric")
 
 ## labor compensation vs. mortality ($) (relative to BAU for both)
-labor_health_fig1 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_comp /1e9, y = cost_PV / 1e9, color = target, shape = policy_intervention, group = scen_id)) +
+labor_health_fig1 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_comp / 1e9, y = cost_PV / -1e9, color = target, shape = policy_intervention, group = scen_id)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor compensation vs. health mortality cost (relative to BAU)",
        subtitle = "no CCS",
-       x = "Cumulative compensation relative to BAU (billion)",
-       y = "Cumulative mortality cost relative to BAU (present value) (billion)",
+       x = "Cumulative labor cost: compensation relative (billion)",
+       y = "Cumulative health benefits:\navoided mortality cost (present value, billion)",
        color = "GHG emission target",
        shape = "Policy intervention") +
   theme_line +
@@ -1681,16 +1682,16 @@ ggsave(labor_health_fig2,
 
 
 ## labor job years vs. mortality ($) (relative to BAU for both)
-labor_health_fig3 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta, color = target, shape = policy_intervention, group = scen_id)) +
+labor_health_fig3 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta * -1, color = target, shape = policy_intervention, group = scen_id)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Labor employment vs. health mortality # (relative to BAU)",
        subtitle = "no CCS",
-       x = "Cumulative employment relative to BAU",
-       y = "Cumulative mortality relative to BAU",
+       x = "Cumulative employment job-years relative to BAU",
+       y = "Cumulative avoided mortality relative to BAU",
        color = "GHG emission target",
        shape = "Policy intervention") +
   theme_line +
-  scale_y_continuous(limits = c(NA, 0)) +
+  scale_y_continuous(limits = c(0, NA)) +
   scale_x_continuous(label = comma) +
   theme(legend.position = "right",
         legend.key.width= unit(1, 'cm'),
@@ -1713,17 +1714,73 @@ ggsave(labor_health_fig3,
 #     y = mean(total_emp)     # y coordinate for slope label
 #   ) 
 
-labor_health_fig4 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta, color = target, shape = policy_intervention, group = scen_id)) +
+
+
+
+## make tibble to run lm
+# labor_health_lines <- labor_health_df %>%
+#   as_tibble() %>%
+#   mutate(mortality_delta = mortality_delta * -1) %>%
+#   filter(ccs_option == "no CCS") %>%
+#   nest(-policy_intervention) %>%
+#   mutate(fit = map(data, ~ lm(mortality_delta ~ total_emp, data = .)),
+#          results = map(fit, augment)) %>% 
+#   unnest(results)
+# 
+# labor_health_lines %>%
+#   ggplot(aes(x = mortality_delta, y = .fitted)) +
+#   geom_abline(intercept = 0, slope = 1, alpha = .2) +  # Line of perfect fit
+#   geom_point() +
+#   facet_grid(policy_intervention ~ .) +
+#   theme_bw()
+
+## function
+labor_health_df_lm <- labor_health_df %>%
+  mutate(mortality_delta = mortality_delta * -1) %>%
+  filter(ccs_option == "no CCS")
+
+intervention_vec <- c("carbon tax", "excise tax", "setback")
+
+lm_out <- data.frame()
+
+for(i in 1:length(intervention_vec)) {
+  
+  policy <- intervention_vec[i]
+  
+  df_tmp <- labor_health_df_lm %>%
+    filter(policy_intervention == policy)
+  
+  ## fit
+  lmfit_tmp <- lm(mortality_delta ~ total_emp, df_tmp)
+  
+  ## coefs
+  coefs_tmp <- coef(lmfit_tmp)
+  intercept_tmp <- coefs_tmp[[1]]
+  slope_tmp <- coefs_tmp[[2]]
+  
+  
+  policy_tmp <- data.frame(policy_intervention = policy,
+                           intercept =intercept_tmp,
+                           slope = slope_tmp)
+  
+  lm_out <- rbind(lm_out, policy_tmp)
+
+}
+
+
+
+
+labor_health_fig4 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta * -1, color = target, shape = policy_intervention, group = scen_id)) +
   geom_point(size = 2, alpha = 0.8) +
-  geom_smooth(data = labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta, shape = policy_intervention), inherit.aes = F, method = "lm", color = "black", size = 0.5, se = F) +
+  geom_smooth(data = labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta * -1, shape = policy_intervention), inherit.aes = F, method = "lm", color = "grey", lty = "dashed", size = 0.5, alpha = -.6, se = F) +
   labs(title = "Labor employment vs. health mortality # (relative to BAU)",
        subtitle = "no CCS",
-       x = "Cumulative employment relative to BAU",
-       y = "Cumulative mortality relative to BAU",
+       x = "Cumulative employment (FTE job-years) relative to BAU",
+       y = "Cumulative avoided mortality relative to BAU",
        color = "GHG emission target",
        shape = "Policy intervention") +
   theme_line +
-  scale_y_continuous(limits = c(NA, 0)) +
+  scale_y_continuous(limits = c(0, NA)) +
   scale_x_continuous(label = comma) +
   theme(legend.position = "right",
         legend.key.width= unit(1, 'cm'),
@@ -1731,6 +1788,36 @@ labor_health_fig4 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), 
 
 ggsave(labor_health_fig4, 
        filename = file.path(save_info_path, 'labor_v_mortality/employment_v_mortality_fit.png'), 
+       width = 5, 
+       height = 5)
+
+## now use estimates from lm_out
+label_df <- lm_out %>%
+  mutate(label_loc = (slope * -150000) + intercept,
+         xloc = -150000,
+         lab = paste0('slope = ', round(slope, 5)))
+  
+
+
+labor_health_fig5 <- ggplot(labor_health_df %>% filter(ccs_option == "no CCS"), aes(x = total_emp, y = mortality_delta * -1, color = target, shape = policy_intervention, group = scen_id)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_abline(data = lm_out, aes(intercept = intercept, slope = slope, group = policy_intervention), color = "grey", lty = "dashed", size = 0.5, alpha = 0.6) +
+  geom_text(data = label_df, aes(x = xloc, y = label_loc, label = lab), inherit.aes = F) +
+  labs(title = "Labor employment vs. health mortality # (relative to BAU)",
+       subtitle = "no CCS",
+       x = "Cumulative employment (FTE job-years) relative to BAU",
+       y = "Cumulative avoided mortality relative to BAU",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  theme_line +
+  scale_y_continuous(limits = c(0, NA)) +
+  scale_x_continuous(label = comma) +
+  theme(legend.position = "right",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+ggsave(labor_health_fig5, 
+       filename = file.path(save_info_path, 'labor_v_mortality/employment_v_mortality_slope.png'), 
        width = 5, 
        height = 5)
 
@@ -1789,6 +1876,19 @@ labor_scens[, diff := total_emp - bau_emp]
 labor_scens[, dac_emp := diff * dac_share]
 
 
+## calculate dac share of jobs in 2020 and 2045 for bau
+abs_labor <- labor_scens[, .(scen_id, ccs_scenario, ccs_option, carbon_price_scenario, setback_scenario,
+                             excise_tax_scenario, target, policy_intervention, county, year, dac_share, total_emp)]
+
+abs_labor[, dac_emp := total_emp * dac_share]
+
+abs_labor <- abs_labor[, .(dac_labor = sum(dac_emp),
+                           total_labor = sum(total_emp)), by = .(scen_id, ccs_scenario, ccs_option, carbon_price_scenario, setback_scenario,
+                                                         excise_tax_scenario, target, policy_intervention, year)]
+
+abs_labor[, dac_share := dac_labor / total_labor]
+
+
 ## calculate dac share, labor FTE
 labor_dac <- labor_scens[, .(cumul_dac_emp_loss = sum(dac_emp), 
                              cumul_total_emp_loss = sum(diff)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
@@ -1841,8 +1941,8 @@ labor_ghg_df <- merge(labor_dac_state, cumul_ghg_df,
                       by = "scen_id",
                       all.x = T)
 
-labor_ghg_df[, dac_loss_ghg := cumul_dac_emp_loss / cumul_ghg_savings]
-labor_ghg_df[, total_loss_ghg := cumul_total_emp_loss / cumul_ghg_savings]
+labor_ghg_df[, dac_loss_ghg := cumul_dac_emp_loss / (cumul_ghg_savings * -1)]
+labor_ghg_df[, total_loss_ghg := cumul_total_emp_loss / (cumul_ghg_savings * -1)]
 labor_ghg_df[, dac_share_loss_ghg := dac_loss_ghg / total_loss_ghg]
 
 labor_ghg_df <- melt(labor_ghg_df, id.vars = c("scen_id", "oil_price_scenario",
@@ -1859,15 +1959,15 @@ labor_ghg_df$type <- factor(labor_ghg_df$type, levels = c("Total population", "D
 ## figure
 fig_emp_ghg <- ggplot(labor_ghg_df %>% filter(ccs_option == "no CCS"), aes(x = target, y = emp_loss_ghg, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Labor: Cumulative job-year loss relative to BAU per\ncumulative avoided GHG MtCO2e (FTE job-year loss/MtCO2e)",
+  labs(title = "Labor: Cumulative job-years relative to BAU per\ncumulative avoided GHG MtCO2e (FTE job-year loss/MtCO2e)",
        subtitle = "no CCS",
        x = NULL,
-       y = "FTE job-year loss/MtCO2e",
+       y = "FTE job-years /MtCO2e",
        color = "GHG emission target",
        shape = "Policy intervention") +
   facet_wrap(~type, ncol = 3, scales = "free_y") +
   theme_line +
-  scale_y_continuous(limits = c()) +
+  scale_y_continuous(limits = c(NA, 1)) +
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
@@ -1942,7 +2042,7 @@ fig_bbl_ghg <- ggplot(energy_metric %>% filter(ccs_option == "no CCS",
        shape = "Policy intervention") +
   facet_wrap(~pop_type, scales = "free_y") +
   theme_line +
-  # scale_y_continuous(limits = c(NA, 1),) +
+  scale_y_continuous(limits = c(NA, 1)) +
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
@@ -2132,6 +2232,20 @@ ggsave(fig_health_dac,
        height = 6)
 
 
+## calculate dac share of mortality in 2020 and 2045 for bau
+abs_health <- health_scens[, .(scen_id, ccs_option, target, policy_intervention, 
+                               census_tract, year, disadvantaged, mortality_level)]
+
+abs_health[, dac_share := fifelse(disadvantaged == "No", 0, 1)]
+abs_health[, dac_mort := mortality_level * dac_share]
+
+abs_health <- abs_health[, .(dac_mort = sum(dac_mort),
+                             total_mort = sum(mortality_level)), by = .(scen_id, ccs_option, target, policy_intervention, year)]
+
+abs_health[, dac_share := dac_mort / total_mort]
+
+
+
 ## cumulative avoided mortality bau / cumulative ghg savings rel bau
 
 ## add cumulative ghg savings relative to bau
@@ -2180,13 +2294,12 @@ ggsave(fig_health_ghg,
 
 ## health per year
 health_ghg_annual <- health_scens[, .(annual_dac_mortality = sum(dac_share_mortality), 
-                                   annual_total_mortality = sum(mortality_delta)), by = .(scen_id, target, policy_intervention, ccs_option, year)]
+                                      annual_total_mortality = sum(mortality_delta)), by = .(scen_id, target, policy_intervention, ccs_option, year)]
 
 
 health_ghg_annual <- merge(health_ghg_annual, rel_ghg_annaul,
                           by = c("scen_id", "year"),
                           all.x = T)
-
 
 health_ghg_annual[, dac_mort_ghg := annual_dac_mortality / diff_bau_ghgs]
 health_ghg_annual[, total_mort_ghg := annual_total_mortality / diff_bau_ghgs]
