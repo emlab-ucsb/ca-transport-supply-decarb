@@ -30,7 +30,7 @@ theme_line = theme_ipsum(base_family = 'Arial',
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-refining_folder_path <- 'outputs/academic-out/refining/refining_2021-11-15/'
+refining_folder_path <- 'outputs/academic-out/refining/refining_2021-11-16/'
 state_save_path     = paste0(main_path, refining_folder_path)
 
 ## create a folder to store outputs
@@ -52,22 +52,28 @@ site_out <- fread(paste0(main_path, refining_folder_path, "site_refining_outputs
 ## filter for subset
 ## ---------------------------------------
 
+# 
+# ## state scens
+# state_scens <- state_out[## bau, three CCS scenarios
+#                         (oil_price_scenario == "reference case" &
+#                           carbon_price_scenario %in% c("price floor") &
+#                           # ccs_scenario %in% c("medium CCS cost", "no ccs") &
+#                           demand_scenario == "BAU" &
+#                           refining_scenario == "historic production") |
+#                           ## the three CCS scenarios interacting with carbon taxes
+#                          (oil_price_scenario == "reference case" &
+#                           # ccs_scenario %in% c("medium CCS cost", "no ccs") &
+#                           demand_scenario == "BAU" &
+#                           refining_scenario == "historic production") |
+#                          (oil_price_scenario == "reference case" &
+#                           carbon_price_scenario %in% c("price floor") &
+#                           # ccs_scenario  %in% c("medium CCS cost", "no ccs") & 
+#                           demand_scenario == "LC1" &
+#                           refining_scenario %in% c("historic exports", "low exports"))]
 
-## state scens
-state_scens <- state_out[(oil_price_scenario == "reference case" &
-                          carbon_price_scenario %in% c("price floor") &
-                          ccs_scenario %in% c("medium CCS cost", "no ccs") &
-                          demand_scenario == "BAU" &
-                          refining_scenario == "historic production") |
-                         (oil_price_scenario == "reference case" &
-                          ccs_scenario %in% c("medium CCS cost", "no ccs") &
-                          demand_scenario == "BAU" &
-                          refining_scenario == "historic production") |
-                         (oil_price_scenario == "reference case" &
-                          carbon_price_scenario %in% c("price floor") &
-                          ccs_scenario  %in% c("medium CCS cost", "no ccs") & 
-                          demand_scenario == "LC1" &
-                          refining_scenario %in% c("historic exports", "low exports"))]
+
+## state_scens
+state_scens <- state_out[oil_price_scenario == "reference case"]
 
 state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                       ccs_scenario, demand_scenario,  refining_scenario, year, total_emp, total_comp)]
@@ -109,98 +115,98 @@ state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_pri
 
 state_levels <- rbind(state_energy_levels, state_labor_levels, state_health_levels)
 
-state_levels[, policy_intervention := paste0(refining_scenario, " - ", demand_scenario, " demand")]
+# state_levels[, policy_intervention := paste0(refining_scenario, " - ", demand_scenario, " demand")]
+# 
+# state_levels[, policy_intervention := fifelse(policy_intervention == "historic production - BAU demand" &
+#                                                 carbon_price_scenario == "price floor", "BAU", policy_intervention)]
 
-state_levels[, policy_intervention := fifelse(policy_intervention == "historic production - BAU demand" &
-                                                carbon_price_scenario == "price floor", "BAU", policy_intervention)]
+state_levels[, target := fifelse(str_detect(scen_id, '90_perc') == TRUE, "90% reduction", 
+                                 fifelse(str_detect(scen_id, '1000ft') == TRUE, "1000ft setback",
+                                         fifelse(str_detect(scen_id, '2500ft') == TRUE, "2500ft setback",
+                                                 fifelse(str_detect(scen_id, '5280ft') == TRUE, "5280ft setback", "no target"))))]
+
+state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", ccs_scenario)]
+
+state_levels$ccs_option <- factor(state_levels$ccs_option, levels = c('no CCS', "high CCS cost", "medium CCS cost"))
+state_levels$refining_scenario <- factor(state_levels$refining_scenario, levels = c('historic production', "historic exports", "low exports"))
 
 
 
-## targets
-target1000 <- c("BAU historic production low innovation carbon_setback_1000ft medium CCS cost reference case",
-                "BAU historic production low innovation carbon_setback_1000ft no ccs reference case")
-
-target2500 <- c("BAU historic production low innovation central SCC medium CCS cost reference case",
-                "BAU historic production low innovation central SCC no ccs reference case")
-
-target5280 <- c("BAU historic production low innovation carbon_setback_5280ft medium CCS cost reference case",
-                "BAU historic production low innovation carbon_setback_5280ft no ccs reference case")
-
-target90 <- c("BAU historic production low innovation carbon_90_perc_reduction no ccs reference case",
-              "BAU historic production low innovation carbon_90_perc_reduction medium CCS cost reference case")
-
-state_levels[, target := fifelse(scen_id %in% target1000, "1000ft setback",
-                                 fifelse(scen_id %in% target2500, "2500ft setback",
-                                         fifelse(scen_id %in% target5280, "5280ft setback",
-                                                 fifelse(scen_id %in% target90, "90% reduction", "no target"))))]
-
-state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no ccs", "ccs")]
 
 ## V1 -- numbers
-## make a series of plots 2019 - 2045
+## make a series of plots 2020- 2045
 ## (bbls equiv, emissions, labor employment, labor compensation, mortality_level)
 
-consumed_fig <- ggplot(state_levels %>% filter(metric == "state_crude_eq_consumed_bbl",
-                                              ccs_option == "ccs"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target, group = scen_id)) +
-  geom_line(size = 0.75, alpha = 0.8) +
+consumed_fig <- ggplot(state_levels %>% filter(metric == "bbls_consumed",
+                                               year > 2019), aes(x = year, y = value / 1e6, color = target, lty = refining_scenario, group = scen_id)) +
+  geom_line(size = 0.75, alpha = 0.5) +
   labs(title = "Refinery consumption",
        x = NULL,
        y = "Bbls crude equivalent (million bbls)",
-       color = NULL) +
-  # facet_wrap(~ccs_option) +
+       color = "Emissions target\n(extraction)",
+       lty = "Refining scenario") +
+  facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "right",
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
 ggsave(consumed_fig, 
        filename = file.path(save_info_path, 'pathway/consumption_x_time_fig.png'), 
-       width = 8, 
-       height = 5)
+       width = 10, 
+       height = 8)
 
 # embed_fonts(file.path(save_info_path, 'pathway/prod_x_time_fig.png'),
 #             outfile = file.path(save_info_path, 'pathway/prod_x_time_fig.png'))
 
 
-## ccs options
-consumed_fig_ccs <- ggplot(state_levels %>% filter(metric == "state_crude_eq_consumed_bbl"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target, group = scen_id)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Refinery consumption",
+fig_ghg <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO2",
+                                               year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
+  geom_line(size = 0.75, alpha = 0.6) +
+  labs(title = "Refinery segment emissions",
        x = NULL,
-       y = "Bbls crude equivalent (million bbls)",
-       color = NULL) +
-  facet_wrap(~ccs_option) +
+       y = "GHG (MtCO2e)",
+       color = "Emissions target\n(extraction)",
+       lty = "Refining scenario") +
+  facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "right",
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
-ggsave(consumed_fig_ccs, 
-       filename = file.path(save_info_path, 'pathway/consumption_x_time_ccs_fig.png'), 
-       width = 8, 
-       height = 5)
+ggsave(fig_ghg, 
+       filename = file.path(save_info_path, 'pathway/ghg_x_time_fig.png'), 
+       width = 10, 
+       height = 10)
+
 
 
 ## employment
 emp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_emp",
-                                             ccs_option == "ccs"),  aes(x = year, y = value, color = policy_intervention, lty = target, group = scen_id)) +
-  geom_line(size = 0.75, alpha = 0.8) +
-  labs(title = "Labor: Total employment",
+                                             year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
+  geom_line(size = 0.75, alpha = 0.6) +
+  labs(title = "Labor: Employment, FTE job-years",
        x = NULL,
-       y = "Total employment, FTE job-years",
-       color = NULL) +
+       y = "FTE job-years",
+       color = "Emissions target\n(extraction)",
+       lty = "Refining scenario") +
+  facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "right",
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
+
 
 ggsave(emp_pw_fig, 
        filename = file.path(save_info_path, 'pathway/labor_empl_x_time_fig.png'), 
-       width = 8, 
-       height = 5)
+       width = 10, 
+       height = 10)
 # 
 # embed_fonts(file.path(save_info_path, 'pathway/labor_empl_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/labor_empl_x_time_fig.pdf'))
@@ -208,67 +214,83 @@ ggsave(emp_pw_fig,
 
 ## compensation
 comp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_comp",
-                                              ccs_option == "ccs"),  aes(x = year, y = value / 1e9, color = policy_intervention, lty = target, group = scen_id)) +
-  geom_line(size = 0.75, alpha = 0.8) +
+                                             year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
+  geom_line(size = 0.75, alpha = 0.6) +
   labs(title = "Labor: Total compensation",
        x = NULL,
        y = "Total compensation (USD billion)",
-       color = NULL) +
+       color = "Emissions target\n(extraction)",
+       lty = "Refining scenario") +
+  facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "right",
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
+
 
 ggsave(comp_pw_fig, 
        filename = file.path(save_info_path, 'pathway/labor_comp_x_time_fig.png'), 
-       width = 8, 
-       height = 5)
+       width = 10, 
+       height = 10)
 
-# embed_fonts(file.path(save_info_path, 'pathway/labor_comp_x_time_fig.pdf'),
-#             outfile = file.path(save_info_path, 'pathway/labor_comp_x_time_fig.pdf'))
+
 
 
 ## pm25
 pm25_pw_fig <- ggplot(state_levels %>% filter(metric == "mean_total_pm25",
-                                              ccs_option == "ccs"), aes(x = year, y = value, color = policy_intervention, lty = target, group = scen_id)) +
+                                              year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Health: Mean total pm2.5 exposure",
        x = NULL,
        y = "pm2.5 exposure (ug/m3)",
        color = NULL) +
+  facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "right",
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
 ggsave(pm25_pw_fig, 
        filename = file.path(save_info_path, 'pathway/health_pm25_x_time_fig.png'), 
        width = 8, 
-       height = 5)
+       height = 8)
 
 # embed_fonts(file.path(save_info_path, 'pathway/health_pm25_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/health_pm25_x_time_fig.pdf'))
 
 ## mortality
 mortality_pw_fig <- ggplot(state_levels %>% filter(metric == "mortality_level",
-                                                   ccs_option == "ccs"), aes(x = year, y = value, color = policy_intervention, lty = target, group = scen_id)) +
-  geom_line(size = 0.75, alpha = 0.8) +
+                                              year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
+  geom_line(size = 0.75, alpha = 0.6) +
   labs(title = "Health: Mortality level",
        x = NULL,
        y = "# premature deaths",
-       color = NULL) +
+       color = "Emissions target\n(extraction)",
+       lty = "Refining scenario") +
+  facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "right",
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
+
 ggsave(mortality_pw_fig, 
-       filename = file.path(save_info_path, 'pathway/health_mortality_x_time_fig.png'), 
+       filename = file.path(save_info_path, 'pathway/health_mort_x_time_fig.png'), 
        width = 8, 
-       height = 5)
+       height = 8)
+
+
+## ----------------------------------------------------------------------
+
+
+
+
 
 
 
