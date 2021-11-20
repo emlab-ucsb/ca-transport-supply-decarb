@@ -67,7 +67,7 @@ site_out <- fread(paste0(main_path, refining_folder_path, "site_refining_outputs
 #                           refining_scenario == "historic production") |
 #                          (oil_price_scenario == "reference case" &
 #                           carbon_price_scenario %in% c("price floor") &
-#                           # ccs_scenario  %in% c("medium CCS cost", "no ccs") & 
+#                           # ccs_scenario  %in% c("medium CCS cost", "no ccs") &
 #                           demand_scenario == "LC1" &
 #                           refining_scenario %in% c("historic exports", "low exports"))]
 
@@ -130,22 +130,25 @@ state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", ccs_sce
 state_levels$ccs_option <- factor(state_levels$ccs_option, levels = c('no CCS', "high CCS cost", "medium CCS cost"))
 state_levels$refining_scenario <- factor(state_levels$refining_scenario, levels = c('historic production', "historic exports", "low exports"))
 
-
+## add scneario names
+state_levels[, scenario := paste0(refining_scenario, " - ", demand_scenario, " demand")]
 
 
 ## V1 -- numbers
 ## make a series of plots 2020- 2045
 ## (bbls equiv, emissions, labor employment, labor compensation, mortality_level)
 
-consumed_fig <- ggplot(state_levels %>% filter(metric == "bbls_consumed",
-                                               year > 2019), aes(x = year, y = value / 1e6, color = target, lty = refining_scenario, group = scen_id)) +
+consumed_fig <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
+                                               metric == "bbls_consumed",
+                                               oil_price_scenario == "reference case",
+                                               year > 2019), aes(x = year, y = value / 1e6, color = scenario, group = scenario)) +
   geom_line(size = 0.75, alpha = 0.5) +
   labs(title = "Refinery consumption",
        x = NULL,
        y = "Bbls crude equivalent (million bbls)",
-       color = "Emissions target\n(extraction)",
+       color = "Refinery scenario -\ndemand scenario",
        lty = "Refining scenario") +
-  facet_grid(demand_scenario ~ ccs_option) +
+  # facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
