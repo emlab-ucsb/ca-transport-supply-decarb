@@ -44,12 +44,21 @@ ref_save_info_path <- paste0(main_path, 'outputs/academic-out/refining/explorato
 
 ## files
 bau_file <- 'reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_field_results.rds'
+labor_file <- 'reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_county_results.rds'
 forecast_file     <- 'field_capex_opex_forecast_revised.csv'
 ghg_file          <- 'ghg_emissions_x_field_2018-2045.csv'
 setback_file      <- 'setback_coverage_R.csv'
+prod_file       <- "well_prod_m_processed.csv"
+
+## well prod
+well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
+                                                                                                 'doc_field_code' = 'character'))
 
 ## read in bau field out
 bau_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2021-11-09/field-results/', bau_file))
+
+## county out
+county_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2021-11-09/county-results/', labor_file))
 
 ## load opex/ capex
 price_data = fread(file.path(main_path, 'outputs/stocks-flows', forecast_file), header = T)
@@ -284,6 +293,65 @@ ggsave(fig_srm_setback,
        filename = file.path(save_info_path, 'srm_setback.png'), 
        width = 6, 
        height = 6)
+
+## save files for kyle
+## field-level variables: oil field identifier, GHG emissions factor, 1 mile setback relative area, 2020 capex, 2020 opex
+## county-level variables: county identifier, GHG emissions factor (averaged across oil fields in that county), 1 mile setback relative area (averaged across oil fields in that county), oil extraction jobs in that county in 2020
+
+field_df <- price_data %>%
+  left_join(ghg_factors) %>%
+  left_join(setback_scens) %>%
+  select(doc_field_code, upstream_kgCO2e_bbl, area_coverage_mile = area_coverage, capex_2020 = m_capex_imputed, opex_2020 = m_opex_imputed)
+
+
+## county match
+county_lut <- well_prod %>%
+  dplyr::select(doc_field_code, county_name) %>%
+  unique() %>%
+  mutate(adj_county_name = str_remove(county_name, " Offshore"))
+
+## field name look up 
+fname_lut <- well_prod %>%
+  dplyr::select(doc_field_code, doc_fieldname) %>%
+  unique()
+
+## get relative county production (most recent year of nonzero production available for each field)
+prod_x_county <- well_prod %>%
+  left_join(county_lut) %>%
+  group_by(doc_field_code, doc_fieldname, year, adj_county_name) %>%
+  summarise(prod = sum(OilorCondensateProduced, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(doc_field_code, year) %>%
+  mutate(field_total = sum(prod, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(rel_prod = prod / field_total,
+         rel_prod = ifelse(is.na(rel_prod) & prod == 0 & field_total == 0, 0, rel_prod)) %>%
+  filter(rel_prod > 0) %>%
+  group_by(doc_field_code) %>%
+  filter(year == max(year)) %>%
+  ungroup() %>%
+  select(doc_field_code, adj_county_name, rel_prod)
+
+
+## calc number of jobs in 2019
+jobs_2019 <- county_out %>%
+  filter(year == 2019)  %>%
+  select(county, total_emp)
+
+## create county df
+county_df <- prod_x_county %>%
+  left_join(field_df) %>%
+  filter(doc_field_code != '848') %>%
+  filter(!is.na(upstream_kgCO2e_bbl)) %>%
+  group_by(adj_county_name) %>%
+  summarise(mean_upstream_kgCO2e_bbl = mean(upstream_kgCO2e_bbl),
+            wm_upstream_kgCO2e_bbl = weighted.mean(upstream_kgCO2e_bbl, rel_prod),
+            mean_area_coverage_mile = mean(area_coverage_mile),
+            wm_area_coverage_mile = weighted.mean(area_coverage_mile, rel_prod)) %>%
+  ungroup() %>%
+  rename(county = adj_county_name) %>%
+  left_join(jobs_2019) %>%
+  mutate(total_emp = ifelse(is.na(total_emp), 0, total_emp))
 
 ## ------------------------------------------------------------------------------
 ## repeat for refining
