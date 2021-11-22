@@ -56,16 +56,12 @@ tax_subset_vec <- c("tax_setback_1000ft", "tax_setback_2500ft", "tax_setback_528
 
 ## find subset scenarios
 ref_carbon_dt = refining_scens[(innovation_scenario == 'low innovation' &
-                                  carbon_price_scenario %in% c(carbon_scens_vec) &
-                                  ccs_scenario %in% c('medium CCS cost', "no ccs")) |
+                                  carbon_price_scenario %in% c(carbon_scens_vec, carbon_subset_vec) &
+                                  ccs_scenario %in% ccs_subset_vec) |
                                  (innovation_scenario == 'low innovation' &
-                                    carbon_price_scenario %in% c(carbon_scens_vec) &
-                                    ccs_scenario %in% ccs_subset_vec & 
-                                    oil_price_scenario == 'reference case') |
-                                 (innovation_scenario == 'low innovation' &
-                                 carbon_price_scenario == "price floor" &
-                                 ccs_scenario %in% c('no ccs', 'medium CCS cost', 'high CCS cost') &
-                                 oil_price_scenario == 'reference case')]
+                                  carbon_price_scenario == "price floor" &
+                                  ccs_scenario %in% c('no ccs', 'medium CCS cost', 'high CCS cost') &
+                                  oil_price_scenario == 'reference case')]
 
 ## indicate scenarios
 refining_scens[, subset_scens := fifelse(scen_id %in% ref_carbon_dt[, scen_id], 1, 0)]
