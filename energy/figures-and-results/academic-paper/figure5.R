@@ -222,10 +222,6 @@ srm_extraction_field <- srm_extraction %>%
   left_join(setback_scens) %>%
   select(doc_field_code, doc_fieldname, dac_pm25, total_pm25, dac_share_pm25, bbl_2019, capex_plus_opex_2020 = sum_cost, upstream_kgCO2e_bbl, area_coverage_mile = area_coverage)
 
-## save 
-fwrite(srm_extraction_field, paste0(main_path, 'outputs/academic-out/extraction/srm-info/srm_characterisics_info.csv'))
-
-
 
 ## figure
 fig_srm_cost <- ggplot(srm_extraction_field, aes(x = sum_cost, y = dac_share_pm25, size = bbl_2019 / 1e6)) +
@@ -352,6 +348,12 @@ county_df <- prod_x_county %>%
   rename(county = adj_county_name) %>%
   left_join(jobs_2019) %>%
   mutate(total_emp = ifelse(is.na(total_emp), 0, total_emp))
+
+## save 
+fwrite(field_df, paste0(main_path, 'outputs/academic-out/extraction/srm-info/field_characteristics.csv'))
+
+fwrite(county_df, paste0(main_path, 'outputs/academic-out/extraction/srm-info/county_characteristics.csv'))
+
 
 ## ------------------------------------------------------------------------------
 ## repeat for refining
