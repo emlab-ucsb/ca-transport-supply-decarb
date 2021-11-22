@@ -55,7 +55,7 @@ bau_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction
 price_data = fread(file.path(main_path, 'outputs/stocks-flows', forecast_file), header = T)
 price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
 price_data[, sum_cost := m_opex_imputed + m_capex_imputed]
-price_data <- price_data[year == 2020, .(doc_field_code, sum_cost)]
+price_data <- price_data[year == 2020, .(doc_field_code, m_opex_imputed, m_capex_imputed, sum_cost)]
 
 ## emissions factors
 ghg_factors = fread(file.path(main_path, 'outputs/stocks-flows', ghg_file), header = T)
@@ -188,7 +188,7 @@ ct_exposure <- total_clusters %>%
   mutate(GEOID = ifelse(GEOID == "06037137000", "06037930401", GEOID)) %>%
   select(id, doc_field_code, census_tract = GEOID, total_pm25)
 
-## 2019 field leve production
+## 2019 field level production
 prod_2019 <- bau_out %>%
   filter(year == 2019) %>%
   select(doc_field_code, doc_fieldname, bbl_2019 = total_prod_bbl)
@@ -211,7 +211,12 @@ srm_extraction_field <- srm_extraction %>%
   left_join(price_data) %>%
   left_join(ghg_factors) %>%
   left_join(setback_scens) %>%
-  select(doc_field_code, doc_fieldname, dac_pm25, total_pm25, dac_share_pm25, bbl_2019, sum_cost, upstream_kgCO2e_bbl, area_coverage_mile = area_coverage)
+  select(doc_field_code, doc_fieldname, dac_pm25, total_pm25, dac_share_pm25, bbl_2019, capex_plus_opex_2020 = sum_cost, upstream_kgCO2e_bbl, area_coverage_mile = area_coverage)
+
+## save 
+fwrite(srm_extraction_field, paste0(main_path, 'outputs/academic-out/extraction/srm-info/srm_characterisics_info.csv'))
+
+
 
 ## figure
 fig_srm_cost <- ggplot(srm_extraction_field, aes(x = sum_cost, y = dac_share_pm25, size = bbl_2019 / 1e6)) +
