@@ -66,11 +66,11 @@
   scenarios_dt = innovation_scens[carbonpx_scens, on = .(year), allow.cartesian = T, nomatch = 0]
   scenarios_dt = scenarios_dt[ccs_scens_all, on = .(year), allow.cartesian = T, nomatch = 0]
   
-  ## filter so that carbon_price_scenario matches ccs_scenario
-  scenarios_dt[, carbon_ccs := sub(".*-", "", carbon_price_scenario)]
-  scenarios_dt[, carbon_ccs := fifelse(carbon_ccs %in% c("medium CCS cost", "no ccs"), carbon_ccs, ccs_scenario)]
-  scenarios_dt <- scenarios_dt[carbon_ccs == ccs_scenario]
-  scenarios_dt[, carbon_ccs := NULL]
+  # ## filter so that carbon_price_scenario matches ccs_scenario
+  # scenarios_dt[, carbon_ccs := sub(".*-", "", carbon_price_scenario)]
+  # scenarios_dt[, carbon_ccs := fifelse(carbon_ccs %in% c("medium CCS cost", "no ccs"), carbon_ccs, ccs_scenario)]
+  # scenarios_dt <- scenarios_dt[carbon_ccs == ccs_scenario]
+  # scenarios_dt[, carbon_ccs := NULL]
   
   ## save
   fwrite(scenarios_dt, file.path(scen_path, 'refinery_scenario_inputs.csv'))

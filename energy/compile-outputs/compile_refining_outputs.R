@@ -43,7 +43,7 @@ refining_file <- 'refining_scenario_outputs_refinery_net_exports_revised.csv'
 site_2019_file <- 'site_refining_outputs_2019.csv'
 county_2019_file <- 'county_refining_outputs_2019.csv'
 refin_file <- 'ref_scenario_id_list.csv'
-ghg_2019_file <- 'refining_emissions_state_2019.csv'
+ghg_2019_file <- 'refining_emissions_state_2019_revised.csv'
 
 ## read in files
 ## ---------------------------------------
@@ -204,7 +204,7 @@ county_2019 <- fread(file.path(main_path, outputs_path, county_2019_file))
 ## ghg 2019
 ghg_2019 <- fread(paste0(main_path, "/model-development/scenario-plot/refinery-outputs/", ghg_2019_file))
 
-ghg_2019 <- ghg_2019[boundary == "in-state", .(year, value)]
+ghg_2019 <- ghg_2019[boundary == "complete", .(year, value)]
 ghg_2019[, mtco2e := value / 1e9]
 ghg_2019[, value := NULL]
 

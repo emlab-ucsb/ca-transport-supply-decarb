@@ -13,7 +13,7 @@ refining_folder  = file.path("/Volumes/GoogleDrive/Shared drives/emlab/projects/
 ## paths
 main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
 data_path  <-'data/stocks-flows/processed'
-outputs_path <- 'outputs/predict-production/refining_2021-09-06/CUF0.6/outputs'
+outputs_path <- 'outputs/predict-production/refining_2021-11-03/CUF0.6/outputs'
 emiss_path <- 'model-development/scenario-plot/refinery-outputs'
 
 ## files
