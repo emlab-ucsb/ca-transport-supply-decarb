@@ -20,7 +20,7 @@ dir.create(paste0(compiled_save_path_refining, '/census-tract-results'), showWar
 dir.create(paste0(compiled_save_path_refining, '/subset-census-tract-results'), showWarnings = FALSE)
 
 ## date of results
-result_date <- "2021-11-03"
+result_date <- "2021-11-22"
 
 ## paths
 main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
