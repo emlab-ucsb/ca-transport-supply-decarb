@@ -49,6 +49,24 @@ state_out <- fread(paste0(state_save_path, "/subset_state_results.csv"))
 site_out <- fread(paste0(main_path, refining_folder_path, "site_refining_outputs.csv"))
 
 
+## 2019 emissions
+refin_file <- 'ref_scenario_id_list.csv'
+ghg_2019_file <- 'refining_emissions_state_2019_revised.csv'
+ghg_2019 <- fread(paste0(main_path, "/model-development/scenario-plot/refinery-outputs/", ghg_2019_file))
+
+ghg_2019 <- ghg_2019[boundary == "complete", .(year, value)]
+ghg_2019[, mtco2e := value / 1e9]
+ghg_2019[, value := NULL]
+ghg_2019_val <- ghg_2019$mtco2e[1]
+
+
+## carbon target results
+target_results <- state_out[year == 2045, .(scen_id, year, carbon_price_scenario, ghg_kg)]
+target_results[, total_state_ghg_MtCO2 := ghg_kg / (1000 * 1e6)]
+target_results[, rel_reduction := (total_state_ghg_MtCO2 - ghg_2019) / ghg_2019]
+target_results <- target_results[, .(scen_id, rel_reduction)]
+
+
 ## filter for subset
 ## ---------------------------------------
 
@@ -141,30 +159,60 @@ state_levels[, scenario := paste0(refining_scenario, " - ", demand_scenario, " d
 consumed_fig <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
                                                metric == "bbls_consumed",
                                                oil_price_scenario == "reference case",
-                                               year > 2019), aes(x = year, y = value / 1e6, color = scenario, group = scenario)) +
-  geom_line(size = 0.75, alpha = 0.5) +
+                                               carbon_price_scenario == "price floor",
+                                               year > 2019), aes(x = year, y = value / 1e6, color = refining_scenario, lty = demand_scenario, group = scenario)) +
+  geom_line(size = 0.75, alpha = 0.7) +
   labs(title = "Refinery consumption",
        x = NULL,
        y = "Bbls crude equivalent (million bbls)",
-       color = "Refinery scenario -\ndemand scenario",
-       lty = "Refining scenario") +
+       color = "Refinery scenario",
+       lty = "Demand scenario") +
+  guides(colour = guide_legend(order = 1), 
+         lty = guide_legend(order = 2)) +
   # facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "bottom",
+  theme(legend.position = "right",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
 ggsave(consumed_fig, 
        filename = file.path(save_info_path, 'pathway/consumption_x_time_fig.png'), 
-       width = 10, 
-       height = 8)
+       width = 8, 
+       height = 6)
 
 # embed_fonts(file.path(save_info_path, 'pathway/prod_x_time_fig.png'),
 #             outfile = file.path(save_info_path, 'pathway/prod_x_time_fig.png'))
 
+fig_ghg <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
+                                          metric == "total_state_ghg_MtCO2",
+                                          oil_price_scenario == "reference case",
+                                          carbon_price_scenario == "price floor",
+                                          year > 2019), aes(x = year, y = value, color = refining_scenario, lty = demand_scenario, group = scenario)) +
+  geom_line(size = 0.75, alpha = 0.7) +
+  labs(title = "Refinery segment emissions",
+       subtitle = "carbon price scenario = price floor",
+       x = NULL,
+       y = "GHG (MtCO2e)",
+       color = "Refinery scenario",
+       lty = "Demand scenario") +
+  # facet_wrap(~carbon_price_scenario, ncol = 3) +
+  # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme_line +
+  theme(legend.position = "right",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm')) 
 
+ggsave(fig_ghg, 
+       filename = file.path(save_info_path, 'pathway/ghg_x_time_fig.png'), 
+       width = 8, 
+       height = 6)
+
+
+
+## figs x carbon price scenario
 fig_ghg <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO2",
                                                year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
   geom_line(size = 0.75, alpha = 0.6) +
@@ -189,96 +237,109 @@ ggsave(fig_ghg,
 
 
 ## employment
-emp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_emp",
-                                             year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
+emp_pw_fig <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
+                                             metric == "total_emp",
+                                             oil_price_scenario == "reference case",
+                                             carbon_price_scenario == "price floor",
+                                             year > 2019), aes(x = year, y = value / 1000, color = refining_scenario, lty = demand_scenario, group = scenario)) +
   geom_line(size = 0.75, alpha = 0.6) +
   labs(title = "Labor: Employment, FTE job-years",
        x = NULL,
-       y = "FTE job-years",
-       color = "Emissions target\n(extraction)",
-       lty = "Refining scenario") +
-  facet_grid(demand_scenario ~ ccs_option) +
+       y = "FTE job-years (thousdand)",
+       color = "Refinery scenario",
+       lty = "Demand scenario") +
+  # facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "bottom",
+  theme(legend.position = "right",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
 
 ggsave(emp_pw_fig, 
        filename = file.path(save_info_path, 'pathway/labor_empl_x_time_fig.png'), 
-       width = 10, 
-       height = 10)
+       width = 8, 
+       height = 6)
 # 
 # embed_fonts(file.path(save_info_path, 'pathway/labor_empl_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/labor_empl_x_time_fig.pdf'))
 
 
 ## compensation
-comp_pw_fig <- ggplot(state_levels %>% filter(metric == "total_comp",
-                                             year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
-  geom_line(size = 0.75, alpha = 0.6) +
+comp_pw_fig <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
+                                              metric == "total_comp",
+                                              oil_price_scenario == "reference case",
+                                              carbon_price_scenario == "price floor",
+                                              year > 2019), aes(x = year, y = value / 1e9, color = refining_scenario, lty = demand_scenario, group = scen_id)) +
+  geom_line(size = 0.75, alpha = 0.75) +
   labs(title = "Labor: Total compensation",
        x = NULL,
        y = "Total compensation (USD billion)",
-       color = "Emissions target\n(extraction)",
-       lty = "Refining scenario") +
-  facet_grid(demand_scenario ~ ccs_option) +
+       color = "Refinery scenario",
+       lty = "Demand scenario") +
+  # facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "bottom",
+  theme(legend.position = "right",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
 
 ggsave(comp_pw_fig, 
        filename = file.path(save_info_path, 'pathway/labor_comp_x_time_fig.png'), 
-       width = 10, 
-       height = 10)
+       width = 8, 
+       height = 6)
 
 
 
 
 ## pm25
-pm25_pw_fig <- ggplot(state_levels %>% filter(metric == "mean_total_pm25",
-                                              year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
+pm25_pw_fig <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
+                                              metric == "mean_total_pm25",
+                                              oil_price_scenario == "reference case",
+                                              carbon_price_scenario == "price floor",
+                                              year > 2019), aes(x = year, y = value, color = refining_scenario, lty = demand_scenario, group = scen_id)) +
   geom_line(size = 0.75, alpha = 0.8) +
   labs(title = "Health: Mean total pm2.5 exposure",
        x = NULL,
        y = "pm2.5 exposure (ug/m3)",
-       color = NULL) +
-  facet_grid(demand_scenario ~ ccs_option) +
+       color = "Refinery scenario",
+       lty = "Demand scenario") +
+  # facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "bottom",
+  theme(legend.position = "right",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
 ggsave(pm25_pw_fig, 
        filename = file.path(save_info_path, 'pathway/health_pm25_x_time_fig.png'), 
        width = 8, 
-       height = 8)
+       height = 6)
 
 # embed_fonts(file.path(save_info_path, 'pathway/health_pm25_x_time_fig.pdf'),
 #             outfile = file.path(save_info_path, 'pathway/health_pm25_x_time_fig.pdf'))
 
 ## mortality
-mortality_pw_fig <- ggplot(state_levels %>% filter(metric == "mortality_level",
-                                              year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
-  geom_line(size = 0.75, alpha = 0.6) +
+mortality_pw_fig <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
+                                                   metric == "mortality_level",
+                                                   oil_price_scenario == "reference case",
+                                                   carbon_price_scenario == "price floor",
+                                                   year > 2019), aes(x = year, y = value, color = refining_scenario, lty = demand_scenario, group = scen_id)) +
+  geom_line(size = 0.75, alpha = 0.75) +
   labs(title = "Health: Mortality level",
        x = NULL,
        y = "# premature deaths",
-       color = "Emissions target\n(extraction)",
-       lty = "Refining scenario") +
-  facet_grid(demand_scenario ~ ccs_option) +
+       color = "Refinery scenario",
+       lty = "Demand scenario") +
+  # facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "bottom",
+  theme(legend.position = "right",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
@@ -286,7 +347,7 @@ mortality_pw_fig <- ggplot(state_levels %>% filter(metric == "mortality_level",
 ggsave(mortality_pw_fig, 
        filename = file.path(save_info_path, 'pathway/health_mort_x_time_fig.png'), 
        width = 8, 
-       height = 8)
+       height = 6)
 
 
 ## ----------------------------------------------------------------------
