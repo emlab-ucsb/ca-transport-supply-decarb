@@ -30,7 +30,7 @@ theme_line = theme_ipsum(base_family = 'Arial',
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-refining_folder_path <- 'outputs/academic-out/refining/refining_2021-11-16/'
+refining_folder_path <- 'outputs/academic-out/refining/refining_2021-11-22/'
 state_save_path     = paste0(main_path, refining_folder_path)
 
 ## create a folder to store outputs
@@ -63,7 +63,7 @@ ghg_2019_val <- ghg_2019$mtco2e[1]
 ## carbon target results
 target_results <- state_out[year == 2045, .(scen_id, year, carbon_price_scenario, ghg_kg)]
 target_results[, total_state_ghg_MtCO2 := ghg_kg / (1000 * 1e6)]
-target_results[, rel_reduction := (total_state_ghg_MtCO2 - ghg_2019) / ghg_2019]
+target_results[, rel_reduction := (total_state_ghg_MtCO2 - ghg_2019_val) / ghg_2019_val]
 target_results <- target_results[, .(scen_id, rel_reduction)]
 
 
@@ -151,6 +151,13 @@ state_levels$refining_scenario <- factor(state_levels$refining_scenario, levels 
 ## add scneario names
 state_levels[, scenario := paste0(refining_scenario, " - ", demand_scenario, " demand")]
 
+## add emission reduction
+state_levels <- merge(state_levels, target_results,
+                      by = "scen_id",
+                      all.x = T)
+
+state_levels[, target_name := paste0(round(rel_reduction, 2) * 100, "% GHG reduction")]
+
 
 ## V1 -- numbers
 ## make a series of plots 2020- 2045
@@ -210,22 +217,26 @@ ggsave(fig_ghg,
        width = 8, 
        height = 6)
 
-
+## carbon price scenario values
+carbon_scens <- c("carbon_setback_1000ft-no ccs", "carbon_setback_2500ft-no ccs", "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs")
 
 ## figs x carbon price scenario
-fig_ghg <- ggplot(state_levels %>% filter(metric == "total_state_ghg_MtCO2",
-                                               year > 2019), aes(x = year, y = value, color = target, lty = refining_scenario, group = scen_id)) +
-  geom_line(size = 0.75, alpha = 0.6) +
+fig_ghg_carbon_scens <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
+                                          metric == "total_state_ghg_MtCO2",
+                                          oil_price_scenario == "reference case",
+                                          carbon_price_scenario %in% carbon_scens,
+                                          year > 2019), aes(x = year, y = value, color = refining_scenario, lty = demand_scenario, group = scen_id)) +
+  geom_line(size = 0.75, alpha = 0.75) +
   labs(title = "Refinery segment emissions",
        x = NULL,
        y = "GHG (MtCO2e)",
        color = "Emissions target\n(extraction)",
        lty = "Refining scenario") +
-  facet_grid(demand_scenario ~ ccs_option) +
+  facet_wrap(~ target_name) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "bottom",
+  theme(legend.position = "right",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
