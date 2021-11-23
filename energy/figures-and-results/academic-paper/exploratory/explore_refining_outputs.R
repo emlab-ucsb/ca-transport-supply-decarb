@@ -44,8 +44,7 @@ dir.create(paste0(save_info_path, "/pathway"), showWarnings = FALSE)
 
 ## read inputs
 state_out <- fread(paste0(state_save_path, "/subset_state_results.csv"))
-
-## site out for ghg 
+county_out <- fread(paste0(main_path, refining_folder_path, '/county_refining_outputs.csv'))
 site_out <- fread(paste0(main_path, refining_folder_path, "site_refining_outputs.csv"))
 
 
@@ -70,29 +69,25 @@ target_results <- target_results[, .(scen_id, rel_reduction)]
 ## filter for subset
 ## ---------------------------------------
 
-# 
-# ## state scens
-# state_scens <- state_out[## bau, three CCS scenarios
-#                         (oil_price_scenario == "reference case" &
-#                           carbon_price_scenario %in% c("price floor") &
-#                           # ccs_scenario %in% c("medium CCS cost", "no ccs") &
-#                           demand_scenario == "BAU" &
-#                           refining_scenario == "historic production") |
-#                           ## the three CCS scenarios interacting with carbon taxes
-#                          (oil_price_scenario == "reference case" &
-#                           # ccs_scenario %in% c("medium CCS cost", "no ccs") &
-#                           demand_scenario == "BAU" &
-#                           refining_scenario == "historic production") |
-#                          (oil_price_scenario == "reference case" &
-#                           carbon_price_scenario %in% c("price floor") &
-#                           # ccs_scenario  %in% c("medium CCS cost", "no ccs") &
-#                           demand_scenario == "LC1" &
-#                           refining_scenario %in% c("historic exports", "low exports"))]
+
+## state scens
+
+## carbon price scenario values
+carbon_scens <- c("carbon_setback_1000ft-no ccs", "carbon_setback_2500ft-no ccs", 
+                  "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs", "price floor")
+
+
+state_scens <- state_out[(oil_price_scenario == "reference case" &
+                             carbon_price_scenario == "price floor" &
+                             ccs_scenario == "no ccs" &
+                             refining_scenario == "historic production" &
+                             demand_scenario == "BAU") |
+                          (oil_price_scenario == "reference case" &
+                          carbon_price_scenario %in% carbon_scens &
+                          ccs_scenario == "medium CCS cost")]
 
 
 ## state_scens
-state_scens <- state_out[oil_price_scenario == "reference case"]
-
 state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                       ccs_scenario, demand_scenario,  refining_scenario, year, total_emp, total_comp)]
 
@@ -217,8 +212,9 @@ ggsave(fig_ghg,
        width = 8, 
        height = 6)
 
-## carbon price scenario values
-carbon_scens <- c("carbon_setback_1000ft-no ccs", "carbon_setback_2500ft-no ccs", "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs")
+state_levels$carbon_price_scenario <- factor(state_levels$carbon_price_scenario, 
+                                                levels = c("price floor", "carbon_setback_1000ft-no ccs", "carbon_setback_2500ft-no ccs", 
+                                                            "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs"))
 
 ## figs x carbon price scenario
 fig_ghg_carbon_scens <- ggplot(state_levels %>% filter(ccs_scenario == "medium CCS cost",
@@ -232,18 +228,20 @@ fig_ghg_carbon_scens <- ggplot(state_levels %>% filter(ccs_scenario == "medium C
        y = "GHG (MtCO2e)",
        color = "Emissions target\n(extraction)",
        lty = "Refining scenario") +
-  facet_wrap(~ target_name) +
+  facet_wrap(~ carbon_price_scenario) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "right",
+  guides(colour = guide_legend(order = 1), 
+         lty = guide_legend(order = 2)) +
+  theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm')) 
 
-ggsave(fig_ghg, 
-       filename = file.path(save_info_path, 'pathway/ghg_x_time_fig.png'), 
+ggsave(fig_ghg_carbon_scens, 
+       filename = file.path(save_info_path, 'pathway/ghg_x_time_carbon_scens.png'), 
        width = 10, 
-       height = 10)
+       height = 8)
 
 
 
@@ -362,10 +360,19 @@ ggsave(mortality_pw_fig,
 
 
 ## ----------------------------------------------------------------------
+## cumulative impacts / avoided GHG emissions (total, DAC, DAC share)
+## ----------------------------------------------------------------------
+
+county_out_subset <- county_out[BAU_scen == 1 |
+                                (oil_price_scenario == "reference case" &
+                                   carbon_price_scenario %in% carbon_scens &
+                                   ccs_scenario == "medium CCS cost")]
+
+labor_bau <- county_out_subset[BAU_scen == 1, .(scen_id, county, dac_share, bbls_consumed, ghg_kg, total_emp, total_comp)]
 
 
 
-
+## NPV
 
 
 
