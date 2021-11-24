@@ -2412,7 +2412,7 @@ cumul_scc_value <- scc_value[, .(scc_avoided_ghg = sum(scc_avoided_ghg, na.rm = 
 cumul_rel_vals_bau <- state_rel_vals[, .(diff_bau = sum(diff_bau)), by = .(scen_id, ccs_option, policy_intervention,
                                                                          target, metric)]
 
-cumul_rel_vals_bau <- cumul_rel_vals_bau[metric %in% c( "total_comp", "total_comp_PV", "cost_2019",
+cumul_rel_vals_bau <- cumul_rel_vals_bau[metric %in% c("total_state_ghg_MtCO2", "total_comp", "total_comp_PV", "cost_2019",
                                                        "cost", "cost_2019_PV", "cost_PV", "cost_PV_20")]
 
 cumul_rel_vals_bau <- dcast(cumul_rel_vals_bau, scen_id + ccs_option + policy_intervention + target ~ metric, value.var = "diff_bau")
@@ -2434,54 +2434,58 @@ cumul_rel_vals_bau <- merge(cumul_rel_vals_bau, ghg_total,
 
 
 
-# ## calc benefit
-# cumul_rel_vals_bau[, benefit := (cost_PV_20 * -1) + total_comp_PV + scc_avoided_ghg]
-# cumul_rel_vals_bau[, benefit_per_ghg := benefit / cumul_ghg]
-# 
-# cumul_rel_vals_bau2 <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'ccs_option', 'target', 'policy_intervention'),
-#                             measure.vars = c("benefit", "benefit_per_ghg"),
-#                             variable.name = "metric",
-#                             value.name = "value")
-# 
-# cumul_rel_vals_bau2[, metric := fifelse(metric == "benefit", "Net benefit (USD)", "Net benefit / MtCO2e (USD per MtCO2e)")]
-# 
-# ## figure
-# fig_benefit <- ggplot(cumul_rel_vals_bau2 %>% filter(ccs_option == "no CCS"), aes(x = target, y = value, color = target, shape = policy_intervention)) +
-#   geom_point(size = 2, alpha = 0.8) +
-#   labs(title = "Net cumulative benefit (USD)",
-#        subtitle = "no CCS",
-#        x = NULL,
-#        y = "Benefit (avoided mortality - labor compensation + scc)",
-#        color = "GHG emission target",
-#        shape = "Policy intervention") +
-#   facet_wrap(~metric, scales = "free_y") +
-#   theme_line +
-#   # scale_y_continuous(labels = comma) +
-#   theme(legend.position = "bottom",
-#         legend.box = "vertical",
-#         legend.key.width= unit(1, 'cm'),
-#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-# 
-# ggsave(fig_benefit, 
-#        filename = file.path(save_info_path, 'dac-share/net_cumul_benefit_fig.png'), 
-#        width = 7, 
-#        height = 6)
+## calc benefit
+cumul_rel_vals_bau[, benefit := (cost_PV_20 * -1) + total_comp_PV + scc_avoided_ghg]
+cumul_rel_vals_bau[, benefit_per_ghg := benefit / (-1 * total_state_ghg_MtCO2)]
+cumul_rel_vals_bau[, benefit_per_ghg := fifelse(is.na(benefit_per_ghg), 0, benefit)]
+
+
+cumul_rel_vals_bau2 <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'ccs_option', 'target', 'policy_intervention'),
+                            measure.vars = c("benefit", "benefit_per_ghg"),
+                            variable.name = "metric",
+                            value.name = "value")
+
+cumul_rel_vals_bau2[, metric := fifelse(metric == "benefit", "Net benefit (USD)", "Net benefit / avoided GHG emissions\n(USD per MtCO2e)")]
+
+## figure
+fig_benefit <- ggplot(cumul_rel_vals_bau2 %>% filter(ccs_option == "no CCS"), aes(x = target, y = value, color = target, shape = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  labs(title = "Net cumulative benefit (USD)",
+       subtitle = "no CCS",
+       x = NULL,
+       y = "Benefit (avoided mortality - labor compensation + scc)",
+       color = "GHG emission target",
+       shape = "Policy intervention") +
+  facet_wrap(~metric, scales = "free_y") +
+  theme_line +
+  # scale_y_continuous(labels = comma) +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(fig_benefit,
+       filename = file.path(save_info_path, 'dac-share/net_cumul_benefit_fig.png'),
+       width = 8,
+       height = 6)
 
 ## benefit x metric
 ## -----------------------------------------
 
-npv_x_metric <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'ccs_option', 'policy_intervention', 'target', 'cumul_ghg'),
+npv_x_metric <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'ccs_option', 'policy_intervention', 'target', 'cumul_ghg', 'total_state_ghg_MtCO2'),
                      measure.vars = c("total_comp_PV", "cost_PV_20", "scc_avoided_ghg"),
                      variable.name = "metric",
                      value.name = "value")
 
 npv_x_metric[, value := fifelse(metric == 'cost_PV_20', value * -1, value)]
-npv_x_metric[, value_per_ghg := value / cumul_ghg]
+npv_x_metric[, value_per_ghg := value / (total_state_ghg_MtCO2 * -1)]
 npv_x_metric[, value_billion := value / 1e9]
 npv_x_metric[, value_per_ghg_million := value_per_ghg / 1e6]
 npv_x_metric[, title := fifelse(metric == "total_comp_PV", "Labor: Compensation",
                                 fifelse(metric == "cost_PV_20", "Health: Avoided mortality", "Abated GHG"))]
 
+
+npv_x_metric[, value_per_ghg_million := fifelse(is.na(value_per_ghg_million), 0, value_per_ghg_million)]
 
 ## fig
 fig_benefit_x_metric <- ggplot(npv_x_metric %>% filter(ccs_option == "no CCS"), aes(x = target, y = value_billion, color = target, shape = policy_intervention)) +
