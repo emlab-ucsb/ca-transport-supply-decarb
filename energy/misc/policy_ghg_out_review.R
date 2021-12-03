@@ -265,8 +265,6 @@ carbon_match_noccs_df <- bind_rows(carbon_match_noccs_list)
 carbon_match_df <- rbind(carbon_match_df, carbon_match_noccs_df)
 
 
-fwrite(carbon_match_df, paste0(scen_path, 'setback_carbon_values.csv'))
-
 
 ## ----------------------------------------------------------------------------------
 ## just 90% for 2019 emissions, carbon tax + excise tax
@@ -300,14 +298,19 @@ carbon_sb_out[, target_ghg_mtCO2e := ghg_target_90]
 
 
 carbon_sb_target <- carbon_sb_out %>%
+  filter(target_ghg_mtCO2e >= total_ghg_mtCO2e) %>%
   group_by(setback_scenario, ccs_scenario) %>%
   filter(abs(ghg_target_90 - total_ghg_mtCO2e) == min(abs(ghg_target_90 - total_ghg_mtCO2e))) %>%
-  ungroup()
+  ungroup() %>%
+  select(ccs_scenario, setback_scenario, carbon_price_scenario, total_ghg_mtCO2e, target_scen, target_emission = target_ghg_mtCO2e)
   
+## join with other carbon taxes
+carbon_match_df <- carbon_match_df %>%
+  mutate(setback_scenario = "no_setback") %>%
+  select(ccs_scenario, setback_scenario, carbon_price_scenario, total_ghg_mtCO2e, target_scen, target_emission) %>%
+  rbind(carbon_sb_target)
 
-  
-
-
-
+## save
+fwrite(carbon_match_df, paste0(scen_path, 'setback_carbon_values.csv'))
 
 
