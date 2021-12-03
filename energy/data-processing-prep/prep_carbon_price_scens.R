@@ -20,8 +20,13 @@ carbon_px_scens <- fread(file.path(scen_path, carbon_file))
 
 carbon_px_scens_filt <- carbon_px_scens[year == 2020]
 
-start_vals <- c(21.1, 24.18, 25.61, 239.80,
-                28.7, 83.36, seq(283.1, 283.3, 0.01))
+## these values work for main results (setback scens and 90% decrease)
+# start_vals <- c(21.1, 24.18, 25.61, 239.80,
+#                 28.7, 83.36, 283.25)
+
+start_vals <- c(seq(253.2, 253.3, 0.01), seq(213, 214, 0.1),
+                seq(211, 212, 0.1), seq(176, 177, 0.1),
+                seq(105, 110, 0.05), 73.01)
 
 ## carbon px setback/ 90 perc scens
 
