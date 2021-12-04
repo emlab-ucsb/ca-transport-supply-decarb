@@ -321,11 +321,35 @@ dac_county <- dac_df %>%
 ## field-level variables: oil field identifier, GHG emissions factor, 1 mile setback relative area, 2020 capex, 2020 opex
 ## county-level variables: county identifier, GHG emissions factor (averaged across oil fields in that county), 1 mile setback relative area (averaged across oil fields in that county), oil extraction jobs in that county in 2020
 
-field_df <- price_data %>%
-  left_join(ghg_factors) %>%
-  left_join(setback_scens) %>%
-  select(doc_field_code, upstream_kgCO2e_bbl, setback_scenario, area_coverage, capex_2020 = m_capex_imputed, opex_2020 = m_opex_imputed)
+## field names
+fnames <- well_prod %>%
+  select(doc_field_code, doc_fieldname) %>%
+  unique()
 
+## calculate average production by field and county, 2015-2019
+prod_x_field <- expand.grid(doc_field_code = unique(fnames$doc_field_code),
+                            year = 2015:2019)
+
+mean_prod_field <- well_prod %>%
+  filter(year >= 2015) %>%
+  group_by(doc_field_code, doc_fieldname, year) %>%
+  summarise(prod = sum(OilorCondensateProduced, na.rm = T), .groups = 'drop') %>%
+  right_join(prod_x_field) %>%
+  mutate(prod = ifelse(is.na(prod), 0, prod)) %>%
+  group_by(doc_field_code) %>%
+  summarise(mean_prod = mean(prod), .groups = 'drop') 
+
+## combine
+field_df <- ghg_factors %>%
+  left_join(price_data) %>%
+  left_join(setback_scens) %>%
+  left_join(mean_prod_field) %>%
+  left_join(fnames) %>%
+  filter(!is.na(setback_scenario)) %>%
+  select(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl, setback_scenario, area_coverage, capex_2020 = m_capex_imputed, opex_2020 = m_opex_imputed, mean_prod)
+
+
+## county ----
 
 ## county match
 county_lut <- well_prod %>%
@@ -333,10 +357,22 @@ county_lut <- well_prod %>%
   unique() %>%
   mutate(adj_county_name = str_remove(county_name, " Offshore"))
 
-## field name look up 
-fname_lut <- well_prod %>%
-  dplyr::select(doc_field_code, doc_fieldname) %>%
-  unique()
+## mean production
+county_yr <- expand.grid(adj_county_name = unique(county_lut$adj_county_name),
+                            year = 2015:2019)
+
+
+## mean prod
+mean_prod_county <- well_prod %>%
+  left_join(county_lut) %>%
+  filter(year >= 2015) %>%
+  group_by(adj_county_name, year) %>%
+  summarise(prod = sum(OilorCondensateProduced, na.rm = T), .groups = 'drop') %>%
+  right_join(county_yr) %>%
+  mutate(prod = ifelse(is.na(prod), 0, prod)) %>%
+  group_by(adj_county_name) %>%
+  summarise(mean_prod = mean(prod), .groups = 'drop') %>%
+  rename(county = adj_county_name)
 
 ## get relative county production (most recent year of nonzero production available for each field)
 prod_x_county <- well_prod %>%
@@ -376,7 +412,8 @@ county_df <- prod_x_county %>%
   left_join(jobs_2019) %>%
   mutate(total_emp = ifelse(is.na(total_emp), 0, total_emp)) %>%
   left_join(dac_county) %>%
-  select(county, county_pop, dac_pop, dac_share, total_emp, mean_upstream_kgCO2e_bbl, wm_upstream_kgCO2e_bbl,
+  left_join(mean_prod_county) %>%
+  select(county, county_pop, dac_pop, dac_share, mean_prod, total_emp, mean_upstream_kgCO2e_bbl, wm_upstream_kgCO2e_bbl,
          setback_scenario, mean_area_coverage, wm_area_coverage)
 
 ## save 
