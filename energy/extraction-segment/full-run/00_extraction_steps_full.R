@@ -3,7 +3,7 @@
   # args = commandArgs(trailingOnly = TRUE)
   # oil_price_selection    = args[1]
   scen_selection   = 'full_run_subset' ## diagnostic, benchmark, tax_scens, full_run, full_run_subset, carbon_scens, carbon_setback_scens
-  run_type = "subset_updated_targets"
+  run_type = "subset_target_scens"
     
 # outputs -------
   
