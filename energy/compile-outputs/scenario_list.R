@@ -7,6 +7,7 @@ library(data.table)
 library(tidyverse)
 library(readxl)
 library(openxlsx)
+library(rebus)
 
 
 # paths -----
@@ -106,15 +107,40 @@ ccs_scens_names <- distinct(ccs_scens_all[, .(ccs_scenario)])
 ## ----------------------------------------
 ## ----------------------------------------
 
+## carbon px - non targets
+carbon_px_vec <- c("price floor", "price ceiling", "central SCC")
+
+carbon_target_vec <- c("carbon_setback_1000ft-no_setback-medium CCS cost",
+                       "carbon_setback_2500ft-no_setback-medium CCS cost",
+                       "carbon_setback_5280ft-no_setback-medium CCS cost",
+                       "carbon_90_perc_reduction-no_setback-medium CCS cost",
+                       "carbon_setback_1000ft-no_setback-no ccs",
+                       "carbon_setback_2500ft-no_setback-no ccs",
+                       "carbon_setback_5280ft-no_setback-no ccs",
+                       "carbon_90_perc_reduction-no_setback-no ccs")
+
+carbon_sb_target_vec <- c("carbon_sb_90_perc_reduction-setback_1000ft-medium CCS cost",
+                          "carbon_sb_90_perc_reduction-setback_1000ft-no ccs",
+                          "carbon_sb_90_perc_reduction-setback_2500ft-no ccs",
+                          "carbon_sb_90_perc_reduction-setback_2500ft-medium CCS cost",
+                          "carbon_sb_90_perc_reduction-setback_5280ft-no ccs",
+                          "carbon_sb_90_perc_reduction-setback_5280ft-medium CCS cost")
+
+## target excise taxes
+tax_px_vec <- c("no tax", "tax_0.05", "tax_0.1", "tax_0.5", "tax_0.9", "tax_1")
+
+tax_target_vec <- c("tax_setback_1000ft", "tax_setback_2500ft", "tax_setback_5280ft", "tax_90_perc_reduction")
 
 ## scenario combinations ----------
+
+## first exclude the targets
 scen_sel <- expand.grid(oil_price_scenario = unique(oilpx_scens_names[, oil_price_scenario]),
                         setback_scenario = unique(setback_scens_name[, setback_scenario]), 
                         prod_quota_scenario = unique(prod_quota_scens_names[, prod_quota_scenario]),
-                        carbon_price_scenario = unique(carbonpx_scens_name[, carbon_price_scenario]),
+                        carbon_price_scenario = c(carbon_px_vec),
                         ccs_scenario = unique(ccs_scens_names[, ccs_scenario]), 
                         innovation_scenario = unique(innovation_scens_name[, innovation_scenario]), 
-                        excise_tax_scenario = unique(excise_tax_scens_name[, excise_tax_scenario]))
+                        excise_tax_scenario = c(tax_px_vec))
 
 setDT(scen_sel)
 
@@ -126,7 +152,7 @@ setcolorder(scen_sel, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'pr
                         'carbon_price_scenario', 'ccs_scenario', 'innovation_scenario', 'excise_tax_scenario'))
 
 
-## filter scen_sel for appropriate set of scenarios
+## remove production quota
 scen_sel = scen_sel[prod_quota_scenario == 'no quota']
 
 ## remove no ccs with incentives
@@ -145,86 +171,105 @@ scen_sel[, BAU_scen := fifelse((oil_price_scenario == 'reference case' &
                                 setback_scenario == 'no_setback' &
                                 prod_quota_scenario == 'no quota'), 1, 0)]
 
-## find scen selection
-carbon_subset_vec <- c("price floor", "price ceiling", "central SCC")
-carbon_scens_vec <- c("carbon_setback_1000ft-no ccs", "carbon_setback_2500ft-no ccs", "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs")
-carbon_scens_wccs_vec <- c("carbon_setback_1000ft-medium CCS cost", "carbon_setback_2500ft-medium CCS cost", "carbon_setback_5280ft-medium CCS cost", "carbon_90_perc_reduction-medium CCS cost")
-ccs_subset_vec <- c("no ccs", "medium CCS cost", "high CCS cost", "medium CCS cost - 45Q - LCFS", "high CCS cost - 45Q - LCFS")
-tax_subset_vec <- c("tax_setback_1000ft", "tax_setback_2500ft", "tax_setback_5280ft", "tax_90_perc_reduction")
 
+## create dfs for target scenarios, bind to main df
+## -------------------------------------------------
+
+## excise targets
+## -----------------------
+excise_target_df <- expand.grid(oil_price_scenario = "reference case",
+                                setback_scenario = "no_setback",
+                                prod_quota_scenario = "no quota",
+                                carbon_price_scenario = "price floor",
+                                ccs_scenario = c("no ccs", "medium CCS cost"),
+                                innovation_scenario = "low innovation",
+                                excise_tax_scenario = tax_target_vec,
+                                BAU_scen = 0)
+
+setDT(excise_target_df)
+
+excise_target_df[, scen_id := paste(oil_price_scenario, setback_scenario, prod_quota_scenario,
+                                  carbon_price_scenario, ccs_scenario, innovation_scenario, excise_tax_scenario, sep = "_")]
+
+setcolorder(excise_target_df, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'prod_quota_scenario',
+                        'carbon_price_scenario', 'ccs_scenario', 'innovation_scenario', 'excise_tax_scenario'))
+
+## carbon tax targets
+## ---------------------------------
+carbon_target_df <- expand.grid(oil_price_scenario = "reference case",
+                                setback_scenario = "no_setback",
+                                prod_quota_scenario = "no quota",
+                                carbon_price_scenario = carbon_target_vec,
+                                innovation_scenario = "low innovation",
+                                excise_tax_scenario = "no tax",
+                                BAU_scen = 0)
+
+setDT(carbon_target_df)
+
+## add ccs column
+carbon_target_df[, ccs_scenario := sub('.*\\-', '', carbon_price_scenario)]
+
+carbon_target_df[, scen_id := paste(oil_price_scenario, setback_scenario, prod_quota_scenario,
+                                    carbon_price_scenario, ccs_scenario, innovation_scenario, excise_tax_scenario, sep = "_")]
+
+setcolorder(carbon_target_df, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'prod_quota_scenario',
+                                'carbon_price_scenario', 'ccs_scenario', 'innovation_scenario', 'excise_tax_scenario'))
+
+
+## carbon - setback targets
+## ----------------------------------
+carbon_sb_target_df <- expand.grid(oil_price_scenario = "reference case",
+                                setback_scenario = "no_setback",
+                                prod_quota_scenario = "no quota",
+                                carbon_price_scenario = carbon_sb_target_vec,
+                                innovation_scenario = "low innovation",
+                                excise_tax_scenario = "no tax",
+                                BAU_scen = 0)
+
+setDT(carbon_sb_target_df)
+
+## add ccs column
+carbon_sb_target_df[, ccs_scenario := sub('.*\\-', '', carbon_price_scenario)]
+
+carbon_sb_target_df[, scen_id := paste(oil_price_scenario, setback_scenario, prod_quota_scenario,
+                                    carbon_price_scenario, ccs_scenario, innovation_scenario, excise_tax_scenario, sep = "_")]
+
+setcolorder(carbon_sb_target_df, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'prod_quota_scenario',
+                                'carbon_price_scenario', 'ccs_scenario', 'innovation_scenario', 'excise_tax_scenario'))
+
+## bind
+target_scens <- rbind(excise_target_df, carbon_target_df, carbon_sb_target_df)
+
+## add target scens to scen sel
+## --------------------------------------------------
+scen_sel <- rbind(scen_sel, target_scens)
+
+## find scen selection
+## ------------------------------
+
+## 
 setback_dt = unique(scen_sel[(innovation_scenario == 'low innovation' &
-                       carbon_price_scenario %in% carbon_subset_vec &
+                       carbon_price_scenario %in% carbon_px_vec &
                        ccs_scenario %in% c("medium CCS cost", "no ccs") & 
                        excise_tax_scenario == 'no tax' &
                        prod_quota_scenario == 'no quota' &
                        oil_price_scenario == 'reference case') |
-                      # (innovation_scenario == 'low innovation' &
-                      #   carbon_price_scenario == 'price floor' &
-                      #   ccs_scenario %in% ccs_subset_vec & 
-                      #   excise_tax_scenario == 'no tax' &
-                      #   prod_quota_scenario == 'no quota' &
-                      #   oil_price_scenario == 'reference case') |
                       (innovation_scenario == 'low innovation' &
                         carbon_price_scenario == 'price floor' &
                         ccs_scenario %in% c("medium CCS cost", "no ccs") &
                         excise_tax_scenario == 'no tax' &
                         prod_quota_scenario == 'no quota')])
 
-tax_dt = unique(scen_sel[(innovation_scenario == 'low innovation' &
-                   carbon_price_scenario %in% carbon_subset_vec &
-                   ccs_scenario %in% c("medium CCS cost", "no ccs") &
-                   excise_tax_scenario %in% tax_subset_vec &
-                   prod_quota_scenario == 'no quota' &
-                   oil_price_scenario == 'reference case' &
-                   setback_scenario == 'no_setback') |
-                  # (innovation_scenario == 'low innovation' &
-                  #    carbon_price_scenario == 'price floor' &
-                  #    ccs_scenario %in% ccs_subset_vec & 
-                  #    excise_tax_scenario %in% tax_subset_vec &
-                  #    prod_quota_scenario == 'no quota' &
-                  #    oil_price_scenario == 'reference case' &
-                  #    setback_scenario == 'no_setback') |
-                  (innovation_scenario == 'low innovation' &
-                     carbon_price_scenario == 'price floor' &
-                     ccs_scenario %in% c("medium CCS cost", "no ccs") &
-                     excise_tax_scenario %in% tax_subset_vec &
-                     prod_quota_scenario == 'no quota' &
-                     setback_scenario == 'no_setback')])
-
-carbon_dt = unique(scen_sel[(innovation_scenario == 'low innovation' &
-                             carbon_price_scenario %in% carbon_scens_vec &
-                             ccs_scenario == 'no ccs' & 
-                             excise_tax_scenario == "no tax" &
-                             prod_quota_scenario == 'no quota' &
-                             setback_scenario == 'no_setback') |
-                            (innovation_scenario == 'low innovation' &
-                             carbon_price_scenario %in% carbon_scens_wccs_vec &
-                             ccs_scenario == 'medium CCS cost' & 
-                             excise_tax_scenario == "no tax" &
-                             prod_quota_scenario == 'no quota' &
-                             setback_scenario == 'no_setback')]) 
-                        # (innovation_scenario == 'low innovation' &
-                        #    carbon_price_scenario %in% carbon_scens_vec &
-                        #    ccs_scenario %in% ccs_subset_vec & 
-                        #    excise_tax_scenario == "no tax" &
-                        #    prod_quota_scenario == 'no quota' &
-                        #    oil_price_scenario == 'reference case' &
-                        #    setback_scenario == 'no_setback')]
 
 
 ## bind
-selected_scens = rbind(setback_dt, tax_dt, carbon_dt)
+selected_scens = rbind(setback_dt, target_scens)
 selected_scens = distinct(selected_scens)
-
-## filter so that carbon_price_scenario matches ccs_scenario
-scen_sel[, carbon_ccs := sub(".*-", "", carbon_price_scenario)]
-scen_sel[!carbon_ccs %in% c("medium CCS cost", "no ccs"), carbon_ccs := ccs_scenario]
-scen_sel <- scen_sel[carbon_ccs == ccs_scenario]
-scen_sel[, carbon_ccs := NULL]
 
 
 ## indicate scenarios
 scen_sel[, subset_scens := fifelse(scen_id %in% selected_scens[, scen_id], 1, 0)]
+
 
 fwrite(scen_sel, file.path(academic_out, 'scenario_id_list.csv'), row.names = F)
 
