@@ -219,7 +219,7 @@ setcolorder(carbon_target_df, c('scen_id', 'oil_price_scenario', 'setback_scenar
 ## carbon - setback targets
 ## ----------------------------------
 carbon_sb_target_df <- expand.grid(oil_price_scenario = "reference case",
-                                setback_scenario = "no_setback",
+                                # setback_scenario = setback_scens_name,
                                 prod_quota_scenario = "no quota",
                                 carbon_price_scenario = carbon_sb_target_vec,
                                 innovation_scenario = "low innovation",
@@ -230,6 +230,10 @@ setDT(carbon_sb_target_df)
 
 ## add ccs column
 carbon_sb_target_df[, ccs_scenario := sub('.*\\-', '', carbon_price_scenario)]
+
+
+## add setback scneario
+carbon_sb_target_df[, setback_scenario := str_extract(carbon_price_scenario, pattern = 'setback_' %R% one_or_more(DIGIT) %R% 'ft')]
 
 carbon_sb_target_df[, scen_id := paste(oil_price_scenario, setback_scenario, prod_quota_scenario,
                                     carbon_price_scenario, ccs_scenario, innovation_scenario, excise_tax_scenario, sep = "_")]
