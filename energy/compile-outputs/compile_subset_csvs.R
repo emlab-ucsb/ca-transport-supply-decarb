@@ -39,6 +39,8 @@ ct_out_list <- list()
 
 for (i in 1:length(subset_ids)) {
   
+  print(i)
+  
   id_name_tmp <- subset_ids[i]
   
   ct_out_tmp <- readRDS(paste0(ct_path, id_name_tmp, '_ct_results.rds'))
