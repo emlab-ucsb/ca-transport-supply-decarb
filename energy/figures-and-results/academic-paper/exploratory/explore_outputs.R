@@ -34,7 +34,7 @@ theme_line = theme_ipsum(base_family = 'Arial',
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-11-09/'
+extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-12-05/'
 state_save_path     = paste0(main_path, extraction_folder_path, 'state-results/')
 
 
@@ -120,14 +120,14 @@ state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 ## keep all carbon taxes match the setback scenarios (no setback, no excise tax)
 
 state_scens <- state_out[(oil_price_scenario == "reference case" &
-                          carbon_price_scenario %in% c("carbon_setback_1000ft-no ccs", "carbon_setback_2500ft-no ccs",
-                                                       "carbon_setback_5280ft-no ccs", "carbon_90_perc_reduction-no ccs") &
+                          carbon_price_scenario %in% c("carbon_setback_1000ft-no_setback-no ccs", "carbon_setback_2500ft-no_setback-no ccs",
+                                                       "carbon_setback_5280ft-no_setback-no ccs", "carbon_90_perc_reduction-no_setback-no ccs") &
                           ccs_scenario %in% c("no ccs") &
                           setback_scenario == "no_setback" &
                           excise_tax_scenario == "no tax") |
                          (oil_price_scenario == "reference case" &
-                          carbon_price_scenario %in% c("carbon_setback_1000ft-medium CCS cost", "carbon_setback_2500ft-medium CCS cost",
-                                                       "carbon_setback_5280ft-medium CCS cost", "carbon_90_perc_reduction-medium CCS cost") &
+                          carbon_price_scenario %in% c("carbon_setback_1000ft-no_setback-medium CCS cost", "carbon_setback_2500ft-no_setback-medium CCS cost",
+                                                       "carbon_setback_5280ft-no_setback-medium CCS cost", "carbon_90_perc_reduction-no_setback-medium CCS cost") &
                               ccs_scenario %in% c("medium CCS cost") &
                               setback_scenario == "no_setback" &
                               excise_tax_scenario == "no tax") |   
@@ -138,7 +138,15 @@ state_scens <- state_out[(oil_price_scenario == "reference case" &
                           carbon_price_scenario == "price floor" &
                           ccs_scenario %in% c("medium CCS cost", "no ccs") &
                           setback_scenario == "no_setback" &
-                          excise_tax_scenario == "no tax")]
+                          excise_tax_scenario == "no tax") |
+                         (oil_price_scenario == "reference case" &
+                          carbon_price_scenario %in% c("carbon_sb_90_perc_reduction-setback_1000ft-medium CCS cost",
+                                                       "carbon_sb_90_perc_reduction-setback_2500ft-medium CCS cost",
+                                                       "carbon_sb_90_perc_reduction-setback_5280ft-medium CCS cost",
+                                                       "carbon_sb_90_perc_reduction-setback_1000ft-no ccs",
+                                                       "carbon_sb_90_perc_reduction-setback_2500ft-no ccs",
+                                                       "carbon_sb_90_perc_reduction-setback_5280ft-no ccs") &
+                            excise_tax_scenario == "no tax")]
 
 ## note that the values in the state_pop column are different than the state_population df created
 ## in this script. The former only includes census tracts affected by oil production, while the latter

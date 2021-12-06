@@ -10,7 +10,7 @@ main_path         <- '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current
 academic_out_path      <- file.path(main_path, 'outputs/academic-out/extraction/')
 
 ## read in saved rds files - updates as needed
-extraction_folder = 'extraction_2021-12-03'
+extraction_folder = 'extraction_2021-12-05'
 
 ## subfolders
 compiled_path  = paste0(academic_out_path, extraction_folder, '/')
