@@ -5,6 +5,7 @@
 ## libraries
 library(data.table)
 library(broom)
+library(rebus)
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
@@ -216,9 +217,53 @@ state_levels[, normalized := fifelse(metric %in% c("total_emp_norm", "total_comp
 
 fwrite(state_levels, paste0(save_info_path, 'state_levels_subset.csv'))
 
-
-## V2 -- relative to BAU
+## cumulative outputs
 ## ------------------------------------
+
+## 2045 emissions
+ghg_2045 <- state_levels[metric == "total_state_ghg_MtCO2" &
+                           year == 2045, .(scen_id, policy_intervention, target, year, value)]
+
+setnames(ghg_2045, "value", "ghg_2045")
+
+ghg_2045[, ghg_2045_perc := (ghg_2045 - ghg_2019) / ghg_2019]
+
+ghg_2045[, ghg_2045 := NULL]
+ghg_2045[, year := NULL]
+ghg_2045[, policy_intervention := NULL]
+ghg_2045[, target := NULL]
+ghg_2045[, ghg_2045_perc_reduction := ghg_2045_perc * -100]
+
+## 2019 values
+vals_2019 <- unique(state_levels[year == 2019, .(metric, value)])
+setnames(vals_2019, "value", "value_2019")
+vals_2019[, value_2019 := fifelse(metric == "total_state_ghg_MtCO2", ghg_2019, value_2019)]
+
+
+## calculate relative values
+cumul_df <- merge(state_levels, vals_2019,
+                  by = c("metric"),
+                  all.x = T)
+
+cumul_df[, diff_2019 := value - value_2019]
+
+cumul_df[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
+
+cumul_df <- cumul_df[year > 2019, .(sum_metric = sum(diff_2019)), by = .(scen_id, ccs_option, policy_intervention, target, metric)]
+
+cumul_df <- merge(cumul_df, ghg_2045,
+                  by = c("scen_id"),
+                  all.x = T)
+
+cumul_df[, scen_name := paste(policy_intervention, target, sep = " - ")]
+
+fwrite(cumul_df, paste0(save_info_path, 'state_cumulative_subset.csv'))
+
+
+## -----------------------------------------------------------------------
+## relative to BAU
+## -----------------------------------------------------------------------
+
 
 ## select health outputs
 
@@ -236,16 +281,24 @@ rel_health_levels <- melt(rel_health_levels, id.vars = c('scen_id', 'oil_price_s
                           variable.name = "metric",
                           value.name = "value")
 
+## add targed and policy
+rel_health_levels[, policy_intervention := fifelse(carbon_price_scenario != "price floor" & setback_scenario == "no_setback", "carbon tax",
+                                              fifelse(setback_scenario != "no_setback" & carbon_price_scenario == 'price floor', "setback",
+                                                      fifelse(excise_tax_scenario != "no tax", "excise tax",
+                                                              fifelse(carbon_price_scenario != 'price floor' & setback_scenario != "no_setback", "carbon tax & setback",  "BAU"))))]
 
-rel_health_levels[, target := fifelse(scen_id %in% target1000, "1000ft setback",
-                                      fifelse(scen_id %in% target2500, "2500ft setback",
-                                              fifelse(scen_id %in% target5280, "5280ft setback",
-                                                      fifelse(scen_id %in% target90, "90% reduction", "BAU"))))]
+## add target
 
-rel_health_levels[, policy_intervention := fifelse(carbon_price_scenario != "price floor", "carbon tax",
-                                                   fifelse(setback_scenario != "no_setback", "setback",
-                                                           fifelse(excise_tax_scenario != "no tax", "excise tax", "BAU")))]
+rel_health_levels[, target := as.numeric(str_extract(carbon_price_scenario, pattern = one_or_more(DIGIT)))]
+rel_health_levels[, target := fifelse(is.na(target), as.numeric(str_extract(excise_tax_scenario, pattern = one_or_more(DIGIT))), target)]
+rel_health_levels[, target := fifelse(is.na(target), as.numeric(str_extract(setback_scenario, pattern = one_or_more(DIGIT))), target)]
 
+rel_health_levels[, target := fifelse(target >= 1000, paste0(target, 'ft setback GHG'),
+                                 fifelse(target < 1000, paste0(target, '% GHG reduction'), 'BAU'))]
+
+rel_health_levels[, target := fifelse(is.na(target), 'BAU', target)]
+
+## rename
 setnames(rel_health_levels, "value", "diff_bau")
 
 
@@ -285,41 +338,97 @@ rel_vals <- rel_vals[, .(scen_id, ccs_option, year, metric, policy_intervention,
 state_rel_vals <- rbind(rel_vals, rel_health_levels)
 
 
-## 2045 emissions
-ghg_2045 <- state_levels[metric == "total_state_ghg_MtCO2" &
-                           year == 2045, .(scen_id, policy_intervention, target, year, value)]
+## --------------------------------------------------------------------------------
+## net cumul benefit x target 
+## -------------------------------------------------------------------------------
 
-setnames(ghg_2045, "value", "ghg_2045")
+## 1) cumul benefit = cumul health benefit -compensation loss + carbon mitigation
+## 2) cumul benefit / cumulative GHG emisisons
 
-ghg_2045[, ghg_2045_perc := (ghg_2045 - ghg_2019) / ghg_2019]
+## social cost of carbon
+scc_value <- state_rel_vals[metric == 'total_state_ghg_MtCO2']
 
-ghg_2045[, ghg_2045 := NULL]
-ghg_2045[, year := NULL]
-ghg_2045[, policy_intervention := NULL]
-ghg_2045[, target := NULL]
+## join with social cost of carbon
+scc_value <- merge(scc_value, scc_df_filt,
+                   by = 'year',
+                   all.x = T)
 
-## 2019 values
-vals_2019 <- unique(state_levels[year == 2019, .(metric, value)])
-setnames(vals_2019, "value", "value_2019")
-vals_2019[, value_2019 := fifelse(metric == "total_state_ghg_MtCO2", ghg_2019, value_2019)]
+scc_value[, scc_avoided_ghg := diff_bau * -1e6 * social_cost_co2]
+
+## summarise
+cumul_scc_value <- scc_value[, .(scc_avoided_ghg = sum(scc_avoided_ghg, na.rm = T)), by = .(scen_id, ccs_option,
+                                                                                            policy_intervention, target)]
 
 
-## calculate relative values
-cumul_df <- merge(state_levels, vals_2019,
-                  by = c("metric"),
-                  all.x = T)
+cumul_rel_vals_bau <- state_rel_vals[, .(diff_bau = sum(diff_bau)), by = .(scen_id, ccs_option, policy_intervention,
+                                                                           target, metric)]
 
-cumul_df[, diff_2019 := value - value_2019]
+cumul_rel_vals_bau <- cumul_rel_vals_bau[metric %in% c("total_state_ghg_MtCO2", "total_comp", "total_comp_PV", "cost_2019",
+                                                       "cost", "cost_2019_PV", "cost_PV", "cost_PV_20")]
 
-cumul_df[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
+cumul_rel_vals_bau <- dcast(cumul_rel_vals_bau, scen_id + ccs_option + policy_intervention + target ~ metric, value.var = "diff_bau")
 
-cumul_df <- cumul_df[year > 2019, .(sum_metric = sum(diff_2019)), by = .(scen_id, ccs_option, policy_intervention, target, metric)]
+## join witih scc
+cumul_rel_vals_bau <- merge(cumul_rel_vals_bau, cumul_scc_value,
+                            by = c('scen_id', 'ccs_option', 'policy_intervention', 'target'),
+                            all.x = T)
 
-cumul_df <- merge(cumul_df, ghg_2045,
-                  by = c("scen_id"),
-                  all.x = T)
+## total ghg emissions
+ghg_total <- state_levels[metric == "total_state_ghg_MtCO2"]
+ghg_total <- ghg_total[, .(cumul_ghg = sum(value)), by = .(scen_id)]
 
-cumul_df[, scen_name := paste(policy_intervention, target, sep = " - ")]
+## join
+cumul_rel_vals_bau <- merge(cumul_rel_vals_bau, ghg_total,
+                            by = "scen_id",
+                            all.x = T)
+
+
+
+
+## calc benefit
+cumul_rel_vals_bau[, benefit := (cost_PV_20 * -1) + total_comp_PV + scc_avoided_ghg]
+cumul_rel_vals_bau[, benefit_per_ghg := benefit / (-1 * total_state_ghg_MtCO2)]
+cumul_rel_vals_bau[, benefit_per_ghg := fifelse(is.na(benefit_per_ghg), 0, benefit)]
+
+## benefit x metric
+## -----------------------------------------
+
+npv_x_metric <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'ccs_option', 'policy_intervention', 'target', 'cumul_ghg', 'total_state_ghg_MtCO2'),
+                     measure.vars = c("total_comp_PV", "cost_PV_20", "scc_avoided_ghg"),
+                     variable.name = "metric",
+                     value.name = "value")
+
+npv_x_metric[, value := fifelse(metric == 'cost_PV_20', value * -1, value)]
+npv_x_metric[, value_per_ghg := value / (total_state_ghg_MtCO2 * -1)]
+npv_x_metric[, value_billion := value / 1e9]
+npv_x_metric[, value_per_ghg_million := value_per_ghg / 1e6]
+npv_x_metric[, title := fifelse(metric == "total_comp_PV", "Labor: Compensation",
+                                fifelse(metric == "cost_PV_20", "Health: Avoided mortality", "Abated GHG"))]
+
+
+npv_x_metric[, value_per_ghg_million := fifelse(is.na(value_per_ghg_million), 0, value_per_ghg_million)]
+
+npv_x_metric <- merge(npv_x_metric, ghg_2045,
+                       by = 'scen_id',
+                       all.x = T)
+
+fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric.csv'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## V2a: take the difference between BAU year t and scenario year t, add all years for cumulative impact, x axis == scenario name
@@ -332,6 +441,4 @@ bau_cumulative_df <- merge(bau_cumulative_df, ghg_2045,
 bau_cumulative_df[, scen_name := paste(policy_intervention, target, sep = " - ")]
 
 setnames(bau_cumulative_df, "sum_diff_bau", "sum_metric")
-
-
 
