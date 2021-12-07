@@ -34,7 +34,7 @@ theme_line = theme_ipsum(base_family = 'Arial',
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-12-05/'
+extraction_folder_path <- 'outputs/academic-out/extraction/extraction_2021-12-06/'
 state_save_path     = paste0(main_path, extraction_folder_path, 'state-results/')
 
 
@@ -221,46 +221,40 @@ state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_pri
 
 state_levels <- rbind(state_extract_levels, state_labor_levels, state_health_levels)
 
-state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price floor", "carbon tax",
-                                              fifelse(setback_scenario != "no_setback", "setback",
-                                                      fifelse(excise_tax_scenario != "no tax", "excise tax", "BAU")))]
 
-## targets
-target1000 <- c("reference case_no_setback_no quota_carbon_setback_1000ft-no ccs_no ccs_low innovation_no tax",
-                "reference case_setback_1000ft_no quota_price floor_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_carbon_setback_1000ft-medium CCS cost_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_1000ft",
-                "reference case_setback_1000ft_no quota_price floor_no ccs_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_1000ft")
 
-target2500 <- c("reference case_no_setback_no quota_carbon_setback_2500ft-medium CCS cost_medium CCS cost_low innovation_no tax",
-                "reference case_setback_2500ft_no quota_price floor_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_carbon_setback_2500ft-no ccs_no ccs_low innovation_no tax",
-                "reference case_setback_2500ft_no quota_price floor_no ccs_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_2500ft",
-                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_2500ft")
 
-target5280 <- c("reference case_no_setback_no quota_carbon_setback_5280ft-medium CCS cost_medium CCS cost_low innovation_no tax",
-                "reference case_setback_5280ft_no quota_price floor_medium CCS cost_low innovation_no tax",
-                "reference case_no_setback_no quota_carbon_setback_5280ft-no ccs_no ccs_low innovation_no tax",
-                "reference case_setback_5280ft_no quota_price floor_no ccs_low innovation_no tax",
-                "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_setback_5280ft",
-                "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_5280ft")
 
-target90 <- c("reference case_no_setback_no quota_carbon_90_perc_reduction-medium CCS cost_medium CCS cost_low innovation_no tax",
-              "reference case_no_setback_no quota_carbon_90_perc_reduction-no ccs_no ccs_low innovation_no tax",
-              "reference case_no_setback_no quota_price floor_medium CCS cost_low innovation_tax_90_perc_reduction",
-              "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_90_perc_reduction")
+state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price floor" & setback_scenario == "no_setback", "carbon tax",
+                                              fifelse(setback_scenario != "no_setback" & carbon_price_scenario == 'price floor', "setback",
+                                                      fifelse(excise_tax_scenario != "no tax", "excise tax",
+                                                              fifelse(carbon_price_scenario != 'price floor' & setback_scenario != "no_setback", "carbon tax & setback",  "BAU"))))]
 
-state_levels[, target := fifelse(scen_id %in% target1000, "1000ft setback",
-                                              fifelse(scen_id %in% target2500, "2500ft setback",
-                                                      fifelse(scen_id %in% target5280, "5280ft setback",
-                                                              fifelse(scen_id %in% target90, "90% reduction", "BAU"))))]
+## add target
+# state_levels[, tmp := fifelse(str_dectect(scen_id, 'carbon_sb') == TRUE, '90', carbon)]
 
+state_levels[, target := as.numeric(str_extract(carbon_price_scenario, pattern = one_or_more(DIGIT)))]
+state_levels[, target := fifelse(is.na(target), as.numeric(str_extract(excise_tax_scenario, pattern = one_or_more(DIGIT))), target)]
+state_levels[, target := fifelse(is.na(target), as.numeric(str_extract(setback_scenario, pattern = one_or_more(DIGIT))), target)]
+
+state_levels[, target := fifelse(target >= 1000, paste0(target, 'ft setback GHG'),
+                                 fifelse(target < 1000, paste0(target, '% GHG reduction'), 'BAU'))]
+
+state_levels[, target := fifelse(is.na(target), 'BAU', target)]
+
+## add ccs
 state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
 
 state_levels[, normalized := fifelse(metric %in% c("total_emp_norm", "total_comp_norm", "mortality_level_norm", "cost_PV_20_norm"),
                                      "Normalized per 1000 people (>= 30 yo)", "Not normalized")]
+
+
+## to recreate figures, remove carbon tax & setback
+## -----------------------------------------------
+
+state_levels <- state_levels[policy_intervention != "carbon tax & setback"]
+
+
 
 ## pathways
 ##--------------------
@@ -278,7 +272,7 @@ prod_ccs_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl",
        color = "GHG emission target",
        lty = "Policy intervention") +
   facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed", "carbon tax & setback" = "longdash")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line +
@@ -305,7 +299,7 @@ prod_fig <- ggplot(state_levels %>% filter(metric == "total_state_bbl",
        color = "GHG emission target",
        lty = "Policy intervention") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed", "carbon tax & setback" = "longdash")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line +
