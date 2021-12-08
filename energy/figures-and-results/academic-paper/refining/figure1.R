@@ -1,7 +1,6 @@
 ## Tracey Mangin
-## December 6, 2021
-## fig 1: map of CA
-
+## December 8, 2021
+## Fig 1 - refining
 
 library(tidyverse)
 library(sf)
@@ -181,4 +180,3 @@ ggsave(fig1_map,
        width = 6,
        height = 6,
        units = "in")
-

@@ -73,7 +73,7 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
                                 )) +
   # scale_y_continuous(labels = comma) +
   theme_line +
-  theme(legend.position = "bottom",
+  theme(legend.position = "left",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
@@ -83,8 +83,8 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 ggsave(fig_benefit_x_metric,
        filename = file.path(main_path, fig_path, 'figure3a.png'),
-       width = 8,
-       height = 8,
+       width = 9.5,
+       height = 5,
        units = "in")
 
 
@@ -102,7 +102,7 @@ fig_equity_labor <- ggplot(dac_dt %>% filter(metric == "Employment loss per avoi
                                              policy_intervention != "carbon tax & setback"), aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(x = 'GHG emissions reduction in 2045 (% of 2019)',
-       y = 'FTE job-years/avoided MtCO2e',
+       y = 'FTE job-years / avoided MtCO2e',
        color = "GHG emission target",
        shape = "Policy intervention") +
   facet_wrap(~pop_type, scales = "free_y") +
@@ -150,6 +150,12 @@ legend <- get_legend(
   
 )
 
+## legend on left
+legend_left <- get_legend(
+  fig_equity_health + theme(legend.position = "left")
+  
+)
+
 
 ## combine the figures
 ## ---------------------------------
@@ -167,6 +173,21 @@ ggsave(fig3b_combine,
        filename = file.path(main_path, fig_path, 'figure3b.png'),
        width = 8,
        height = 8,
+       units = "in")
+
+## legend on left plot for slides
+
+left_panel <- ggpubr::ggarrange(fig_equity_health, fig_equity_labor, # list of plots
+                  labels = "AUTO", # labels
+                  common.legend = T, # COMMON LEGEND
+                  legend = "left", # legend position
+                  align = "hv", # Align them both, horizontal and vertical
+                  nrow = 2)  # number of row
+
+ggsave(left_panel,
+       filename = file.path(main_path, fig_path, 'figure3b_left.png'),
+       width = 9.5,
+       height = 6,
        units = "in")
 
 ## remake figures with carbon + sb policy
