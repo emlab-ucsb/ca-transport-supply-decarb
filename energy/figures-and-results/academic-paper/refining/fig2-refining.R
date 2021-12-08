@@ -11,28 +11,28 @@ library(scales)
 library(broom)
 library(cowplot)
 
-# ## source figs
-# items <- "figure_themes.R"
-# 
-# walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
-# 
-# ## paths
-# main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-# fig_path <- 'outputs/academic-out/extraction/figures/'
-# 
-# ## csv names
-# levels_file <- 'state_levels_subset.csv'
-# cumulative_file <- 'state_cumulative_subset.csv'
-# 
-# ## read in data
-# levels_dt <- fread(paste0(main_path, fig_path, levels_file))
-# cumulative_dt <- fread(paste0(main_path, fig_path, cumulative_file))
-# 
-# ## filter out carbon + setback
-# levels_dt <- levels_dt[policy_intervention != 'carbon tax & setback' & ccs_scenario == "no ccs"]
-# levels_dt$target <- factor(levels_dt$target, levels = c('BAU', '1000ft setback GHG', '2500ft setback GHG', '5280ft setback GHG',
-#                                                         '90% GHG reduction'))
-# 
+## source figs
+items <- "figure_themes.R"
+
+walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+
+## paths
+main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+fig_path <- 'outputs/academic-out/refining/figures/'
+
+## csv names
+levels_file <- 'state_levels_subset_refining.csv'
+cumulative_file <- 'state_cumulative_subset.csv'
+
+## read in data
+levels_dt <- fread(paste0(main_path, fig_path, levels_file))
+cumulative_dt <- fread(paste0(main_path, fig_path, cumulative_file))
+
+## filter out carbon + setback
+levels_dt <- levels_dt[policy_intervention != 'carbon tax & setback' & ccs_scenario == "no ccs"]
+levels_dt$target <- factor(levels_dt$target, levels = c('BAU', '1000ft setback GHG', '2500ft setback GHG', '5280ft setback GHG',
+                                                        '90% GHG reduction'))
+
 # ## cumulative
 # cumulative_dt <- cumulative_dt[policy_intervention != 'carbon tax & setback' & ccs_option != "medium CCS cost"]
 # cumulative_dt$target <- factor(cumulative_dt$target, levels = c('BAU', '1000ft setback GHG', '2500ft setback GHG', '5280ft setback GHG',

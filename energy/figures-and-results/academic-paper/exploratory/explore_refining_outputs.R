@@ -471,6 +471,9 @@ bau_cumulative_df <- merge(bau_cumulative_df, target_results,
 
 setnames(bau_cumulative_df, "sum_diff_bau", "sum_metric")
 
+
+
+
 ## labor vs mortality
 ## --------------------------------------------------------------------
 

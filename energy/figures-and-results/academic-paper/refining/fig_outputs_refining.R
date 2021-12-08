@@ -230,6 +230,8 @@ bau_cumulative_df <- merge(bau_cumulative_df, target_results,
 
 setnames(bau_cumulative_df, "sum_diff_bau", "sum_metric")
 
+fwrite(bau_cumulative_df, paste0(save_info_path, 'state_cumulative_subset_refining.csv'))
+
 
 
 ## -----------------------------------------------------------------------
@@ -279,7 +281,7 @@ ghg_total <- ghg_total[, .(cumul_ghg = sum(value)), by = .(scen_id)]
 ## cumul ghg
 avoided_ghg <- state_rel_vals[metric == 'total_state_ghg_MtCO2']
 avoided_ghg <- avoided_ghg[, .(cumul_diff_ghg = sum(diff_bau)), by = .(scen_id)]
-
+avoided_ghg <- avoided_ghg[, cumul_diff_ghg := cumul_diff_ghg * -1]
 
 ## join
 cumul_rel_vals_bau <- merge(cumul_rel_vals_bau, ghg_total,
@@ -359,14 +361,14 @@ labor_scens[, dac_emp := diff * dac_share]
 
 
 ## calculate dac share, labor FTE
-labor_dac <- labor_scens[, .(cumul_dac_emp_loss = sum(dac_emp), 
-                             cumul_total_emp_loss = sum(diff)), by = .(scen_id, oil_price_scenario, ccs_scenario, 
-                                                                       carbon_price_scenario, refining_scenario,
-                                                                       demand_scenario, scenario, county, median_hh_income)]
+# labor_dac <- labor_scens[, .(cumul_dac_emp_loss = sum(dac_emp), 
+#                              cumul_total_emp_loss = sum(diff)), by = .(scen_id, oil_price_scenario, ccs_scenario, 
+#                                                                        carbon_price_scenario, refining_scenario,
+#                                                                        demand_scenario, scenario, county, median_hh_income)]
+# 
 
-
-labor_dac_state <- labor_dac[, .(cumul_dac_emp_loss = sum(cumul_dac_emp_loss), 
-                                 cumul_total_emp_loss = sum(cumul_total_emp_loss)), by = .(scen_id, oil_price_scenario, ccs_scenario, 
+labor_dac_state <- labor_scens[, .(cumul_dac_emp_loss = sum(dac_emp), 
+                                 cumul_total_emp_loss = sum(diff)), by = .(scen_id, oil_price_scenario, ccs_scenario, 
                                                                                            carbon_price_scenario, refining_scenario,
                                                                                            demand_scenario, scenario)]
 
@@ -386,14 +388,15 @@ labor_dac_state <- merge(labor_dac_state, ghg_total,
 ## add cumulative ghg savings relative to bau
 cumul_ghg_df <- bau_cumulative_df[metric == "total_state_ghg_MtCO2", .(scen_id, sum_metric)]
 setnames(cumul_ghg_df, "sum_metric", "cumul_ghg_savings")
+cumul_ghg_df[, cumul_ghg_savings := cumul_ghg_savings * -1]
 
 # labor ghg
 labor_ghg_df <- merge(labor_dac_state, cumul_ghg_df,
                       by = "scen_id",
                       all.x = T)
 
-labor_ghg_df[, dac_loss_ghg := fifelse(cumul_dac_emp_loss == 0 & cumul_ghg_savings == 0, 0, cumul_dac_emp_loss / (cumul_ghg_savings * -1))]
-labor_ghg_df[, total_loss_ghg := fifelse(cumul_total_emp_loss == 0 & cumul_ghg_savings == 0, 0, cumul_total_emp_loss / (cumul_ghg_savings * -1))]
+labor_ghg_df[, dac_loss_ghg := fifelse(cumul_dac_emp_loss == 0 & cumul_ghg_savings == 0, 0, cumul_dac_emp_loss / cumul_ghg_savings)]
+labor_ghg_df[, total_loss_ghg := fifelse(cumul_total_emp_loss == 0 & cumul_ghg_savings == 0, 0, cumul_total_emp_loss / cumul_ghg_savings)]
 labor_ghg_df[, dac_share_loss_ghg := fifelse(dac_loss_ghg == 0 & total_loss_ghg == 0, 0, dac_loss_ghg / total_loss_ghg)]
 
 labor_ghg_df <- melt(labor_ghg_df, id.vars = c("scen_id", "oil_price_scenario", "ccs_scenario", "carbon_price_scenario",
@@ -473,8 +476,8 @@ health_ghg_df <- merge(health_dac_state, cumul_ghg_df,
                        by = "scen_id",
                        all.x = T)
 
-health_ghg_df[, dac_avoided_mort_ghg := fifelse(cumul_dac_mortality == 0 & cumul_ghg_savings == 0, 0, cumul_dac_mortality / cumul_ghg_savings)]
-health_ghg_df[, total_avoided_mort_ghg := fifelse(cumul_total_mortality == 0 & cumul_ghg_savings == 0, 0, cumul_total_mortality / cumul_ghg_savings)]
+health_ghg_df[, dac_avoided_mort_ghg := fifelse(cumul_dac_mortality == 0 & cumul_ghg_savings == 0, 0, (cumul_dac_mortality *-1) / cumul_ghg_savings)]
+health_ghg_df[, total_avoided_mort_ghg := fifelse(cumul_total_mortality == 0 & cumul_ghg_savings == 0, 0, (cumul_total_mortality * -1) / cumul_ghg_savings)]
 health_ghg_df[, dac_share_loss_ghg := fifelse(dac_avoided_mort_ghg == 0 & total_avoided_mort_ghg == 0, 0, dac_avoided_mort_ghg / total_avoided_mort_ghg)]
 
 health_ghg_df <- melt(health_ghg_df, id.vars = c("scen_id", "oil_price_scenario", "ccs_scenario", "carbon_price_scenario",

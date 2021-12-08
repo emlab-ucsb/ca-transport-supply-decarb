@@ -71,7 +71,7 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(ccs_scenario == "no ccs",
 
 ggsave(fig_benefit_x_metric,
        filename = file.path(main_path, fig_path, 'figure3a_refining.png'),
-       width = 9.5,
+       width = 9.7,
        height = 5,
        units = "in")
 
@@ -103,7 +103,7 @@ fig_equity_labor <- ggplot(dac_dt %>% filter(metric == "Employment loss per avoi
                                 'low exports - BAU demand' = '#4a6c6f',
                                 'low exports - LC1 demand' = "#fcb97d")) +
   theme_line +
-  scale_y_continuous(limits = c(NA, 0.6)) +
+  # scale_y_continuous(limits = c(NA, 0.6)) +
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
@@ -124,7 +124,7 @@ fig_equity_health <- ggplot(dac_dt %>% filter(metric != "Employment loss per avo
                                 'low exports - BAU demand' = '#4a6c6f',
                                 'low exports - LC1 demand' = "#fcb97d")) +
   theme_line +
-  scale_y_continuous(limits = c(0, NA)) +
+  # scale_y_continuous(limits = c(0, NA)) +
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
