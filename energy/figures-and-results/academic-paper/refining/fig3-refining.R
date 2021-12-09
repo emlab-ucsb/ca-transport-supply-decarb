@@ -59,10 +59,10 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(ccs_scenario == "no ccs",
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = c('BAU demand - historic exports' = "#ff5e5b",
-                                'BAU demand - low exports' = '#4a6c6f',
+                                'BAU demand - low exports' = '#fcb97d',
                                 # 'historic production - BAU demand' = "#A84268",
-                                'Low carbon demand - historic exports' = '#9DBF9E',
-                                'Low carbon demand - low exports' = "#fcb97d")) +
+                                'Low carbon demand - historic exports' = '#4a6c6f',
+                                'Low carbon demand - low exports' = "#9DBF9E")) +
   # scale_y_continuous(labels = comma) +
   theme_line +
   theme(legend.position = "left",
@@ -105,11 +105,11 @@ fig_equity_labor <- ggplot(dac_dt %>% filter(metric == "Employment loss per avoi
        color = NULL) +
   facet_wrap(~type, scales = "free_y") +
   scale_x_continuous(limits = c(0, NA)) +
-  scale_color_manual(values = c('historic exports - BAU demand' = "#9DBF9E",
-                                'historic exports - LC1 demand' = '#ff5e5b',
+  scale_color_manual(values = c('BAU demand - historic exports' = "#ff5e5b",
+                                'BAU demand - low exports' = '#fcb97d',
                                 # 'historic production - BAU demand' = "#A84268",
-                                'low exports - BAU demand' = '#4a6c6f',
-                                'low exports - LC1 demand' = "#fcb97d")) +
+                                'Low carbon demand - historic exports' = '#4a6c6f',
+                                'Low carbon demand - low exports' = "#9DBF9E")) +
   theme_line +
   # scale_y_continuous(limits = c(NA, 0.6)) +
   theme(legend.position = "bottom",
@@ -144,15 +144,15 @@ fig_equity_health <- ggplot(dac_dt %>% filter(metric != "Employment loss per avo
 dac_shares <- ggplot(dac_dt %>% filter(type == "DAC share"), aes(x = rel_reduction * -100, y = value, color = scenario)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(x = NULL,
-       y = 'DAC share',,
+       y = 'DAC share',
        color = NULL) +
   facet_wrap(~metric, ncol = 1) +
   scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = c('BAU demand - historic exports' = "#ff5e5b",
-                                'BAU demand - low exports' = '#4a6c6f',
+                                'BAU demand - low exports' = '#fcb97d',
                                 # 'historic production - BAU demand' = "#A84268",
-                                'Low carbon demand - historic exports' = '#9DBF9E',
-                                'Low carbon demand - low exports' = "#fcb97d")) +
+                                'Low carbon demand - historic exports' = '#4a6c6f',
+                                'Low carbon demand - low exports' = "#9DBF9E")) +
   theme_line +
   scale_y_continuous(limits = c(0.25, 0.5)) +
   theme(legend.position = "none",

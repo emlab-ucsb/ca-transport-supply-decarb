@@ -9,7 +9,6 @@ library(hrbrthemes)
 library(extrafont)
 library(scales)
 library(broom)
-library(cowplot)
 
 ## source figs
 items <- "figure_themes.R"
@@ -21,24 +20,13 @@ main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects
 fig_path <- 'outputs/academic-out/extraction/figures/'
 
 ## csv names
-levels_file <- 'state_levels_subset.csv'
-cumulative_file <- 'state_cumulative_subset.csv'
+levels_name <- 'state_levels_subset.csv'
 
 ## read in data
-levels_dt <- fread(paste0(main_path, fig_path, levels_file))
-cumulative_dt <- fread(paste0(main_path, fig_path, cumulative_file))
+levels_dt <- fread(paste0(main_path, fig_path, levels_name))
 
 ## filter out carbon + setback
 levels_dt <- levels_dt[policy_intervention != 'carbon tax & setback' & ccs_scenario == "no ccs"]
-levels_dt$target <- factor(levels_dt$target, levels = c('BAU', '1000ft setback GHG', '2500ft setback GHG', '5280ft setback GHG',
-                                                        '90% GHG reduction'))
-
-## cumulative
-cumulative_dt <- cumulative_dt[policy_intervention != 'carbon tax & setback' & ccs_option != "medium CCS cost"]
-cumulative_dt$target <- factor(cumulative_dt$target, levels = c('BAU', '1000ft setback GHG', '2500ft setback GHG', '5280ft setback GHG',
-                                                        '90% GHG reduction'))
-
-
 
 
 ## horizontal panel, A) production; B) GHG emissions; C) Cumulative GHG emissions x 2045 emissions reduction
@@ -55,25 +43,15 @@ prod_fig <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed", "carbon tax & setback" = "longdash")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_bw() +
   theme_line +
-  theme(legend.position = "left",
+  theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
-        legend.box="vertical",
-        legend.justification = "left") 
+        legend.box="vertical") 
 
-## extract the legend
-legend_pathways <- get_legend(
-  prod_fig 
-    
-)
-
-
-
-# ggsave(prod_fig, 
-#        filename = file.path(save_info_path, 'pathway/prod_x_time_fig.png'), 
-#        width = 8, 
-#        height = 5)
+ggsave(prod_fig, 
+       filename = file.path(save_info_path, 'pathway/prod_x_time_fig.png'), 
+       width = 8, 
+       height = 5)
 
 
 
@@ -94,49 +72,10 @@ ghg_pw_fig <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
         legend.key.width= unit(1, 'cm'),
         legend.box="vertical") 
 
-# ggsave(ghg_pw_fig, 
-#        filename = file.path(save_info_path, 'pathway/ghg_x_time_fig.png'), 
-#        width = 8, 
-#        height = 5)
+ggsave(ghg_pw_fig, 
+       filename = file.path(save_info_path, 'pathway/ghg_x_time_fig.png'), 
+       width = 8, 
+       height = 5)
 
 
-## part C: cumulative GHG x 2045 reduction
-
-## ghg
-ghg_cumul_fig <- ggplot(cumulative_dt %>% filter(metric == "total_state_ghg_MtCO2"), 
-                       aes(x = ghg_2045_perc_reduction, y = sum_metric, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Cumulative GHG emissions relative to 2019",
-       x = "GHG emissions reduction in 2045 (% of 2019)",
-       y = "GHG emissions (MtCO2e)",
-       color = "2045 GHG emission target",
-       shape = "Policy intervention") +
-  theme_line +
-  scale_x_continuous(limits = c(0, NA)) +
-  scale_y_continuous(limits = c(NA, 0)) +
-  theme(legend.position = c(0.25, 0.5),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        legend.background = element_rect(fill = "white", color = "grey")) 
-
-
-## combine the figures
-## ---------------------------------
-
-fig2_combine <- plot_grid(
-  legend_pathways,
-  prod_fig + theme(legend.position="none"),
-  ghg_pw_fig + theme(legend.position="none"),
-  ghg_cumul_fig,
-  align = 'vh',
-  # labels = c("A", "B", "C"),
-  hjust = -1,
-  nrow = 1,
-  rel_widths = c(0.4, 1, 1, 1)
-)
-
-
-ggsave(fig2_combine,
-       filename = file.path(main_path, fig_path, 'figure2.png'),
-       width = 13,
-       height = 4,
-       units = "in")
+## part C: cumulative GHG x 2045 reductions

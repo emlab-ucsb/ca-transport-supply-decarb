@@ -37,29 +37,49 @@ cumulative_dt <- fread(paste0(main_path, fig_path, cumulative_file))
 # Legend title: “Refinery demand”
 
 
-consumed_fig <- ggplot(levels_dt %>% filter(ccs_scenario %in% c("medium CCS cost"),
+## add scenario
+levels_dt[, scenario := paste0(refining_scenario, ' - ', demand_scenario, ' demand')]
+levels_dt <- levels_dt[!scenario %in% c("historic production - LC1 demand")]
+levels_dt[, scenario := paste0(demand_scenario, " demand", ' - ', refining_scenario)]
+levels_dt <- levels_dt[, scenario := str_replace(scenario, "LC1", "Low carbon")]
+
+## factor
+levels_dt$scenario <- factor(levels_dt$scenario, levels = c('BAU demand - historic production', 
+                                                            'BAU demand - historic exports', 
+                                                            'BAU demand - low exports',
+                                                            'Low carbon demand - historic exports',
+                                                            'Low carbon demand - low exports'))
+
+
+
+consumed_fig <- ggplot(levels_dt %>% filter(ccs_scenario %in% c("no ccs"),
                                                metric == "bbls_consumed",
                                                oil_price_scenario == "reference case",
                                                carbon_price_scenario == "price floor",
                                                year > 2019), aes(x = year, y = value / 1e6, color = scenario)) +
   geom_line(size = 0.75, alpha = 0.7) +
-  labs(title = "Refinery consumption",
+  labs(title = "Refinery oil and renewable feedstock consumption",
        x = NULL,
-       y = "Bbls crude equivalent (million bbls)",
-       color = "Refinery-demand scenario",
-       lty = "CCS scenario") +
+       y = "Oil refined (millions bbls crude oil equivalent)",
+       color = "Refinery demand") +
   guides(colour = guide_legend(order = 1), 
          lty = guide_legend(order = 2)) +
+  scale_color_manual(values = c('BAU demand - historic exports' = "#ff5e5b",
+                                'BAU demand - low exports' = '#fcb97d',
+                                'BAU demand - historic production' = "#A84268",
+                                'Low carbon demand - historic exports' = '#4a6c6f',
+                                'Low carbon demand - low exports' = "#9DBF9E")) +
   # facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "right",
+  theme(legend.position = "left",
         legend.box = "vertical",
-        legend.key.width= unit(1, 'cm')) 
+        legend.key.width= unit(1, 'cm'),
+        plot.title = element_text(hjust = 1)) 
 
 ggsave(consumed_fig, 
-       filename = file.path(save_info_path, 'pathway/consumption_x_time_fig.png'), 
+       filename = paste0(main_path, fig_path, 'figure2-refining.png'), 
        width = 8, 
        height = 6)
 
