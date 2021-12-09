@@ -41,7 +41,9 @@ cumulative_dt <- fread(paste0(main_path, fig_path, cumulative_file))
 levels_dt[, scenario := paste0(refining_scenario, ' - ', demand_scenario, ' demand')]
 levels_dt <- levels_dt[!scenario %in% c("historic production - LC1 demand")]
 levels_dt[, scenario := paste0(demand_scenario, " demand", ' - ', refining_scenario)]
-levels_dt <- levels_dt[, scenario := str_replace(scenario, "LC1", "Low carbon")]
+levels_dt[, scenario := str_replace(scenario, "LC1", "Low C.")]
+levels_dt[, short_scen := str_replace(scenario, "LC1", "Low C.")]
+levels_dt[, short_scen := str_replace(short_scen, "historic", "hist.")]
 
 ## factor
 levels_dt$scenario <- factor(levels_dt$scenario, levels = c('BAU demand - historic production', 
@@ -50,13 +52,19 @@ levels_dt$scenario <- factor(levels_dt$scenario, levels = c('BAU demand - histor
                                                             'Low carbon demand - historic exports',
                                                             'Low carbon demand - low exports'))
 
+## factor
+levels_dt$short_scen <- factor(levels_dt$short_scen, levels = c('BAU demand - hist. production', 
+                                                            'BAU demand - hist. exports', 
+                                                            'BAU demand - low exports',
+                                                            'Low C. demand - hist. exports',
+                                                            'Low C. demand - low exports'))
 
 
 consumed_fig <- ggplot(levels_dt %>% filter(ccs_scenario %in% c("no ccs"),
                                                metric == "bbls_consumed",
                                                oil_price_scenario == "reference case",
                                                carbon_price_scenario == "price floor",
-                                               year > 2019), aes(x = year, y = value / 1e6, color = scenario)) +
+                                               year > 2019), aes(x = year, y = value / 1e6, color = short_scen)) +
   geom_line(size = 0.75, alpha = 0.7) +
   labs(title = "Refinery oil and renewable feedstock consumption",
        x = NULL,
@@ -64,24 +72,60 @@ consumed_fig <- ggplot(levels_dt %>% filter(ccs_scenario %in% c("no ccs"),
        color = "Refinery demand") +
   guides(colour = guide_legend(order = 1), 
          lty = guide_legend(order = 2)) +
-  scale_color_manual(values = c('BAU demand - historic exports' = "#ff5e5b",
+  scale_color_manual(values = c('BAU demand - hist. production' = "#A84268",
+                                'BAU demand - hist. exports' = "#ff5e5b",
                                 'BAU demand - low exports' = '#fcb97d',
-                                'BAU demand - historic production' = "#A84268",
-                                'Low carbon demand - historic exports' = '#4a6c6f',
-                                'Low carbon demand - low exports' = "#9DBF9E")) +
+                                'Low C. demand - hist. exports' = '#4a6c6f',
+                                'Low C. demand - low exports' = "#9DBF9E")) +
   # facet_grid(demand_scenario ~ ccs_option) +
   # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
-  theme(legend.position = "left",
+  theme(legend.position = "none",
         legend.box = "vertical",
-        legend.key.width= unit(1, 'cm'),
-        plot.title = element_text(hjust = 1)) 
+        legend.key.width= unit(1, 'cm')) 
 
-ggsave(consumed_fig, 
-       filename = paste0(main_path, fig_path, 'figure2-refining.png'), 
-       width = 8, 
-       height = 6)
+
+
+# ggsave(consumed_fig, 
+#        filename = paste0(main_path, fig_path, 'figure2-refining.png'), 
+#        width = 8, 
+#        height = 6)
+
+
+## extract the legend
+legend_pathways <- get_legend(
+  consumed_fig + theme(legend.position = "left")
+  
+)
+
+fig2_combine <- plot_grid(
+  legend_pathways,
+  consumed_fig + theme(legend.position = "none"),
+  align = 'vh',
+  # labels = c("A", "B", "C"),
+  hjust = -1,
+  nrow = 1,
+  rel_widths = c(0.5, 1)
+)
+
+
+ggsave(fig2_combine,
+       filename = file.path(main_path, fig_path, 'figure2.png'),
+       width = 6.2,
+       height = 4,
+       units = "in")
+
+
+
+
+
+
+
+
+
+
+
 
 # embed_fonts(file.path(save_info_path, 'pathway/prod_x_time_fig.png'),
 #             outfile = file.path(save_info_path, 'pathway/prod_x_time_fig.png'))

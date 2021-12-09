@@ -43,14 +43,28 @@ npv_dt[, measure := fifelse(unit == "value_billion", "NPV (2020 USD billion)", "
 npv_dt[, scenario := paste0(refining_scenario, ' - ', demand_scenario, ' demand')]
 npv_dt <- npv_dt[!scenario %in% c("historic production - BAU demand", "historic production - LC1 demand")]
 npv_dt[, scenario := paste0(demand_scenario, " demand", ' - ', refining_scenario)]
-npv_dt <- npv_dt[, scenario := str_replace(scenario, "LC1", "Low carbon")]
+npv_dt[, scenario := str_replace(scenario, "LC1", "Low carbon")]
+npv_dt[, short_scen := str_replace(scenario, "Low carbon", "Low C.")]
+npv_dt[, short_scen := str_replace(short_scen, "historic", "hist.")]
+
+## factor
+npv_dt$scenario <- factor(npv_dt$scenario, levels = c('BAU demand - historic exports', 
+                                                      'BAU demand - low exports',
+                                                      'Low carbon demand - historic exports',
+                                                       'Low carbon demand - low exports'))
+
+## factor
+npv_dt$short_scen <- factor(npv_dt$short_scen, levels = c('BAU demand - hist. exports', 
+                                                          'BAU demand - low exports',
+                                                          'Low C. demand - hist. exports',
+                                                          'Low C. demand - low exports'))
 
 
 
 ## fig
 fig_benefit_x_metric <- ggplot(npv_dt %>% filter(ccs_scenario == "no ccs",
                                                  carbon_price_scenario == "price floor"), 
-                               aes(x = rel_reduction * -100, y = value, color = scenario)) +
+                               aes(x = rel_reduction * -100, y = value, color = short_scen)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(color = NULL,
        y = NULL,
@@ -58,11 +72,11 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(ccs_scenario == "no ccs",
   facet_grid(measure~title, scales = "free_y") +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   scale_x_continuous(limits = c(0, NA)) +
-  scale_color_manual(values = c('BAU demand - historic exports' = "#ff5e5b",
+  scale_color_manual(values = c('BAU demand - hist. exports' = "#ff5e5b",
                                 'BAU demand - low exports' = '#fcb97d',
-                                # 'historic production - BAU demand' = "#A84268",
-                                'Low carbon demand - historic exports' = '#4a6c6f',
-                                'Low carbon demand - low exports' = "#9DBF9E")) +
+                                # 'BAU demand - hist. production' = "#A84268",
+                                'Low C. demand - hist. exports' = '#4a6c6f',
+                                'Low C. demand - low exports' = "#9DBF9E")) +
   # scale_y_continuous(labels = comma) +
   theme_line +
   theme(legend.position = "left",
@@ -73,7 +87,7 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(ccs_scenario == "no ccs",
 
 ggsave(fig_benefit_x_metric,
        filename = file.path(main_path, fig_path, 'figure3a_refining.png'),
-       width = 10,
+       width = 9.5,
        height = 5,
        units = "in")
 
