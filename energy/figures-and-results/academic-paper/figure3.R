@@ -150,13 +150,6 @@ legend <- get_legend(
   
 )
 
-## legend on left
-legend_left <- get_legend(
-  fig_equity_health + theme(legend.position = "left")
-  
-)
-
-
 ## combine the figures
 ## ---------------------------------
 
@@ -189,6 +182,46 @@ ggsave(left_panel,
        width = 9.5,
        height = 6,
        units = "in")
+
+## DAC only
+
+dac_shares <- ggplot(dac_dt %>% filter(pop_type == "DAC share",
+                                       policy_intervention != "carbon tax & setback"), 
+                     aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  labs(x = NULL,
+       y = 'DAC share',
+       color = NULL) +
+  facet_wrap(~metric, ncol = 1) +
+  scale_x_continuous(limits = c(0, NA)) +
+  scale_color_manual(values = c('1000ft setback GHG' = "#A3A500",
+                                '2500ft setback GHG' = '#00BF7D',
+                                '5280ft setback GHG' = "#00B0F6",
+                                '90% GHG reduction' = "#E76BF3"
+                                # , 'BAU' = '#F8766D'
+  )) +
+  theme_line +
+  scale_y_continuous(limits = c(0.25, 0.5)) +
+  theme(legend.position = "none",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+
+
+ggsave(dac_shares,
+       filename = file.path(main_path, fig_path, 'figure3c_dac.png'),
+       width = 3,
+       height = 6,
+       units = "in")
+
+
+
+
+
+
+
+
 
 ## remake figures with carbon + sb policy
 ## -----------------------------------------------------

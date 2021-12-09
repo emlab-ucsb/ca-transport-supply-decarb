@@ -22,51 +22,78 @@ fig_path <- 'outputs/academic-out/refining/figures/'
 
 ## csv names
 levels_file <- 'state_levels_subset_refining.csv'
-cumulative_file <- 'state_cumulative_subset.csv'
+cumulative_file <- 'state_cumulative_subset_refining.csv'
 
 ## read in data
 levels_dt <- fread(paste0(main_path, fig_path, levels_file))
 cumulative_dt <- fread(paste0(main_path, fig_path, cumulative_file))
 
-## filter out carbon + setback
-levels_dt <- levels_dt[policy_intervention != 'carbon tax & setback' & ccs_scenario == "no ccs"]
-levels_dt$target <- factor(levels_dt$target, levels = c('BAU', '1000ft setback GHG', '2500ft setback GHG', '5280ft setback GHG',
-                                                        '90% GHG reduction'))
 
-# ## cumulative
-# cumulative_dt <- cumulative_dt[policy_intervention != 'carbon tax & setback' & ccs_option != "medium CCS cost"]
-# cumulative_dt$target <- factor(cumulative_dt$target, levels = c('BAU', '1000ft setback GHG', '2500ft setback GHG', '5280ft setback GHG',
-#                                                                 '90% GHG reduction'))
-# 
-# 
-# 
-# 
-# ## horizontal panel, A) production; B) GHG emissions; C) Cumulative GHG emissions x 2045 emissions reduction
-# 
-# prod_fig <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
-#                                         year > 2019), aes(x = year, y = value / 1e6, color = target, lty = policy_intervention)) +
-#   geom_line(size = 0.75, alpha = 0.8) +
-#   labs(title = "Oil production",
-#        x = NULL,
-#        y = "Oil production (million bbls)",
-#        color = "2045 GHG emission target",
-#        lty = "Policy intervention") +
-#   # facet_wrap(~ccs_option) +
-#   scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed", "carbon tax & setback" = "longdash")) +
-#   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
-#   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-#   theme_bw() +
-#   theme_line +
-#   theme(legend.position = "left",
-#         legend.key.width= unit(1, 'cm'),
-#         legend.box="vertical",
-#         legend.justification = "left") 
-# 
-# ## extract the legend
-# legend_pathways <- get_legend(
-#   prod_fig 
-#   
-# )
+# And the last plot I need is the refining pathways. I will be adding only the refinery oil consumption plot instead of the three panel figure similar to Figure 2 for extraction.
+# You have that figure on page 50. To make it consistent with the slide text and the extraction figure, I will state the changes here.
+# Move the legend to the left of the plot.
+# Change the y axis label to “Oil refined (millions bbls crude oil equivalent)”
+# Title: “Refinery oil and renewable feedstock consumption”
+# Legend title: “Refinery demand”
+
+
+consumed_fig <- ggplot(levels_dt %>% filter(ccs_scenario %in% c("medium CCS cost"),
+                                               metric == "bbls_consumed",
+                                               oil_price_scenario == "reference case",
+                                               carbon_price_scenario == "price floor",
+                                               year > 2019), aes(x = year, y = value / 1e6, color = scenario)) +
+  geom_line(size = 0.75, alpha = 0.7) +
+  labs(title = "Refinery consumption",
+       x = NULL,
+       y = "Bbls crude equivalent (million bbls)",
+       color = "Refinery-demand scenario",
+       lty = "CCS scenario") +
+  guides(colour = guide_legend(order = 1), 
+         lty = guide_legend(order = 2)) +
+  # facet_grid(demand_scenario ~ ccs_option) +
+  # scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  theme_line +
+  theme(legend.position = "right",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm')) 
+
+ggsave(consumed_fig, 
+       filename = file.path(save_info_path, 'pathway/consumption_x_time_fig.png'), 
+       width = 8, 
+       height = 6)
+
+# embed_fonts(file.path(save_info_path, 'pathway/prod_x_time_fig.png'),
+#             outfile = file.path(save_info_path, 'pathway/prod_x_time_fig.png'))
+
+
+
+## horizontal panel, A) production; B) GHG emissions; C) Cumulative GHG emissions x 2045 emissions reduction
+
+prod_fig <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
+                                        year > 2019), aes(x = year, y = value / 1e6, color = target, lty = policy_intervention)) +
+  geom_line(size = 0.75, alpha = 0.8) +
+  labs(title = "Oil production",
+       x = NULL,
+       y = "Oil production (million bbls)",
+       color = "2045 GHG emission target",
+       lty = "Policy intervention") +
+  # facet_wrap(~ccs_option) +
+  scale_linetype_manual(values = c("setback" = "solid", "BAU" = "dotdash", "carbon tax" = "dotted", "excise tax" = "dashed", "carbon tax & setback" = "longdash")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+  theme_bw() +
+  theme_line +
+  theme(legend.position = "left",
+        legend.key.width= unit(1, 'cm'),
+        legend.box="vertical",
+        legend.justification = "left")
+
+## extract the legend
+legend_pathways <- get_legend(
+  prod_fig
+
+)
 # 
 # 
 # 
