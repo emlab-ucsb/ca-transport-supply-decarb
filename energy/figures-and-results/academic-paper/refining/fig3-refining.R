@@ -4,13 +4,13 @@
 
 ## libraries
 library(data.table)
-library(tidyverse)
 library(hrbrthemes)
 library(extrafont)
 library(scales)
 library(broom)
 library(cowplot)
 library(rebus)
+library(tidyverse)
 
 ## source figs
 items <- "figure_themes.R"
@@ -154,7 +154,7 @@ dac_shares <- ggplot(dac_dt %>% filter(type == "DAC share"), aes(x = rel_reducti
                                 'Low carbon demand - historic exports' = '#4a6c6f',
                                 'Low carbon demand - low exports' = "#9DBF9E")) +
   theme_line +
-  scale_y_continuous(limits = c(0.25, 0.5)) +
+  scale_y_continuous(limits = c(0.35, 0.5)) +
   theme(legend.position = "none",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
@@ -174,6 +174,6 @@ dac_shares <- ggplot(dac_dt %>% filter(type == "DAC share"), aes(x = rel_reducti
 ggsave(dac_shares,
        filename = file.path(main_path, fig_path, 'figure3c_dac_refining.png'),
        width = 3,
-       height = 6,
+       height = 5,
        units = "in")
 
