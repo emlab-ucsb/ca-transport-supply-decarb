@@ -27,5 +27,17 @@ theme_line = theme_ipsum(base_family = 'Arial',
         strip.text = element_text(hjust = 0.5),
         plot.margin = unit(c(1,1,1,1), 'lines'))
 
+## target colors
+target_colors <- c("1000ft setback GHG" = "#133a54",
+                   "2500ft setback GHG" = "#1d577e",
+                   "5280ft setback GHG" = "#6390ae",
+                   "90% GHG reduction" = "#a6bfd1")
+
+
+policy_symbols <- c("BAU" = 16,
+                    "carbon tax" = 17,
+                    "excise tax" = 15,
+                    "setback" = 3)
+
 
 
