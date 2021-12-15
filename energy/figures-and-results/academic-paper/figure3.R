@@ -45,7 +45,10 @@ npv_dt <- melt(npv_dt, id.vars = c('scen_id', 'ccs_option', 'policy_intervention
                      variable.name = "unit",
                      value.name = "value")
 
-npv_dt[, measure := fifelse(unit == "value_billion", "NPV (2020 USD billion)", "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e")]
+npv_dt[, measure := fifelse(unit == "value_billion", "NPV (2020 USD billion)", "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)")]
+
+npv_dt[, measure_unit := fifelse(unit == "value_billion", "2020 USD billion", "2020 USD million / MtCO2e")]
+
 
 npv_dt <- npv_dt[target != 'BAU']
 
@@ -56,21 +59,23 @@ npv_dt <- npv_dt[ccs_option != "medium CCS cost"]
 
 ## fig
 fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
-                                                 policy_intervention != 'carbon tax & setback'), aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
+                                                 policy_intervention != 'carbon tax & setback',
+                                                 unit != "value_billion",
+                                                 title != "Climate: Abated GHG emissions"), aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(color = "GHG emission target",
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(title = "NPV per avoided GHG MtCO2e",
+       color = "GHG emission target",
        shape = "Policy intervention",
        y = NULL,
        x = 'GHG emissions reduction in 2045 (% of 2019)') +
-  facet_grid(measure~title, scales = "free_y") +
+  facet_grid(measure_unit~title, scales = "free_y") +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   scale_x_continuous(limits = c(0, NA)) +
-  scale_color_manual(values = c('1000ft setback GHG' = "#A3A500",
-                                '2500ft setback GHG' = '#00BF7D',
-                                '5280ft setback GHG' = "#00B0F6",
-                                '90% GHG reduction' = "#E76BF3"
-                                # , 'BAU' = '#F8766D'
-                                )) +
+  scale_color_manual(values = target_colors) +
+  scale_shape_manual(values = c("carbon tax" = 17,
+                                "excise tax" = 15,
+                                "setback" = 3)) +
   # scale_y_continuous(labels = comma) +
   theme_line +
   theme(legend.position = "left",
@@ -79,13 +84,12 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
-# "#F8766D" "#A3A500" "#00BF7D" "#00B0F6" "#E76BF3"
 
-ggsave(fig_benefit_x_metric,
-       filename = file.path(main_path, fig_path, 'figure3a.png'),
-       width = 9.5,
-       height = 5,
-       units = "in")
+# ggsave(fig_benefit_x_metric,
+#        filename = file.path(main_path, fig_path, 'figure3a.png'),
+#        width = 9.5,
+#        height = 5,
+#        units = "in")
 
 
 ## Equity portion
