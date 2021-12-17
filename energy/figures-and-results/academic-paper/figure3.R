@@ -1,6 +1,6 @@
 ## Tracey Mangin
 ## December 6, 2021
-## Academic paper figure 2
+## Academic paper figure 3
 
 ## libraries
 library(data.table)
@@ -58,24 +58,23 @@ npv_dt$target <- factor(npv_dt$target, levels = c('1000ft setback GHG', '2500ft 
 npv_dt <- npv_dt[ccs_option != "medium CCS cost"]
 
 ## fig
-fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
+fig_benefit_x_metric_v2 <- ggplot(npv_dt %>% filter(target != 'BAU',
                                                  policy_intervention != 'carbon tax & setback',
                                                  unit != "value_billion",
-                                                 title != "Climate: Abated GHG emissions"), aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
+                                                 title != "Climate: Abated GHG emissions"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(title = "NPV per avoided GHG MtCO2e",
-       color = "GHG emission target",
-       shape = "Policy intervention",
+       color = "Policy intervention",
        y = NULL,
-       x = 'GHG emissions reduction in 2045 (% of 2019)') +
+       x = 'GHG emissions reduction target (%, 2045 vs 2019)') +
   facet_grid(measure_unit~title, scales = "free_y") +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
-  scale_x_continuous(limits = c(0, NA)) +
-  scale_color_manual(values = target_colors) +
-  scale_shape_manual(values = c("carbon tax" = 17,
-                                "excise tax" = 15,
-                                "setback" = 3)) +
+  # scale_x_continuous(limits = c(0, NA)) +
+  scale_color_manual(values = policy_colors_subset) +
+  # scale_shape_manual(values = c("carbon tax" = 17,
+  #                               "excise tax" = 15,
+  #                               "setback" = 3)) +
   # scale_y_continuous(labels = comma) +
   theme_line +
   theme(legend.position = "left",
@@ -95,58 +94,76 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
 ## Equity portion
 ## ------------------------------------------------------
 
-dac_dt$pop_type <- factor(dac_dt$pop_type, levels = c("Total population", "DAC population", "DAC share"))
+# dac_dt$pop_type <- factor(dac_dt$pop_type, levels = c("Total population", "DAC population", "DAC share"))
 
 dac_dt <- dac_dt[ccs_option == "no CCS" &
-                   target != "BAU"]
-
-
-## figure
-fig_equity_labor <- ggplot(dac_dt %>% filter(metric == "Employment loss per avoided GHG",
-                                             policy_intervention != "carbon tax & setback"), aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(x = 'GHG emissions reduction in 2045 (% of 2019)',
-       y = 'FTE job-years / avoided MtCO2e',
-       color = "GHG emission target",
-       shape = "Policy intervention") +
-  facet_wrap(~pop_type, scales = "free_y") +
-  scale_x_continuous(limits = c(0, NA)) +
-  scale_color_manual(values = c('1000ft setback GHG' = "#A3A500",
-                                '2500ft setback GHG' = '#00BF7D',
-                                '5280ft setback GHG' = "#00B0F6",
-                                '90% GHG reduction' = "#E76BF3"
-                                # , 'BAU' = '#F8766D'
-  )) +
-  theme_line +
-  scale_y_continuous(limits = c(NA, 0.5)) +
-  theme(legend.position = "bottom",
-        legend.box = "vertical",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
+                   unit == "ratio" &
+                 policy_intervention != "carbon tax & setback"]
 
 ## health
-fig_equity_health <- ggplot(dac_dt %>% filter(metric != "Employment loss per avoided GHG",
-                                              policy_intervention != "carbon tax & setback"), aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
+dac_df <- ggplot(dac_dt, aes(x = ghg_2045_perc_reduction, y = value, color = target_label, shape = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(x = '',
-       y = 'Avoided mortalities / avoided MtCO2e',
-       color = "GHG emission target",
+  labs(x = 'GHG emissions reduction target (%, 2045 vs 2019)',
+       y = 'DAC share',
+       color = "2045 GHG emission target",
        shape = "Policy intervention") +
-  facet_wrap(~pop_type, scales = "free_y") +
-  scale_x_continuous(limits = c(0, NA)) +
-  scale_color_manual(values = c('1000ft setback GHG' = "#A3A500",
-                                '2500ft setback GHG' = '#00BF7D',
-                                '5280ft setback GHG' = "#00B0F6",
-                                '90% GHG reduction' = "#E76BF3"
-                                # , 'BAU' = '#F8766D'
-  )) +
+  facet_wrap(~metric) +
+  # scale_x_continuous(limits = c(0, NA)) +
+  scale_color_manual(values = c("BAU" = "black", target_colors)) +
+  scale_shape_manual(values = policy_symbols) +
   theme_line +
   scale_y_continuous(limits = c(0, NA)) +
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# ## figure
+# fig_equity_labor <- ggplot(dac_dt %>% filter(metric == "Employment loss per avoided GHG",
+#                                              policy_intervention != "carbon tax & setback"), aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(x = 'GHG emissions reduction in 2045 (% of 2019)',
+#        y = 'FTE job-years / avoided MtCO2e',
+#        color = "GHG emission target",
+#        shape = "Policy intervention") +
+#   facet_wrap(~pop_type, scales = "free_y") +
+#   scale_x_continuous(limits = c(0, NA)) +
+#   scale_color_manual(values = c('1000ft setback GHG' = "#A3A500",
+#                                 '2500ft setback GHG' = '#00BF7D',
+#                                 '5280ft setback GHG' = "#00B0F6",
+#                                 '90% GHG reduction' = "#E76BF3"
+#                                 # , 'BAU' = '#F8766D'
+#   )) +
+#   theme_line +
+#   scale_y_continuous(limits = c(NA, 0.5)) +
+#   theme(legend.position = "bottom",
+#         legend.box = "vertical",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+# 
+# 
+# ## health
+# fig_equity_health <- ggplot(dac_dt %>% filter(metric != "Employment loss per avoided GHG",
+#                                               policy_intervention != "carbon tax & setback"), aes(x = ghg_2045_perc_reduction, y = value, color = target, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(x = '',
+#        y = 'Avoided mortalities / avoided MtCO2e',
+#        color = "GHG emission target",
+#        shape = "Policy intervention") +
+#   facet_wrap(~pop_type, scales = "free_y") +
+#   scale_x_continuous(limits = c(0, NA)) +
+#   scale_color_manual(values = c('1000ft setback GHG' = "#A3A500",
+#                                 '2500ft setback GHG' = '#00BF7D',
+#                                 '5280ft setback GHG' = "#00B0F6",
+#                                 '90% GHG reduction' = "#E76BF3"
+#                                 # , 'BAU' = '#F8766D'
+#   )) +
+#   theme_line +
+#   scale_y_continuous(limits = c(0, NA)) +
+#   theme(legend.position = "bottom",
+#         legend.box = "vertical",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 ## extract the legend
 legend <- get_legend(

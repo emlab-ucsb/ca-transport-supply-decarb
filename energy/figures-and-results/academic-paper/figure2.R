@@ -184,7 +184,7 @@ ghg_cumul_fig <- ggplot(cumul_ghg, aes(x = ghg_2045_perc * -100, y = cumul_ghg, 
   scale_color_manual(values = c(target_colors, "BAU" = "black")) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_y_continuous(limits = c(NA, 0)) +
-  theme(legend.position = c(0.25, 0.5),
+  theme(legend.position = c(0.25, 0.3),
         # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         legend.background = element_rect(fill = "white", color = "grey")) 
 
@@ -206,20 +206,20 @@ ghg_cumul_fig_v2 <- ggplot(cumul_ghg, aes(x = ghg_2045_perc * -100, y = cumul_gh
 
 
 
-ghg_cumul_fig <- ggplot(cumul_ghg, aes(x = target_label, y = cumul_ghg, color = target_label, shape = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "Cumulative GHG emissions",
-       x = "GHG emissions reduction target (%, 2045 vs 2019)",
-       y = "GHG emissions (MtCO2e)",
-       color = "2045 GHG emission target",
-       shape = "Policy intervention") +
-  theme_line +
-  scale_color_manual(values = c(target_colors, "BAU" = "black")) +
-  # scale_x_continuous(limits = c(0, NA)) +
-  # scale_y_continuous(limits = c(NA, 0)) +
-  theme(legend.position = c(0.25, 0.5),
-        # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        legend.background = element_rect(fill = "white", color = "grey")) 
+# ghg_cumul_fig <- ggplot(cumul_ghg, aes(x = target_label, y = cumul_ghg, color = target_label, shape = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "Cumulative GHG emissions",
+#        x = "GHG emissions reduction target (%, 2045 vs 2019)",
+#        y = "GHG emissions (MtCO2e)",
+#        color = "2045 GHG emission target",
+#        shape = "Policy intervention") +
+#   theme_line +
+#   scale_color_manual(values = c(target_colors, "BAU" = "black")) +
+#   # scale_x_continuous(limits = c(0, NA)) +
+#   # scale_y_continuous(limits = c(NA, 0)) +
+#   theme(legend.position = c(0.25, 0.3),
+#         # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+#         legend.background = element_rect(fill = "white", color = "grey")) 
 
 
 ## combine the figures
@@ -291,7 +291,7 @@ fig2_combine <- plot_grid(
   prod_fig + theme(legend.position="none"),
   ghg_pw_fig + theme(legend.position="none"),
   legend_pathways,
-  ghg_cumul_fig,
+  ghg_cumul_fig + guides(color = "none"),
   align = 'vh',
   # labels = c("A", "B", "C"),
   hjust = -1,
