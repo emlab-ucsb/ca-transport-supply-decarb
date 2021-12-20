@@ -417,7 +417,8 @@ npv_x_metric <- merge(npv_x_metric, setback_2045,
                       by = c("ccs_scenario", "target"),
                       all.x = T)
 
-npv_x_metric[, target_label := fifelse(target %in% c("BAU", "90% GHG reduction"), target, target_label)]
+npv_x_metric[, target_label := fifelse(target == "BAU", target, 
+                                       fifelse(target == "90% GHG reduction", "90%", target_label))]
 
 
 
