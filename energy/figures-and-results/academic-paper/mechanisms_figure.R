@@ -31,35 +31,29 @@ health_dt <- fread(paste0(main_path, fig_path, health_file))
 
 ## health fig, affected pop / total production, annual
 
-## test -- any years for which a cluster has 0 prod?
-test <- health_dt %>%
-  group_by(scen_id, id, year) %>%
-  summarise(sum_prod = sum(total_prod_bbl)) %>%
-  ungroup() %>%
-  filter(sum_prod > 0) %>%
-  group_by(scen_id, year) %>%
-  summarise(n = n()) %>%
-  ungroup()
-
 health_cluster_dt <- health_dt[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(scen_id, carbon_price_scenario,
                                                                                  setback_scenario, excise_tax_scenario,
                                                                                  id, year, affected_pop, share_dac_weighted)]
 
 health_cluster_dt[, dac_affected_pop := affected_pop * share_dac_weighted]
 
-## if production is zero, affected prod == 0
-health_cluster_dt[, affected_cluster := fifelse(total_prod_bbl > 0, 1, 0)]
-health_cluster_dt[, adj_affected_pop := affected_pop * affected_cluster]
-health_cluster_dt[, adj_dac_affected_pop := dac_affected_pop * affected_cluster]
+# ## if production is zero, affected prod == 0
+# health_cluster_dt[, affected_cluster := fifelse(total_prod_bbl > 0, 1, 0)]
+# health_cluster_dt[, adj_affected_pop := affected_pop * affected_cluster]
+# health_cluster_dt[, adj_dac_affected_pop := dac_affected_pop * affected_cluster]
 
 
-## summarize by year
-health_annual_dt <- health_cluster_dt[, lapply(.SD, sum, na.rm = T), .SDcols = c("adj_affected_pop", "adj_dac_affected_pop", "total_prod_bbl"), 
+## sum of affected * prod over total production
+health_cluster_dt[, affected_pop_prod := affected_pop * total_prod_bbl]
+health_cluster_dt[, dac_affected_pop_prod := dac_affected_pop * total_prod_bbl]
+
+## sum by year, divide by total prod
+health_annual_dt <- health_cluster_dt[, lapply(.SD, sum, na.rm = T), .SDcols = c("affected_pop_prod", "dac_affected_pop_prod", "total_prod_bbl"), 
                                       by = .(scen_id, carbon_price_scenario, setback_scenario, excise_tax_scenario, year)]
 
-health_annual_dt[, pop_per_bbl := adj_affected_pop / total_prod_bbl]
-health_annual_dt[, dac_pop_per_bbl := adj_dac_affected_pop / total_prod_bbl]
 
+health_annual_dt[, pop_per_bbl := affected_pop_prod / total_prod_bbl]
+health_annual_dt[, dac_pop_per_bbl := dac_affected_pop_prod / total_prod_bbl]
 
 ## make long for plotting
 ppl_per_bbl_dt <- melt(health_annual_dt, id.vars = c('scen_id', 'year'),
@@ -79,9 +73,10 @@ ppl_per_bbl_dt[, scen_lab := fifelse(scen_id == "reference case_no_setback_no qu
 ## plot
 mechanism_fig1 <- ggplot(ppl_per_bbl_dt, aes(x = year, y = ppl_per_bbl, color = scen_lab)) +
   geom_line(size = 0.8, alpha = 0.9) +
-  labs(title = "Population affected per bbl produced",
+  labs(title = "Production weighted affected population per bbl produced",
+       subtitle = "75% GHG reduction",
        x = NULL,
-       y = "Pop/bbl",
+       y = NULL,
        color = "Policy intervention") +
   facet_wrap(~pop_lab, nrow = 1) +
   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
@@ -91,6 +86,11 @@ mechanism_fig1 <- ggplot(ppl_per_bbl_dt, aes(x = year, y = ppl_per_bbl, color = 
         legend.key.width= unit(1, 'cm'),
         legend.box="vertical") 
 
+ggsave(mechanism_fig1,
+       filename = file.path(main_path, fig_path, 'figure_mechanisms.png'),
+       width = 6,
+       height = 4,
+       units = "in")
 
 
 
