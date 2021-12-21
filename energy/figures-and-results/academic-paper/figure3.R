@@ -25,11 +25,13 @@ fig_path <- 'outputs/academic-out/extraction/figures/'
 # levels_file <- 'state_levels_subset.csv'
 npv_file <- 'npv_x_metric.csv'
 dac_file <- 'dac_health_labor.csv'
+dac_pop_file <- 'state_dac_ratios.csv'
 
 
 ## read in data
 npv_dt <- fread(paste0(main_path, fig_path, npv_file))
 dac_dt <- fread(paste0(main_path, fig_path, dac_file))
+dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
 
 ## cumulative
 npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: Abated GHG emissions', title)]
@@ -146,6 +148,10 @@ dac_dt <- dac_dt[ccs_option == "no CCS" &
                  policy_intervention != "carbon tax & setback" &
                  target_label != "55%"]
 
+dac_dt$metric <- factor(dac_dt$metric, levels = c("Mortalities", "Employment"))
+
+
+
 # ## health
 # dac_fig <- ggplot(dac_dt, aes(x = ghg_2045_perc_reduction, y = value, color = target_label, shape = policy_intervention)) +
 #   geom_point(size = 2, alpha = 0.8) +
@@ -164,6 +170,12 @@ dac_dt <- dac_dt[ccs_option == "no CCS" &
 #         legend.key.width= unit(1, 'cm'),
 #         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+## 2019 DAC line
+dac_line <- dac_pop_dt %>% 
+  filter(year == 2019) %>% 
+  select(dac_ratio) %>% 
+  as.numeric()
+
 
 ## DAC
 dac_fig_v2 <- ggplot(dac_dt, aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -173,6 +185,8 @@ dac_fig_v2 <- ggplot(dac_dt, aes(x = ghg_2045_perc_reduction, y = value, color =
        y = NULL,
        color = "Policy intervention") +
   facet_wrap(~metric) +
+  geom_hline(yintercept = dac_line, color = "darkgray", size = 0.5) +
+  annotate("text", x = 75, y = 0.24, label = paste0("2019 DAC ratio = ", round(dac_line, 2)), color = "darkgray", size = 3) +
   geom_text(data = dac_dt %>% filter(target == "BAU"), aes(x = ghg_2045_perc_reduction, y = value, label = target), 
     nudge_x = 2, nudge_y = 0.02,  check_overlap = T, size = 3) +
   # scale_x_continuous(limits = c(0, NA)) +
@@ -254,7 +268,7 @@ fig3b_combine <- plot_grid(
 
 ggsave(fig3b_combine,
        filename = file.path(main_path, fig_path, 'figure3.png'),
-       width = 6,
+       width = 5.5,
        height = 6,
        units = "in")
 
