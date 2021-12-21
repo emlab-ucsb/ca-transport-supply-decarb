@@ -70,6 +70,24 @@ cpi2019 <- cpi_df %>%
 ## discount rate
 discount_rate <- 0.03
 
+## health params
+VSL_2015 <- 8705114.25462459
+VSL_2019 <- VSL_2015 * 107.8645906/100 #(https://fred.stlouisfed.org/series/CPALTT01USA661S)
+income_elasticity_mort <- 0.4
+
+## for monetary mortality impact
+growth_rates <- read.csv(paste0(main_path, "data/benmap/processed/growth_rates.csv"), stringsAsFactors = FALSE) %>%
+  filter(year > 2018) %>%
+  mutate(growth = ifelse(year == 2019, 0, growth_2030),
+         cum_growth = cumprod(1 + growth)) %>%
+  select(-growth_2030, -growth) %>%
+  as.data.table()
+
+## function for health impacts
+future_WTP <- function(elasticity, growth_rate, WTP){
+  return(elasticity * growth_rate * WTP + WTP) 
+}
+
 ## 2019 GHG emissions
 ## --------------------------
 hist_ghg <- fread(paste0(main_path, 'data/stocks-flows/processed/', ghg_file), header = T)
@@ -440,57 +458,11 @@ fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric.csv'))
 # setnames(bau_cumulative_df, "sum_diff_bau", "sum_metric")
 
 
-
-## --------------------------------------------------------------------
-## avg # of people/workers affected per bbl (remaining field, exiting field)
-## --------------------------------------------------------------------
-
-## excise, carbon, setback 1-mile
-
-field_files <- paste0(field_out, c("reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_field.rds",
-                 "reference case_setback_5280ft_no quota_price floor_no ccs_low innovation_no tax_field.rds",
-                 "reference case_no_setback_no quota_carbon_setback_5280ft-no_setback-no ccs_no ccs_low innovation_no tax_field.rds",
-                 "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_5280ft_field.rds"))
-
-field_dt = setDT(rbindlist(lapply(field_files, readRDS)))
-
-field_dt <- field_dt[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(scen_id, carbon_price_scenario, setback_scenario,
-                                                                       excise_tax_scenario, doc_field_code, doc_fieldname,
-                                                                       year)]
-
-## people affected
-
-##  cross walk between >200 oil fields and ~20 field cluster. 
-## Use this crosswalk to go from oil fields up to field clusters.
-field_cluster_xwalk <- fread(paste0(health_out, field_cluster_file))
-field_cluster_xwalk[, NAME := NULL]
-field_cluster_xwalk[, input_fid := NULL]
-field_cluster_xwalk[, doc_field_code := sprintf("%03d", doc_field_code)]
-
-
-## cluster-level number of affected population, called affected_pop (from a single pulse of PM25) 
-## and population weighted DAC share, called share_dac_weighted. Use these two variables.
-cluster_pop_dt <- fread(paste0(health_out, cluster_pop_file))
-                        
-## join the data sets
-field_dt_health <- merge(field_dt, field_cluster_xwalk,
-                         by = "doc_field_code",
-                         all.x = T)
-
-field_dt_health <-  merge(field_dt_health, cluster_pop_dt,
-                          by = "id",
-                          all.x = T)
-
-## save
-fwrite(field_dt_health, paste0(save_info_path, 'field_dt_health.csv'))
-
-
 ## ------------------------------------------------------------
 ## DAC share
 ## -------------------------------------------------------------
 
 ## labor, county
-
 labor_out <- fread(paste0(main_path, extraction_folder_path, 'county-results/subset_county_results.csv'))
 
 ## filter scens
@@ -521,6 +493,23 @@ labor_dac_state[, dac_comp_share := cumul_dac_comp / cumul_total_comp]
 labor_dac_state[, dac_comp_pv_share := cumul_dac_comp_PV / cumul_total_comp_PV]
 labor_dac_state[, dac_emp_share := cumul_dac_emp / cumul_total_emp]
 
+## prepare for joining with health
+labor_dac_bind <- labor_dac_state[, .(scen_id, target, policy_intervention, ccs_option, 
+                                      cumul_dac_comp, cumul_total_comp, dac_comp_share,
+                                      cumul_dac_comp_PV, cumul_total_comp_PV, dac_comp_pv_share,
+                                      cumul_dac_emp, cumul_total_emp, dac_emp_share)]
+
+labor_dac_bind <- melt(labor_dac_bind, measure.vars = c('cumul_dac_comp', 'cumul_total_comp', 'dac_comp_share',
+                                                        'cumul_dac_comp_PV', 'cumul_total_comp_PV', 'dac_comp_pv_share',
+                                                        'cumul_dac_emp', 'cumul_total_emp', 'dac_emp_share'),
+                       variable.name = "metric", value.name = "value")
+
+labor_dac_bind[, type := fifelse(metric %in% c("cumul_dac_comp", "cumul_dac_comp_PV", "cumul_dac_emp"), "DAC",
+                                 fifelse(metric %in% c("cumul_total_comp", "cumul_total_comp_PV", "cumul_total_emp"), "Total", "DAC share"))]
+
+
+labor_dac_bind[, category := "Employment"]
+
 
 
 ##----------------------------------------------------
@@ -540,79 +529,219 @@ health_scens <- merge(health_scens, unique(state_levels[, .(scen_id, policy_inte
 ## calculate dac share, mortality
 health_scens[, dac_multiplier := fifelse(disadvantaged == "Yes", 1, 0)]
 
-health_scens[, dac_share_mort := dac_multiplier * mortality_level]
-health_scens[, dac_share_pv := dac_multiplier * cost_PV]
+## calculate the cost associated with premature mortality
+health_dac_state <- health_scens %>%
+  left_join(growth_rates, by = c("year" = "year")) %>%
+  rowwise() %>%
+  mutate(VSL = future_WTP(income_elasticity_mort, 
+                          (cum_growth - 1),
+                          VSL_2019),
+         cost = mortality_level * VSL) %>%
+  ungroup () %>%
+  group_by(year) %>%
+  mutate(cost_PV = cost/ ((1 + discount_rate) ^ (year - 2019))) %>%
+  ungroup() %>%
+  select(scen_id, census_tract,policy_intervention, target, ccs_option, disadvantaged, dac_multiplier,
+         mortality_level, cost, cost_PV)
+
+setDT(health_dac_state)
+
+## dac 
+health_dac_state[, dac_mort := dac_multiplier * mortality_level]
+health_dac_state[, dac_mort_cost := dac_multiplier * cost]
+health_dac_state[, dac_mort_pv := dac_multiplier * cost_PV]
 
 ## aggregate at state level
-health_dac_state <- health_scens[, .(cumul_dac_mort = sum(dac_share_mort), 
+health_dac_state <- health_dac_state[, .(cumul_dac_mort = sum(dac_mort), 
                                      cumul_total_mort = sum(mortality_level),
-                                     cumul_dac_pv = sum(dac_share_pv),
+                                     cumul_dac_cost = sum(dac_mort_cost),
+                                     cumul_total_cost = sum(cost),
+                                     cumul_dac_pv = sum(dac_mort_pv),
                                      cumul_total_pv = sum(cost_PV)), by = .(scen_id, target, policy_intervention, ccs_option)]
 
 health_dac_state[, dac_share_mort := cumul_dac_mort / cumul_total_mort]
+health_dac_state[, dac_share_cost := cumul_dac_cost / cumul_total_cost]
 health_dac_state[, dac_share_pv := cumul_dac_pv / cumul_total_pv]
 
-
-
-## combine health and labor dac dfs
-labor_dac_bind <- labor_dac_state[, .(scen_id, target, policy_intervention, ccs_option, 
-                                      cumul_dac_comp, cumul_total_comp, dac_comp_share,
-                                      cumul_dac_comp_PV, cumul_total_comp_PV, dac_comp_pv_share,
-                                      cumul_dac_emp, cumul_total_emp, dac_emp_share)]
-
-labor_dac_bind <- melt(labor_dac_bind, measure.vars = c('cumul_dac_comp', 'cumul_total_comp', 'dac_comp_share',
-                                                        'cumul_dac_comp_PV', 'cumul_total_comp_PV', 'dac_comp_pv_share',
-                                                        'cumul_dac_emp', 'cumul_total_emp', 'dac_emp_share'),
+# prepare for binding with labor
+health_dac_bind <- melt(health_dac_state, measure.vars = c("cumul_dac_mort", "cumul_total_mort", "dac_share_mort",
+                                                          "cumul_dac_cost", "cumul_total_cost", "dac_share_cost",
+                                                          "cumul_dac_pv", "cumul_total_pv", "dac_share_pv"),
                        variable.name = "metric", value.name = "value")
 
-labor_dac_bind[, type := fifelse(metric %in% c("cumul_dac_comp", "cumul_dac_comp_PV", "cumul_dac_emp"), "DAC",
-                                 fifelse(metric %in% c("cumul_total_comp", "cumul_total_comp_PV", "cumul_total_emp"), "Total", "DAC share"))]
+health_dac_bind[, type := fifelse(metric %in% c("cumul_dac_mort", "cumul_dac_pv", "cumul_dac_cost"), "DAC",
+                                 fifelse(metric %in% c("cumul_total_mort", "cumul_total_cost", "cumul_total_pv"), "Total", "DAC share"))]
 
 
-labor_dac_bind[, metric := "Employment"]
+health_dac_bind[, category := "Mortality"]
+
+## bind
+dac_df <- rbind(health_dac_bind, labor_dac_bind)
+
+dac_df[, ccs_scenario := fifelse(ccs_option == "no CCS", "no ccs", "medium CCS cost")]
+
+
+dac_df <- merge(dac_df, setback_2045,
+                by = c("ccs_scenario", "target"),
+                all.x = T)
+
+dac_df[, target_label := fifelse(target == "BAU", target,
+                                       fifelse(target == "90% GHG reduction", "90%", target_label))]
+
+dac_df <- merge(dac_df, ghg_2045,
+                      by = c("scen_id", "ccs_scenario"),
+                      all.x = T)
+
+
+fwrite(dac_df, paste0(save_info_path, 'dac_health_labor.csv'))
 
 
 
-## health
-## update health to calculate health values (mortality level not delta)
 
+## -------------------------------------------------------
+## Relative to BAU
+## -------------------------------------------------------
+
+## bau
+bau_emp <- labor_scens[policy_intervention == "BAU", .(ccs_scenario, ccs_option, county, year, total_emp, total_comp, total_comp_PV)]
+setnames(bau_emp, c("total_emp", "total_comp", "total_comp_PV"), c("bau_emp", "bau_comp", "bau_pv"))
+
+## join
+labor_bau_dac <-  merge(labor_scens[, .(scen_id, carbon_price_scenario, ccs_scenario,
+                                        setback_scenario, excise_tax_scenario, policy_intervention,
+                                        target, ccs_option, county,
+                                        dac_share, year,total_emp, total_comp, total_comp_PV)], bau_emp,
+                        by = c("ccs_scenario", "ccs_option", "county", "year"),
+                        all.x = T)
+
+labor_bau_dac[, diff_emp := total_emp - bau_emp]
+labor_bau_dac[, diff_comp := total_comp - bau_comp]
+labor_bau_dac[, diff_pv := total_comp_PV - bau_pv]
+labor_bau_dac[, dac_emp := diff_emp * dac_share]
+labor_bau_dac[, dac_comp := diff_comp * dac_share]
+labor_bau_dac[, dac_pv := diff_pv * dac_share]
+
+## calculate dac share, labor FTE
+labor_bau_dac <- labor_bau_dac[, .(cumul_dac_emp_loss = sum(dac_emp),
+                                   cumul_total_emp_loss = sum(diff_emp),
+                                   cumul_dac_comp_loss = sum(dac_comp),
+                                   cumul_total_comp_loss = sum(diff_comp),
+                                   cumul_dac_pv_loss = sum(dac_pv),
+                                   cumul_total_pv_loss = sum(diff_pv)), by = .(scen_id, carbon_price_scenario,
+                                                                           setback_scenario, excise_tax_scenario,
+                                                                           target, policy_intervention, ccs_option)]
+
+labor_bau_dac[, dac_share_emp := cumul_dac_emp_loss / cumul_total_emp_loss]
+labor_bau_dac[, dac_share_comp := cumul_dac_comp_loss / cumul_total_comp_loss]
+labor_bau_dac[, dac_share_pv := cumul_dac_pv_loss / cumul_total_pv_loss]
+
+
+# ## cumulative job loss rel bau / cumulative ghg savings rel bau
+# ## ---------------------------------------------------------------
 # 
-# health_dac_bind <- health_dac_state[, .(scen_id, target, policy_intervention, ccs_option, cumul_dac_mort,
-#                                         cumul_total_mort, dac_share_mort, cumul_dac_pv, cumul_total_pv, dac_share_pv)]
+# ## add cumulative ghg savings relative to bau
+# cumul_ghg_df <- bau_cumulative_df[metric == "total_state_ghg_MtCO2", .(scen_id, sum_metric, ghg_2045_perc_reduction)]
+# setnames(cumul_ghg_df, "sum_metric", "cumul_ghg_savings")
 # 
-# health_dac_bind <- melt(health_dac_bind, measure.vars = c("cumul_dac_mort", "cumul_total_mort", "dac_share_mort",
-#                                                           "cumul_dac_pv", "cumul_total_pv", "dac_share_pv"),
-#                        variable.name = "metric", value.name = "value")
-# 
-# health_dac_bind[, type := fifelse(metric %in% c("cumul_dac_mort", "cumul_dac_pv"), "DAC",
-#                                  fifelse(metric %in% c("cumul_total_mort", "cumul_total_pv"), "Total", "DAC share"))]
-# 
-# 
-# health_dac_bind[, metric := "Mortality"]
-# 
-# ## bind
-# 
-# dac_df <- rbind(health_dac_bind, labor_dac_bind)
-# 
-# dac_df[, ccs_scenario := fifelse(ccs_option == "no CCS", "no ccs", "medium CCS cost")]
-# 
-# 
-# dac_df <- merge(dac_df, setback_2045,
-#                 by = c("ccs_scenario", "target"),
-#                 all.x = T)
-# 
-# dac_df[, target_label := fifelse(target == "BAU", target,
-#                                        fifelse(target == "90% GHG reduction", "90%", target_label))]
-# 
-# dac_df <- merge(dac_df, ghg_2045,
-#                       by = c("scen_id", "ccs_scenario"),
+# ## labor ghg
+# labor_ghg_df <- merge(labor_dac_state, cumul_ghg_df,
+#                       by = "scen_id",
 #                       all.x = T)
 # 
+# labor_ghg_df[, dac_loss_ghg := cumul_dac_emp_loss / (cumul_ghg_savings * -1)]
+# labor_ghg_df[, total_loss_ghg := cumul_total_emp_loss / (cumul_ghg_savings * -1)]
+# labor_ghg_df[, dac_share_loss_ghg := dac_loss_ghg / total_loss_ghg]
+
+labor_bau_dac <- melt(labor_bau_dac, id.vars = c("scen_id", 
+                                               "target", "policy_intervention", "ccs_option"),
+                     measure.vars = c("cumul_dac_emp_loss", "cumul_total_emp_loss", "dac_share_emp",
+                                      "cumul_dac_comp_loss", "cumul_total_comp_loss", "dac_share_comp",
+                                      "cumul_dac_pv_loss", "cumul_total_pv_loss", "dac_share_pv"),
+                     variable.name = "metric", value.name = "value")
+
+labor_bau_dac[, type := fifelse(metric %in% c("cumul_dac_emp_loss", "cumul_dac_comp_loss", "cumul_dac_pv_loss"), "DAC population",
+                               fifelse(metric %in% c("cumul_total_emp_loss", "cumul_total_comp_loss", "cumul_total_pv_loss"), "Total population", "DAC share"))]
+
+labor_bau_dac$type <- factor(labor_bau_dac$type, levels = c("Total population", "DAC population", "DAC share"))
+
+labor_bau_dac[, category := "Employment"]
+
+
+## health, relative to BAU
+## -----------------------------------------------------
+
+health_dac_bau <- health_scens[, .(scen_id, target, ccs_option, policy_intervention, census_tract, year, mortality_delta, cost, cost_PV, dac_multiplier)]
+
+health_dac_bau[, dac_av_mort := dac_multiplier * mortality_delta]
+health_dac_bau[, dac_av_mort_cost := dac_multiplier * cost]
+health_dac_bau[, dac_av_mort_cost_pv := dac_multiplier * cost_PV]
+
+## aggregate at state level
+health_dac_bau <- health_dac_bau[, .(cumul_dac_av_mort = sum(dac_av_mort),
+                                     cumul_total_av_mort = sum(mortality_delta),
+                                     cumul_dac_av_mort_cost = sum(dac_av_mort_cost),
+                                     cumul_total_av_mort_cost = sum(cost),
+                                     cumul_dac_av_mort_pv = sum(dac_av_mort_cost_pv),
+                                     cumul_total_av_mort_pv = sum(cost_PV)), by = .(scen_id, target, policy_intervention, ccs_option)]
+
+health_dac_bau[, dac_share_av_mort := cumul_dac_av_mort / cumul_total_av_mort]
+health_dac_bau[, dac_share_av_cost := cumul_dac_av_mort_cost / cumul_total_av_mort_cost]
+health_dac_bau[, dac_share_av_pv := cumul_dac_av_mort_pv / cumul_total_av_mort_pv]
+
+# health_dac_state[, dac_share_health := fifelse(is.na(dac_share_health), 0, dac_share_health)]
+
+# ## add cumulative ghg savings relative to bau
 # 
-# fwrite(dac_df, paste0(save_info_path, 'dac_health_labor.csv'))
+# health_dac_ghg <- merge(health_dac_state, cumul_ghg_df,
+#                         by = "scen_id",
+#                         all.x = T)
+# 
+# health_dac_ghg[, dac_av_mort_ghg := cumul_dac_av_mort / cumul_ghg_savings]
+# health_dac_ghg[, total_av_mort_ghg := cumul_total_av_mort / cumul_ghg_savings]
+# health_dac_ghg[, DAC_share_av_mort_ghg := dac_av_mort_ghg / total_av_mort_ghg]
+# 
+health_dac_bau <- melt(health_dac_bau, id.vars = c("scen_id", "target", "policy_intervention",
+                                                        "ccs_option"),
+                            measure.vars = c("cumul_dac_av_mort", "cumul_total_av_mort", "dac_share_av_mort",
+                                             "cumul_dac_av_mort_cost", "cumul_total_av_mort_cost", "dac_share_av_cost",
+                                             "cumul_dac_av_mort_pv", "cumul_total_av_mort_pv", "dac_share_av_pv"),
+                            variable.name = "metric", value.name = "value")
+
+health_dac_bau[, type := fifelse(metric %in% c("cumul_dac_av_mort", "cumul_dac_av_mort_cost", "cumul_dac_av_mort_pv"), "DAC population",
+                                          fifelse(metric %in% c("cumul_total_av_mort", "cumul_total_av_mort_cost", "cumul_total_av_mort_pv"), "Total population", "DAC share"))]
+
+health_dac_bau$type <- factor(health_dac_bau$type, levels = c("Total population", "DAC population", "DAC share"))
+
+health_dac_bau[, category := "Avoided mortalities"]
+
+
+## bind and save
+dac_bau_df <- rbind(labor_bau_dac, health_dac_bau)
+
+dac_bau_df[, ccs_scenario := fifelse(ccs_option == "no CCS", "no ccs", "medium CCS cost")]
+
+
+dac_bau_df <- merge(dac_bau_df, setback_2045,
+                by = c("ccs_scenario", "target"),
+                all.x = T)
+
+dac_bau_df[, target_label := fifelse(target == "BAU", target,
+                                 fifelse(target == "90% GHG reduction", "90%", target_label))]
+
+dac_bau_df <- merge(dac_bau_df, ghg_2045,
+                by = c("scen_id", "ccs_scenario"),
+                all.x = T)
+
+
+fwrite(dac_bau_df, paste0(save_info_path, 'dac_bau_health_labor.csv'))
+
+
+
+
 
 
 ## what is the state dac proportion through time?
+## -----------------------------------------------------
 
 dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
 
@@ -657,110 +786,48 @@ dac_pop_time[, pop_description := "30+ years old"]
 fwrite(dac_pop_time, paste0(save_info_path, 'state_dac_ratios.csv'))
 
 
-## Relative to BAU
-## --------------------------------------------
 
-## bau
-bau_emp <- labor_scens[policy_intervention == "BAU", .(ccs_scenario, ccs_option, county, year, total_emp, total_comp, total_comp_PV)]
-setnames(bau_emp, c("total_emp", "total_comp", "total_comp_PV"), c("bau_emp", "bau_comp", "bau_pv"))
+### --------------------------------------------------------------------
+## avg # of people/workers affected per bbl (remaining field, exiting field)
+## --------------------------------------------------------------------
 
-## join
-labor_bau_dac <-  merge(labor_scens, bau_emp,
-                        by = c("ccs_scenario", "ccs_option", "county", "year"),
-                        all.x = T)
+## excise, carbon, setback 1-mile
 
-labor_bau_dac[, diff_emp := total_emp - bau_emp]
-labor_bau_dac[, diff_comp := total_comp - bau_comp]
-labor_bau_dac[, diff_pv := total_comp_PV - bau_pv]
-labor_bau_dac[, dac_emp := diff_emp * dac_share]
-labor_bau_dac[, dac_comp := diff_comp * dac_share]
-labor_bau_dac[, dac_pv := diff_pv * dac_share]
+field_files <- paste0(field_out, c("reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_field.rds",
+                                   "reference case_setback_5280ft_no quota_price floor_no ccs_low innovation_no tax_field.rds",
+                                   "reference case_no_setback_no quota_carbon_setback_5280ft-no_setback-no ccs_no ccs_low innovation_no tax_field.rds",
+                                   "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_5280ft_field.rds"))
 
-## calculate dac share, labor FTE
-labor_bau_dac <- labor_bau_dac[, .(cumul_dac_emp_loss = sum(dac_emp),
-                                   cumul_total_emp_loss = sum(diff_emp),
-                                   cumul_dac_comp_loss = sum(dac_comp),
-                                   cumul_total_comp_loss = sum(diff_comp),
-                                   cumul_dac_pv = sum(dac_pv),
-                                   cumul_total_pv = sum(diff_pv)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
-                                                                           setback_scenario, excise_tax_scenario,
-                                                                           target, policy_intervention, ccs_option)]
+field_dt = setDT(rbindlist(lapply(field_files, readRDS)))
 
-labor_bau_dac[, dac_share_emp := cumul_dac_emp_loss / cumul_total_emp_loss]
-labor_bau_dac[, dac_share_comp := cumul_dac_comp_loss / cumul_total_comp_loss]
-labor_bau_dac[, dac_share_pv := cumul_dac_pv / cumul_total_pv]
+field_dt <- field_dt[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(scen_id, carbon_price_scenario, setback_scenario,
+                                                                       excise_tax_scenario, doc_field_code, doc_fieldname,
+                                                                       year)]
+
+## people affected
+
+##  cross walk between >200 oil fields and ~20 field cluster. 
+## Use this crosswalk to go from oil fields up to field clusters.
+field_cluster_xwalk <- fread(paste0(health_out, field_cluster_file))
+field_cluster_xwalk[, NAME := NULL]
+field_cluster_xwalk[, input_fid := NULL]
+field_cluster_xwalk[, doc_field_code := sprintf("%03d", doc_field_code)]
 
 
-# ## cumulative job loss rel bau / cumulative ghg savings rel bau
-# ## ---------------------------------------------------------------
-# 
-# ## add cumulative ghg savings relative to bau
-# cumul_ghg_df <- bau_cumulative_df[metric == "total_state_ghg_MtCO2", .(scen_id, sum_metric, ghg_2045_perc_reduction)]
-# setnames(cumul_ghg_df, "sum_metric", "cumul_ghg_savings")
-# 
-# ## labor ghg
-# labor_ghg_df <- merge(labor_dac_state, cumul_ghg_df,
-#                       by = "scen_id",
-#                       all.x = T)
-# 
-# labor_ghg_df[, dac_loss_ghg := cumul_dac_emp_loss / (cumul_ghg_savings * -1)]
-# labor_ghg_df[, total_loss_ghg := cumul_total_emp_loss / (cumul_ghg_savings * -1)]
-# labor_ghg_df[, dac_share_loss_ghg := dac_loss_ghg / total_loss_ghg]
-# 
-labor_bau_dac <- melt(labor_bau_dac, id.vars = c("scen_id", "oil_price_scenario",
-                                               "target", "policy_intervention", "ccs_option"),
-                     measure.vars = c("cumul_dac_emp_loss", "cumul_total_emp_loss", "dac_share_emp",
-                                      "cumul_dac_comp_loss", "cumul_total_comp_loss", "dac_share_comp",
-                                      "cumul_dac_pv", "cumul_total_pv", "dac_share_pv"),
-                     variable.name = "type", value.name = "value")
+## cluster-level number of affected population, called affected_pop (from a single pulse of PM25) 
+## and population weighted DAC share, called share_dac_weighted. Use these two variables.
+cluster_pop_dt <- fread(paste0(health_out, cluster_pop_file))
 
-labor_bau_dac[, type := fifelse(type %in% c("cumul_dac_emp_loss", "cumul_dac_comp_loss", "cumul_dac_pv"), "DAC population",
-                               fifelse(type %in% c("cumul_total_emp_loss", "cumul_total_comp_loss", "cumul_total_pv"), "Total population", "DAC share"))]
+## join the data sets
+field_dt_health <- merge(field_dt, field_cluster_xwalk,
+                         by = "doc_field_code",
+                         all.x = T)
 
-labor_bau_dac$type <- factor(labor_bau_dac$type, levels = c("Total population", "DAC population", "DAC share"))
+field_dt_health <-  merge(field_dt_health, cluster_pop_dt,
+                          by = "id",
+                          all.x = T)
+
+## save
+fwrite(field_dt_health, paste0(save_info_path, 'field_dt_health.csv'))
 
 
-
-
-## health, relative to BAU
-## -----------------------------------------------------
-
-# health_dac_bau <- health_dac_state[, .(scen_id, census_tract, year, mortality_delta, cost_PV, dac_multiplier)]
-# 
-# health_dac_bau[, dac_share_av_mort:= dac_multiplier * mortality_delta]
-# 
-# ## aggregate at state level
-# health_dac_state <- health_scens[, .(cumul_dac_av_mort = sum(dac_share_av_mort),
-#                                      cumul_total_av_mort = sum(mortality_delta)), by = .(scen_id, target, policy_intervention, ccs_option)]
-# 
-# health_dac_state[, dac_share_health := cumul_dac_av_mort / cumul_total_av_mort]
-# 
-# # health_dac_state[, dac_share_health := fifelse(is.na(dac_share_health), 0, dac_share_health)]
-# 
-# 
-# 
-# ## add cumulative ghg savings relative to bau
-# 
-# health_dac_ghg <- merge(health_dac_state, cumul_ghg_df,
-#                         by = "scen_id",
-#                         all.x = T)
-# 
-# health_dac_ghg[, dac_av_mort_ghg := cumul_dac_av_mort / cumul_ghg_savings]
-# health_dac_ghg[, total_av_mort_ghg := cumul_total_av_mort / cumul_ghg_savings]
-# health_dac_ghg[, DAC_share_av_mort_ghg := dac_av_mort_ghg / total_av_mort_ghg]
-# 
-# health_cumul_metric <- melt(health_dac_ghg, id.vars = c("scen_id", "target", "policy_intervention",
-#                                                         "ccs_option", "ghg_2045_perc_reduction"),
-#                             measure.vars = c("dac_av_mort_ghg", "total_av_mort_ghg", "DAC_share_av_mort_ghg"),
-#                             variable.name = "pop_type", value.name = "avoided_mort_per_ghg")
-# 
-# health_cumul_metric[, pop_type := fifelse(pop_type == "dac_av_mort_ghg", "DAC population",
-#                                           fifelse(pop_type == "total_av_mort_ghg", "Total population", "DAC share"))]
-# 
-# health_cumul_metric$pop_type <- factor(health_cumul_metric$pop_type, levels = c("Total population", "DAC population", "DAC share"))
-# 
-# health_dac_bind[, metric := "Avoided mortalities per avoided GHG"]
-# 
-# setnames(health_dac_bind, c("avoided_mort_per_ghg"), c("value"))
-# 
-# 
