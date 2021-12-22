@@ -62,7 +62,28 @@ npv_dt <- npv_dt[ccs_option != "medium CCS cost"]
 npv_dt$target_label <- factor(npv_dt$target_label, levels = c("55%", "60%", "75%", "90%"))
 
 npv_dt$policy_intervention <- factor(npv_dt$policy_intervention, levels = c("carbon tax", "excise tax",
-                                                                                  "setback"))
+                                                                                  "setback", "carbon tax & setback"))
+
+## bind with dac
+npv_dt_bind <- npv_dt[, .(scen_id, ccs_option, policy_intervention, title, ghg_2045_perc_reduction,
+                          measure, value)]
+
+dac_bau_dt_bind <- dac_bau_dt[metric %in% c("dac_share_pv", "dac_share_av_pv") &
+                                type == "DAC share", .(scen_id, ccs_option, policy_intervention, category, ghg_2045_perc_reduction,
+                                  type, value, metric)]
+
+dac_bau_dt_bind[, metric := NULL]
+
+setnames(dac_bau_dt_bind, c("category", "type"), c("title", "measure"))
+
+dac_bau_dt_bind[, title := fifelse(title == "Avoided mortalities", "Health: Avoided mortality", "Labor: Compensation")]
+
+## rbind
+npv_dac_dt <- rbind(npv_dt_bind, dac_bau_dt_bind)
+
+npv_dac_dt$measure <- factor(npv_dac_dt$measure, levels = c("NPV (2020 USD billion)",
+                                                            "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)",
+                                                            "DAC share"))
 
 
 ## fig
@@ -87,57 +108,108 @@ npv_dt$policy_intervention <- factor(npv_dt$policy_intervention, levels = c("car
 #         legend.key.width= unit(1, 'cm'),
 #         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))  
 
+## 2019 DAC line
+dac_line <- dac_pop_dt %>% 
+  filter(year == 2019) %>% 
+  select(dac_ratio) %>% 
+  as.numeric()
 
-fig_benefit_x_metric_v2 <- ggplot(npv_dt %>% filter(!target %in% c('BAU', '1000ft setback GHG'),
-                                                 policy_intervention != 'carbon tax & setback',
-                                                 unit != "value_billion",
-                                                 title != "Climate: Abated GHG emissions"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+dac_line_df <- npv_dac_dt %>%
+  filter(measure == "DAC share") %>%
+  mutate(value = dac_line,
+         text = paste0("2019 DAC ratio = ", round(dac_line, 2)))
+
+
+
+fig_benefit_npv <- ggplot(npv_dac_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
+                                                title == "Health: Avoided mortality",
+                                                 ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "NPV per avoided GHG MtCO2e",
+  geom_line(data = dac_line_df %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
+                                          ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value), color = "darkgrey", lty = "dashed") +
+  labs(title = "Avoided mortality",
        color = "Policy intervention",
-       y = "2020 USD million per MtCO2e",
-       x = 'GHG emissions reduction target (%, 2045 vs 2019)') +
-  facet_wrap(~title) +
+       y = NULL,
+       x = " ") +
+  facet_wrap(~measure, ncol = 3, scales = "free_y") +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = policy_colors_subset) +
-  # scale_shape_manual(values = c("carbon tax" = 17,
-  #                               "excise tax" = 15,
-  #                               "setback" = 3)) +
-  # scale_y_continuous(labels = comma) +
   theme_line +
-  theme(legend.position = "left",
-        legend.box = "vertical",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-
-
-## bar plot
-fig_benefit_x_metric_bar <- ggplot(npv_dt %>% filter(!target %in% c('BAU', '1000ft setback GHG'),
-                                                    policy_intervention != 'carbon tax & setback',
-                                                    unit != "value_billion",
-                                                    title != "Climate: Abated GHG emissions"), aes(x = target_label, y = value, fill = policy_intervention)) +
-  geom_bar(position = "dodge", stat = "identity") +
-  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "NPV per avoided GHG MtCO2e",
-       fill = "Policy intervention",
-       y = "2020 USD million per MtCO2e",
-       x = NULL) +
-  facet_wrap(~title) +
-  # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
-  # scale_x_continuous(limits = c(0, NA)) +
-  scale_fill_manual(values = policy_colors_subset) +
-  # scale_shape_manual(values = c("carbon tax" = 17,
-  #                               "excise tax" = 15,
-  #                               "setback" = 3)) +
-  # scale_y_continuous(labels = comma) +
-  theme_line +
-  theme(legend.position = "left",
+  theme(legend.position = "none",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
+
+
+fig_benefit_labor <- ggplot(npv_dac_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
+                                                        title == "Labor: Compensation",
+                                                        ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  geom_line(data = dac_line_df %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
+                                          ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value), color = "darkgrey", lty = "dashed") +
+  labs(title = "Employment loss",
+       color = "Policy intervention",
+       y = NULL,
+       x = 'GHG emissions reduction target (%, 2045 vs 2019)') +
+  facet_wrap(~measure, ncol = 3, scales = "free_y") +
+  # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
+  # scale_x_continuous(limits = c(0, NA)) +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "none",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(vjust = 0.5, hjust=1)) 
+
+
+
+
+## save both versions of DAC figure for review
+## combine the figures
+
+fig3_combine <- plot_grid(
+  fig_benefit_npv + theme(legend.position="none"),
+  fig_benefit_labor + theme(legend.position="none"),
+  nrow = 2,
+  rel_heights = c(1, 1)
+)
+
+ggsave(fig3_combine,
+       filename = file.path(main_path, fig_path, 'figure3.png'),
+       width = 7.5,
+       height = 7.5,
+       units = "in")
+
+
+
+
+# ## bar plot
+# fig_benefit_x_metric_bar <- ggplot(npv_dt %>% filter(!target %in% c('BAU', '1000ft setback GHG'),
+#                                                     policy_intervention != 'carbon tax & setback',
+#                                                     unit != "value_billion",
+#                                                     title != "Climate: Abated GHG emissions"), aes(x = target_label, y = value, fill = policy_intervention)) +
+#   geom_bar(position = "dodge", stat = "identity") +
+#   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+#   labs(title = "NPV per avoided GHG MtCO2e",
+#        fill = "Policy intervention",
+#        y = "2020 USD million per MtCO2e",
+#        x = NULL) +
+#   facet_wrap(~title) +
+#   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
+#   # scale_x_continuous(limits = c(0, NA)) +
+#   scale_fill_manual(values = policy_colors_subset) +
+#   # scale_shape_manual(values = c("carbon tax" = 17,
+#   #                               "excise tax" = 15,
+#   #                               "setback" = 3)) +
+#   # scale_y_continuous(labels = comma) +
+#   theme_line +
+#   theme(legend.position = "left",
+#         legend.box = "vertical",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
 
 ## Equity portion
@@ -147,8 +219,7 @@ fig_benefit_x_metric_bar <- ggplot(npv_dt %>% filter(!target %in% c('BAU', '1000
 
 dac_dt_filt <- dac_dt[ccs_option == "no CCS" &
                  type == "DAC share" &
-                 policy_intervention != "carbon tax & setback" &
-                 target_label != "55%"]
+                 policy_intervention != "carbon tax & setback"]
 
 dac_dt_filt$category <- factor(dac_dt_filt$category, levels = c("Mortality", "Employment"))
 

@@ -28,7 +28,6 @@ levels_dt <- fread(paste0(main_path, fig_path, levels_name))
 ## filter out carbon + setback
 levels_dt <- levels_dt[policy_intervention != 'carbon tax & setback' & ccs_scenario == "no ccs"]
 
-
 ## horizontal panel, A) production; B) GHG emissions; C) Cumulative GHG emissions x 2045 emissions reduction
 
 # prod_fig <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
@@ -57,21 +56,15 @@ levels_dt <- levels_dt[policy_intervention != 'carbon tax & setback' & ccs_scena
 
 ## version 2, categorical colors for policy
 prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
-                                        year > 2019,
-                                        policy_intervention != "BAU",
-                                        target_label != "55%"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+                                        year > 2019), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
-                                        year > 2019,
-                                        policy_intervention == "BAU"), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  annotate("text", x = 2044, y = 85, label = "BAU") +
   labs(title = "Oil production",
        x = NULL,
        y = "million bbls",
-       color = "Policy intervention",
+       color = "Policy",
        lty = "2045 GHG emission target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("60%" = "dashed", "75%" = "dotted", "90%" = "dotdash")) +
+  scale_linetype_manual(values = c("55%" = "longdash", "60%" = "dotted", "75%" = "dashed", "90%" = "dotdash")) +
   scale_color_manual(values = policy_colors_subset) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
@@ -98,7 +91,7 @@ prod_fig_legend <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
        color = "Policy intervention",
        lty = "2045 GHG emission target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("60%" = "dashed", "75%" = "dotted", "90%" = "dotdash")) +
+  scale_linetype_manual(values = c("55%" = "longdash", "60%" = "dotted", "75%" = "dashed", "90%" = "dotdash")) +
   scale_color_manual(values = c(policy_colors_subset)) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
@@ -140,8 +133,7 @@ prod_fig_legend <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
 ## v2 ghg
 ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                           year > 2019,
-                                          policy_intervention != "BAU",
-                                          target_label != "55%"), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
+                                          policy_intervention != "BAU"), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.8) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         year > 2019,
@@ -153,7 +145,7 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
        color = "Policy intervention",
        lty = "2045 GHG emission target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("60%" = "dashed", "75%" = "dotted", "90%" = "dotdash")) +
+  scale_linetype_manual(values = c("55%" = "longdash", "60%" = "dotted", "75%" = "dashed", "90%" = "dotdash")) +
   scale_color_manual(values = policy_colors_subset) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
@@ -193,7 +185,7 @@ cumul_ghg$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = 
 #         legend.background = element_rect(fill = "white", color = "grey")) 
 
 
-ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% filter(target_label != "55%"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
+ghg_cumul_fig_v2 <- ggplot(cumul_ghg, aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "Cumulative GHG emissions",
        x = "GHG emissions reduction target (%, 2045 vs 2019)",
