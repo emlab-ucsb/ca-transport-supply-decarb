@@ -15,7 +15,11 @@ library(foreign)
 library(haven)
 library(readr)
 library(dplyr)
+library(maps)
 rm(list=ls())
+
+ca_crs <- 3488
+
 #DANAE'S MACHINE
 outputFiles <- "C:/Users/dhern125/Dropbox/UCSB-PhD/emLab/CALEPA/data/academic_output"
 sourceFiles <- "C:/Users/dhern125/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix"
@@ -97,14 +101,24 @@ field1wgs84<-st_transform(field1,4326)
 
 field1_intersection<-st_intersection(LA_metro, field1wgs84)
 
+
+
+
 LA <- map%>%subset(COUNTYFP=='037')%>%dplyr::filter(AWATER<ALAND)
+LA1<-st_transform(LA,4326)
+LA2<-st_intersection(LA_metro,LA1)
+
+map2<-st_transform(map,ca_crs)
+all_SC<-st_intersection(california,map2)
+
+
 total_pm25<-ggplot (data = LA) +
-  geom_sf(data = LA, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")")))  +
+  geom_sf(data = LA2, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")")))  +
   scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", na.value = "gray50",
                       limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
   #geom_sf(data = LA_contour_cropped, fill="transparent", color="gray65") +
   geom_sf(data = LA_metro, fill="transparent", color="gray65")+
-  geom_sf(data = field1, fill="transparent", color="black") 
+  geom_sf(data = field1_intersection, fill="transparent", color="black") 
 pdf("C:/Users/dhern125/Documents/GitHub/ca-transport-supply-decarb/health/outputs/LA_field_cluster_1.pdf")
 print(total_pm25)
 dev.off() 
@@ -115,8 +129,8 @@ total_pm25<-ggplot (data = LA) +
   scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", na.value = "gray50",
                       limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
   #geom_sf(data = LAcontour, fill="transparent", color="gray65") +
-  geom_sf(data = LA_contour_cropped, fill="transparent", color="gray65") +
-  #geom_sf(data = LA_metro, fill="transparent", color="gray65")+
+  #geom_sf(data = LA_contour_cropped, fill="transparent", color="gray65") +
+  geom_sf(data = LA_metro, fill="transparent", color="gray65")+
   geom_sf(data = dac_map, fill="transparent", color="gray65",   size = 0.005)+
   geom_sf(data = field1_intersection, fill="transparent", color="black") 
 pdf("C:/Users/dhern125/Documents/GitHub/ca-transport-supply-decarb/health/outputs/LA_field_cluster_1pop.pdf")
@@ -124,8 +138,7 @@ print(total_pm25)
 dev.off() 
 plot(total_pm25)
 
-LA1<-st_transform(LA,4326)
-LA2<-st_intersection(LA_metro,LA1)
+
 
 
 total_pm25<-ggplot (data = LA) +
@@ -142,6 +155,84 @@ dev.off()
 plot(total_pm25)
 
 
-LA$GEOID<-as.double(LA$GEOID)
-torrance_dacs<-left_join(LA,dac_population,by="GEOID")%>%dplyr::select("GEOID","total_pm25","sb535_dac")
-torrance_dacs<-torrance_dacs%>%dplyr::filter(total_pm25>0.00001)
+
+#FORMAT AS TRACEY
+
+## califonia
+states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+
+california <- states %>% filter(ID == "california") %>%
+  st_transform(4269)
+
+## counties boundaries
+county_boundaries <- st_read("C:/Users/dhern125/Dropbox/UCSB-PhD/emLab/CALEPA/data/CA_Counties/CA_Counties/CA_Counties_TIGER2016.shp") %>% 
+  st_transform(ca_crs) %>%
+  dplyr::select(adj_county_name = NAME)
+
+
+
+## crop area
+disp_win2_wgs84 <- st_sfc(st_point(c(-123, 33)), st_point(c(-115, 39)),
+                          crs = 4326)
+
+disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
+
+disp_win2_coord <- st_coordinates(disp_win2_trans)
+
+mapRangeLim<-c(-123,-115,33,39)
+map2<-st_transform(map,ca_crs)
+field1_intersection2<-st_transform(field1_intersection,ca_crs)
+
+mapRangeLim<-c(-114,-123,32.5,39)
+
+total_pm25<-ggplot () +
+  geom_sf(data = map, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
+  scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", 
+                      limits = c(min(map$total_pm25), max(map$total_pm25))) +
+  geom_sf(data = field1_intersection, fill="transparent", color="black") +
+  geom_sf(data = california, fill="transparent", color="gray65")+
+  coord_sf(xlim = mapRangeLim[c(1:2)], ylim = mapRangeLim[c(3:4)])+
+  theme(
+    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+    legend.justification = c(0, 1),
+    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+    legend.position = c(0.10, 0.15),
+    legend.title = element_text(size = 9)) +
+  guides(fill = guide_colourbar(title.position="top", 
+                                title.hjust = 0,
+                                direction = "horizontal"))
+pdf("C:/Users/dhern125/Documents/GitHub/ca-transport-supply-decarb/health/outputs/LA_field_cluster_1pop.pdf")
+print(total_pm25)
+dev.off() 
+plot(total_pm25)
+
+
+
+
+
+ct_map <- ggplot() +
+  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
+  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
+  geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0, alpha = 1, show.legend = TRUE) +
+  # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
+  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
+  # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
+  labs(title = 'Population * PM2.5 by census tract',
+       fill = 'Population * PM2.5',
+       x = NULL,
+       y = NULL) +
+  scale_fill_gradientn(colors = blues_pal) +
+  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
+           datum = ca_crs, expand = FALSE) +
+  # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
+  theme_void() +
+  theme(
+    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+    legend.justification = c(0, 1),
+    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+    legend.position = c(0.10, 0.15),
+    legend.title = element_text(size = 9)) +
+  guides(fill = guide_colourbar(title.position="top", 
+                                title.hjust = 0,
+                                direction = "horizontal"))
