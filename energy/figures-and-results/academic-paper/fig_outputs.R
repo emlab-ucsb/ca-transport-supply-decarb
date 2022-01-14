@@ -610,7 +610,7 @@ setnames(bau_emp, c("total_emp", "total_comp", "total_comp_PV"), c("bau_emp", "b
 labor_bau_dac <-  merge(labor_scens[, .(scen_id, carbon_price_scenario, ccs_scenario,
                                         setback_scenario, excise_tax_scenario, policy_intervention,
                                         target, ccs_option, county,
-                                        dac_share, year,total_emp, total_comp, total_comp_PV)], bau_emp,
+                                        dac_share, year, total_emp, total_comp, total_comp_PV)], bau_emp,
                         by = c("ccs_scenario", "ccs_option", "county", "year"),
                         all.x = T)
 
@@ -761,26 +761,51 @@ ct_inc_pop_45 <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"),
   as.data.table()
 
 ## census tract, population > 29
-ct_pop_time <- ct_inc_pop_45 %>%
+ct_pop_time_30 <- ct_inc_pop_45 %>%
   filter(lower_age > 29) %>%
   group_by(ct_id, year) %>%
-  summarize(ct_pop = sum(pop, na.rm = T)) %>%
+  summarize(ct_pop_30plus = sum(pop, na.rm = T)) %>%
+  ungroup() %>%
+  rename(census_tract = ct_id) %>%
+  as.data.table()
+
+
+## census tract, total population through time
+ct_pop_time_all <- ct_inc_pop_45 %>%
+  group_by(ct_id, year) %>%
+  summarize(ct_pop_all = sum(pop, na.rm = T)) %>%
   ungroup() %>%
   rename(census_tract = ct_id) %>%
   as.data.table()
 
 ## dac share over time
+ct_pop_time <- merge(ct_pop_time_30, ct_pop_time_all, 
+                     by = c("census_tract", "year"),
+                     all.x = T)
+
+## pivot longer
+ct_pop_time <- pivot_longer(ct_pop_time, ct_pop_30plus:ct_pop_all, names_to = "pop_type", values_to = "pop")
+
+## merge with dac
 ct_pop_time <- merge(ct_pop_time, dac_df, 
                      by = c("census_tract"),
                      all.x = T)
 
+setDT(ct_pop_time)
+
 ## calc annual dac share
 ct_pop_time[, dac_mult := fifelse(dac_status == "Yes", 1, 0)]
-ct_pop_time[, dac_pop := ct_pop * dac_mult]
 
-dac_pop_time <- ct_pop_time[, lapply(.SD, sum, na.rm = T), .SDcols = c("ct_pop", "dac_pop"), by = .(year)]
-dac_pop_time[, dac_ratio := dac_pop / ct_pop]
-dac_pop_time[, pop_description := "30+ years old"]
+ct_pop_time[, dac_pop := pop * dac_mult]
+
+dac_pop_time <- ct_pop_time[, lapply(.SD, sum, na.rm = T), .SDcols = c("pop", "dac_pop"), by = .(year, pop_type)]
+dac_pop_time[, dac_ratio := dac_pop / pop]
+
+## diff between all vs 30+?
+diff_dac_df <- pivot_wider(dac_pop_time %>% select(year, pop_type, dac_ratio), names_from = pop_type, values_from = dac_ratio) %>%
+  mutate(diff = ct_pop_all - ct_pop_30plus)
+
+## differences are 2-3% (dac pop all > dac share 30+)
 
 ## save
 fwrite(dac_pop_time, paste0(save_info_path, 'state_dac_ratios.csv'))

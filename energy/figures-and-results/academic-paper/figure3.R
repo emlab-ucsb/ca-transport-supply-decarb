@@ -24,8 +24,8 @@ fig_path <- 'outputs/academic-out/extraction/figures/'
 ## csv names
 # levels_file <- 'state_levels_subset.csv'
 npv_file <- 'npv_x_metric.csv'
-dac_file <- 'dac_health_labor.csv'
-dac_bau_file <- 'dac_bau_health_labor.csv'
+dac_file <- 'dac_health_labor.csv' ## DAC shares not relative to BAU
+dac_bau_file <- 'dac_bau_health_labor.csv' ## DAC shares relative to BAU
 dac_pop_file <- 'state_dac_ratios.csv'
 
 
@@ -64,125 +64,136 @@ npv_dt$target_label <- factor(npv_dt$target_label, levels = c("55%", "60%", "75%
 npv_dt$policy_intervention <- factor(npv_dt$policy_intervention, levels = c("carbon tax", "excise tax",
                                                                                   "setback", "carbon tax & setback"))
 
-## bind with dac
-npv_dt_bind <- npv_dt[, .(scen_id, ccs_option, policy_intervention, title, ghg_2045_perc_reduction,
-                          measure, value)]
-
-dac_bau_dt_bind <- dac_bau_dt[metric %in% c("dac_share_pv", "dac_share_av_pv") &
-                                type == "DAC share", .(scen_id, ccs_option, policy_intervention, category, ghg_2045_perc_reduction,
-                                  type, value, metric)]
-
-dac_bau_dt_bind[, metric := NULL]
-
-setnames(dac_bau_dt_bind, c("category", "type"), c("title", "measure"))
-
-dac_bau_dt_bind[, title := fifelse(title == "Avoided mortalities", "Health: Avoided mortality", "Labor: Compensation")]
-
-## rbind
-npv_dac_dt <- rbind(npv_dt_bind, dac_bau_dt_bind)
-
-npv_dac_dt$measure <- factor(npv_dac_dt$measure, levels = c("NPV (2020 USD billion)",
-                                                            "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)",
-                                                            "DAC share"))
-
-
-## fig
-# fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
-#                                                  policy_intervention != 'carbon tax & setback',
-#                                                  unit != "value_billion",
-#                                                  title != "Climate: Abated GHG emissions"), aes(x = ghg_2045_perc_reduction, y = value, color = target_label, shape = policy_intervention)) +
-#   geom_point(size = 2, alpha = 0.8) +
-#   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-#   labs(title = "NPV per avoided GHG MtCO2e",
-#        x = "GHG emissions reduction target (%, 2045 vs 2019)",
-#        y = NULL,
-#        color = "2045 GHG emission target",
-#        shape = "Policy intervention") +
-#   theme_line +
-#   facet_grid(measure_unit~title, scales = "free_y") +
-#   scale_color_manual(values = c(target_colors)) +
-#   # scale_x_continuous(limits = c(0, NA)) +
-#   # scale_y_continuous(limits = c(NA, 0)) +
-#   theme(legend.position = "left",
-#         legend.box = "vertical",
-#         legend.key.width= unit(1, 'cm'),
-#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))  
-
-## 2019 DAC line
-dac_line <- dac_pop_dt %>% 
-  filter(year == 2019) %>% 
-  select(dac_ratio) %>% 
-  as.numeric()
-
-dac_line_df <- npv_dac_dt %>%
-  filter(measure == "DAC share") %>%
-  mutate(value = dac_line,
-         text = paste0("2019 DAC ratio = ", round(dac_line, 2)))
+# ## bind with dac
+# npv_dt_bind <- npv_dt[, .(scen_id, ccs_option, policy_intervention, title, ghg_2045_perc_reduction,
+#                           measure, value)]
+# 
+# dac_bau_dt_bind <- dac_bau_dt[metric %in% c("dac_share_pv", "dac_share_av_pv") &
+#                                 type == "DAC share", .(scen_id, ccs_option, policy_intervention, category, ghg_2045_perc_reduction,
+#                                   type, value, metric)]
+# 
+# dac_bau_dt_bind[, metric := NULL]
+# 
+# setnames(dac_bau_dt_bind, c("category", "type"), c("title", "measure"))
+# 
+# dac_bau_dt_bind[, title := fifelse(title == "Avoided mortalities", "Health: Avoided mortality", "Labor: Compensation")]
+# 
+# ## rbind
+# npv_dac_dt <- rbind(npv_dt_bind, dac_bau_dt_bind)
+# 
+# npv_dac_dt$measure <- factor(npv_dac_dt$measure, levels = c("NPV (2020 USD billion)",
+#                                                             "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)",
+#                                                             "DAC share"))
 
 
-
-fig_benefit_npv <- ggplot(npv_dac_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
-                                                title == "Health: Avoided mortality",
-                                                 ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+# fig
+fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
+                                                 policy_intervention != 'carbon tax & setback'), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_line(data = dac_line_df %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
-                                          ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value), color = "darkgrey", lty = "dashed") +
-  labs(title = "Avoided mortality",
-       color = "Policy intervention",
+  labs(color = "Policy intervention",
        y = NULL,
-       x = " ") +
-  facet_wrap(~measure, ncol = 3, scales = "free_y") +
+       x = "GHG emissions reduction target (%, 2045 vs 2019)",) +
+  facet_grid(measure ~ title, scales = "free_y") +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
-  theme(legend.position = "none",
-        legend.box = "vertical",
-        legend.key.width= unit(1, 'cm'),
+  theme(legend.position = "bottom",
+        # legend.box = "vertical",
+        # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
-
-fig_benefit_labor <- ggplot(npv_dac_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
-                                                        title == "Labor: Compensation",
-                                                        ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_line(data = dac_line_df %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
-                                          ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value), color = "darkgrey", lty = "dashed") +
-  labs(title = "Employment loss",
-       color = "Policy intervention",
-       y = NULL,
-       x = 'GHG emissions reduction target (%, 2045 vs 2019)') +
-  facet_wrap(~measure, ncol = 3, scales = "free_y") +
-  # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
-  # scale_x_continuous(limits = c(0, NA)) +
-  scale_color_manual(values = policy_colors_subset) +
-  theme_line +
-  theme(legend.position = "none",
-        legend.box = "vertical",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(vjust = 0.5, hjust=1)) 
-
-
-
-
-## save both versions of DAC figure for review
-## combine the figures
-
-fig3_combine <- plot_grid(
-  fig_benefit_npv + theme(legend.position="none"),
-  fig_benefit_labor + theme(legend.position="none"),
-  nrow = 2,
-  rel_heights = c(1, 1)
-)
-
-ggsave(fig3_combine,
+## save figure 3
+ggsave(fig_benefit_x_metric,
        filename = file.path(main_path, fig_path, 'figure3.png'),
        width = 7.5,
        height = 7.5,
        units = "in")
 
+
+## figure 4: DAC, two versions
+## -----------------------------------------
+
+## version 1: relative to BAU
+fig_dac_bau <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback'),
+                                                type == "DAC share",
+                                                metric %in% c("dac_share_pv", "dac_share_av_pv"), 
+                                                ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy intervention",
+       y = "DAC share",
+       x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+  facet_wrap(~category, ncol = 2, scales = "free_y") +
+  # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
+  # scale_x_continuous(limits = c(0, NA)) +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "left",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(vjust = 0.5, hjust=1)) 
+
+## save figure 4, v1
+ggsave(fig_dac_bau,
+       filename = file.path(main_path, fig_path, 'figure4_v1.png'),
+       width = 5.5,
+       height = 3,
+       units = "in")
+
+
+## version 2, not relative
+
+## 2019 DAC line
+dac_line <- dac_pop_dt %>% 
+  filter(year == 2019) %>%
+  select(pop_type, year, dac_ratio) %>%
+  mutate(category = ifelse(pop_type == "ct_pop_all", "Employment", "Mortality"),
+         measure = "DAC share",
+         text = paste0("2019 DAC ratio = ", round(dac_ratio, 2)))
+
+reduction_df <- tibble(ghg_2045_perc_reduction = c(100, 100, 50, 50),
+                       category = c("Employment", "Mortality", "Employment", "Mortality")) %>%
+  left_join(dac_line)
+
+
+# dac_line_df <- npv_dac_dt %>%
+#   filter(measure == "DAC share") %>%
+#   mutate(value = dac_line,
+#          text = paste0("2019 DAC ratio = ", round(dac_line, 2)))
+
+dac_dt$category <- factor(dac_dt$category, levels = c("Mortality", "Employment"))
+reduction_df$category <- factor(reduction_df$category, levels = c("Mortality", "Employment"))
+
+## DAC, PV, not relative to BAU
+dac_fig_v2 <- ggplot(dac_dt %>% filter(type == "DAC share",
+                                       metric %in% c("dac_share_pv", "dac_comp_pv_share"),
+                                       !policy_intervention %in% c('carbon tax & setback'),
+                                       ccs_option == "no CCS"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.6) +
+  labs(x = 'GHG emissions reduction target (%, 2045 vs 2019)',
+       y = "DAC share",
+       color = "Policy intervention") +
+  facet_wrap(~category, scales = "free_y") +
+  scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+  geom_line(data = reduction_df, aes(x = ghg_2045_perc_reduction, y = dac_ratio), inherit.aes = F, color = "darkgray", size = 0.5) +
+  geom_text(data = reduction_df %>% filter(ghg_2045_perc_reduction == 50), aes(x = ghg_2045_perc_reduction + 25,
+                                                                                y = dac_ratio,
+                                                                                label = text), vjust = 0, size = 2, inherit.aes = F) +
+  theme_line +
+  # scale_y_continuous(limits = c(0, NA)) +
+  theme(legend.position = "left",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+## save figure 4, v2
+ggsave(dac_fig_v2,
+       filename = file.path(main_path, fig_path, 'figure4_v2.png'),
+       width = 5.5,
+       height = 3,
+       units = "in")
 
 
 
