@@ -405,6 +405,10 @@ county_df <- prod_x_county %>%
   group_by(adj_county_name, setback_scenario) %>%
   summarise(mean_upstream_kgCO2e_bbl = mean(upstream_kgCO2e_bbl),
             wm_upstream_kgCO2e_bbl = weighted.mean(upstream_kgCO2e_bbl, rel_prod),
+            mean_capex_2020 = mean(capex_2020),
+            wm_capex_2020 = weighted.mean(capex_2020, rel_prod),
+            mean_opex_2020 = mean(opex_2020),
+            wm_opex_2020 = weighted.mean(opex_2020, rel_prod),
             mean_area_coverage = mean(area_coverage),
             wm_area_coverage = weighted.mean(area_coverage, rel_prod)) %>%
   ungroup() %>%
@@ -414,7 +418,10 @@ county_df <- prod_x_county %>%
   left_join(dac_county) %>%
   left_join(mean_prod_county) %>%
   select(county, county_pop, dac_pop, dac_share, mean_prod, total_emp, mean_upstream_kgCO2e_bbl, wm_upstream_kgCO2e_bbl,
-         setback_scenario, mean_area_coverage, wm_area_coverage)
+         mean_capex_2020, wm_capex_2020, mean_opex_2020, wm_opex_2020, setback_scenario, mean_area_coverage, wm_area_coverage)
+
+
+
 
 ## save 
 fwrite(field_df, paste0(main_path, 'outputs/academic-out/extraction/srm-info/field_characteristics.csv'))

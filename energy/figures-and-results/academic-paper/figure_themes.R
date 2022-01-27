@@ -49,5 +49,7 @@ policy_symbols <- c("BAU" = 16,
                     "excise tax" = 15,
                     "setback" = 3)
 
+macro_pal <- c("#233d4d", "#fe7f2d", "#fcca46", "#a1c181", "#619b8a")
+
 
 
