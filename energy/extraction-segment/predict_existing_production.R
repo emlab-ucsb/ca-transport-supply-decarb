@@ -159,10 +159,10 @@ setcolorder(dt_pred_long_adj, c("doc_field_code", "doc_fieldname", "setback_scen
 
 setDT(dt_pred_long_adj)
 
-## calculate prod per bbl, use the number of non-plugged wells
+## calculate prod per well, use the number of non-plugged wells
 dt_pred_long_adj[, prod_per_bbl := fifelse(n_active_wells == 0, 0, production_bbl / n_active_wells)]
 
-## account for setbacks -- multiple by number of active and non-setback wells
+## account for setbacks -- multiple by number of active and non-setback (eligible) wells
 dt_pred_long_adj[, production_bbl_sb := prod_per_bbl * n_not_setback_active]
 
 ## use production_bbl_sb (rename to production_bbl) & n_not_setback_active (rename to adj_no_wells)
