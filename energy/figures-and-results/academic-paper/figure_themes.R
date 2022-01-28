@@ -51,5 +51,10 @@ policy_symbols <- c("BAU" = 16,
 
 macro_pal <- c("#233d4d", "#fe7f2d", "#fcca46", "#a1c181", "#619b8a")
 
+## pals
+
+## distinct ucsb
+ucsb_distinct <- c("#1295D8", "#FFB511", "#FF6E1B", "#E44C9A", "#00778B")
+
 
 
