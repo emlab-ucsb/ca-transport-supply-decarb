@@ -29,14 +29,6 @@ dir.create(file.path(save_path, run_name, 'exit-out'), showWarnings = FALSE)
 # set seed
 set.seed(228)
 
-# source from other scripts -------
-
-# source load_input_info.R to load input info
-source(here::here('energy', 'extraction-segment', 'full-run-revised', 'load_input_info.R'))
-
-# source function to predict extraction
-source(here::here('energy', 'extraction-segment', 'full-run-revised', 'fun_extraction_model_targets.R'))
-
 # load libraries ------
 
 library(data.table)
@@ -45,6 +37,15 @@ library(tidyverse)
 # Multiprocessing
 library(doParallel)
 library(foreach)
+
+# source from other scripts -------
+
+# source load_input_info.R to load input info
+source(here::here('energy', 'extraction-segment', 'full-run-revised', 'load_input_info.R'))
+
+# source function to predict extraction
+source(here::here('energy', 'extraction-segment', 'full-run-revised', 'fun_extraction_model_targets.R'))
+
 
 # step 0: load the inputs
 

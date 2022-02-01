@@ -308,7 +308,8 @@ run_extraction_model <- function(input_scenarios) {
       
       excise_tax_scens_z <- tibble(year = c(2020:2045)) %>%
         mutate(tax_rate = excise_tax_val,
-               excise_tax_scenario = scen[, excise_tax_scenario][1])
+               excise_tax_scenario = scen[, excise_tax_scenario][1]) %>%
+        as.data.table()
       
       carbonpx_scens_z <- copy(carbonpx_scens)
       
