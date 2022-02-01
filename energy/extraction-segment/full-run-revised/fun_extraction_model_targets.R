@@ -309,22 +309,30 @@ run_extraction_model <- function(scenario_selection) {
         mutate(tax_rate = excise_tax_val,
                excise_tax_scenario = scen[, excise_tax_scenario][1])
       
-      carbonpx_scens_z <- carbonpx_scens
+      carbonpx_scens_z <- copy(carbonpx_scens)
       
     } else if (target_pol == "carbon_tax") {
       
+      carbonpx_val <- find_carbonpx_start(scen_z = scen)
       
-      
-      
+      carbonpx_scens_z <- tibble(year = c(2020:2045)) %>%
+        mutate(carbon_price = carbonpx_val,
+               tval = row_number() - 1) %>%
+        fill(carbon_price) %>%
+        mutate(carbon_price = ifelse(tval == 0, carbon_price, calculate_carbonpx_val(x0 = carbon_price, r = perc_inc, t = tval)),
+               carbon_price_usd_per_kg = carbon_price / 1000) %>%
+        select(year, carbon_price_usd_per_kg) %>%
+        as.data.table()
+
+      excise_tax_scens_z <- copy(excise_tax_scens)
+
     } else {
       
       carbonpx_scens_z <- copy(carbonpx_scens)
       
       excise_tax_scens_z <- copy(excise_tax_scens)
       
-      
     }
-    
     
     
     ## create input sheet
@@ -1451,6 +1459,13 @@ run_extraction_model <- function(scenario_selection) {
     
     state_all[, total_ghg_mtCO2e := total_ghg_kgCO2e/1e9]
     
+    ## add excise tax val, carbon px val, target, and target pol to state df
+    state_all[, target_policy := target_pol]
+    state_all[, target := scen[, target][1]]
+    state_all <- state_all[excise_tax_scens_z, on = .(year), allow.cartesian = T, nomatch = 0]
+    state_all <- state_all[carbonpx_scens_z, on = .(year), allow.cartesian = T, nomatch = 0]
+    
+
     ## save rds for each scenario
     ## -------------------------------------------
     
@@ -1488,7 +1503,8 @@ run_extraction_model <- function(scenario_selection) {
     
     rm(vintage_all, state_all, field_all, existing_prod_dt, new_prod_dt, scen, scenarios_dt_z, 
        depl_2019_z, prod_2019_z, trr_2020_z, depl_2020_z, dt_depl_z, dt_info_z, density_dt_merg, 
-       density_dt, exit_out, scenario_name_z)
+       density_dt, exit_out, scenario_name_z, target_pol, carbonpx_scens_z, excise_tax_scens_z,
+       carbonpx_val, excise_tax_val)
     
     # return(output_scen)
     

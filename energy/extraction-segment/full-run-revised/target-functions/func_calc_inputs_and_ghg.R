@@ -65,9 +65,10 @@ calc_carbonpx_ghg <- function(carbonpx_val, scen_z) {
       mutate(carbon_price = carbonpx_val,
              tval = row_number() - 1) %>%
       fill(carbon_price) %>%
-      mutate(carbon_price = ifelse(tval == 0, carbon_price, calculate_val(x0 = carbon_price, r = perc_inc, t = tval)),
+      mutate(carbon_price = ifelse(tval == 0, carbon_price, calculate_carbonpx_val(x0 = carbon_price, r = perc_inc, t = tval)),
              carbon_price_usd_per_kg = carbon_price / 1000) %>%
-      select(year, carbon_price_usd_per_kg)
+      select(year, carbon_price_usd_per_kg) %>%
+    as.data.table()
     
     
     carbonpx_input_z = carbonpx_input_z[carbonpx_stream, on = .(year), nomatch = 0]
