@@ -17,7 +17,8 @@ find_excise_tax <- function(scen_z) {
      
      target_scen <- scen_z %>%
        select(oil_price_scenario:excise_tax_scenario) %>%
-       mutate(excise_tax_scenario = "no tax")
+       mutate(excise_tax_scenario = "no tax",
+              setback_scenario = target_z)
      
      ## create input sheet
      target_scen_dt_z = target_scen[oilpx_scens, on = .(oil_price_scenario), allow.cartesian = T, nomatch = 0]
