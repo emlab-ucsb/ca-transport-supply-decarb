@@ -1,0 +1,75 @@
+# inputs -----
+
+# args = commandArgs(trailingOnly = TRUE)
+run_name = "test_target"
+
+# outputs -------
+
+# save_path             = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+save_path             = '/Volumes/calepa/extraction-out/'
+
+# create save path that is based on the specified path and the run date ------
+
+cur_date              = Sys.Date()
+save_path             = file.path(save_path, paste0('extraction_', cur_date))
+dir.create(save_path, showWarnings = FALSE)
+
+# create directories for individual outputs
+
+save_info_path = file.path(save_path, run_name)
+dir.create(save_info_path)
+
+dir.create(file.path(save_path, run_name, 'vintage-out'), showWarnings = FALSE)
+dir.create(file.path(save_path, run_name, 'field-out'), showWarnings = FALSE)
+dir.create(file.path(save_path, run_name, 'state-out'), showWarnings = FALSE)
+dir.create(file.path(save_path, run_name, 'density-out'), showWarnings = FALSE)
+dir.create(file.path(save_path, run_name, 'depl-out'), showWarnings = FALSE)
+dir.create(file.path(save_path, run_name, 'exit-out'), showWarnings = FALSE)
+
+# set seed
+set.seed(228)
+
+# source from other scripts -------
+
+# source load_input_info.R to load input info
+source(here::here('energy', 'extraction-segment', 'full-run-revised', 'load_input_info.R'))
+
+# source function to predict extraction
+source(here::here('energy', 'extraction-segment', 'full-run-revised', 'fun_extraction_model_targets.R'))
+
+# load libraries ------
+
+library(data.table)
+library(openxlsx)
+library(tidyverse)
+# Multiprocessing
+library(doParallel)
+library(foreach)
+
+# step 0: load the inputs
+
+scen_id_file      = 'scenario_id_list_targets.csv'
+scen_id_list = fread(file.path(academic_out, scen_id_file), header = T)
+
+## filter for scenarios to run
+selected_scens <- scen_id_list[subset_scens == 1]
+
+## filter for test
+test_scens <- selected_scens[oil_price_scenario == 'reference case' &
+                               !carbon_price_scenario %in% c('price ceiling', 'central SCC')]
+
+
+# step 1: run extraction model and get outputs -------
+
+# set start time -----
+start_time <- Sys.time()
+print(paste("Starting extraction model at ", start_time))
+
+# cores
+n_cores <- future::availableCores() - 2
+doParallel::registerDoParallel(cores = n_cores)
+
+run_extraction_model(input_scenarios = test_scens)
+
+elapsed_time <- Sys.time() - start_time
+print(elapsed_time)
