@@ -12,14 +12,15 @@ library(openxlsx)
 library(furrr)
 library(future)
 
-## save location
-save_external <- 0
+
+## model output location
+save_external <- 1
 
 ## current date
 cur_date              = Sys.Date()
 
 ## paths 
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path     <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 
 ## UPDATE THESE WITH NEW RUNS!!!!!
 extraction_folder_path <- 'outputs/predict-production/extraction_2021-12-06/'
@@ -36,7 +37,7 @@ main_path_external <- '/Volumes/calepa/'
 if(save_external == 1) {
   
   ## UPDATE THIS WITH NEW RUNS!!!!!
-  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2021-09-02/full_run/')
+  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2022-02-01/test_target/')
   
   dir.create(paste0(main_path_external, 'academic-out/'), showWarnings = FALSE)
   compiled_save_path  <- paste0(main_path_external, 'academic-out/extraction_', cur_date, '/')
