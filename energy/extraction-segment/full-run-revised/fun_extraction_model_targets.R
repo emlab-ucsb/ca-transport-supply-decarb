@@ -322,8 +322,9 @@ run_extraction_model <- function(input_scenarios) {
                tval = row_number() - 1) %>%
         fill(carbon_price) %>%
         mutate(carbon_price = ifelse(tval == 0, carbon_price, calculate_carbonpx_val(x0 = carbon_price, r = perc_inc, t = tval)),
-               carbon_price_usd_per_kg = carbon_price / 1000) %>%
-        select(year, carbon_price_usd_per_kg) %>%
+               carbon_price_usd_per_kg = carbon_price / 1000,
+               carbon_price_scenario = scen[, carbon_price_scenario][1]) %>%
+        select(year, carbon_price_scenario, carbon_price_usd_per_kg) %>%
         as.data.table()
 
       excise_tax_scens_z <- copy(excise_tax_scens)
