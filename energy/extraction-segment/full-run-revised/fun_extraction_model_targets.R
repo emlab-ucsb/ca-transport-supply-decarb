@@ -1176,7 +1176,7 @@ run_extraction_model <- function(input_scenarios) {
     ## add excise tax val, carbon px val, target, and target pol to state df
     state_all[, target_policy := target_pol]
     state_all[, target := scen[, target][1]]
-    state_all <- state_all[excise_tax_scens_z, on = .(year, exise_tax_scenario), allow.cartesian = T, nomatch = 0]
+    state_all <- state_all[excise_tax_scens_z, on = .(year, excise_tax_scenario), allow.cartesian = T, nomatch = 0]
     state_all <- state_all[carbonpx_scens_z, on = .(year, carbon_price_scenario), allow.cartesian = T, nomatch = 0]
     
 
