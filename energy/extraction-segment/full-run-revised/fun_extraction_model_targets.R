@@ -15,21 +15,23 @@ run_extraction_model <- function(input_scenarios) {
     
     if(target_pol == "excise_tax") {
       
-      excise_tax_val <- find_excise_tax(scen_z = scen)
+      excise_tax_df <- find_excise_tax(scen_z = scen)
       
       excise_tax_scens_z <- tibble(year = c(2020:2045)) %>%
-        mutate(tax_rate = excise_tax_val,
+        mutate(tax_rate = excise_tax_df[, tax_est_val][1],
                excise_tax_scenario = scen[, excise_tax_scenario][1]) %>%
         as.data.table()
       
       carbonpx_scens_z <- copy(carbonpx_scens)
       
+      target_ghg_val = excise_tax_df[, target_val][1]
+      
     } else if (target_pol == "carbon_tax") {
       
-      carbonpx_val <- find_carbonpx_start(scen_z = scen)
-      
+      carbonpx_df <- find_carbonpx_start(scen_z = scen)
+    
       carbonpx_scens_z <- tibble(year = c(2020:2045)) %>%
-        mutate(carbon_price = carbonpx_val,
+        mutate(carbon_price = carbonpx_df[, carbonpx_est_val[1]],
                tval = row_number() - 1) %>%
         fill(carbon_price) %>%
         mutate(carbon_price = ifelse(tval == 0, carbon_price, calculate_carbonpx_val(x0 = carbon_price, r = perc_inc, t = tval)),
@@ -39,6 +41,8 @@ run_extraction_model <- function(input_scenarios) {
         as.data.table()
 
       excise_tax_scens_z <- copy(excise_tax_scens)
+      
+      target_ghg_val = carbonpx_df[, carbonpx_est_val[1]]
 
     } else {
       
@@ -1176,6 +1180,17 @@ run_extraction_model <- function(input_scenarios) {
     ## add excise tax val, carbon px val, target, and target pol to state df
     state_all[, target_policy := target_pol]
     state_all[, target := scen[, target][1]]
+    
+    if(target == "no_target") {
+      
+      state_tmp <- state_all[year == 2045, .(total_ghg_mtCO2e)]
+      
+      target_ghg_val <- state_tmp[, total_ghg_mtCO2e][1]
+      
+    } 
+    
+    
+    state_all[, target_val := target_ghg_val]
     state_all <- state_all[excise_tax_scens_z, on = .(year, excise_tax_scenario), allow.cartesian = T, nomatch = 0]
     state_all <- state_all[carbonpx_scens_z, on = .(year, carbon_price_scenario), allow.cartesian = T, nomatch = 0]
     

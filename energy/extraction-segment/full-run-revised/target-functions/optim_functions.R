@@ -73,7 +73,13 @@ find_excise_tax <- function(scen_z) {
   
   # Extract tax
   tax_est <- fit$par
-  return(tax_est)
+  
+  tax_est_target <- tibble(target_val = target_ghg,
+                           tax_est_val = tax_est) %>%
+    as.data.table()
+  
+  
+  return(tax_est_target)
   
 }
 
@@ -144,7 +150,12 @@ find_carbonpx_start <- function(scen_z) {
   
   # Extract tax
   caarbonpx_est <- fit$par
-  return(caarbonpx_est)
+  
+  carbonpx_est_target <- tibble(target_val = target_ghg,
+                                carbonpx_est_val = caarbonpx_est) %>%
+    as.data.table()
+  
+  return(carbonpx_est_target)
   
 }
 
