@@ -32,7 +32,7 @@ find_excise_tax <- function(scen_z) {
      
      ## compute tax
      target_scen_dt_z[, tax := tax_rate * oil_price_usd_per_bbl]
-     target_scen_dt_z[, tax_rate:= NULL]
+     target_scen_dt_z[, tax_rate := NULL]
      
      ## set order
      setcolorder(target_scen_dt_z, c('year', 'doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
@@ -52,21 +52,24 @@ find_excise_tax <- function(scen_z) {
   # value and the value achieved at a given tax
   
   obj_fun_excise <- function(excise_tax_val){
-    
+
     ghg_actual <- calc_excise_ghg(excise_tax_val = excise_tax_val, scen_z = scen_z)
     diff_abs <- target_ghg - ghg_actual
     diff_use <- ifelse(ghg_actual > target_ghg, 1000, diff_abs)
-    
+
     return(diff_use)
+
+  }
+
   
-    }
   
   ## Solve problem
-  fit <- optim(par = 1,
+  fit <- optim(par = 0.1,
                fn = obj_fun_excise,
                method = "Brent", # suggested for one dimension optimiation
                lower = 0, # set based on tax knowledge
-               upper = 2) # set based on tax knowledge
+               upper = 2, # set based on tax knowledge
+               control = list(maxit = 20000)) 
   
   # Extract tax
   tax_est <- fit$par
@@ -136,7 +139,8 @@ find_carbonpx_start <- function(scen_z) {
                fn = obj_fun_carbonpx,
                method = "Brent", # suggested for one dimension optimiation
                lower = 0, # set based on tax knowledge
-               upper = 5000) # set based on tax knowledge
+               upper = 5000, # set based on tax knowledge
+               control = list(maxit = 20000)) 
   
   # Extract tax
   caarbonpx_est <- fit$par

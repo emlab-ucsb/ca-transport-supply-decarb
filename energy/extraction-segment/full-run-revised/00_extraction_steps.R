@@ -1,7 +1,7 @@
 # inputs -----
 
 # args = commandArgs(trailingOnly = TRUE)
-run_name = "test_target"
+run_name = "all_target"
 
 # outputs -------
 
@@ -55,10 +55,10 @@ scen_id_list = fread(file.path(academic_out, scen_id_file), header = T)
 ## filter for scenarios to run
 selected_scens <- scen_id_list[subset_scens == 1]
 
-## filter for test
-test_scens <- selected_scens[oil_price_scenario == 'reference case' &
-                               !carbon_price_scenario %in% c('price ceiling', 'central SCC')]
-
+# ## filter for test
+# test_scens <- selected_scens[oil_price_scenario == 'reference case' &
+#                                !carbon_price_scenario %in% c('price ceiling', 'central SCC')]
+# 
 
 # step 1: run extraction model and get outputs -------
 
@@ -70,7 +70,7 @@ print(paste("Starting extraction model at ", start_time))
 n_cores <- future::availableCores() - 2
 doParallel::registerDoParallel(cores = n_cores)
 
-run_extraction_model(input_scenarios = test_scens)
+run_extraction_model(input_scenarios = selected_scens)
 
 elapsed_time <- Sys.time() - start_time
 print(elapsed_time)

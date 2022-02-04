@@ -12,7 +12,7 @@ save_external <- 1
 ## path names, ## UPDATE THESE WITH NEW RUNS!!!!!
 extraction_folder_path <- 'outputs/predict-production/extraction_2021-12-06/'
 extraction_folder_name <- 'subset_target_scens/'
-external_path <- 'extraction-out/extraction_2022-02-02/test_target/'
+external_path <- 'extraction-out/extraction_2022-02-02/all_target/'
 
 
 ## current date
@@ -50,7 +50,7 @@ state_subset_all <- rbindlist(state_out_list)
 state_out_2045 <- state_subset_all[year == 2045, .(scen_id, oil_price_scenario, innovation_scenario,
                                                    carbon_price_scenario, ccs_scenario, setback_scenario,
                                                    prod_quota_scenario, excise_tax_scenario, target, 
-                                                   target_policy, year, total_ghg_mtCO2e)]
+                                                   target_policy, year, total_ghg_mtCO2e, tax_rate)]
 
 ## change setback target
 state_out_2045[, target := fifelse(setback_scenario != "no_setback" & target == "no_target", 
@@ -66,8 +66,11 @@ state_subset_all[, target_policy := fifelse(setback_scenario != "no_setback" & t
                                      "setback_scenario", target_policy)]
 
 ## ghgs
-ggplot(state_subset_all, aes(x = year, y = total_ghg_mtCO2e, color = target_policy, group = scen_id)) +
-  geom_line()
+ghgs <- ggplot(state_subset_all, aes(x = year, y = total_ghg_mtCO2e, color = target_policy, group = scen_id)) +
+  geom_line() +
+  facet_wrap(~oil_price_scenario)
+
+plotly::ggplotly(ghgs)
 
 ## carbon price
 ggplot(state_subset_all, aes(x = year, y = carbon_price_usd_per_kg * 1000, color = carbon_price_scenario, group = scen_id)) +
