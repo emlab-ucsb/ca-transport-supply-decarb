@@ -6,6 +6,15 @@
 library(data.table)
 library(tidyverse)
 
+
+# fig 1: county-level ghg emissions intensity x 2019 production, calculated using weighted mean, w = 2019 production
+# fig 2: county-level costs x 2019 production, calculated using weighted mean, w = 2019 production
+# fig 3: county-level labor x 2019 production, use the indicator in the mechanisms figure
+# fig 4: county-level PM2.5 affected population x 2019 production, use the indicator in the mechanisms figure 
+# fig 5: county-level % of county affected by setback x 2019 production, use the setback scenario in mechanisms figures
+
+
+
 ## source figs
 items <- "figure_themes.R"
 
@@ -210,6 +219,10 @@ test <- ggplot(county_prod %>% filter(setback_scenario != "no_setback"), aes(x =
   theme_line
 
 ggplotly(test)
+
+
+
+
 
 
 
