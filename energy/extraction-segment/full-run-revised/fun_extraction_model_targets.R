@@ -42,7 +42,7 @@ run_extraction_model <- function(input_scenarios) {
 
       excise_tax_scens_z <- copy(excise_tax_scens)
       
-      target_ghg_val = carbonpx_df[, carbonpx_est_val[1]]
+      target_ghg_val = carbonpx_df[, target_val[1]]
 
     } else {
       
@@ -1181,7 +1181,7 @@ run_extraction_model <- function(input_scenarios) {
     state_all[, target_policy := target_pol]
     state_all[, target := scen[, target][1]]
     
-    if(target == "no_target") {
+    if(scen[, target][1] == "no_target") {
       
       state_tmp <- state_all[year == 2045, .(total_ghg_mtCO2e)]
       

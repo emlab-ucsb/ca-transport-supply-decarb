@@ -12,7 +12,7 @@ save_external <- 1
 ## path names, ## UPDATE THESE WITH NEW RUNS!!!!!
 extraction_folder_path <- 'outputs/predict-production/extraction_2021-12-06/'
 extraction_folder_name <- 'subset_target_scens/'
-external_path <- 'extraction-out/extraction_2022-02-04/all_target/'
+external_path <- 'extraction-out/extraction_2022-02-05/all-target/'
 
 
 ## current date
@@ -50,7 +50,9 @@ state_subset_all <- rbindlist(state_out_list)
 state_out_2045 <- state_subset_all[year == 2045, .(scen_id, oil_price_scenario, innovation_scenario,
                                                    carbon_price_scenario, ccs_scenario, setback_scenario,
                                                    prod_quota_scenario, excise_tax_scenario, target, 
-                                                   target_policy, year, total_ghg_mtCO2e, tax_rate)]
+                                                   target_policy, year, target_val, total_ghg_mtCO2e, tax_rate)]
+
+state_out_2045[, diff := target_val - total_ghg_mtCO2e]
 
 ## change setback target
 state_out_2045[, target := fifelse(setback_scenario != "no_setback" & target == "no_target", 

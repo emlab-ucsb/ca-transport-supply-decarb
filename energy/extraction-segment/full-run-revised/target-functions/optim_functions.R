@@ -67,9 +67,10 @@ find_excise_tax <- function(scen_z) {
   fit <- optim(par = 0.1,
                fn = obj_fun_excise,
                method = "Brent", # suggested for one dimension optimiation
+               # method = "L-BFGS-B",
                lower = 0, # set based on tax knowledge
                upper = 2, # set based on tax knowledge
-               control = list(maxit = 20000)) 
+               control = list(maxit = 10000)) 
   
   # Extract tax
   tax_est <- fit$par
@@ -146,13 +147,13 @@ find_carbonpx_start <- function(scen_z) {
                method = "Brent", # suggested for one dimension optimiation
                lower = 0, # set based on tax knowledge
                upper = 5000, # set based on tax knowledge
-               control = list(maxit = 20000)) 
+               control = list(maxit = 10000)) 
   
   # Extract tax
-  caarbonpx_est <- fit$par
+  carbonpx_est <- fit$par
   
   carbonpx_est_target <- tibble(target_val = target_ghg,
-                                carbonpx_est_val = caarbonpx_est) %>%
+                                carbonpx_est_val = carbonpx_est) %>%
     as.data.table()
   
   return(carbonpx_est_target)
