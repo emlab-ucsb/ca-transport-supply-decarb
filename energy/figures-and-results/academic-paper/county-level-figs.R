@@ -25,6 +25,7 @@ main_path       <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-pr
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed/'
 outputs_path    <- 'outputs/academic-out/extraction/'
 health_out      <- paste0(main_path, "outputs/academic-out/health/")
+source_path     <- paste0(main_path, 'data/health/source_receptor_matrix/')
 
 ## results path (update this)
 county_results <- 'extraction_2021-12-06/county-results/'
@@ -37,6 +38,11 @@ setback_file        <- 'setback_coverage_R.csv'
 county_out_file     <- 'subset_county_results.csv'
 county_setback_file <- 'county_level_setback_coverage.csv'
 cluster_pop_file    <- 'extraction_cluster_affectedpop.csv'
+field_cluster_file  <- 'extraction_field_cluster_xwalk.csv'
+oil_price_file      <- 'oil_price_projections_revised.xlsx'
+
+## paths
+data_path  <-'data/stocks-flows/processed/'
 
 ## figures - county-level indicator x 2019 production, add 90th percentile line
 ## ghg emission intensity, costs, employment multipliers, pm2.5?, setbacks?
@@ -47,6 +53,19 @@ cluster_pop_file    <- 'extraction_cluster_affectedpop.csv'
 ## monthly well production
 well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                                                  'doc_field_code' = 'character'))
+## 2019 oil px
+oilpx_scens = setDT(read.xlsx(file.path(main_path, data_path, oil_price_file), sheet = 'real', cols = c(1:4)))
+colnames(oilpx_scens) = c('year', 'reference_case', 'high_oil_price', 'low_oil_price')
+oilpx_scens = melt(oilpx_scens, measure.vars = c('reference_case', 'high_oil_price', 'low_oil_price'), 
+                   variable.name = 'oil_price_scenario', value.name = 'oil_price_usd_per_bbl')
+oilpx_scens[, oil_price_scenario := gsub('_', ' ', oil_price_scenario)]
+oilpx_scens[, oil_price_scenario := factor(oil_price_scenario, levels = c('reference case', 'high oil price', 'low oil price'))]
+oilpx_scens <- oilpx_scens[year == 2019]
+setorderv(oilpx_scens, c('oil_price_scenario', 'year'))
+
+oilpx_2019 <- oilpx_scens[, oil_price_usd_per_bbl][1]
+
+
 ## ghg factors
 ghg_factors = fread(file.path(main_path, 'outputs/stocks-flows', ghg_file), header = T, colClasses = c('doc_field_code' = 'character'))
 ghg_factors_2019 = ghg_factors[year == 2019, c('doc_field_code', 'year', 'upstream_kgCO2e_bbl')]
@@ -59,14 +78,28 @@ price_data <- price_data[year == 2020, .(doc_field_code, m_opex_imputed, m_capex
 
 ## county setback (use 1000ft)
 county_setback_coverage <- fread(file.path(main_path, 'outputs/setback/county-level', county_setback_file), header = T)
-
-## setback coverage
-setback_scens = fread(file.path(main_path, 'outputs/setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
-setnames(setback_scens, 'rel_coverage', 'area_coverage')
-setback_scens <- setback_scens[setback_scenario != "no_setback", .(doc_field_code, setback_scenario, area_coverage)]
+county_setback_coverage <- county_setback_coverage[, .(adj_county_name, setback_scenario, county_field_coverage)]
 
 ## cluster health out
 cluster_pop_dt <- fread(paste0(health_out, cluster_pop_file))
+
+## load and process cross-walk between fields and clusters 
+extraction_field_clusters_10km <- read_csv(paste0(source_path,"/extraction_fields_clusters_10km.csv",sep="")) %>%
+  select(OUTPUT_FID, INPUT_FID) %>%
+  rename(id = OUTPUT_FID, input_fid = INPUT_FID)
+
+extraction_fields_xwalk <- foreign::read.dbf(paste0(source_path, "/extraction_fields_xwalk_id.dbf", sep = "")) %>%
+  rename(input_fid = id, doc_field_code = dc_fld_)
+
+extraction_xwalk <- extraction_field_clusters_10km %>%
+  left_join(extraction_fields_xwalk, by = c("input_fid")) 
+
+
+## join
+cluster_pop_dt <- merge(cluster_pop_dt, extraction_xwalk,
+                        by = "id",
+                        allow.cartesian = T) %>%
+  select(doc_field_code, id, affected_pop)
 
 ## labor
 total_multipliers_ext <- read_xlsx(paste0(main_path, labor_processed, 'ica_multipliers_v2.xlsx'), sheet = 'ica_total') %>% 
@@ -80,13 +113,14 @@ total_multipliers_ext <- read_xlsx(paste0(main_path, labor_processed, 'ica_multi
          ip.dire_comp_mult = ip.direct_comp, 
          ip.indi_comp_mult = ip.indirect_comp, 
          ip.indu_comp_mult = ip.induced_comp) %>%
-  as.data.table()
+  as.data.table() %>%
+  rename(adj_county_name = county)
 
 total_multipliers_ext[, ':=' (total_emp = dire_emp_mult + indi_emp_mult + indu_emp_mult,
                               total_comp = dire_comp_mult + ip.indi_comp_mult + ip.indu_comp_mult)]
 
 
-total_multipliers_ext <- total_multipliers_ext[, .(county, total_emp, total_comp)]
+total_multipliers_ext <- total_multipliers_ext[, .(adj_county_name, total_emp, total_comp)]
 
 ## county results
 county_out <- fread(paste0(main_path, outputs_path, county_results, county_out_file), header = T)
@@ -162,6 +196,32 @@ county_out <- merge(county_out, price_data,
                     by = c("doc_field_code"),
                     all.x = T,
                     allow.cartesian = T)
+
+## add affected pop
+county_out <- merge(county_out, cluster_pop_dt,
+                    by = c("doc_field_code"),
+                    all.x = T,
+                    allow.cartesian = T)
+
+## add labor
+county_out <- merge(county_out, total_multipliers_ext,
+                    by = "adj_county_name",
+                    all.x = T,
+                    allow.cartesian = T)
+
+
+## calculate employment
+county_out[, revenue := total_prod_bbl * oilpx_2019]
+
+## compute county values
+## -------------------------------------------------
+
+
+
+## add county setback
+couty_out <- merge(county_out, county_setback_coverage,
+                   by = "adj_county_name",
+                   allow.cartesian = T)
 
 
 
