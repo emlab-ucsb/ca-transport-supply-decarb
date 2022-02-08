@@ -12,7 +12,8 @@ library(tidyverse)
 # fig 3: county-level labor x 2019 production, use the indicator in the mechanisms figure
 # fig 4: county-level PM2.5 affected population x 2019 production, use the indicator in the mechanisms figure 
 # fig 5: county-level % of county affected by setback x 2019 production, use the setback scenario in mechanisms figures
-
+# fig 6: county-level production under different setback scenarios
+# fig 7: county-level steam injection
 
 ## source figs
 items <- "figure_themes.R"
