@@ -14,26 +14,28 @@ library(tidyverse)
 # fig 5: county-level % of county affected by setback x 2019 production, use the setback scenario in mechanisms figures
 
 
-
 ## source figs
 items <- "figure_themes.R"
 
 walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
 
 ## paths 
-main_path     <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path       <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed/'
 outputs_path    <- 'outputs/academic-out/extraction/'
+health_out      <- paste0(main_path, "outputs/academic-out/health/")
 
 ## results path (update this)
 county_results <- 'extraction_2021-12-06/county-results/'
 
 ## files
-ghg_file      <- 'ghg_emissions_x_field_2018-2045.csv'
-prod_file     <- 'well_prod_m_processed.csv'
-forecast_file <- 'field_capex_opex_forecast_revised.csv'
-setback_file  <- 'setback_coverage_R.csv'
-county_out_file <- 'subset_county_results.csv'
+ghg_file            <- 'ghg_emissions_x_field_2018-2045.csv'
+prod_file           <- 'well_prod_m_processed.csv'
+forecast_file       <- 'field_capex_opex_forecast_revised.csv'
+setback_file        <- 'setback_coverage_R.csv'
+county_out_file     <- 'subset_county_results.csv'
+county_setback_file <- 'county_level_setback_coverage.csv'
+cluster_pop_file    <- 'extraction_cluster_affectedpop.csv'
 
 ## figures - county-level indicator x 2019 production, add 90th percentile line
 ## ghg emission intensity, costs, employment multipliers, pm2.5?, setbacks?
@@ -54,10 +56,16 @@ price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
 price_data[, sum_cost := m_opex_imputed + m_capex_imputed]
 price_data <- price_data[year == 2020, .(doc_field_code, m_opex_imputed, m_capex_imputed, sum_cost)]
 
+## county setback (use 1000ft)
+county_setback_coverage <- fread(file.path(main_path, 'outputs/setback/county-level', county_setback_file), header = T)
+
 ## setback coverage
 setback_scens = fread(file.path(main_path, 'outputs/setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
 setnames(setback_scens, 'rel_coverage', 'area_coverage')
 setback_scens <- setback_scens[setback_scenario != "no_setback", .(doc_field_code, setback_scenario, area_coverage)]
+
+## cluster health out
+cluster_pop_dt <- fread(paste0(health_out, cluster_pop_file))
 
 ## labor
 total_multipliers_ext <- read_xlsx(paste0(main_path, labor_processed, 'ica_multipliers_v2.xlsx'), sheet = 'ica_total') %>% 
