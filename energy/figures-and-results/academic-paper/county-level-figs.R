@@ -5,6 +5,7 @@
 ## libraries
 library(data.table)
 library(tidyverse)
+library(openxlsx)
 
 
 # fig 1: county-level ghg emissions intensity x 2019 production, calculated using weighted mean, w = 2019 production
@@ -212,9 +213,12 @@ county_out <- merge(county_out, total_multipliers_ext,
 
 ## calculate employment
 county_out[, revenue := total_prod_bbl * oilpx_2019]
+# county_out[, employment]
 
 ## compute county values
 ## -------------------------------------------------
+
+# county_summaries <- county_out[, ()]
 
 
 

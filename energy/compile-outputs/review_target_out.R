@@ -12,7 +12,7 @@ save_external <- 1
 ## path names, ## UPDATE THESE WITH NEW RUNS!!!!!
 extraction_folder_path <- 'outputs/predict-production/extraction_2021-12-06/'
 extraction_folder_name <- 'subset_target_scens/'
-external_path <- 'extraction-out/extraction_2022-02-06/all-target/'
+external_path <- 'extraction-out/extraction_2022-02-07/all-target/'
 
 
 ## current date

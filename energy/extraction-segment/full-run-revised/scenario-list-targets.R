@@ -247,12 +247,13 @@ scen_sel <- rbind(scen_sel, target_scens)
 ## 
 subset_dt = unique(## non-taget (all oil, all setback, all carbon px, no tax, low inno, no ccs, no quota)
   scen_sel[(innovation_scenario == 'low innovation' &
-            carbon_price_scenario %in% carbonpx_scens_name[, carbon_price_scenario] &
+            carbon_price_scenario == "price floor" &
             ccs_scenario %in% c("no ccs") & 
             excise_tax_scenario == 'no tax' &
-             prod_quota_scenario == 'no quota') |
+            prod_quota_scenario == 'no quota') |
              ## targets
   (innovation_scenario == 'low innovation' &
+   !carbon_price_scenario %in% c("price ceiling", "central SCC") & 
    prod_quota_scenario == 'no quota' &
    ccs_scenario %in% c("no ccs") &
    excise_tax_scenario %in% c("no tax", "tax_setback_1000ft", "tax_setback_2500ft", "tax_setback_5280ft", "tax_90perc_reduction") &   
