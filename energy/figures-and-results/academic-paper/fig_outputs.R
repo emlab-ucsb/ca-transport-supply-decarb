@@ -4,6 +4,7 @@
 
 ## libraries
 library(data.table)
+library(tidyverse)
 library(broom)
 library(rebus)
 library(readxl)
