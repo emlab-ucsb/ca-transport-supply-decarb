@@ -11,14 +11,14 @@ library(openxlsx)
 
 ## paths 
 main_path              = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path = 'outputs/academic-out/extraction/extraction_2021-12-06/'
+extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-02-08/'
 state_save_path        = paste0(main_path, extraction_folder_path, 'state-results/')
-field_out              = paste0(main_path, "outputs/predict-production/extraction_2021-12-06/subset_target_scens/field-out/")
+field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-02-07/all-target/field-out/")
 health_out             = paste0(main_path, "outputs/academic-out/health/")
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
-save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/')
+save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/all-oil-px/')
 dir.create(save_info_path, showWarnings = FALSE)  
 
 ## files
@@ -102,53 +102,56 @@ ghg_2019 <- as.numeric(hist_ghg[, value][1])
 ## read inputs
 state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 
+
+## DELETE
+
 # setnames(state_out, "county_pop", "state_pop")
 
-## filter for BAU macro (ref oil price, price floor, low innovation, and no CCS cost)
-## keep all setback scenarios (no tax, carbon price floor)
-## keep all four excise tax scenarios (no setback, carbon price floor)
-## keep all carbon taxes match the setback scenarios (no setback, no excise tax)
-
-state_scens <- state_out[(oil_price_scenario == "reference case" &
-                            carbon_price_scenario %in% c("carbon_setback_1000ft-no_setback-no ccs", "carbon_setback_2500ft-no_setback-no ccs",
-                                                         "carbon_setback_5280ft-no_setback-no ccs", "carbon_90_perc_reduction-no_setback-no ccs") &
-                            ccs_scenario %in% c("no ccs") &
-                            setback_scenario == "no_setback" &
-                            excise_tax_scenario == "no tax") |
-                           (oil_price_scenario == "reference case" &
-                              carbon_price_scenario %in% c("carbon_setback_1000ft-no_setback-medium CCS cost", "carbon_setback_2500ft-no_setback-medium CCS cost",
-                                                           "carbon_setback_5280ft-no_setback-medium CCS cost", "carbon_90_perc_reduction-no_setback-medium CCS cost") &
-                              ccs_scenario %in% c("medium CCS cost") &
-                              setback_scenario == "no_setback" &
-                              excise_tax_scenario == "no tax") |   
-                           (oil_price_scenario == "reference case" &
-                              carbon_price_scenario == "price floor" &
-                              ccs_scenario %in% c("medium CCS cost", "no ccs")) |
-                           (oil_price_scenario == "reference case" &
-                              carbon_price_scenario == "price floor" &
-                              ccs_scenario %in% c("medium CCS cost", "no ccs") &
-                              setback_scenario == "no_setback" &
-                              excise_tax_scenario == "no tax") |
-                           (oil_price_scenario == "reference case" &
-                              carbon_price_scenario %in% c("carbon_sb_90_perc_reduction-setback_1000ft-medium CCS cost",
-                                                           "carbon_sb_90_perc_reduction-setback_2500ft-medium CCS cost",
-                                                           "carbon_sb_90_perc_reduction-setback_5280ft-medium CCS cost",
-                                                           "carbon_sb_90_perc_reduction-setback_1000ft-no ccs",
-                                                           "carbon_sb_90_perc_reduction-setback_2500ft-no ccs",
-                                                           "carbon_sb_90_perc_reduction-setback_5280ft-no ccs") &
-                              excise_tax_scenario == "no tax")]
+# ## filter for BAU macro (ref oil price, price floor, low innovation, and no CCS cost)
+# ## keep all setback scenarios (no tax, carbon price floor)
+# ## keep all four excise tax scenarios (no setback, carbon price floor)
+# ## keep all carbon taxes match the setback scenarios (no setback, no excise tax)
+# 
+# state_scens <- state_out[(oil_price_scenario == "reference case" &
+#                             carbon_price_scenario %in% c("carbon_setback_1000ft-no_setback-no ccs", "carbon_setback_2500ft-no_setback-no ccs",
+#                                                          "carbon_setback_5280ft-no_setback-no ccs", "carbon_90_perc_reduction-no_setback-no ccs") &
+#                             ccs_scenario %in% c("no ccs") &
+#                             setback_scenario == "no_setback" &
+#                             excise_tax_scenario == "no tax") |
+#                            (oil_price_scenario == "reference case" &
+#                               carbon_price_scenario %in% c("carbon_setback_1000ft-no_setback-medium CCS cost", "carbon_setback_2500ft-no_setback-medium CCS cost",
+#                                                            "carbon_setback_5280ft-no_setback-medium CCS cost", "carbon_90_perc_reduction-no_setback-medium CCS cost") &
+#                               ccs_scenario %in% c("medium CCS cost") &
+#                               setback_scenario == "no_setback" &
+#                               excise_tax_scenario == "no tax") |   
+#                            (oil_price_scenario == "reference case" &
+#                               carbon_price_scenario == "price floor" &
+#                               ccs_scenario %in% c("medium CCS cost", "no ccs")) |
+#                            (oil_price_scenario == "reference case" &
+#                               carbon_price_scenario == "price floor" &
+#                               ccs_scenario %in% c("medium CCS cost", "no ccs") &
+#                               setback_scenario == "no_setback" &
+#                               excise_tax_scenario == "no tax") |
+#                            (oil_price_scenario == "reference case" &
+#                               carbon_price_scenario %in% c("carbon_sb_90_perc_reduction-setback_1000ft-medium CCS cost",
+#                                                            "carbon_sb_90_perc_reduction-setback_2500ft-medium CCS cost",
+#                                                            "carbon_sb_90_perc_reduction-setback_5280ft-medium CCS cost",
+#                                                            "carbon_sb_90_perc_reduction-setback_1000ft-no ccs",
+#                                                            "carbon_sb_90_perc_reduction-setback_2500ft-no ccs",
+#                                                            "carbon_sb_90_perc_reduction-setback_5280ft-no ccs") &
+#                               excise_tax_scenario == "no tax")]
 
 ## note that the values in the state_pop column are different than the state_population df created
 ## in this script. The former only includes census tracts affected by oil production, while the latter
 ## includes all census tracts.
 
 ## merge with population series
-state_scens <- merge(state_scens, state_population,
+state_scens <- merge(state_out, state_population,
                      by = c("year"),
                      all.x = T)
 
 state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                      ccs_scenario, excise_tax_scenario,  setback_scenario, year, total_emp, total_comp, state_pop, total_state_pop)]
+                                      ccs_scenario, excise_tax_scenario, setback_scenario, target, target_policy, year, total_emp, total_comp, state_pop, total_state_pop)]
 
 
 ## calc PV
@@ -161,7 +164,8 @@ state_labor_levels <- state_labor_levels %>%
 
 ## melt
 state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
-                                                           'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
+                                                           'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
+                                                           'target', 'target_policy',  'year'),
                            measure.vars = c("total_emp", "total_emp_norm", "total_comp", "total_comp_norm", "total_comp_PV"),
                            variable.name = "metric",
                            value.name = "value")
@@ -170,13 +174,14 @@ state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price
 ## emissions and extraction
 ## ------------------------------
 state_extract_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                        ccs_scenario, setback_scenario, excise_tax_scenario, year, total_state_bbl, total_state_ghg_kgCO2)]
+                                        ccs_scenario, setback_scenario, excise_tax_scenario, target, target_policy, year, total_state_bbl, total_state_ghg_kgCO2)]
 
 state_extract_levels[, total_state_ghg_MtCO2 := total_state_ghg_kgCO2 / (1000 * 1e6)]
 state_extract_levels[, total_state_ghg_kgCO2 := NULL]
 
 state_extract_levels <- melt(state_extract_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
-                                                               'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',  'year'),
+                                                               'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
+                                                               'target', 'target_policy', 'year'),
                              measure.vars = c("total_state_bbl", "total_state_ghg_MtCO2"),
                              variable.name = "metric",
                              value.name = "value")
@@ -184,7 +189,8 @@ state_extract_levels <- melt(state_extract_levels, id.vars = c('scen_id', 'oil_p
 ## health
 ## ------------------------------
 state_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                       ccs_scenario, setback_scenario, excise_tax_scenario, year, mean_total_pm25, mean_delta_total_pm25, 
+                                       ccs_scenario, setback_scenario, excise_tax_scenario, target, target_policy,
+                                       year, mean_total_pm25, mean_delta_total_pm25, 
                                        mortality_level, mortality_delta, cost_2019_PV, cost_PV, state_pop)]
 
 
@@ -199,7 +205,8 @@ state_health_levels <- state_health_levels %>%
 
 
 state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
-                                                             'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
+                                                             'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
+                                                             'target', 'target_policy', 'year'),
                             measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", 
                                              "mortality_delta", "cost_2019_PV", "cost_PV", "mortality_level_norm",
                                              "cost_PV_20_norm", "cost_PV_20"),
@@ -216,25 +223,33 @@ state_levels <- rbind(state_extract_levels, state_labor_levels, state_health_lev
 
 
 state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price floor" & setback_scenario == "no_setback", "carbon tax",
-                                              fifelse(setback_scenario != "no_setback" & carbon_price_scenario == 'price floor', "setback",
-                                                      fifelse(excise_tax_scenario != "no tax", "excise tax",
-                                                              fifelse(carbon_price_scenario != 'price floor' & setback_scenario != "no_setback", "carbon tax & setback",  "BAU"))))]
+                                              fifelse(setback_scenario != "no_setback" & carbon_price_scenario == 'price floor' & excise_tax_scenario == 'no tax', "setback",
+                                                      fifelse(excise_tax_scenario != "no tax" & setback_scenario == "no_setback", "excise tax",
+                                                              fifelse(excise_tax_scenario != 'no tax' & setback_scenario != 'no_setback', 'excise tax & setback',
+                                                                fifelse(carbon_price_scenario != 'price floor' & setback_scenario != "no_setback", "carbon tax & setback", "BAU")))))]
+
+## DELETE
 
 ## add target
 # state_levels[, tmp := fifelse(str_dectect(scen_id, 'carbon_sb') == TRUE, '90', carbon)]
 
-state_levels[, target := as.numeric(str_extract(carbon_price_scenario, pattern = one_or_more(DIGIT)))]
-state_levels[, target := fifelse(is.na(target), as.numeric(str_extract(excise_tax_scenario, pattern = one_or_more(DIGIT))), target)]
-state_levels[, target := fifelse(is.na(target), as.numeric(str_extract(setback_scenario, pattern = one_or_more(DIGIT))), target)]
+# state_levels[, target := as.numeric(str_extract(carbon_price_scenario, pattern = one_or_more(DIGIT)))]
+# state_levels[, target := fifelse(is.na(target), as.numeric(str_extract(excise_tax_scenario, pattern = one_or_more(DIGIT))), target)]
+# state_levels[, target := fifelse(is.na(target), as.numeric(str_extract(setback_scenario, pattern = one_or_more(DIGIT))), target)]
+# 
+# state_levels[, target := fifelse(target >= 1000, paste0(target, 'ft setback GHG'),
+#                                  fifelse(target < 1000, paste0(target, '% GHG reduction'), 'BAU'))]
+# 
+# state_levels[, target := fifelse(is.na(target), 'BAU', target)]
+# 
+# ## add ccs
+# state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
 
-state_levels[, target := fifelse(target >= 1000, paste0(target, 'ft setback GHG'),
-                                 fifelse(target < 1000, paste0(target, '% GHG reduction'), 'BAU'))]
 
-state_levels[, target := fifelse(is.na(target), 'BAU', target)]
+## adjust so that setback is target
+state_levels[, target := fifelse(setback_scenario != 'no_setback' & target == 'no_target', setback_scenario, target)]
 
-## add ccs
-state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
-
+## add indicator for normalized
 state_levels[, normalized := fifelse(metric %in% c("total_emp_norm", "total_comp_norm", "mortality_level_norm", "cost_PV_20_norm"),
                                      "Normalized per 1000 people (>= 30 yo)", "Not normalized")]
 
@@ -243,14 +258,14 @@ state_levels[, normalized := fifelse(metric %in% c("total_emp_norm", "total_comp
 
 ## 2045 emissions
 ghg_2045 <- state_levels[metric == "total_state_ghg_MtCO2" &
-                           year == 2045, .(scen_id, policy_intervention, ccs_scenario, target, year, value)]
+                           year == 2045, .(scen_id, policy_intervention, oil_price_scenario, target, year, value)]
 
 setnames(ghg_2045, "value", "ghg_2045")
 
 ghg_2045[, ghg_2045_perc := (ghg_2045 - ghg_2019) / ghg_2019]
 
 ## setback 2045 end
-setback_2045 <- ghg_2045[policy_intervention == "setback", .(ccs_scenario, target, ghg_2045_perc)]
+setback_2045 <- ghg_2045[policy_intervention == "setback", .(oil_price_scenario, target, ghg_2045_perc)]
 setback_2045[, target_label := paste0(round(ghg_2045_perc * -100), "%")]
 setback_2045[, ghg_2045_perc := NULL]
 
@@ -264,18 +279,18 @@ ghg_2045[, ghg_2045_perc_reduction := ghg_2045_perc * -100]
 
 ## merge with levels, save
 state_levels <- merge(state_levels, setback_2045,
-                      by = c("ccs_scenario", "target"),
+                      by = c("oil_price_scenario", "target"),
                       all.x = T)
 
-state_levels[, target_label := fifelse(target == "BAU", target, 
-                                       fifelse(target == "90% GHG reduction", "90%", target_label))]
+state_levels[, target_label := fifelse(policy_intervention == "BAU", target, 
+                                       fifelse(target == "90perc_reduction", "90%", target_label))]
 
 state_levels <- merge(state_levels, ghg_2045,
-                      by = c("scen_id", "ccs_scenario"),
+                      by = c("scen_id", "oil_price_scenario"),
                       all.x = T)
 
 
-fwrite(state_levels, paste0(save_info_path, 'state_levels_subset.csv'))
+fwrite(state_levels, paste0(save_info_path, 'state_levels_all_oil.csv'))
 
 
 ## -----------------------------------------------------------------------
@@ -286,7 +301,7 @@ fwrite(state_levels, paste0(save_info_path, 'state_levels_subset.csv'))
 ## select health outputs
 
 rel_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                     ccs_scenario, setback_scenario, excise_tax_scenario, year,
+                                     ccs_scenario, setback_scenario, excise_tax_scenario, target, target_policy, year,
                                      mean_delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
 
 
@@ -294,46 +309,55 @@ rel_health_levels[, cost_PV_20 := cost_PV / cpi2019 * cpi2020]
 
 
 rel_health_levels <- melt(rel_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario',
-                                                         'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario', 'year'),
+                                                         'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
+                                                         'target', 'target_policy', 'year'),
                           measure.vars = c("mean_delta_total_pm25", "mortality_delta", "cost_2019", "cost", "cost_2019_PV", "cost_PV", "cost_PV_20"),
                           variable.name = "metric",
                           value.name = "value")
 
 ## add target and policy
 rel_health_levels[, policy_intervention := fifelse(carbon_price_scenario != "price floor" & setback_scenario == "no_setback", "carbon tax",
-                                              fifelse(setback_scenario != "no_setback" & carbon_price_scenario == 'price floor', "setback",
-                                                      fifelse(excise_tax_scenario != "no tax", "excise tax",
-                                                              fifelse(carbon_price_scenario != 'price floor' & setback_scenario != "no_setback", "carbon tax & setback",  "BAU"))))]
+                                                   fifelse(setback_scenario != "no_setback" & carbon_price_scenario == 'price floor' & excise_tax_scenario == 'no tax', "setback",
+                                                           fifelse(excise_tax_scenario != "no tax" & setback_scenario == "no_setback", "excise tax",
+                                                                   fifelse(excise_tax_scenario != 'no tax' & setback_scenario != 'no_setback', 'excise tax & setback',
+                                                                           fifelse(carbon_price_scenario != 'price floor' & setback_scenario != "no_setback", "carbon tax & setback", "BAU")))))]
 
-## add target
 
-rel_health_levels[, target := as.numeric(str_extract(carbon_price_scenario, pattern = one_or_more(DIGIT)))]
-rel_health_levels[, target := fifelse(is.na(target), as.numeric(str_extract(excise_tax_scenario, pattern = one_or_more(DIGIT))), target)]
-rel_health_levels[, target := fifelse(is.na(target), as.numeric(str_extract(setback_scenario, pattern = one_or_more(DIGIT))), target)]
+## DELETE
 
-rel_health_levels[, target := fifelse(target >= 1000, paste0(target, 'ft setback GHG'),
-                                 fifelse(target < 1000, paste0(target, '% GHG reduction'), 'BAU'))]
+# ## add target
+# 
+# rel_health_levels[, target := as.numeric(str_extract(carbon_price_scenario, pattern = one_or_more(DIGIT)))]
+# rel_health_levels[, target := fifelse(is.na(target), as.numeric(str_extract(excise_tax_scenario, pattern = one_or_more(DIGIT))), target)]
+# rel_health_levels[, target := fifelse(is.na(target), as.numeric(str_extract(setback_scenario, pattern = one_or_more(DIGIT))), target)]
+# 
+# rel_health_levels[, target := fifelse(target >= 1000, paste0(target, 'ft setback GHG'),
+#                                  fifelse(target < 1000, paste0(target, '% GHG reduction'), 'BAU'))]
+# 
+# rel_health_levels[, target := fifelse(is.na(target), 'BAU', target)]
 
-rel_health_levels[, target := fifelse(is.na(target), 'BAU', target)]
+## adjust so that setback is target
+rel_health_levels[, target := fifelse(setback_scenario != 'no_setback' & target == 'no_target', setback_scenario, target)]
+
 
 ## rename
 setnames(rel_health_levels, "value", "diff_bau")
 
+# DELETE
+# rel_health_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
 
-rel_health_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
-
-rel_health_levels <- rel_health_levels[, .(scen_id, ccs_option, year, metric, policy_intervention, target, diff_bau)]
+rel_health_levels <- rel_health_levels[, .(scen_id, oil_price_scenario, year, metric, policy_intervention, target, diff_bau)]
 
 
 ## BAU outputs for labor and energy
-bau_out <- state_levels[target == "BAU" & policy_intervention == "BAU" & metric %in% c("total_state_bbl",
+bau_out <- state_levels[target == "no_target" & policy_intervention == "BAU" & metric %in% c("total_state_bbl",
                                                                                        "total_state_ghg_MtCO2",
                                                                                        "total_emp",
                                                                                        "total_comp",
                                                                                        "total_comp_PV")]
 
 setnames(bau_out, "value", "bau_value")
-bau_out <- bau_out[, .(ccs_option, year, metric, bau_value)]
+bau_out <- bau_out[, .(oil_price_scenario, year, metric, bau_value)]
 
 ## combine bau with scenario outputs
 rel_vals <- state_levels[metric %in% c("total_state_bbl",
@@ -343,14 +367,12 @@ rel_vals <- state_levels[metric %in% c("total_state_bbl",
                                        "total_comp_PV")]
 
 rel_vals <- merge(rel_vals, bau_out,
-                  by = c("ccs_option", "year", "metric"),
+                  by = c("oil_price_scenario", "year", "metric"),
                   all.x = T)
 
 rel_vals[, diff_bau := value - bau_value]
 
-rel_vals[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
-
-rel_vals <- rel_vals[, .(scen_id, ccs_option, year, metric, policy_intervention, target, diff_bau)]
+rel_vals <- rel_vals[, .(scen_id, oil_price_scenario, year, metric, policy_intervention, target, diff_bau)]
 
 ## bind
 state_rel_vals <- rbind(rel_vals, rel_health_levels)
@@ -374,21 +396,21 @@ scc_value <- merge(scc_value, scc_df_filt,
 scc_value[, scc_avoided_ghg := diff_bau * -1e6 * social_cost_co2]
 
 ## summarise
-cumul_scc_value <- scc_value[, .(scc_avoided_ghg = sum(scc_avoided_ghg, na.rm = T)), by = .(scen_id, ccs_option,
+cumul_scc_value <- scc_value[, .(scc_avoided_ghg = sum(scc_avoided_ghg, na.rm = T)), by = .(scen_id, oil_price_scenario,
                                                                                             policy_intervention, target)]
 
 
-cumul_rel_vals_bau <- state_rel_vals[, .(diff_bau = sum(diff_bau)), by = .(scen_id, ccs_option, policy_intervention,
+cumul_rel_vals_bau <- state_rel_vals[, .(diff_bau = sum(diff_bau)), by = .(scen_id, oil_price_scenario, policy_intervention,
                                                                            target, metric)]
 
 cumul_rel_vals_bau <- cumul_rel_vals_bau[metric %in% c("total_state_ghg_MtCO2", "total_comp", "total_comp_PV", "cost_2019",
                                                        "cost", "cost_2019_PV", "cost_PV", "cost_PV_20")]
 
-cumul_rel_vals_bau <- dcast(cumul_rel_vals_bau, scen_id + ccs_option + policy_intervention + target ~ metric, value.var = "diff_bau")
+cumul_rel_vals_bau <- dcast(cumul_rel_vals_bau, scen_id + oil_price_scenario + policy_intervention + target ~ metric, value.var = "diff_bau")
 
 ## join witih scc
 cumul_rel_vals_bau <- merge(cumul_rel_vals_bau, cumul_scc_value,
-                            by = c('scen_id', 'ccs_option', 'policy_intervention', 'target'),
+                            by = c('scen_id', 'oil_price_scenario', 'policy_intervention', 'target'),
                             all.x = T)
 
 ## total ghg emissions
@@ -411,7 +433,7 @@ cumul_rel_vals_bau[, benefit_per_ghg := fifelse(is.na(benefit_per_ghg), 0, benef
 ## benefit x metric
 ## -----------------------------------------
 
-npv_x_metric <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'ccs_option', 'policy_intervention', 'target', 'cumul_ghg', 'total_state_ghg_MtCO2'),
+npv_x_metric <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'oil_price_scenario', 'policy_intervention', 'target', 'cumul_ghg', 'total_state_ghg_MtCO2'),
                      measure.vars = c("total_comp_PV", "cost_PV_20", "scc_avoided_ghg"),
                      variable.name = "metric",
                      value.name = "value")
@@ -427,20 +449,20 @@ npv_x_metric[, title := fifelse(metric == "total_comp_PV", "Labor: Compensation"
 npv_x_metric[, value_per_ghg_million := fifelse(is.na(value_per_ghg_million), 0, value_per_ghg_million)]
 
 npv_x_metric <- merge(npv_x_metric, ghg_2045,
-                       by = 'scen_id',
+                       by = c('scen_id', 'oil_price_scenario'),
                        all.x = T)
 
 ## join with target label
 npv_x_metric <- merge(npv_x_metric, setback_2045,
-                      by = c("ccs_scenario", "target"),
+                      by = c("oil_price_scenario", "target"),
                       all.x = T)
 
-npv_x_metric[, target_label := fifelse(target == "BAU", target, 
-                                       fifelse(target == "90% GHG reduction", "90%", target_label))]
+npv_x_metric[, target_label := fifelse(policy_intervention == "BAU", target, 
+                                       fifelse(target == "90perc_reduction", "90%", target_label))]
 
 
 
-fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric.csv'))
+fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric_all_oil.csv'))
 
 # ## -------------------------------------
 # ## cumulative difference BAU
@@ -465,11 +487,14 @@ fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric.csv'))
 ## labor, county
 labor_out <- fread(paste0(main_path, extraction_folder_path, 'county-results/subset_county_results.csv'))
 
-## filter scens
-labor_scens <- labor_out[scen_id %in% state_levels$scen_id]
+labor_out[, target := NULL]
+
+# ## delete
+# ## filter scens
+# labor_scens <- labor_out[scen_id %in% state_levels$scen_id]
 
 ## add target, policy intervention, ccs_option
-labor_scens <- merge(labor_scens, unique(state_levels[, .(scen_id, policy_intervention, target, ccs_option)]),
+labor_scens <- merge(labor_out, unique(state_levels[, .(scen_id, policy_intervention, target)]),
                      by = "scen_id",
                      all.x = T)
 
@@ -487,14 +512,14 @@ labor_dac_state <- labor_scens[, .(cumul_dac_comp = sum(dac_comp),
                                    cumul_dac_emp = sum(dac_emp),
                                    cumul_total_emp = sum(total_emp)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
                                                                              setback_scenario, excise_tax_scenario,
-                                                                             target, policy_intervention, ccs_option)]
+                                                                             target, target_policy, policy_intervention)]
 
 labor_dac_state[, dac_comp_share := cumul_dac_comp / cumul_total_comp]
 labor_dac_state[, dac_comp_pv_share := cumul_dac_comp_PV / cumul_total_comp_PV]
 labor_dac_state[, dac_emp_share := cumul_dac_emp / cumul_total_emp]
 
 ## prepare for joining with health
-labor_dac_bind <- labor_dac_state[, .(scen_id, target, policy_intervention, ccs_option, 
+labor_dac_bind <- labor_dac_state[, .(scen_id, oil_price_scenario, target, target_policy, policy_intervention, 
                                       cumul_dac_comp, cumul_total_comp, dac_comp_share,
                                       cumul_dac_comp_PV, cumul_total_comp_PV, dac_comp_pv_share,
                                       cumul_dac_emp, cumul_total_emp, dac_emp_share)]
@@ -518,11 +543,14 @@ labor_dac_bind[, category := "Employment"]
 
 health_out <- fread(paste0(main_path, extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
 
-## filter scens
-health_scens <- health_out[scen_id %in% state_levels$scen_id]
+health_out[, target := NULL]
+
+## DELETE
+# ## filter scens
+# health_scens <- health_out[scen_id %in% state_levels$scen_id]
 
 ## add target, policy intervention, ccs_option
-health_scens <- merge(health_scens, unique(state_levels[, .(scen_id, policy_intervention, target, ccs_option)]),
+health_scens <- merge(health_out, unique(state_levels[, .(scen_id, policy_intervention, target)]),
                      by = "scen_id",
                      all.x = T)
 
@@ -541,7 +569,7 @@ health_dac_state <- health_scens %>%
   group_by(year) %>%
   mutate(cost_PV = cost/ ((1 + discount_rate) ^ (year - 2019))) %>%
   ungroup() %>%
-  select(scen_id, census_tract,policy_intervention, target, ccs_option, disadvantaged, dac_multiplier,
+  select(scen_id, census_tract, policy_intervention, target, target_policy, disadvantaged, dac_multiplier,
          mortality_level, cost, cost_PV)
 
 setDT(health_dac_state)
@@ -557,7 +585,7 @@ health_dac_state <- health_dac_state[, .(cumul_dac_mort = sum(dac_mort),
                                      cumul_dac_cost = sum(dac_mort_cost),
                                      cumul_total_cost = sum(cost),
                                      cumul_dac_pv = sum(dac_mort_pv),
-                                     cumul_total_pv = sum(cost_PV)), by = .(scen_id, target, policy_intervention, ccs_option)]
+                                     cumul_total_pv = sum(cost_PV)), by = .(scen_id, target, target_policy, policy_intervention)]
 
 health_dac_state[, dac_share_mort := cumul_dac_mort / cumul_total_mort]
 health_dac_state[, dac_share_cost := cumul_dac_cost / cumul_total_cost]
@@ -575,25 +603,24 @@ health_dac_bind[, type := fifelse(metric %in% c("cumul_dac_mort", "cumul_dac_pv"
 
 health_dac_bind[, category := "Mortality"]
 
+health_dac_bind[, oil_price_scenario := sub("-.*", "", scen_id)  ]
+
 ## bind
 dac_df <- rbind(health_dac_bind, labor_dac_bind)
 
-dac_df[, ccs_scenario := fifelse(ccs_option == "no CCS", "no ccs", "medium CCS cost")]
-
-
 dac_df <- merge(dac_df, setback_2045,
-                by = c("ccs_scenario", "target"),
+                by = c("oil_price_scenario", "target"),
                 all.x = T)
 
-dac_df[, target_label := fifelse(target == "BAU", target,
-                                       fifelse(target == "90% GHG reduction", "90%", target_label))]
+dac_df[, target_label := fifelse(policy_intervention == "BAU", target,
+                                       fifelse(target == "90perc_reduction", "90%", target_label))]
 
 dac_df <- merge(dac_df, ghg_2045,
-                      by = c("scen_id", "ccs_scenario"),
+                      by = c("scen_id", "oil_price_scenario"),
                       all.x = T)
 
 
-fwrite(dac_df, paste0(save_info_path, 'dac_health_labor.csv'))
+fwrite(dac_df, paste0(save_info_path, 'dac_health_labor_all_oil.csv'))
 
 
 
@@ -603,15 +630,15 @@ fwrite(dac_df, paste0(save_info_path, 'dac_health_labor.csv'))
 ## -------------------------------------------------------
 
 ## bau
-bau_emp <- labor_scens[policy_intervention == "BAU", .(ccs_scenario, ccs_option, county, year, total_emp, total_comp, total_comp_PV)]
+bau_emp <- labor_scens[policy_intervention == "BAU", .(oil_price_scenario, county, year, total_emp, total_comp, total_comp_PV)]
 setnames(bau_emp, c("total_emp", "total_comp", "total_comp_PV"), c("bau_emp", "bau_comp", "bau_pv"))
 
 ## join
-labor_bau_dac <-  merge(labor_scens[, .(scen_id, carbon_price_scenario, ccs_scenario,
+labor_bau_dac <-  merge(labor_scens[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario,
                                         setback_scenario, excise_tax_scenario, policy_intervention,
-                                        target, ccs_option, county,
+                                        target, target_policy, county,
                                         dac_share, year, total_emp, total_comp, total_comp_PV)], bau_emp,
-                        by = c("ccs_scenario", "ccs_option", "county", "year"),
+                        by = c("oil_price_scenario", "county", "year"),
                         all.x = T)
 
 labor_bau_dac[, diff_emp := total_emp - bau_emp]
@@ -627,9 +654,9 @@ labor_bau_dac <- labor_bau_dac[, .(cumul_dac_emp_loss = sum(dac_emp),
                                    cumul_dac_comp_loss = sum(dac_comp),
                                    cumul_total_comp_loss = sum(diff_comp),
                                    cumul_dac_pv_loss = sum(dac_pv),
-                                   cumul_total_pv_loss = sum(diff_pv)), by = .(scen_id, carbon_price_scenario,
+                                   cumul_total_pv_loss = sum(diff_pv)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
                                                                            setback_scenario, excise_tax_scenario,
-                                                                           target, policy_intervention, ccs_option)]
+                                                                           target, target_policy, policy_intervention)]
 
 labor_bau_dac[, dac_share_emp := cumul_dac_emp_loss / cumul_total_emp_loss]
 labor_bau_dac[, dac_share_comp := cumul_dac_comp_loss / cumul_total_comp_loss]
@@ -652,8 +679,8 @@ labor_bau_dac[, dac_share_pv := cumul_dac_pv_loss / cumul_total_pv_loss]
 # labor_ghg_df[, total_loss_ghg := cumul_total_emp_loss / (cumul_ghg_savings * -1)]
 # labor_ghg_df[, dac_share_loss_ghg := dac_loss_ghg / total_loss_ghg]
 
-labor_bau_dac <- melt(labor_bau_dac, id.vars = c("scen_id", 
-                                               "target", "policy_intervention", "ccs_option"),
+labor_bau_dac <- melt(labor_bau_dac, id.vars = c("scen_id", "oil_price_scenario",
+                                               "target", "policy_intervention", "target_policy"),
                      measure.vars = c("cumul_dac_emp_loss", "cumul_total_emp_loss", "dac_share_emp",
                                       "cumul_dac_comp_loss", "cumul_total_comp_loss", "dac_share_comp",
                                       "cumul_dac_pv_loss", "cumul_total_pv_loss", "dac_share_pv"),
@@ -670,7 +697,8 @@ labor_bau_dac[, category := "Employment"]
 ## health, relative to BAU
 ## -----------------------------------------------------
 
-health_dac_bau <- health_scens[, .(scen_id, target, ccs_option, policy_intervention, census_tract, year, mortality_delta, cost, cost_PV, dac_multiplier)]
+health_dac_bau <- health_scens[, .(scen_id, target, target_policy, policy_intervention, census_tract, year, mortality_delta, cost, cost_PV, dac_multiplier)]
+health_dac_bau[, oil_price_scenario := sub("-.*", "", scen_id)]
 
 health_dac_bau[, dac_av_mort := dac_multiplier * mortality_delta]
 health_dac_bau[, dac_av_mort_cost := dac_multiplier * cost]
@@ -682,7 +710,7 @@ health_dac_bau <- health_dac_bau[, .(cumul_dac_av_mort = sum(dac_av_mort),
                                      cumul_dac_av_mort_cost = sum(dac_av_mort_cost),
                                      cumul_total_av_mort_cost = sum(cost),
                                      cumul_dac_av_mort_pv = sum(dac_av_mort_cost_pv),
-                                     cumul_total_av_mort_pv = sum(cost_PV)), by = .(scen_id, target, policy_intervention, ccs_option)]
+                                     cumul_total_av_mort_pv = sum(cost_PV)), by = .(scen_id, oil_price_scenario, target, policy_intervention, target_policy)]
 
 health_dac_bau[, dac_share_av_mort := cumul_dac_av_mort / cumul_total_av_mort]
 health_dac_bau[, dac_share_av_cost := cumul_dac_av_mort_cost / cumul_total_av_mort_cost]
@@ -700,8 +728,8 @@ health_dac_bau[, dac_share_av_pv := cumul_dac_av_mort_pv / cumul_total_av_mort_p
 # health_dac_ghg[, total_av_mort_ghg := cumul_total_av_mort / cumul_ghg_savings]
 # health_dac_ghg[, DAC_share_av_mort_ghg := dac_av_mort_ghg / total_av_mort_ghg]
 # 
-health_dac_bau <- melt(health_dac_bau, id.vars = c("scen_id", "target", "policy_intervention",
-                                                        "ccs_option"),
+health_dac_bau <- melt(health_dac_bau, id.vars = c("scen_id", "oil_price_scenario", "target", "policy_intervention",
+                                                        "target_policy"),
                             measure.vars = c("cumul_dac_av_mort", "cumul_total_av_mort", "dac_share_av_mort",
                                              "cumul_dac_av_mort_cost", "cumul_total_av_mort_cost", "dac_share_av_cost",
                                              "cumul_dac_av_mort_pv", "cumul_total_av_mort_pv", "dac_share_av_pv"),
@@ -718,22 +746,19 @@ health_dac_bau[, category := "Avoided mortalities"]
 ## bind and save
 dac_bau_df <- rbind(labor_bau_dac, health_dac_bau)
 
-dac_bau_df[, ccs_scenario := fifelse(ccs_option == "no CCS", "no ccs", "medium CCS cost")]
-
-
 dac_bau_df <- merge(dac_bau_df, setback_2045,
-                by = c("ccs_scenario", "target"),
+                by = c("oil_price_scenario", "target"),
                 all.x = T)
 
-dac_bau_df[, target_label := fifelse(target == "BAU", target,
-                                 fifelse(target == "90% GHG reduction", "90%", target_label))]
+dac_bau_df[, target_label := fifelse(policy_intervention == "BAU", target,
+                                 fifelse(target == "90perc_reduction", "90%", target_label))]
 
 dac_bau_df <- merge(dac_bau_df, ghg_2045,
-                by = c("scen_id", "ccs_scenario"),
+                by = c("scen_id", "oil_price_scenario"),
                 all.x = T)
 
 
-fwrite(dac_bau_df, paste0(save_info_path, 'dac_bau_health_labor.csv'))
+fwrite(dac_bau_df, paste0(save_info_path, 'dac_bau_health_labor_all_oil.csv'))
 
 
 
@@ -818,14 +843,14 @@ fwrite(dac_pop_time, paste0(save_info_path, 'state_dac_ratios.csv'))
 
 ## excise, carbon, setback 1-mile
 
-field_files <- paste0(field_out, c("reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_field.rds",
-                                   "reference case_setback_5280ft_no quota_price floor_no ccs_low innovation_no tax_field.rds",
-                                   "reference case_no_setback_no quota_carbon_setback_5280ft-no_setback-no ccs_no ccs_low innovation_no tax_field.rds",
-                                   "reference case_no_setback_no quota_price floor_no ccs_low innovation_tax_setback_5280ft_field.rds"))
+field_files <- paste0(field_out, c("reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_field.rds",
+                                   "reference case-setback_5280ft-no quota-price floor-no ccs-low innovation-no tax_field.rds",
+                                   "reference case-no_setback-no quota-carbon_target_setback_5280ft-no ccs-low innovation-no tax_field.rds",
+                                   "reference case-no_setback-no quota-price floor-no ccs-low innovation-tax_setback_5280ft_field.rds"))
 
 field_dt = setDT(rbindlist(lapply(field_files, readRDS)))
 
-field_dt <- field_dt[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(scen_id, carbon_price_scenario, setback_scenario,
+field_dt <- field_dt[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario,
                                                                        excise_tax_scenario, doc_field_code, doc_fieldname,
                                                                        year)]
 
