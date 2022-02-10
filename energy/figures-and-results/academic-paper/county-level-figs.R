@@ -321,7 +321,7 @@ county_setback_plot <- ggplot(county_setback_coverage %>% filter(!is.na(total_pr
   theme(legend.title = element_blank())
 
 ggsave(county_setback_plot,
-       filename = file.path(main_path, fig_path, 'county-setback.png'),
+       filename = file.path(main_path, fig_path, 'county-setback-coverage.png'),
        width = 8,
        height = 6,
        units = "in")
