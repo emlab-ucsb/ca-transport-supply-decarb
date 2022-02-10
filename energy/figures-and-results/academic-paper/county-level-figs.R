@@ -312,10 +312,10 @@ county_setback_coverage <- merge(county_setback_coverage, county_summaries[, .(a
                                  allow.cartesian = T)
 
 
-county_setback_plot <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl)), aes(x = total_prod_bbl / 1e6, y = county_field_coverage, color = adj_county_name)) +
+county_setback_plot <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl)), aes(x = total_prod_bbl / 1e6, y = county_field_coverage * 100, color = adj_county_name)) +
   geom_point(alpha = 0.8) +
   labs(x = "2019 production (million bbls)",
-       y = "Setback oil field coverage") +
+       y = "Setback oil field coverage (%)") +
   facet_wrap(~setback_scenario) +
   theme_line +
   theme(legend.title = element_blank())
