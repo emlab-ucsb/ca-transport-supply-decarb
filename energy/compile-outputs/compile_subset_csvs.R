@@ -5,15 +5,29 @@
 ## libraries
 library(data.table)
 
+external_save <- 1
+
 ## paths
 main_path         <- '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
 academic_out_path      <- file.path(main_path, 'outputs/academic-out/extraction/')
 
 ## read in saved rds files - updates as needed
-extraction_folder = 'extraction_2021-12-06'
+extraction_folder = 'extraction_2022-02-08'
 
-## subfolders
-compiled_path  = paste0(academic_out_path, extraction_folder, '/')
+external_path <- '/Volumes/calepa/academic-out/extraction_2022-02-08/'
+
+## get correct path
+
+if(external_save == 1) {
+  
+  compiled_path = external_path
+} else {
+
+ compiled_path  = paste0(academic_out_path, extraction_folder, '/')
+
+}
+
+## sub folders
 field_path     = paste0(compiled_path, 'field-results/')
 state_path     = paste0(compiled_path, 'state-results/')
 county_path    = paste0(compiled_path, 'county-results/')
@@ -21,14 +35,14 @@ ct_path        = paste0(compiled_path, 'census-tract-results/')
 
 
 ## files
-scen_file <- 'scenario_id_list.csv'
+scen_file <- 'scenario_id_list_targets.csv'
 
 ## load files
 scen_list <- fread(file.path(academic_out_path, scen_file), header = T) 
 
 subset_list <- scen_list[BAU_scen == 1 | subset_scens == 1]
 
-subset_ids <- subset_list[, scen_id]
+subset_ids <- subset_list[, .(scen_id, target, target_policy)]
 
 ## start function
 ## 1) read in rds for subset ids; 2) save to drive; 3) compile field level outputs for health (for now)
@@ -37,17 +51,26 @@ county_out_list <- list()
 state_out_list <- list()
 ct_out_list <- list()
 
-for (i in 1:length(subset_ids)) {
+for (i in 1:nrow(subset_ids)) {
   
   print(i)
   
-  id_name_tmp <- subset_ids[i]
+  id_name_tmp <- subset_ids[i, scen_id]
   
   ct_out_tmp <- readRDS(paste0(ct_path, id_name_tmp, '_ct_results.rds'))
   
+  ct_out_tmp <- merge(ct_out_tmp, subset_ids,
+                      by = "scen_id")
+  
   county_out_tmp <- readRDS(paste0(county_path, id_name_tmp, '_county_results.rds'))
   
+  county_out_tmp <- merge(county_out_tmp, subset_ids,
+                      by = "scen_id")
+  
   state_out_tmp <- readRDS(paste0(state_path, id_name_tmp, '_state_results.rds'))
+  
+  state_out_tmp <- merge(state_out_tmp, subset_ids,
+                          by = "scen_id")
   
   ct_out_list[[i]]     <- ct_out_tmp
   county_out_list[[i]] <- county_out_tmp

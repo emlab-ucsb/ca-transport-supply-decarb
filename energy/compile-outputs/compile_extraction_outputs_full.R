@@ -23,8 +23,8 @@ cur_date              = Sys.Date()
 main_path     <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 
 ## UPDATE THESE WITH NEW RUNS!!!!!
-extraction_folder_path <- 'outputs/predict-production/extraction_2021-12-06/'
-extraction_folder_name <- 'subset_target_scens/'
+extraction_folder_path <- 'outputs/predict-production/extraction_2022-02-07/'
+extraction_folder_name <- 'all-target/'
 data_path  <-'data/stocks-flows/processed/'
 
 ## health code paths
@@ -37,7 +37,7 @@ main_path_external <- '/Volumes/calepa/'
 if(save_external == 1) {
   
   ## UPDATE THIS WITH NEW RUNS!!!!!
-  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2022-02-01/test_target/')
+  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2022-02-07/all-target/')
   
   dir.create(paste0(main_path_external, 'academic-out/'), showWarnings = FALSE)
   compiled_save_path  <- paste0(main_path_external, 'academic-out/extraction_', cur_date, '/')
@@ -665,11 +665,35 @@ print(elapsed_time)
 ## add state values to state_results
 ## -------------------------------------------------------------
 
-## extraction pm25 BAU
-extraction_BAU <- readRDS(paste0(ct_save_path, "reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_ct_results.rds")) %>%
-  rename(bau_total_pm25 = total_pm25) %>%
-  select(census_tract, year, bau_total_pm25) %>% 
-  as.data.table()
+## get BAU vals for all three oil price scenarios
+
+bau_scens <- c('reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_ct_results.rds',
+               'low oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax_ct_results.rds',
+               'high oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax_ct_results.rds')
+
+bau_out <- list()
+
+for(i in 1:length(bau_scens)) {
+  
+  scen_tmp <- bau_scens[i]
+  
+  bau_tmp <- readRDS(paste0(ct_save_path, scen_tmp)) %>%
+    rename(bau_total_pm25 = total_pm25) %>%
+    select(oil_price_scenario, census_tract, year, bau_total_pm25) %>% 
+    as.data.table()
+  
+  bau_out[[i]] <- bau_tmp
+  
+}
+
+bau_out <- bind_rows(bau_out)
+
+
+# ## extraction pm25 BAU
+# extraction_BAU <- readRDS(paste0(ct_save_path, "reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_ct_results.rds")) %>%
+#   rename(bau_total_pm25 = total_pm25) %>%
+#   select(census_tract, year, bau_total_pm25) %>% 
+#   as.data.table()
 
 ## scenarios
 scenarios_to_process <- str_remove_all(field_files_to_process, "_field.rds")
@@ -683,9 +707,9 @@ for (i in 1:length(field_files_to_process)) {
   setDT(ct_scen_out)
   
   ## calculate delta pm 2.5
-  delta_extraction <- merge(ct_scen_out, extraction_BAU,
-                            by = c("census_tract", "year"),
-                            all = T)
+  delta_extraction <- merge(ct_scen_out, bau_out,
+                            by = c("oil_price_scenario", "census_tract", "year"),
+                            all.x = T)
   
   delta_extraction[, delta_total_pm25 := total_pm25 - bau_total_pm25]
   
