@@ -104,43 +104,6 @@ ghg_2019 <- as.numeric(hist_ghg[, value][1])
 state_out <- fread(paste0(state_save_path, "subset_state_results.csv"))
 
 
-## DELETE
-
-# setnames(state_out, "county_pop", "state_pop")
-
-# ## filter for BAU macro (ref oil price, price floor, low innovation, and no CCS cost)
-# ## keep all setback scenarios (no tax, carbon price floor)
-# ## keep all four excise tax scenarios (no setback, carbon price floor)
-# ## keep all carbon taxes match the setback scenarios (no setback, no excise tax)
-# 
-# state_scens <- state_out[(oil_price_scenario == "reference case" &
-#                             carbon_price_scenario %in% c("carbon_setback_1000ft-no_setback-no ccs", "carbon_setback_2500ft-no_setback-no ccs",
-#                                                          "carbon_setback_5280ft-no_setback-no ccs", "carbon_90_perc_reduction-no_setback-no ccs") &
-#                             ccs_scenario %in% c("no ccs") &
-#                             setback_scenario == "no_setback" &
-#                             excise_tax_scenario == "no tax") |
-#                            (oil_price_scenario == "reference case" &
-#                               carbon_price_scenario %in% c("carbon_setback_1000ft-no_setback-medium CCS cost", "carbon_setback_2500ft-no_setback-medium CCS cost",
-#                                                            "carbon_setback_5280ft-no_setback-medium CCS cost", "carbon_90_perc_reduction-no_setback-medium CCS cost") &
-#                               ccs_scenario %in% c("medium CCS cost") &
-#                               setback_scenario == "no_setback" &
-#                               excise_tax_scenario == "no tax") |   
-#                            (oil_price_scenario == "reference case" &
-#                               carbon_price_scenario == "price floor" &
-#                               ccs_scenario %in% c("medium CCS cost", "no ccs")) |
-#                            (oil_price_scenario == "reference case" &
-#                               carbon_price_scenario == "price floor" &
-#                               ccs_scenario %in% c("medium CCS cost", "no ccs") &
-#                               setback_scenario == "no_setback" &
-#                               excise_tax_scenario == "no tax") |
-#                            (oil_price_scenario == "reference case" &
-#                               carbon_price_scenario %in% c("carbon_sb_90_perc_reduction-setback_1000ft-medium CCS cost",
-#                                                            "carbon_sb_90_perc_reduction-setback_2500ft-medium CCS cost",
-#                                                            "carbon_sb_90_perc_reduction-setback_5280ft-medium CCS cost",
-#                                                            "carbon_sb_90_perc_reduction-setback_1000ft-no ccs",
-#                                                            "carbon_sb_90_perc_reduction-setback_2500ft-no ccs",
-#                                                            "carbon_sb_90_perc_reduction-setback_5280ft-no ccs") &
-#                               excise_tax_scenario == "no tax")]
 
 ## note that the values in the state_pop column are different than the state_population df created
 ## in this script. The former only includes census tracts affected by oil production, while the latter
@@ -229,23 +192,6 @@ state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price fl
                                                               fifelse(excise_tax_scenario != 'no tax' & setback_scenario != 'no_setback', 'excise tax & setback',
                                                                 fifelse(carbon_price_scenario != 'price floor' & setback_scenario != "no_setback", "carbon tax & setback", "BAU")))))]
 
-## DELETE
-
-## add target
-# state_levels[, tmp := fifelse(str_dectect(scen_id, 'carbon_sb') == TRUE, '90', carbon)]
-
-# state_levels[, target := as.numeric(str_extract(carbon_price_scenario, pattern = one_or_more(DIGIT)))]
-# state_levels[, target := fifelse(is.na(target), as.numeric(str_extract(excise_tax_scenario, pattern = one_or_more(DIGIT))), target)]
-# state_levels[, target := fifelse(is.na(target), as.numeric(str_extract(setback_scenario, pattern = one_or_more(DIGIT))), target)]
-# 
-# state_levels[, target := fifelse(target >= 1000, paste0(target, 'ft setback GHG'),
-#                                  fifelse(target < 1000, paste0(target, '% GHG reduction'), 'BAU'))]
-# 
-# state_levels[, target := fifelse(is.na(target), 'BAU', target)]
-# 
-# ## add ccs
-# state_levels[, ccs_option := fifelse(ccs_scenario == "no ccs", "no CCS", "medium CCS cost")]
-
 
 ## adjust so that setback is target
 state_levels[, target := fifelse(setback_scenario != 'no_setback' & target == 'no_target', setback_scenario, target)]
@@ -324,18 +270,6 @@ rel_health_levels[, policy_intervention := fifelse(carbon_price_scenario != "pri
                                                                            fifelse(carbon_price_scenario != 'price floor' & setback_scenario != "no_setback", "carbon tax & setback", "BAU")))))]
 
 
-## DELETE
-
-# ## add target
-# 
-# rel_health_levels[, target := as.numeric(str_extract(carbon_price_scenario, pattern = one_or_more(DIGIT)))]
-# rel_health_levels[, target := fifelse(is.na(target), as.numeric(str_extract(excise_tax_scenario, pattern = one_or_more(DIGIT))), target)]
-# rel_health_levels[, target := fifelse(is.na(target), as.numeric(str_extract(setback_scenario, pattern = one_or_more(DIGIT))), target)]
-# 
-# rel_health_levels[, target := fifelse(target >= 1000, paste0(target, 'ft setback GHG'),
-#                                  fifelse(target < 1000, paste0(target, '% GHG reduction'), 'BAU'))]
-# 
-# rel_health_levels[, target := fifelse(is.na(target), 'BAU', target)]
 
 ## adjust so that setback is target
 rel_health_levels[, target := fifelse(setback_scenario != 'no_setback' & target == 'no_target', setback_scenario, target)]
@@ -462,7 +396,6 @@ npv_x_metric[, target_label := fifelse(policy_intervention == "BAU", target,
                                        fifelse(target == "90perc_reduction", "90%", target_label))]
 
 
-
 fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric_all_oil.csv'))
 
 # ## -------------------------------------
@@ -546,9 +479,6 @@ health_out <- fread(paste0(main_path, extraction_folder_path, 'census-tract-resu
 
 health_out[, target := NULL]
 
-## DELETE
-# ## filter scens
-# health_scens <- health_out[scen_id %in% state_levels$scen_id]
 
 ## add target, policy intervention, ccs_option
 health_scens <- merge(health_out, unique(state_levels[, .(scen_id, policy_intervention, target)]),
