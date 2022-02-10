@@ -6,6 +6,7 @@
 library(data.table)
 library(tidyverse)
 library(openxlsx)
+library(readxl)
 
 
 # fig 1: county-level ghg emissions intensity x 2019 production, calculated using weighted mean, w = 2019 production
@@ -29,7 +30,7 @@ health_out      <- paste0(main_path, "outputs/academic-out/health/")
 source_path     <- paste0(main_path, 'data/health/source_receptor_matrix/')
 
 ## results path (update this)
-county_results <- 'extraction_2021-12-06/county-results/'
+county_results <- 'extraction_2022-02-08/county-results/'
 
 ## files
 ghg_file            <- 'ghg_emissions_x_field_2018-2045.csv'
@@ -44,6 +45,7 @@ oil_price_file      <- 'oil_price_projections_revised.xlsx'
 
 ## paths
 data_path  <-'data/stocks-flows/processed/'
+fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/figs/'
 
 ## figures - county-level indicator x 2019 production, add 90th percentile line
 ## ghg emission intensity, costs, employment multipliers, pm2.5?, setbacks?
@@ -124,7 +126,7 @@ total_multipliers_ext[, ':=' (total_emp = dire_emp_mult + indi_emp_mult + indu_e
 total_multipliers_ext <- total_multipliers_ext[, .(adj_county_name, total_emp, total_comp)]
 
 ## county results
-county_out <- fread(paste0(main_path, outputs_path, county_results, county_out_file), header = T)
+county_prod <- fread(paste0(main_path, outputs_path, county_results, county_out_file), header = T)
 
 ## county information
 ## -------------------------------
@@ -218,54 +220,117 @@ county_out[, revenue := total_prod_bbl * oilpx_2019]
 ## compute county values
 ## -------------------------------------------------
 
-# county_summaries <- county_out[, ()]
+county_summaries <- county_out[, .(wm_upstream_kgCO2e_bbl = weighted.mean(upstream_kgCO2e_bbl, total_prod_bbl),
+                                  wm_cost = weighted.mean(sum_cost, total_prod_bbl),
+                                  total_emp = sum(total_emp),
+                                  total_prod_bbl = sum(total_prod_bbl)), by = .(adj_county_name)]
 
 
+county_summaries[, emp_per_bbl := total_emp / total_prod_bbl]
 
-## add county setback
-couty_out <- merge(county_out, county_setback_coverage,
-                   by = "adj_county_name",
-                   allow.cartesian = T)
+county_summaries <- county_summaries[total_prod_bbl > 0]
 
+## plot ghg emissions intensity
+## -----------------------------------
 
-
-
-
-## labor multipliers (these are county-level)
-
-
-
-
-
-
-
-
-
-
-
-
-## county emissions factors, weighted by 2019 production
-county_ghg_intensity <- county_out[, .(mean_ghg_intensity = weighted.mean(upstream_kgCO2e_bbl, total_prod_bbl),
-                                       total_prod_bbl = sum(total_prod_bbl)), 
-                                   by = .(adj_county_name)]
-
-county_ghg_intensity <- county_ghg_intensity[total_prod_bbl > 0]
-
-## plot
-
-county_ghg_plot <- ggplot(county_ghg_intensity, aes(x = total_prod_bbl / 1e6, y = mean_ghg_intensity)) +
+county_ghg_plot <- ggplot(county_summaries, aes(x = total_prod_bbl / 1e6, y = wm_upstream_kgCO2e_bbl)) +
   geom_point(alpha = 0.8) +
   labs(x = "2019 production (million bbls)",
-       y = "County-level emission intensity") +
-  ggrepel::geom_text_repel(data = county_ghg_intensity %>% filter(mean_ghg_intensity > 40), aes(x = total_prod_bbl / 1e6, y = mean_ghg_intensity, label = adj_county_name), 
+       y = "County-level GHG emission intensity") +
+  ggrepel::geom_text_repel(data = county_summaries %>% filter(wm_upstream_kgCO2e_bbl > 40), aes(x = total_prod_bbl / 1e6, y = wm_upstream_kgCO2e_bbl, label = adj_county_name), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
   theme_line
+
+ggsave(county_ghg_plot,
+       filename = file.path(main_path, fig_path, 'county-ghg-emissions-intensity.png'),
+       width = 6,
+       height = 6,
+       units = "in")
+
+## plot cost
+## -----------------------------------
+
+county_cost_plot <- ggplot(county_summaries, aes(x = total_prod_bbl / 1e6, y = wm_cost)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "2019 production (million bbls)",
+       y = "County-level cost per bbl") +
+  ggrepel::geom_text_repel(data = county_summaries, aes(x = total_prod_bbl / 1e6, y = wm_cost, label = adj_county_name), 
+                           hjust = 0, nudge_x = 0.1, size = 3) +
+  theme_line
+
+ggsave(county_cost_plot,
+       filename = file.path(main_path, fig_path, 'county-cost.png'),
+       width = 6,
+       height = 6,
+       units = "in")
+
+## plot employment
+## -----------------------------------
+
+county_labor_plot <- ggplot(county_summaries, aes(x = total_prod_bbl / 1e6, y = emp_per_bbl)) +
+  geom_point(alpha = 0.8) +
+  labs(title = "Jobs per bbl",
+       x = "2019 production (million bbls)",
+       y = "Jobs per bbl") +
+  # ggrepel::geom_text_repel(data = county_summaries, aes(x = total_prod_bbl / 1e6, y = emp_per_bbl, label = adj_county_name), 
+  #                          hjust = 0, nudge_x = 0.1, size = 3) +
+  theme_line
+
+county_labor_plot2 <- ggplot(county_summaries %>% filter(adj_county_name != "San Mateo"), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl)) +
+  geom_point(alpha = 0.8) +
+  labs(title = "Jobs per bbl (San Mateo removed)",
+       x = "2019 production (million bbls)",
+       y = "Jobs per bbl") +
+  ggrepel::geom_text_repel(data = county_summaries %>% filter(adj_county_name != "San Mateo"), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl, label = adj_county_name),
+                           hjust = 0, nudge_x = 0.1, size = 3) +
+  theme_line
+
+
+county_labor_fig <- plot_grid(
+  county_labor_plot,
+  county_labor_plot2,
+  align = 'vh',
+  # labels = c("A", "B", "C"),
+  hjust = -1,
+  nrow = 1,
+  rel_widths = c(1, 1)
+)
+
+ggsave(county_labor_fig,
+       filename = file.path(main_path, fig_path, 'county-labor.png'),
+       width = 8,
+       height = 4,
+       units = "in")
+
+
+## plot setback (1000ft)
+## -----------------------------------
+
+county_setback_coverage <- merge(county_setback_coverage, county_summaries[, .(adj_county_name, total_prod_bbl)],
+                                 by = "adj_county_name",
+                                 all.x = T,
+                                 allow.cartesian = T)
+
+
+county_setback_plot <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl)), aes(x = total_prod_bbl / 1e6, y = county_field_coverage, color = adj_county_name)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "2019 production (million bbls)",
+       y = "Setback oil field coverage") +
+  facet_wrap(~setback_scenario) +
+  theme_line +
+  theme(legend.title = element_blank())
+
+ggsave(county_setback_plot,
+       filename = file.path(main_path, fig_path, 'county-setback.png'),
+       width = 8,
+       height = 6,
+       units = "in")
 
 
 ## county-level production
 # ---------------------------------
 
-ounty_prod <- county_out[oil_price_scenario == 'reference case' &
+county_prod <- county_prod[oil_price_scenario == 'reference case' &
                            innovation_scenario == 'low innovation'&
                            carbon_price_scenario == 'price floor' &
                            ccs_scenario == "no ccs" &
@@ -286,12 +351,21 @@ county_prod[, ':=' (diff_prod = total_county_bbl - bau_county_bbl,
 county_prod[, ':=' (rel_diff_prod = diff_prod / bau_county_bbl,
                     rel_diff_ghg = diff_ghg / bau_county_ghg)]
 
-test <- ggplot(county_prod %>% filter(setback_scenario != "no_setback"), aes(x = year, y = rel_diff_prod, group = county, color = county)) +
-  geom_line() +
-  facet_wrap(~setback_scenario) +
-  theme_line
+county_prod[, ':=' (rel_diff_prod = fifelse(is.na(rel_diff_prod), 0, rel_diff_prod),
+                    rel_diff_ghg = fifelse(is.na(rel_diff_ghg), 0, rel_diff_ghg))]
 
-ggplotly(test)
+sb_prod <- ggplot(county_prod %>% filter(setback_scenario != "no_setback"), aes(x = year, y = rel_diff_prod, group = county, color = county)) +
+  geom_line(alpha = 0.8) +
+  facet_wrap(~setback_scenario) +
+  theme_line +
+  theme(legend.title = element_blank(),
+        legend.position = "right")
+
+ggsave(sb_prod,
+       filename = file.path(main_path, fig_path, 'county-setback-production.png'),
+       width = 8,
+       height = 6,
+       units = "in")
 
 
 
