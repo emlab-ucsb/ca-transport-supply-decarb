@@ -7,15 +7,17 @@ library(data.table)
 library(tidyverse)
 library(openxlsx)
 library(readxl)
+library(sf)
+library(maps)
+library(viridis)
 
 
 # fig 1: county-level ghg emissions intensity x 2019 production, calculated using weighted mean, w = 2019 production
 # fig 2: county-level costs x 2019 production, calculated using weighted mean, w = 2019 production
 # fig 3: county-level labor x 2019 production, use the indicator in the mechanisms figure
-# fig 4: county-level PM2.5 affected population x 2019 production, use the indicator in the mechanisms figure 
+# fig 4: county-level mortality per bbl (2019)
 # fig 5: county-level % of county affected by setback x 2019 production, use the setback scenario in mechanisms figures
-# fig 6: county-level production under different setback scenarios
-# fig 7: county-level steam injection
+# fig 6: county-level steam injection
 
 ## source figs
 items <- "figure_themes.R"
@@ -26,22 +28,21 @@ walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) 
 main_path       <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed/'
 outputs_path    <- 'outputs/academic-out/extraction/'
-health_out      <- paste0(main_path, "outputs/academic-out/health/")
 source_path     <- paste0(main_path, 'data/health/source_receptor_matrix/')
 
 ## results path (update this)
-county_results <- 'extraction_2022-02-08/county-results/'
+ct_results <- 'extraction_2022-02-08/census-tract-results/'
 
 ## files
 ghg_file            <- 'ghg_emissions_x_field_2018-2045.csv'
 prod_file           <- 'well_prod_m_processed.csv'
 forecast_file       <- 'field_capex_opex_forecast_revised.csv'
 setback_file        <- 'setback_coverage_R.csv'
-county_out_file     <- 'subset_county_results.csv'
+ct_out_file         <- 'subset_census_tract_results.csv'
 county_setback_file <- 'county_level_setback_coverage.csv'
-cluster_pop_file    <- 'extraction_cluster_affectedpop.csv'
 field_cluster_file  <- 'extraction_field_cluster_xwalk.csv'
 oil_price_file      <- 'oil_price_projections_revised.xlsx'
+monthly_inj_file    <- 'well_inj_m_processed.csv'
 
 ## paths
 data_path  <-'data/stocks-flows/processed/'
@@ -83,26 +84,29 @@ price_data <- price_data[year == 2020, .(doc_field_code, m_opex_imputed, m_capex
 county_setback_coverage <- fread(file.path(main_path, 'outputs/setback/county-level', county_setback_file), header = T)
 county_setback_coverage <- county_setback_coverage[, .(adj_county_name, setback_scenario, county_field_coverage)]
 
-## cluster health out
-cluster_pop_dt <- fread(paste0(health_out, cluster_pop_file))
+## census tract health out
+ct_health_out <- fread(paste0(main_path, outputs_path, ct_results, ct_out_file)) %>%
+  filter(scen_id == "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax",
+         year == 2019)
 
-## load and process cross-walk between fields and clusters 
-extraction_field_clusters_10km <- read_csv(paste0(source_path,"/extraction_fields_clusters_10km.csv",sep="")) %>%
-  select(OUTPUT_FID, INPUT_FID) %>%
-  rename(id = OUTPUT_FID, input_fid = INPUT_FID)
+## county - CT 
+dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
 
-extraction_fields_xwalk <- foreign::read.dbf(paste0(source_path, "/extraction_fields_xwalk_id.dbf", sep = "")) %>%
-  rename(input_fid = id, doc_field_code = dc_fld_)
+ces_county <- dac_ces %>%
+  select(`Census Tract`, `California County`) %>%
+  rename(census_tract = `Census Tract`,
+         county = `California County`) %>%
+  mutate(census_tract = paste0("0", census_tract, sep=""))
 
-extraction_xwalk <- extraction_field_clusters_10km %>%
-  left_join(extraction_fields_xwalk, by = c("input_fid")) 
+county_mortality <- ct_health_out[, .(census_tract, mortality_level)]
+county_mortality[, census_tract := paste0("0", census_tract)]
 
+county_mortality <- merge(county_mortality, ces_county,
+                          by = "census_tract",
+                          all.x = T)
 
-## join
-cluster_pop_dt <- merge(cluster_pop_dt, extraction_xwalk,
-                        by = "id",
-                        allow.cartesian = T) %>%
-  select(doc_field_code, id, affected_pop)
+county_mortality <- county_mortality[, .(mortality_level = sum(mortality_level)), by = .(county)]
+county_mortality <- county_mortality[!is.na(county)]
 
 ## labor
 total_multipliers_ext <- read_xlsx(paste0(main_path, labor_processed, 'ica_multipliers_v2.xlsx'), sheet = 'ica_total') %>% 
@@ -125,8 +129,8 @@ total_multipliers_ext[, ':=' (total_emp = dire_emp_mult + indi_emp_mult + indu_e
 
 total_multipliers_ext <- total_multipliers_ext[, .(adj_county_name, total_emp, total_comp)]
 
-## county results
-county_prod <- fread(paste0(main_path, outputs_path, county_results, county_out_file), header = T)
+# ## county results
+# county_prod <- fread(paste0(main_path, outputs_path, county_results, county_out_file), header = T)
 
 ## county information
 ## -------------------------------
@@ -200,12 +204,6 @@ county_out <- merge(county_out, price_data,
                     all.x = T,
                     allow.cartesian = T)
 
-## add affected pop
-county_out <- merge(county_out, cluster_pop_dt,
-                    by = c("doc_field_code"),
-                    all.x = T,
-                    allow.cartesian = T)
-
 ## add labor
 county_out <- merge(county_out, total_multipliers_ext,
                     by = "adj_county_name",
@@ -233,11 +231,12 @@ county_summaries <- county_summaries[total_prod_bbl > 0]
 ## plot ghg emissions intensity
 ## -----------------------------------
 
-county_ghg_plot <- ggplot(county_summaries, aes(x = total_prod_bbl / 1e6, y = wm_upstream_kgCO2e_bbl)) +
+county_ghg_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_upstream_kgCO2e_bbl)) +
   geom_point(alpha = 0.8) +
   labs(x = "2019 production (million bbls)",
-       y = "County-level GHG emission intensity") +
-  ggrepel::geom_text_repel(data = county_summaries %>% filter(wm_upstream_kgCO2e_bbl > 40), aes(x = total_prod_bbl / 1e6, y = wm_upstream_kgCO2e_bbl, label = adj_county_name), 
+       y = "County-level GHG emission intensity",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_upstream_kgCO2e_bbl, label = adj_county_name), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
   theme_line
 
@@ -250,11 +249,12 @@ ggsave(county_ghg_plot,
 ## plot cost
 ## -----------------------------------
 
-county_cost_plot <- ggplot(county_summaries, aes(x = total_prod_bbl / 1e6, y = wm_cost)) +
+county_cost_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_cost)) +
   geom_point(alpha = 0.8) +
   labs(x = "2019 production (million bbls)",
-       y = "County-level cost per bbl") +
-  ggrepel::geom_text_repel(data = county_summaries, aes(x = total_prod_bbl / 1e6, y = wm_cost, label = adj_county_name), 
+       y = "County-level cost per bbl",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_cost, label = adj_county_name), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
   theme_line
 
@@ -267,39 +267,39 @@ ggsave(county_cost_plot,
 ## plot employment
 ## -----------------------------------
 
-county_labor_plot <- ggplot(county_summaries, aes(x = total_prod_bbl / 1e6, y = emp_per_bbl)) +
+county_labor_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl)) +
   geom_point(alpha = 0.8) +
-  labs(title = "Jobs per bbl",
-       x = "2019 production (million bbls)",
-       y = "Jobs per bbl") +
-  # ggrepel::geom_text_repel(data = county_summaries, aes(x = total_prod_bbl / 1e6, y = emp_per_bbl, label = adj_county_name), 
-  #                          hjust = 0, nudge_x = 0.1, size = 3) +
-  theme_line
-
-county_labor_plot2 <- ggplot(county_summaries %>% filter(adj_county_name != "San Mateo"), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl)) +
-  geom_point(alpha = 0.8) +
-  labs(title = "Jobs per bbl (San Mateo removed)",
-       x = "2019 production (million bbls)",
-       y = "Jobs per bbl") +
-  ggrepel::geom_text_repel(data = county_summaries %>% filter(adj_county_name != "San Mateo"), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl, label = adj_county_name),
+  labs(x = "2019 production (million bbls)",
+       y = "Jobs per bbl",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl, label = adj_county_name),
                            hjust = 0, nudge_x = 0.1, size = 3) +
   theme_line
 
+# county_labor_plot2 <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl)) +
+#   geom_point(alpha = 0.8) +
+#   labs(title = "Jobs per bbl (San Mateo removed)",
+#        x = "2019 production (million bbls)",
+#        y = "Jobs per bbl") +
+#   ggrepel::geom_text_repel(data = county_summaries %>% filter(adj_county_name != "San Mateo"), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl, label = adj_county_name),
+#                            hjust = 0, nudge_x = 0.1, size = 3) +
+#   theme_line
 
-county_labor_fig <- plot_grid(
-  county_labor_plot,
-  county_labor_plot2,
-  align = 'vh',
-  # labels = c("A", "B", "C"),
-  hjust = -1,
-  nrow = 1,
-  rel_widths = c(1, 1)
-)
 
-ggsave(county_labor_fig,
+# county_labor_fig <- plot_grid(
+#   county_labor_plot,
+#   county_labor_plot2,
+#   align = 'vh',
+#   # labels = c("A", "B", "C"),
+#   hjust = -1,
+#   nrow = 1,
+#   rel_widths = c(1, 1)
+# )
+
+ggsave(county_labor_plot,
        filename = file.path(main_path, fig_path, 'county-labor.png'),
-       width = 8,
-       height = 4,
+       width = 6,
+       height = 6,
        units = "in")
 
 
@@ -311,12 +311,20 @@ county_setback_coverage <- merge(county_setback_coverage, county_summaries[, .(a
                                  all.x = T,
                                  allow.cartesian = T)
 
+county_setback_coverage[, setback_name := fifelse(setback_scenario == "setback_1000ft",
+                                                  "1000ft setback",
+                                                  fifelse(setback_scenario == "setback_2500ft",
+                                                          "2500ft setback", "5280 setback"))]
 
-county_setback_plot <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl)), aes(x = total_prod_bbl / 1e6, y = county_field_coverage * 100, color = adj_county_name)) +
+
+county_setback_plot <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl),
+                                                                 total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = county_field_coverage * 100, color = adj_county_name)) +
   geom_point(alpha = 0.8) +
   labs(x = "2019 production (million bbls)",
-       y = "Setback oil field coverage (%)") +
-  facet_wrap(~setback_scenario) +
+       y = "Setback oil field coverage (%)",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  facet_wrap(~setback_name) +
+  scale_y_continuous(limits = c(0, 100)) +
   theme_line +
   theme(legend.title = element_blank())
 
@@ -330,40 +338,233 @@ ggsave(county_setback_plot,
 ## county-level production
 # ---------------------------------
 
-county_prod <- county_prod[oil_price_scenario == 'reference case' &
-                           innovation_scenario == 'low innovation'&
-                           carbon_price_scenario == 'price floor' &
-                           ccs_scenario == "no ccs" &
-                           prod_quota_scenario == "no quota" &
-                           excise_tax_scenario == 'no tax', .(scen_id, setback_scenario, county, year, total_county_bbl, total_county_ghg_kgCO2e)]
+# county_prod <- county_prod[oil_price_scenario == 'reference case' &
+#                            innovation_scenario == 'low innovation'&
+#                            carbon_price_scenario == 'price floor' &
+#                            ccs_scenario == "no ccs" &
+#                            prod_quota_scenario == "no quota" &
+#                            excise_tax_scenario == 'no tax', .(scen_id, setback_scenario, county, year, total_county_bbl, total_county_ghg_kgCO2e)]
+# 
+# bau_prod <- county_prod[setback_scenario == "no_setback", .(county, year, total_county_bbl, total_county_ghg_kgCO2e)]
+# 
+# setnames(bau_prod, c("total_county_bbl", "total_county_ghg_kgCO2e"), c("bau_county_bbl", "bau_county_ghg"))
+# 
+# 
+# county_prod = county_prod[bau_prod, on = .(county, year), allow.cartesian = T, nomatch = 0]
+# 
+# county_prod[, ':=' (diff_prod = total_county_bbl - bau_county_bbl,
+#                     diff_ghg = total_county_ghg_kgCO2e - bau_county_ghg)]
+# 
+# 
+# county_prod[, ':=' (rel_diff_prod = diff_prod / bau_county_bbl,
+#                     rel_diff_ghg = diff_ghg / bau_county_ghg)]
+# 
+# county_prod[, ':=' (rel_diff_prod = fifelse(is.na(rel_diff_prod), 0, rel_diff_prod),
+#                     rel_diff_ghg = fifelse(is.na(rel_diff_ghg), 0, rel_diff_ghg))]
+# 
+# sb_prod <- ggplot(county_prod %>% filter(setback_scenario != "no_setback"), aes(x = year, y = rel_diff_prod, group = county, color = county)) +
+#   geom_line(alpha = 0.8) +
+#   facet_wrap(~setback_scenario) +
+#   theme_line +
+#   theme(legend.title = element_blank(),
+#         legend.position = "right")
+# 
+# ggsave(sb_prod,
+#        filename = file.path(main_path, fig_path, 'county-setback-production.png'),
+#        width = 8,
+#        height = 6,
+#        units = "in")
 
-bau_prod <- county_prod[setback_scenario == "no_setback", .(county, year, total_county_bbl, total_county_ghg_kgCO2e)]
+## health outcomes
+## -------------------------------------
 
-setnames(bau_prod, c("total_county_bbl", "total_county_ghg_kgCO2e"), c("bau_county_bbl", "bau_county_ghg"))
+county_prod_summary <- county_summaries %>%
+  rename(county = adj_county_name) %>%
+  select(county, total_prod_bbl)
+
+county_health_df <- county_mortality %>%
+  left_join(county_prod_summary) %>%
+  mutate(total_prod_bbl = ifelse(is.na(total_prod_bbl), 0, total_prod_bbl),
+         mortality_per_bbl = mortality_level / total_prod_bbl) %>%
+  pivot_longer(cols = c(mortality_level, mortality_per_bbl),
+               names_to = "indicator",
+               values_to = "value")
+
+## califonia
+states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+
+ca_crs <- 3488
+
+california <- states %>% filter(ID == "california") %>%
+  st_transform(ca_crs)
+
+## counties boundaries
+county_boundaries <- st_read(file.path(main_path, "data/GIS/raw/CA_Counties/CA_Counties_TIGER2016.shp")) %>% 
+  st_transform(ca_crs) %>%
+  dplyr::select(county = NAME)
+
+county_health_df <- county_boundaries %>%
+  left_join(county_health_df) 
+
+## plot health impacts
+## -----------------------------------
+
+## crop area
+disp_win_wgs84 <- st_sfc(st_point(c(-123, 32)), st_point(c(-113, 37)),
+                         crs = 4326)
+
+disp_win_trans <- st_transform(disp_win_wgs84, crs = ca_crs)
+
+disp_win_coord <- st_coordinates(disp_win_trans)
 
 
-county_prod = county_prod[bau_prod, on = .(county, year), allow.cartesian = T, nomatch = 0]
 
-county_prod[, ':=' (diff_prod = total_county_bbl - bau_county_bbl,
-                    diff_ghg = total_county_ghg_kgCO2e - bau_county_ghg)]
+health_map1 <- ggplot() +
+  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
+  geom_sf(data = county_health_df %>% filter(indicator == "mortality_level"), mapping = aes(geometry = geometry, fill = value), lwd = 0, alpha = 1, show.legend = TRUE) +
+  labs(title = "Mortality by county (2019)",
+       fill = 'Mortality level',
+       x = NULL,
+       y = NULL) +
+  scale_fill_viridis(option="mako",
+                     direction = -1) +
+  geom_sf_text(data = county_health_df %>% filter(indicator == "mortality_level"), 
+               aes(geometry = geometry, label = county), colour = "orange", size = 2) +
+  theme_void() +
+  coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+           datum = ca_crs, expand = FALSE) +
+  theme(
+    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+    legend.justification = c(0, 1),
+    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+    legend.position = "bottom",
+    legend.title = element_text(size = 9)) +
+  guides(fill = guide_colourbar(title.position="top", 
+                                title.hjust = 0,
+                                direction = "horizontal"))
 
 
-county_prod[, ':=' (rel_diff_prod = diff_prod / bau_county_bbl,
-                    rel_diff_ghg = diff_ghg / bau_county_ghg)]
+## health map 2
+health_map2 <- ggplot() +
+  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = county_health_df %>% filter(indicator == "mortality_per_bbl",
+                                             total_prod_bbl > 0), mapping = aes(geometry = geometry, fill = value), lwd = 0, alpha = 1, show.legend = TRUE) +
+  labs(title = "Mortality per bbl by county (2019)",
+       fill = 'Mortality level per bbl',
+       x = NULL,
+       y = NULL) +
+  scale_fill_viridis(option="mako",
+                     direction = -1) +
+  geom_sf_text(data = county_health_df %>% filter(indicator == "mortality_per_bbl",
+                                                  total_prod_bbl > 0), 
+               aes(geometry = geometry, label = county), colour = "orange", size = 2) +
+  theme_void() +
+  coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+           datum = ca_crs, expand = FALSE) +
+  theme(
+    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+    legend.justification = c(0, 1),
+    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+    legend.position = "bottom",
+    legend.title = element_text(size = 9)) +
+  guides(fill = guide_colourbar(title.position="top", 
+                                title.hjust = 0,
+                                direction = "horizontal"))
 
-county_prod[, ':=' (rel_diff_prod = fifelse(is.na(rel_diff_prod), 0, rel_diff_prod),
-                    rel_diff_ghg = fifelse(is.na(rel_diff_ghg), 0, rel_diff_ghg))]
 
-sb_prod <- ggplot(county_prod %>% filter(setback_scenario != "no_setback"), aes(x = year, y = rel_diff_prod, group = county, color = county)) +
-  geom_line(alpha = 0.8) +
-  facet_wrap(~setback_scenario) +
-  theme_line +
-  theme(legend.title = element_blank(),
-        legend.position = "right")
+## county health maps
+## ------------------------------------
 
-ggsave(sb_prod,
-       filename = file.path(main_path, fig_path, 'county-setback-production.png'),
+county_health_maps <- plot_grid(
+  health_map1, health_map2,
+  nrow = 1,
+  # rel_heights values control vertical title margins
+  rel_heights = c(1, 1)
+)
+
+
+ggsave(county_health_maps,
+       filename = file.path(main_path, fig_path, 'county-mortality.png'),
        width = 8,
+       height = 6,
+       units = "in")
+
+## fig 3
+
+health_fig3 <- ggplot(county_health_df %>% filter(total_prod_bbl >= 1e6,
+                                                  indicator == "mortality_per_bbl"), aes(x = total_prod_bbl / 1e6, y = value)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "2019 production (million bbls)",
+       y = "2019 mortality per bbl",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  theme_line +
+  ggrepel::geom_text_repel(data = county_health_df %>% filter(total_prod_bbl >= 1e6,
+                                                              indicator == "mortality_per_bbl"), aes(x = total_prod_bbl / 1e6, y = value, label = county), 
+                           hjust = 0, nudge_x = 0.1, size = 3) +
+  theme(legend.title = element_blank())
+
+ggsave(health_fig3,
+       filename = file.path(main_path, fig_path, 'county-mortality-v2.png'),
+       width = 6,
+       height = 6,
+       units = "in")
+
+
+
+
+## steam injectin by county
+## ---------------------------------------------
+
+## monthly well production
+well_inj <- fread(paste0(main_path, "/data/stocks-flows/processed/", monthly_inj_file), colClasses = c('api_ten_digit' = 'character',
+                                                                                                       'doc_field_code' = 'character'))
+                                                                                                 
+# aggregate well injection data and production data by county and year -----
+agg_inj_county = well_inj[!is.na(SteamWaterInjected), .(sum_steam = sum(SteamWaterInjected)), by = .(year, county_name)]
+
+# filter out county-aggregated data for 2019 ------
+agg_inj_county_2019 = agg_inj_county[year == 2019]
+
+## adj county name
+agg_inj_county_2019[, adj_county_name := str_remove(county_name, " Offshore")]
+
+agg_inj_county_2019 = agg_inj_county_2019[, .(sum_steam = sum(sum_steam)), by = .(year, adj_county_name)]
+
+
+# aggregate water and steam injection by well type and county for 2019 ------
+
+agg_inj_2019 = well_inj[!is.na(SteamWaterInjected) & year == 2019, .(sum_steam = sum(SteamWaterInjected)), by = .(county_name, well_type_name, year)]
+
+agg_inj_2019[, adj_county_name := str_remove(county_name, " Offshore")]
+
+agg_inj_2019 = agg_inj_2019[, .(sum_steam = sum(sum_steam)), by = .(year, adj_county_name, well_type_name)]
+
+
+## merge with county production
+county_inj_prod <- agg_inj_county_2019 %>%
+  full_join(county_summaries) %>%
+  select(adj_county_name, total_prod_bbl, sum_steam) %>%
+  mutate(sum_steam = ifelse(is.na(sum_steam), 0, sum_steam),
+         steam_per_bbl = sum_steam / total_prod_bbl)
+
+
+
+## figure
+steam_inj_fig <- ggplot(county_inj_prod %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = steam_per_bbl)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "2019 production (million bbls)",
+       y = "2019 steam injection per bbl",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  theme_line +
+  ggrepel::geom_text_repel(data = county_inj_prod %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = steam_per_bbl, label = adj_county_name), 
+                           hjust = 0, nudge_x = 0.1, size = 3) +
+  theme(legend.title = element_blank())
+
+ggsave(steam_inj_fig,
+       filename = file.path(main_path, fig_path, 'county-steam-inj-per-bbl.png'),
+       width = 6,
        height = 6,
        units = "in")
 
@@ -373,3 +574,62 @@ ggsave(sb_prod,
 
 
 
+
+# # match well code with well type ----
+# 
+# agg_inj_2019 = agg_inj_2019[well_type_df, on = 'WellTypeCode', nomatch = 0]
+# 
+# # rename NA well types as 'Unknown' -----
+# 
+# agg_inj_2019[is.na(WellTypeCode), well_type_name := 'Unknown' ]
+# 
+# # rename non-common well types as 'Other' ------
+# 
+# agg_inj_2019[ ! well_type_name %in% c("Water Flood", "Water Disposal", "Steam Flood", "Cyclic Steam",  "Oil & Gas", 'Unknown'), well_type_name := 'Other']
+# 
+# # get top 10 water intensities for 2019 ------
+# 
+# county_prod_inj = agg_prod_county[agg_inj_county, on = c('year', 'county_name')]
+# county_prod_inj_2019 = county_prod_inj[ year == 2019 ]
+# 
+# county_prod_inj_2019[, water_intensity := sum_steam/sum_prod ] # first calculate water intensities at the individual county level (not aggregated to "Other" yet ) because some counties have NA or Inf water intensities
+# county_prod_inj_2019 = county_prod_inj_2019[ !is.na(water_intensity) & water_intensity < Inf ]
+# county_prod_inj_2019[, adj_name := ifelse(county_name %in% top_prod_counties[, county_name], county_name, 'Other' )] # rename non-top 10 producing as "Other"
+# 
+# county_prod_inj_2019 = county_prod_inj_2019[, .(sum_steam = sum(sum_steam), sum_prod = sum(sum_prod)), by = .(year, adj_name)]  # re-calculate sums
+# county_prod_inj_2019[, water_intensity := sum_steam/sum_prod ] # re-calculate water intensities
+# setorder(county_prod_inj_2019, -water_intensity)
+# top_int_counties = county_prod_inj_2019[1:10][, rank := 1:10]
+# 
+# # reorder factor levels -----
+# 
+# agg_inj_2019 = agg_inj_2019[, adj_name := factor(adj_name, levels = c('Other', rev(top_int_counties[, adj_name])))]
+# 
+# # plot -------
+# 
+# # bars are ranked from highest (top) to lowest (bottom) water intensity
+# fig_well_perc = ggplot(agg_inj_2019, aes(x = adj_name, y = sum_steam, fill = well_type_name)) + 
+#   geom_bar(stat = "identity", position = 'fill') +
+#   labs(x = NULL,
+#        y = 'Percentage of water or steam injected in 2019 in each county by well type',
+#        fill = NULL) +
+#   theme_ipsum(base_family = "Calibri", grid = "X", axis_title_just = "center",
+#               axis_title_size = 20, axis_text_size = 16, strip_text_size = 14) +
+#   scale_y_percent() +
+#   scale_fill_manual(values = calepa_pal) + 
+#   # base_theme +
+#   theme(legend.position = "top") +
+#   theme(legend.text = element_text(size = 12),
+#         legend.title = element_text(size = 14, face = "bold"),
+#         strip.background = element_blank(),
+#         strip.text.x = element_blank(),
+#         axis.text.x = element_text(angle = 0, vjust = 0.5, hjust =0.5))
+# fig_well_perc = fig_well_perc + coord_flip()
+# fig_well_perc
+
+# uncomment if want to save:
+# ggsave(filename = "bar_percentage-of-water-injected-by-well-type.png",
+#        plot = fig_well_perc,
+#        width = 10,
+#        height = 8,
+#        dpi = 800)
