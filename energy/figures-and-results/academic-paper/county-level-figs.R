@@ -410,7 +410,7 @@ county_health_df <- county_boundaries %>%
 ## -----------------------------------
 
 ## crop area
-disp_win_wgs84 <- st_sfc(st_point(c(-123, 32)), st_point(c(-113, 37)),
+disp_win_wgs84 <- st_sfc(st_point(c(-123, 32.5)), st_point(c(-113, 37)),
                          crs = 4326)
 
 disp_win_trans <- st_transform(disp_win_wgs84, crs = ca_crs)
@@ -421,9 +421,9 @@ disp_win_coord <- st_coordinates(disp_win_trans)
 
 health_map1 <- ggplot() +
   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = california, mapping = aes(), fill = "#f8f9fa", lwd = 0.4, show.legend = FALSE) +
   # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
-  geom_sf(data = county_health_df %>% filter(indicator == "mortality_level"), mapping = aes(geometry = geometry, fill = value), lwd = 0, alpha = 1, show.legend = TRUE) +
+  geom_sf(data = county_health_df %>% filter(indicator == "mortality_level"), mapping = aes(geometry = geometry, fill = value), lwd = 0.2, alpha = 1, show.legend = TRUE) +
   labs(title = "Mortality by county (2019)",
        fill = 'Mortality level',
        x = NULL,
@@ -431,7 +431,7 @@ health_map1 <- ggplot() +
   scale_fill_viridis(option="mako",
                      direction = -1) +
   geom_sf_text(data = county_health_df %>% filter(indicator == "mortality_level"), 
-               aes(geometry = geometry, label = county), colour = "orange", size = 2) +
+               aes(geometry = geometry, label = county), colour = "#6c757d", size = 2) +
   theme_void() +
   coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
            datum = ca_crs, expand = FALSE) +
@@ -446,20 +446,22 @@ health_map1 <- ggplot() +
                                 direction = "horizontal"))
 
 
+
 ## health map 2
 health_map2 <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = california, mapping = aes(), fill = "#f8f9fa", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = county_health_df %>% filter(indicator == "mortality_per_bbl",
-                                             total_prod_bbl > 0), mapping = aes(geometry = geometry, fill = value), lwd = 0, alpha = 1, show.legend = TRUE) +
+                                             total_prod_bbl >= 1e6), mapping = aes(geometry = geometry, fill = value), lwd = 0.2, alpha = 1, show.legend = TRUE) +
   labs(title = "Mortality per bbl by county (2019)",
        fill = 'Mortality level per bbl',
        x = NULL,
-       y = NULL) +
+       y = NULL,
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
   scale_fill_viridis(option="mako",
                      direction = -1) +
   geom_sf_text(data = county_health_df %>% filter(indicator == "mortality_per_bbl",
-                                                  total_prod_bbl > 0), 
-               aes(geometry = geometry, label = county), colour = "orange", size = 2) +
+                                                  total_prod_bbl >= 1e6), 
+               aes(geometry = geometry, label = county), colour = "#6c757d", size = 2) +
   theme_void() +
   coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
            datum = ca_crs, expand = FALSE) +
@@ -468,7 +470,8 @@ health_map2 <- ggplot() +
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
     legend.position = "bottom",
-    legend.title = element_text(size = 9)) +
+    legend.title = element_text(size = 9),
+    legend.key.width= unit(1, 'cm')) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal"))
