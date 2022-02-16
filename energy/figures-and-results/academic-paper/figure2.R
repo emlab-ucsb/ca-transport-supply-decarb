@@ -409,6 +409,40 @@ ghg_cumul_low <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "low oil pric
         # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         legend.background = element_rect(fill = "white", color = "grey")) 
 
+## label
+legend_low <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
+                                          year > 2019,
+                                          oil_price_scenario == "low oil price"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+  geom_line(size = 0.65, alpha = 0.9) +
+  geom_point() +
+  labs(title = "Oil production",
+       x = NULL,
+       y = "million bbls",
+       color = "Policy",
+       lty = "2045 GHG emission reduction target") +
+  scale_linetype_manual(values = c("80%" = "longdash", "85%" = "dotted", "90%" = "dashed", "94%" = "dotdash")) +
+  geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
+                                        year > 2019,
+                                        policy_intervention == "BAU",
+                                        oil_price_scenario == "low oil price"), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
+  
+  annotate("text", x = 2044, y = 44, label = "BAU") +
+  scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+  theme_line +
+  guides(lty = guide_legend(order = 1), colour = guide_legend(order = 2)) +
+  theme(legend.position = "left",
+        legend.key.width= unit(1, 'cm'),
+        legend.box="vertical") 
+
+legend_pathways_low <- get_legend(
+  legend_low + 
+    theme(legend.title = element_text(size = 10),
+          legend.text = element_text(size = 8))
+  
+)  
+  
 
 ## combine v2  figure - low oil px
 ## ---------------------------------
@@ -429,7 +463,7 @@ title_low <- ggdraw() +
 fig2_v2_combine_low <- plot_grid(
   prod_fig_low + theme(legend.position="none"),
   ghg_pw_low + theme(legend.position="none"),
-  legend_pathways_v2,
+  legend_pathways_low,
   ghg_cumul_low + theme(legend.position = "none"),
   align = 'vh',
   # labels = c("A", "B", "C"),
@@ -527,6 +561,45 @@ ghg_cumul_high <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "high oil pr
         legend.background = element_rect(fill = "white", color = "grey")) 
 
 
+## label
+legend_high <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
+                                           year > 2019,
+                                           oil_price_scenario == "high oil price") %>%
+                        mutate(target_label = ifelse(target_label == "-8%", "+8%", target_label)), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+  geom_line(size = 0.65, alpha = 0.9) +
+  geom_point() +
+  labs(title = "Oil production",
+       x = NULL,
+       y = "million bbls",
+       color = "Policy",
+       lty = "2045 GHG emission reduction target") +
+  scale_linetype_manual(values = c("+8%" = "longdash", "2%" = "dotted", "21%" = "dashed", "90%" = "dotdash")) +
+  geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
+                                        year > 2019,
+                                        policy_intervention == "BAU",
+                                        oil_price_scenario == "high oil price"), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
+  
+  annotate("text", x = 2045, y = 170, label = "BAU", size = 3) +
+  scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+  theme_line +
+  guides(lty = guide_legend(order = 1), colour = guide_legend(order = 2)) +
+  theme(legend.position = "left",
+        legend.key.width= unit(1, 'cm'),
+        legend.box="vertical") 
+
+legend_pathways_high <- get_legend(
+  legend_high + 
+    theme(legend.title = element_text(size = 10),
+          legend.text = element_text(size = 8))
+  
+)  
+
+
+
+
+
 ## combine v2  figure - low oil px
 ## ---------------------------------
 
@@ -546,7 +619,7 @@ title_high <- ggdraw() +
 fig2_v2_combine_high <- plot_grid(
   prod_fig_high + theme(legend.position="none"),
   ghg_pw_high + theme(legend.position="none"),
-  legend_pathways_v2,
+  legend_pathways_high,
   ghg_cumul_high + theme(legend.position = "none"),
   align = 'vh',
   # labels = c("A", "B", "C"),

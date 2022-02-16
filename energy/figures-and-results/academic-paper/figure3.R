@@ -378,16 +378,16 @@ ggsave(dac_fig_v2_high,
 ## facet... total and per avoided mtghgco2e
 
 
-## carbon px values 2020 
-carbon_px_vals <- carbon_px %>%
-  filter(carbon_price_scenario %in% c("carbon_90_perc_reduction-no_setback-no ccs",
-                                      "carbon_sb_90_perc_reduction-setback_1000ft-no ccs",
-                                      "carbon_sb_90_perc_reduction-setback_2500ft-no ccs",
-                                      "carbon_sb_90_perc_reduction-setback_5280ft-no ccs"),
-         year %in% c(2020, 2045)) %>%
-  mutate(sb_dist = str_extract(carbon_price_scenario, pattern = one_or_more(DGT) %R% 'ft'),
-         sb_dist = ifelse(is.na(sb_dist), "0ft", sb_dist)) %>%
-  select(sb_dist, year, carbon_price)
+# ## carbon px values 2020 
+# carbon_px_vals <- carbon_px %>%
+#   filter(carbon_price_scenario %in% c("carbon_90_perc_reduction-no_setback-no ccs",
+#                                       "carbon_sb_90_perc_reduction-setback_1000ft-no ccs",
+#                                       "carbon_sb_90_perc_reduction-setback_2500ft-no ccs",
+#                                       "carbon_sb_90_perc_reduction-setback_5280ft-no ccs"),
+#          year %in% c(2020, 2045)) %>%
+#   mutate(sb_dist = str_extract(carbon_price_scenario, pattern = one_or_more(DGT) %R% 'ft'),
+#          sb_dist = ifelse(is.na(sb_dist), "0ft", sb_dist)) %>%
+#   select(sb_dist, year, carbon_price)
 
 
 ## filter and pivot wider x measure
@@ -399,26 +399,28 @@ csb_npv_dt <- npv_dt %>%
          sb_dist = ifelse(is.na(sb_dist), "0ft", sb_dist),
          sector = ifelse(title == "Labor: Compensation", "labor", "health")) %>%
   select(oil_price_scenario, sb_dist, sector, value, measure, measure_unit) %>%
-  pivot_wider(names_from = sector, values_from = value) 
+  pivot_wider(names_from = sector, values_from = value) %>%
+  mutate(scenario_name = paste0("Carbon tax + ", sb_dist, " setback"))
 
 
 
 # fig
-fig_carbon_sb <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "reference case"), aes(x = labor, y = health, color = sb_dist)) +
-  geom_point(size = 2) +
-  labs(y = "Health: Avoited mortalities",
-       x = "Labor: Compensation",
-       color = "Setback distance") +
+fig_carbon_sb <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "reference case"), aes(x = labor, y = health, color = scenario_name)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(y = "Health: value of avoided mortalities",
+       x = "Labor: value of compensation loss",
+       color = NULL) +
   facet_wrap(~ measure, ncol = 2, scales = "free") +
-  scale_color_manual(values = c("0ft" = "#cedfce",
-                                "1000ft" = "#b0cbb1",
-                                "2500ft" = "#7d987e", 
-                                "5280ft" = "#3e4c3f")) +
+  scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
+                                "Carbon tax + 1000ft setback" = "#73C9AC",
+                                "Carbon tax + 2500ft setback" = "#3B7C87", 
+                                "Carbon tax + 5280ft setback" = "#0B3866")) +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_color_manual(values = policy_colors_subset) +
   theme_line +
-  theme(legend.position = "left",
+  guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme(legend.position = "bottom",
         # legend.box = "vertical",
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
@@ -427,38 +429,72 @@ fig_carbon_sb <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "reference c
 ggsave(fig_carbon_sb,
        filename = file.path(main_path, fig_path, 'figs/figure6-refcase.png'),
        width = 6.5,
-       height = 3,
+       height = 5,
        units = "in")
 
 
 
 
 ## high and low
-fig_carbon_sb_grid <- ggplot(csb_npv_dt %>% filter(oil_price_scenario != "reference case"), aes(x = labor, y = health, color = sb_dist)) +
+fig_carbon_sb_low <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "low oil price"), aes(x = labor, y = health, color = scenario_name)) +
   geom_point(size = 2) +
-  labs(y = "Health: Avoited mortalities",
-       x = "Labor: Compensation",
-       color = "Setback distance") +
-  facet_grid(measure ~ oil_price_scenario, scales = "free") +
-  scale_color_manual(values = c("0ft" = "#cedfce",
-                                "1000ft" = "#b0cbb1",
-                                "2500ft" = "#7d987e", 
-                                "5280ft" = "#3e4c3f")) +
+  labs(title = "Low oil price",
+       y = "Health: value of avoided mortalities",
+       x = "Labor: value of compensation loss",
+       color = NULL) +
+  facet_wrap(~ measure, scales = "free") +
+  scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
+                                "Carbon tax + 1000ft setback" = "#73C9AC",
+                                "Carbon tax + 2500ft setback" = "#3B7C87", 
+                                "Carbon tax + 5280ft setback" = "#0B3866")) +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_color_manual(values = policy_colors_subset) +
   theme_line +
-  theme(legend.position = "left",
+  guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme(legend.position = "bottom",
         # legend.box = "vertical",
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
 ## save figure 3
-ggsave(fig_carbon_sb_grid,
-       filename = file.path(main_path, fig_path, 'figs/figure6-high-low.png'),
+ggsave(fig_carbon_sb_low,
+       filename = file.path(main_path, fig_path, 'figs/figure6-low.png'),
        width = 6.5,
-       height = 6.5,
+       height = 5,
        units = "in")
+
+
+## high and low
+fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high oil price"), aes(x = labor, y = health, color = scenario_name)) +
+  geom_point(size = 2) +
+  labs(title = "High oil price",
+       y = "Health: value of avoided mortalities",
+       x = "Labor: value of compensation loss",
+       color = NULL) +
+  facet_wrap(~ measure, scales = "free") +
+  scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
+                                "Carbon tax + 1000ft setback" = "#73C9AC",
+                                "Carbon tax + 2500ft setback" = "#3B7C87", 
+                                "Carbon tax + 5280ft setback" = "#0B3866")) +
+  # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
+  # scale_x_continuous(limits = c(0, NA)) +
+  # scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
+  theme(legend.position = "bottom",
+        # legend.box = "vertical",
+        # legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(vjust = 0.5, hjust=1)) 
+
+## save figure 3
+ggsave(fig_carbon_sb_high,
+       filename = file.path(main_path, fig_path, 'figs/figure6-high.png'),
+       width = 6.5,
+       height = 5,
+       units = "in")
+
+
 
 
 
@@ -806,15 +842,22 @@ npv_90[, setback_dist := str_extract(scen_id, pattern = 'setback_' %R% one_or_mo
 npv_90 <- npv_90[policy_intervention != 'excise tax & setback']
 
 npv_90 <- npv_90 %>%
-  mutate(scen_name = ifelse(policy_intervention == 'carbon tax & setback', paste0('carbon tax + ', str_extract(setback_dist, one_or_more(DIGIT)), 'ft setback'), as.character(policy_intervention))) %>%
+  mutate(scen_name = ifelse(policy_intervention == 'carbon tax & setback', paste0('Carbon tax + ', str_extract(setback_dist, one_or_more(DIGIT)), 'ft setback'), as.character(policy_intervention))) %>%
   setDT()
+
+npv_90 <- npv_90 %>%
+  mutate(scen_name = ifelse(policy_intervention == 'carbon tax', 'Carbon tax + 0ft setback', scen_name))
   
-npv_90$scen_name <- factor(npv_90$scen_name, levels = c("excise tax", "carbon tax", "carbon tax + 1000ft setback", "carbon tax + 2500ft setback", "carbon tax + 5280ft setback"))
+npv_90$scen_name <- factor(npv_90$scen_name, levels = c("excise tax", "Carbon tax + 0ft setback", 
+                                                        "Carbon tax + 1000ft setback", 
+                                                        "Carbon tax + 2500ft setback", 
+                                                        "Carbon tax + 5280ft setback"))
 
 
 ## fig
 fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
-                                                  oil_price_scenario == "reference case"), aes(x = scen_name, y = value)) +
+                                                  oil_price_scenario == "reference case",
+                                                  scen_name != "excise tax"), aes(x = scen_name, y = value)) +
   geom_point(size = 2, alpha = 0.8, color = "#1d577e") +
   labs(color = NULL,
        y = NULL,
@@ -846,7 +889,8 @@ ggsave(fig_benefit_x_metric2,
 ## ---------------------------
 
 fig_benefit_x_metric2_low <- ggplot(npv_90 %>% filter(target != 'BAU',
-                                                  oil_price_scenario == "low oil price"), aes(x = scen_name, y = value)) +
+                                                  oil_price_scenario == "low oil price",
+                                                  scen_name != "excise tax"), aes(x = scen_name, y = value)) +
   geom_point(size = 2, alpha = 0.8, color = "#1d577e") +
   labs(title = "Low oil price",
        color = NULL,
@@ -869,7 +913,8 @@ ggsave(fig_benefit_x_metric2_low,
 
 ## high
 fig_benefit_x_metric2_high <- ggplot(npv_90 %>% filter(target != 'BAU',
-                                                      oil_price_scenario == "high oil price"), aes(x = scen_name, y = value)) +
+                                                      oil_price_scenario == "high oil price",
+                                                      scen_name != "excise tax"), aes(x = scen_name, y = value)) +
   geom_point(size = 2, alpha = 0.8, color = "#1d577e") +
   labs(title = "High oil price",
        color = NULL,
