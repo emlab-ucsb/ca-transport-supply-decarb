@@ -19,7 +19,7 @@ scen_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-
 save_directory    <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/figures/si-figs/'
 
 oil_price_file    <- 'oil_price_projections_revised.xlsx'
-carbon_file       <- 'final_carbon_tax_scenarios.csv'
+carbon_file       <- 'carbon_prices_revised.csv'
 # prod_quota_file   = 'prod_quota_scenarios_with_sb.csv'
 
 
@@ -44,19 +44,39 @@ oilpx_scens$scenario_name <- factor(oilpx_scens$scenario_name, levels = c('EIA l
 ## figure
 oil_fig <- ggplot(oilpx_scens %>% filter(year > 2019), aes(x = year, y = oil_price_usd_per_bbl, color = scenario_name)) +
   geom_line(size = 0.75, alpha = 0.8) +
-  ylab("Price (USD) per barrel") +
+  labs(y = "Price (USD) per barrel",
+       x = NULL) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 300)) +
   theme_line +
   theme(legend.title = element_blank()) +
   scale_color_manual(values = rev(macro_pal)) 
 
-ggsave(filename =  paste0(save_directory, "oil_px_si_fig.png"), oil_fig, width = 6.5, height = 4, units = "in", dpi = 300)
+ggsave(filename =  paste0(save_directory, "oil_px_si_fig.png"), oil_fig, width = 5, height = 4, units = "in", dpi = 300)
 
 ## carbon prices
 carbonpx_scens = fread(file.path(scen_path, carbon_file), header = T)
 # carbonpx_scens[carbon_price_scenario == 'last CA auction price', carbon_price := 0] # assume rystard's BAU opex already embeds carbon price
-carbonpx_scens[, carbon_price_usd_per_kg := carbon_price/1000] # convert from usd per metric ton to usd per kg
+carbonpx_scens[, carbon_price_usd_per_kg := carbon_price / 1000] # convert from usd per metric ton to usd per kg
 carbonpx_scens = carbonpx_scens[, c('year', 'carbon_price_scenario', 'carbon_price_usd_per_kg')]
+
+## factor
+carbonpx_scens$carbon_price_scenario <- factor(carbonpx_scens$carbon_price_scenario , 
+                                               levels = c("price floor", "central SCC", "price ceiling"))
+
+## figure
+carbon_fig <- ggplot(carbonpx_scens %>% filter(year > 2019), aes(x = year, y = carbon_price_usd_per_kg, color = carbon_price_scenario)) +
+  geom_line(size = 0.75, alpha = 0.8) +
+  labs(y = "Price (USD) per kg",
+       x = NULL) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 0.4)) +
+  theme_line +
+  theme(legend.title = element_blank()) +
+  scale_color_manual(values = rev(macro_pal)) 
+
+ggsave(filename =  paste0(save_directory, "carbon_px_si_fig.png"), carbon_fig, width = 5, height = 4, units = "in", dpi = 300)
+
+
+
 
 ## text work for filter
 ccs_options <- or1(c("medium CCS", "no ccs", "price floor", "price ceiling", "central SCC"))
