@@ -204,29 +204,44 @@ county_out <- merge(county_out, price_data,
                     all.x = T,
                     allow.cartesian = T)
 
-## add labor
-county_out <- merge(county_out, total_multipliers_ext,
-                    by = "adj_county_name",
-                    all.x = T,
-                    allow.cartesian = T)
-
 
 ## calculate employment
-county_out[, revenue := total_prod_bbl * oilpx_2019]
+county_out[, revenue := county_prod_bbl * oilpx_2019]
 # county_out[, employment]
 
 ## compute county values
 ## -------------------------------------------------
 
-county_summaries <- county_out[, .(wm_upstream_kgCO2e_bbl = weighted.mean(upstream_kgCO2e_bbl, total_prod_bbl),
-                                  wm_cost = weighted.mean(sum_cost, total_prod_bbl),
-                                  total_emp = sum(total_emp),
-                                  total_prod_bbl = sum(total_prod_bbl)), by = .(adj_county_name)]
+county_summaries <- county_out[, .(wm_upstream_kgCO2e_bbl = weighted.mean(upstream_kgCO2e_bbl, county_prod_bbl),
+                                  wm_cost = weighted.mean(sum_cost, county_prod_bbl),
+                                  total_prod_bbl = sum(county_prod_bbl)), by = .(adj_county_name)]
+
+## add labor
+county_summaries <- merge(county_summaries, total_multipliers_ext,
+                    by = "adj_county_name",
+                    all.x = T,
+                    allow.cartesian = T)
 
 
 county_summaries[, emp_per_bbl := total_emp / total_prod_bbl]
 
 county_summaries <- county_summaries[total_prod_bbl > 0]
+
+
+
+## state summaries weighted mean (using 2019 production)
+state_summaries <- copy(county_summaries)
+
+state_summaries[, state := "California"]
+
+state_summaries <- state_summaries[, .(wm_upstream_kgCO2e_bbl = weighted.mean(wm_upstream_kgCO2e_bbl, total_prod_bbl),
+                                        wm_cost = weighted.mean(wm_cost, total_prod_bbl),
+                                        total_emp = weighted.mean(total_emp, total_prod_bbl),
+                                        total_comp = weighted.mean(total_comp, total_prod_bbl),
+                                        emp_per_bbl = weighted.mean(emp_per_bbl, total_prod_bbl),
+                                        total_prod_bbl = sum(total_prod_bbl)), by = .(state)]
+
+
 
 ## plot ghg emissions intensity
 ## -----------------------------------
@@ -238,6 +253,8 @@ county_ghg_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), ae
        caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
   ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_upstream_kgCO2e_bbl, label = adj_county_name), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
+  geom_hline(yintercept = state_summaries$wm_upstream_kgCO2e_bbl, lty = "dashed", color = "#848C8E") +
+  annotate("text", x = 30, y = 95, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
   theme_line
 
 ggsave(county_ghg_plot,
@@ -256,6 +273,8 @@ county_cost_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), a
        caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
   ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_cost, label = adj_county_name), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
+  geom_hline(yintercept = state_summaries$wm_cost, lty = "dashed", color = "#848C8E") +
+  annotate("text", x = 30, y = 35, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
   theme_line
 
 ggsave(county_cost_plot,
@@ -274,6 +293,9 @@ county_labor_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), 
        caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
   ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl, label = adj_county_name),
                            hjust = 0, nudge_x = 0.1, size = 3) +
+  
+  geom_hline(yintercept = state_summaries$emp_per_bbl, lty = "dashed", color = "#848C8E") +
+  annotate("text", x = 80, y = 5e-7, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
   theme_line
 
 # county_labor_plot2 <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl)) +
@@ -317,14 +339,27 @@ county_setback_coverage[, setback_name := fifelse(setback_scenario == "setback_1
                                                           "2500ft setback", "5280 setback"))]
 
 
+## state summary
+state_setback_coverage <- copy(county_setback_coverage)
+
+state_setback_coverage[, state := "California"]
+
+state_setback_coverage <- state_setback_coverage[!is.na(total_prod_bbl)]
+
+state_setback_coverage <- state_setback_coverage[, .(county_field_coverage = weighted.mean(county_field_coverage, total_prod_bbl)), 
+                                                 by = .(state, setback_scenario, setback_name)]
+
+state_setback_coverage[, county_field_coverage := county_field_coverage * 100]
+
 county_setback_plot <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl),
                                                                  total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = county_field_coverage * 100, color = adj_county_name)) +
   geom_point(alpha = 0.8) +
   labs(x = "2019 production (million bbls)",
        y = "Setback oil field coverage (%)",
        caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
-  facet_wrap(~setback_name) +
   scale_y_continuous(limits = c(0, 100)) +
+  # geom_hline(yintercept = state_setback_coverage$county_field_coverage, lty = "dashed", color = "#848C8E") +
+  facet_wrap(~setback_name) +
   theme_line +
   theme(legend.title = element_blank())
 
@@ -333,6 +368,87 @@ ggsave(county_setback_plot,
        width = 8,
        height = 6,
        units = "in")
+
+## setback, individual figs
+
+y1000 <- state_setback_coverage %>%
+  filter(setback_scenario == 'setback_1000ft') %>%
+  select(county_field_coverage) %>%
+  as.numeric()
+
+county_setback_1000 <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl),
+                                                                 total_prod_bbl >= 1e6,
+                                                                 setback_scenario == 'setback_1000ft'), aes(x = total_prod_bbl / 1e6, y = county_field_coverage * 100, color = adj_county_name)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "2019 production (million bbls)",
+       y = "Setback oil field coverage (%)",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  scale_y_continuous(limits = c(0, 100)) +
+  geom_hline(yintercept = y1000, lty = "dashed", color = "#848C8E") +
+  annotate("text", x = 30, y = 16, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
+  facet_wrap(~setback_name) +
+  theme_line +
+  theme(legend.title = element_blank())
+
+ggsave(county_setback_1000,
+       filename = file.path(main_path, fig_path, 'county-setback-coverage-1000.png'),
+       width = 4,
+       height = 6,
+       units = "in")
+
+
+y2500 <- state_setback_coverage %>%
+  filter(setback_scenario == 'setback_2500ft') %>%
+  select(county_field_coverage) %>%
+  as.numeric()
+
+county_setback_2500 <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl),
+                                                                 total_prod_bbl >= 1e6,
+                                                                 setback_scenario == 'setback_2500ft'), aes(x = total_prod_bbl / 1e6, y = county_field_coverage * 100, color = adj_county_name)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "2019 production (million bbls)",
+       y = "Setback oil field coverage (%)",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  scale_y_continuous(limits = c(0, 100)) +
+  geom_hline(yintercept = y2500, lty = "dashed", color = "#848C8E") +
+  annotate("text", x = 80, y = 28, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
+  facet_wrap(~setback_name) +
+  theme_line +
+  theme(legend.title = element_blank())
+
+ggsave(county_setback_2500,
+       filename = file.path(main_path, fig_path, 'county-setback-coverage-2500.png'),
+       width = 4,
+       height = 6,
+       units = "in")
+
+
+
+y5280 <- state_setback_coverage %>%
+  filter(setback_scenario == 'setback_5280ft') %>%
+  select(county_field_coverage) %>%
+  as.numeric()
+
+county_setback_5280 <- ggplot(county_setback_coverage %>% filter(!is.na(total_prod_bbl),
+                                                                 total_prod_bbl >= 1e6,
+                                                                 setback_scenario == 'setback_5280ft'), aes(x = total_prod_bbl / 1e6, y = county_field_coverage * 100, color = adj_county_name)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "2019 production (million bbls)",
+       y = "Setback oil field coverage (%)",
+       caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
+  scale_y_continuous(limits = c(0, 100)) +
+  geom_hline(yintercept = y5280, lty = "dashed", color = "#848C8E") +
+  annotate("text", x = 80, y = 45, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
+  facet_wrap(~setback_name) +
+  theme_line +
+  theme(legend.title = element_blank())
+
+ggsave(county_setback_5280,
+       filename = file.path(main_path, fig_path, 'county-setback-coverage-5280.png'),
+       width = 4,
+       height = 6,
+       units = "in")
+
 
 
 ## county-level production
@@ -496,6 +612,19 @@ ggsave(county_health_maps,
 
 ## fig 3
 
+state_health <- county_health_df %>%
+  mutate(state = "California") %>%
+  filter(total_prod_bbl > 0) %>%
+  group_by(state, indicator) %>%
+  summarise(wm_value = weighted.mean(value, total_prod_bbl)) %>%
+  ungroup() 
+
+yval <- state_health %>%
+  st_drop_geometry() %>%
+  filter(indicator == "mortality_per_bbl") %>%
+  select(wm_value) %>%
+  as.numeric()
+
 health_fig3 <- ggplot(county_health_df %>% filter(total_prod_bbl >= 1e6,
                                                   indicator == "mortality_per_bbl"), aes(x = total_prod_bbl / 1e6, y = value)) +
   geom_point(alpha = 0.8) +
@@ -506,6 +635,8 @@ health_fig3 <- ggplot(county_health_df %>% filter(total_prod_bbl >= 1e6,
   ggrepel::geom_text_repel(data = county_health_df %>% filter(total_prod_bbl >= 1e6,
                                                               indicator == "mortality_per_bbl"), aes(x = total_prod_bbl / 1e6, y = value, label = county), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
+  geom_hline(yintercept = yval, lty = "dashed", color = "#848C8E") +
+  annotate("text", x = 80, y = 2.5e-7, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
   theme(legend.title = element_blank())
 
 ggsave(health_fig3,
