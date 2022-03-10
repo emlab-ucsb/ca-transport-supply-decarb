@@ -121,13 +121,9 @@ total_multipliers_ext <- read_xlsx(paste0(main_path, labor_processed, 'ica_multi
          ip.indi_comp_mult = ip.indirect_comp, 
          ip.indu_comp_mult = ip.induced_comp) %>%
   as.data.table() %>%
-  rename(adj_county_name = county)
+  rename(adj_county_name = county) %>%
+  select(-segment)
 
-total_multipliers_ext[, ':=' (total_emp = dire_emp_mult + indi_emp_mult + indu_emp_mult,
-                              total_comp = dire_comp_mult + ip.indi_comp_mult + ip.indu_comp_mult)]
-
-
-total_multipliers_ext <- total_multipliers_ext[, .(adj_county_name, total_emp, total_comp)]
 
 # ## county results
 # county_prod <- fread(paste0(main_path, outputs_path, county_results, county_out_file), header = T)
@@ -214,13 +210,33 @@ county_out[, revenue := county_prod_bbl * oilpx_2019]
 
 county_summaries <- county_out[, .(wm_upstream_kgCO2e_bbl = weighted.mean(upstream_kgCO2e_bbl, county_prod_bbl),
                                   wm_cost = weighted.mean(sum_cost, county_prod_bbl),
-                                  total_prod_bbl = sum(county_prod_bbl)), by = .(adj_county_name)]
+                                  total_prod_bbl = sum(county_prod_bbl),
+                                  total_revenue = sum(revenue)), by = .(adj_county_name)]
+
+## add labor info
+## -------------------------
 
 ## add labor
 county_summaries <- merge(county_summaries, total_multipliers_ext,
                     by = "adj_county_name",
                     all.x = T,
                     allow.cartesian = T)
+
+##
+county_summaries[, ':=' (c.dire_emp = (total_revenue / (10 ^ 6)) * dire_emp_mult,
+                         c.indi_emp = (total_revenue / (10 ^ 6)) * indi_emp_mult,
+                         c.indu_emp = (total_revenue / (10 ^ 6)) * indu_emp_mult,
+                         c.dire_comp = (total_revenue / (10 ^ 6)) * dire_comp_mult,
+                         c.indi_comp = (total_revenue / (10 ^ 6)) * ip.indi_comp_mult,
+                         c.indu_comp = (total_revenue / (10 ^ 6)) * ip.indu_comp_mult)]
+
+county_summaries[, ':=' (total_emp = c.dire_emp + c.indi_emp + c.indu_emp,
+                         total_comp = c.dire_comp + c.indi_comp + c.indu_comp)]
+
+
+county_summaries <- county_summaries[, .(adj_county_name, wm_upstream_kgCO2e_bbl,
+                                         wm_cost, total_prod_bbl, total_revenue,
+                                         total_emp, total_comp)]
 
 
 county_summaries[, emp_per_bbl := total_emp / total_prod_bbl]
@@ -254,6 +270,7 @@ county_ghg_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), ae
   ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_upstream_kgCO2e_bbl, label = adj_county_name), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
   geom_hline(yintercept = state_summaries$wm_upstream_kgCO2e_bbl, lty = "dashed", color = "#848C8E") +
+  scale_y_continuous(limits = c(0, 160)) +
   annotate("text", x = 30, y = 95, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
   theme_line
 
@@ -274,7 +291,8 @@ county_cost_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), a
   ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_cost, label = adj_county_name), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
   geom_hline(yintercept = state_summaries$wm_cost, lty = "dashed", color = "#848C8E") +
-  annotate("text", x = 30, y = 35, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
+  annotate("text", x = 30, y = 36, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
+  scale_y_continuous(limits = c(0, 60)) +
   theme_line
 
 ggsave(county_cost_plot,
@@ -293,9 +311,9 @@ county_labor_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), 
        caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
   ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl, label = adj_county_name),
                            hjust = 0, nudge_x = 0.1, size = 3) +
-  
+  scale_y_continuous(limits = c(0, 0.0005)) +
   geom_hline(yintercept = state_summaries$emp_per_bbl, lty = "dashed", color = "#848C8E") +
-  annotate("text", x = 80, y = 5e-7, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
+  annotate("text", x = 80, y = 1.7e-4, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
   theme_line
 
 # county_labor_plot2 <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = emp_per_bbl)) +
