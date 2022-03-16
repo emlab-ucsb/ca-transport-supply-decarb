@@ -77,7 +77,7 @@ field_name <- well_prod_org %>%
 
 well_n_df_revised <- pred_wells_fm %>%
   left_join(field_name) %>%
-  mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_fieldname, "Non-top field"),
+  mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_fieldname, "Non-top fields"),
          field_name_adj = ifelse(field_name_adj == "Belridge  South", "Belridge South", field_name_adj)) %>%
   pivot_longer(new_wells:new_wells_pred, names_to = "category", values_to = "n_wells") %>%
   mutate(label_name = ifelse(category == "new_wells", "Observed entry", "Predicted entry")) %>%
@@ -111,7 +111,7 @@ well_n_df_revised$field_name_adj <- factor(well_n_df_revised$field_name_adj, lev
                                                                                         "Elk Hills",
                                                                                         "Coalinga",
                                                                                         "Poso Creek",
-                                                                                        "Non-top field"))
+                                                                                        "Non-top fields"))
 
 # ## hold out
 # well_fig_ho <- 
@@ -199,7 +199,7 @@ exit_pred_df <- read_csv(paste0(main_path, 'outputs/exit/well_exits_pred.csv')) 
 ## 
 well_exit_df2 <- exit_pred_df %>%
   left_join(field_name) %>%
-  mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_fieldname, "Non-top field"),
+  mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_fieldname, "Non-top fields"),
          field_name_adj = ifelse(field_name_adj == "Belridge  South", "Belridge South", field_name_adj)) %>%
   pivot_longer(well_exits:well_exits_pred, names_to = "category", values_to = "n_wells") %>%
   mutate(label_name = ifelse(category == "well_exits", "Observed exit", "Predicted exit")) %>%
@@ -226,7 +226,7 @@ well_exit_df2$field_name_adj <- factor(well_exit_df2$field_name_adj, levels = c(
                                                                               "Elk Hills",
                                                                               "Coalinga",
                                                                               "Poso Creek",
-                                                                              "Non-top field"))
+                                                                              "Non-top fields"))
 
 
 ## full data set
