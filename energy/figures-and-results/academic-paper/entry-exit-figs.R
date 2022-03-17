@@ -113,41 +113,6 @@ well_n_df_revised$field_name_adj <- factor(well_n_df_revised$field_name_adj, lev
                                                                                         "Poso Creek",
                                                                                         "Non-top fields"))
 
-# ## hold out
-# well_fig_ho <- 
-#   ggplot(well_n_df %>% filter(category != "new_wells_pred_fm"), aes(x = year, y = n_wells, color = label_name)) +
-#   geom_line(size = 0.6, alpha = 0.8) +
-#   # labs(title = 'Observed and predicted well entry',
-#   #      subtitle = 'Training data: 1978-2009') +
-#   geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
-#   scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
-#   scale_y_continuous(label = comma) +
-#   scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
-#   facet_wrap(~field_name_adj, scales = "free_y") +
-#   ylab("Number of wells") +
-#   base_theme +
-#   theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
-#         legend.position = "top")
-# 
-# ggsave(filename =  paste0(save_directory, "predictions_oos_topfield.png"), well_fig_ho, width = 10, height = 8, units = "in", dpi = 300)
-# 
-# ## state hold out
-# state_fig_ho <- 
-#   ggplot(state_df %>% filter(category != "new_wells_pred_fm"), aes(x = year, y = n_wells, color = label_name)) +
-#   geom_line(size = 0.6, alpha = 0.8) +
-#   # labs(title = 'Observed and predicted well entry: California',
-#   #      subtitle = 'Training data: 1978-2009') +
-#   geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
-#   scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
-#   scale_y_continuous(label = comma) +
-#   scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
-#   # facet_wrap(~field_name_adj, scales = "free_y") +
-#   ylab("Number of wells") +
-#   base_theme +
-#   theme(legend.position = "top")
-# 
-# ggsave(filename =  paste0(save_directory, "predictions_oos_state.png"), state_fig_ho, width = 5, height = 4, units = "in", dpi = 300)
-# 
 
 ## full data set
 well_fig_fs <- 
@@ -169,6 +134,28 @@ well_fig_fs <-
         legend.position = "top")
 
 ggsave(filename =  paste0(save_directory, "pred_fullsample_topfield.png"), well_fig_fs, width = 8, height = 10, units = "in", dpi = 300)
+
+## full data set
+well_fig_fs_fixed <- 
+  ggplot(well_n_df_revised %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells, color = label_name)) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  labs(y = "Number of wells",
+       x = NULL,
+       color = NULL) +
+  # labs(title = 'Observed and predicted well entry',
+  #      subtitle = 'Training data: 1978-2020') +
+  # geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
+  scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
+  scale_y_continuous(label = comma) +
+  # scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
+  facet_wrap(~field_name_adj, ncol = 3) +
+  ylab("Number of wells") +
+  theme_line +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
+        legend.position = "top")
+
+ggsave(filename =  paste0(save_directory, "pred_fullsample_topfield.png"), well_fig_fs, width = 8, height = 10, units = "in", dpi = 300)
+
 
 ## state no hold out
 state_fig_fs <- 
@@ -248,6 +235,27 @@ well_exit_fs <-
         legend.position = "top")
 
 ggsave(filename =  paste0(save_directory, "pred_exit_topfield.png"), well_exit_fs, width = 8, height = 10, units = "in", dpi = 300)
+
+## fixed y axis
+well_exit_fs <- 
+  ggplot(well_exit_df2, aes(x = year, y = n_wells, color = label_name)) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  labs(y = "Number of well exits",
+       x = NULL,
+       color = NULL) +
+  # labs(title = 'Observed and predicted well entry',
+  #      subtitle = 'Training data: 1978-2020') +
+  # geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
+  scale_x_continuous(limits = c(1978, 2010), breaks=c(1978, seq(1990, 2010, 10))) +
+  scale_y_continuous(label = comma) +
+  # scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
+  facet_wrap(~field_name_adj, ncol = 3) +
+  theme_line +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
+        legend.position = "top")
+
+
+
 
 ## state no hold out
 state_fig_exit <- 

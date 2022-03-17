@@ -82,6 +82,19 @@ levels_dt_oilpx[, oil_name := paste0('EIA ', oil_price_scenario)]
 ## factor
 levels_dt_oilpx$oil_name <- factor(levels_dt_oilpx$oil_name , levels = c("EIA low oil price", "EIA reference case", "EIA high oil price"))
 
+## production difference (2019 vs 2045, BAU)
+prod_diff <- levels_dt_oilpx %>%
+  filter(oil_price_scenario == 'reference case',
+         target == 'no_target',
+         year %in% c(2019, 2045),
+         metric == "total_state_bbl") %>%
+  select(scen_id, year, value) %>%
+  mutate(year = paste0('X', year)) %>%
+  pivot_wider(names_from = year, values_from = value) %>%
+  mutate(perc_diff = (X2045 - X2019) / X2019)
+
+
+
 
 ## plot production
 prod_oil_fig <- ggplot(levels_dt_oilpx %>% filter(metric == "total_state_bbl",
