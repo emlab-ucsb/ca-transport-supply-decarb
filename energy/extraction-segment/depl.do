@@ -5,6 +5,7 @@ Estimate implied technically recoverable resource in each field
 Ruiwen Lee
 Created:  10 Sep 2020
 Modified: 21 Oct 2020
+Modified (for paper): 12 May 2021
 
 */
 
@@ -16,7 +17,7 @@ set more off
 set linesize 90
 set matsize 800
 
-global workDir "//Users/rui/Dropbox/Research/CarbonNeutrality/STATA/"
+global workDir "/Dropbox/Research/CarbonNeutrality/STATA/"
 
 global codeDir  "codeSTATA"
 global dataDir  "dataSTATA"
@@ -28,12 +29,14 @@ global logDir     "logs"
 global docDir	  "docs"
 global texDir	  "tex"
 
+global resultsGoogleDriveDir "/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/entry-model-results"
+
 cd $workDir
 *log using $logDir/depl.log, replace
 
 ********** Start **********
 
-use $dataDir/entry_10132020_v3, replace // from entry.do
+use $dataDir/entry_revised, replace // from entry.do
 
 *************** Estimate total resource by field *******************************
 
@@ -71,8 +74,9 @@ keep if year==2019
 keep doc_field_code resource depl
 rename depl depl2019
 //duplicates drop
-save $dataDir/forecast_depl, replace
-outsheet doc_field_code resource using $resultsTextDir/field_resource.csv, comma replace
+save $dataDir/forecast_depl_revised, replace
+outsheet doc_field_code resource using $resultsTextDir/field_resource_revised.csv, comma replace
+outsheet doc_field_code resource using "$resultsGoogleDriveDir/field_resource_revised.csv", comma replace
 
 /*
 merge 1:m doc_field_code using $dataDir/forecast_cost
@@ -125,4 +129,29 @@ hist d_res_prod
 count if d_res_prod<0 // 82 
 // - for most fields, estimated resource > production from existing wells till 2100
 
+********** Check estimated total resource against DOC 2009 report ***
+insheet using $dataRawDir/oil_production_reserves_2009.csv, comma names clear
+gen doc_field_code_orig=doc_field_code
+destring doc_field_code, force replace
+destring cumulative_oil_and_condensatembb estimated_oil_reservesmbbl, ///
+	force gen(cum_prod reserves_left)
+replace cum_prod=0 if cum_prod==.
+replace reserves_left=0 if reserves_left==.
 
+drop if _n>=501 // drop county subtotals
+drop if doc_field_code==. // fields that don't exist in main dataset, or counties
+
+gen resource_doc=cum_prod+reserves_left
+
+keep doc_field_code doc_fieldname field_name cum_prod reserves_left resource_doc
+
+merge 1:1 doc_field_code using $dataDir/forecast_depl_revised
+drop if _merge==1 // fields not in our main dataset
+drop _merge
+
+order doc_field_code doc_fieldname resource depl2019 field_name resource_doc
+replace resource=resource/1000 // convert from bbl to Mbbl
+
+tw (scatter resource resource_doc, mlab(doc_fieldname)) (lfit resource resource_doc) ///
+	(function y=x, range(resource_doc)), ///
+	legend(label(1 "Resource") label(2 "Linear fit") label(3 "y=x"))
