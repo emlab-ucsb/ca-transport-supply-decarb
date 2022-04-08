@@ -42,9 +42,9 @@ policy_colors_all <-  c('BAU' = "black",
                         'setback' = '#4a6c6f',
                         'carbon tax & setback' = "#9DBF9E")
 
-policy_colors_subset <-  c('carbon tax' = "#fcb97d",
+policy_colors_subset <-  c('setback' = '#4a6c6f',
                            'excise tax' = '#ff5e5b',
-                           'setback' = '#4a6c6f')
+                           'carbon tax' = "#fcb97d")
 
 
 policy_symbols <- c("BAU" = 16,
