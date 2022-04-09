@@ -38,9 +38,10 @@ dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
 # carbon_px <- fread(paste0("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs/", carbon_px_file))
 
 ## cumulative
-npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: Abated GHG emissions', title)]
+npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: avoided climate damage',
+                                    fifelse(title == "Labor: Compensation", "Labor: forgone wages", "Health: avoided mortality"))]
 
-npv_dt$title <- factor(npv_dt$title, levels = c('Health: Avoided mortality', 'Labor: Compensation', 'Climate: Abated GHG emissions'))
+npv_dt$title <- factor(npv_dt$title, levels = c('Health: avoided mortality', 'Labor: forgone wages', 'Climate: avoided climate damage'))
 
 ## pivot longer
 npv_dt <- melt(npv_dt, id.vars = c('scen_id', 'oil_price_scenario', 'policy_intervention', 'target', 'cumul_ghg',  'title', 'ghg_2045_perc_reduction', 'target_label'),
@@ -87,16 +88,18 @@ npv_dt$policy_intervention <- factor(npv_dt$policy_intervention, levels = c("car
 #                                                             "DAC share"))
 
 
+
+
 # fig
 fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
                                                  oil_price_scenario == "reference case",
                                                  !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback')), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(color = "Policy intervention",
+  labs(color = "Policy",
        y = NULL,
        x = "GHG emissions reduction target (%, 2045 vs 2019)",) +
-  facet_grid(measure ~ title, scales = "free_y") +
+  facet_grid(measure ~ title, scales = "free") +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = policy_colors_subset) +
@@ -105,6 +108,159 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
         # legend.box = "vertical",
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust = 1)) 
+
+## revised version, make them separately
+## -------------------------------------------------------------------
+fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
+                                      oil_price_scenario == "reference case",
+                                      !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+                                      title == "Health: avoided mortality",
+                                      measure == "NPV (2020 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
+       title = "(A) Health: avoided mortality",
+       y = "NPV (2020 USD billion)",
+       x = NULL) +
+  ylim(0, 3) +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "none",
+        axis.text.x = element_text(vjust = 0.5, hjust = 1)) 
+
+fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
+                                      oil_price_scenario == "reference case",
+                                      !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+                                      title == "Labor: forgone wages",
+                                      measure == "NPV (2020 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
+       title = "(B) Labor: forgone wages",
+       y = NULL,
+       x = NULL) +
+  ylim(-15, 0) +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "none",
+        axis.text.x = element_text(vjust = 0.5, hjust = 1)) 
+
+fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
+                                      oil_price_scenario == "reference case",
+                                      !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+                                      title == "Climate: avoided climate damage",
+                                      measure == "NPV (2020 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
+       title = "(C) Climate: avoided climate damage",
+       y = NULL,
+       x = NULL) +
+  ylim(0, 8) +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "none",
+        axis.text.x = element_text(vjust = 0.5, hjust = 1)) 
+
+bquotelab <- bquote(MtCO[2]~e)
+
+fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
+                                      oil_price_scenario == "reference case",
+                                      !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+                                      title == "Health: avoided mortality",
+                                      measure == "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
+       title = "(D)",
+       # y = expression(NPV~(2020~USD~million)~per~avoied~GHG ~MtCO[2]~e),
+       y = bquote('NPV (2020 USD million)\nper avoided GHG MtCO'[2]~e),
+       # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
+       x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "none",
+        axis.text.x = element_text(vjust = 0.5, hjust = 1))
+
+fig_bxm_e <- ggplot(npv_dt %>% filter(target != 'BAU',
+                                      oil_price_scenario == "reference case",
+                                      !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+                                      title == "Labor: forgone wages",
+                                      measure == "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
+       title = "(E)",
+       y = NULL,
+       # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
+       x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "none",
+        axis.text.x = element_text(vjust = 0.5, hjust = 1))
+
+fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
+                                      oil_price_scenario == "reference case",
+                                      !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+                                      title == "Climate: avoided climate damage",
+                                      measure == "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
+       title = "(F)",
+       y = NULL,
+       # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
+       x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = c(0.8, 0.2),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1))
+
+## extract legend
+
+legend_fig_3 <- get_legend(
+  fig_bxm_f + 
+    theme(legend.title = element_text(size = 10),
+          legend.text = element_text(size = 8))
+  
+)
+
+
+## combine figure
+## ---------------------------------
+
+## shared x axis
+xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)")
+
+fig3_plot_grid <- plot_grid(
+  fig_bxm_a,
+  fig_bxm_b,
+  fig_bxm_c,
+  fig_bxm_d + labs(x = NULL),
+  fig_bxm_e + labs(x = NULL),
+  fig_bxm_f+ labs(x = NULL),
+  align = 'vh',
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  hjust = -1,
+  nrow = 2,
+  rel_widths = c(1, 1, 1, 1)
+)
+
+fig3_plot_grid2 <- plot_grid(
+  fig3_plot_grid,
+  xaxis_lab,
+  align = "v",
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  # hjust = -1,
+  ncol = 1,
+  rel_heights = c(1, 0.05)
+  # rel_widths = c(1, 1),
+)
+
 
 ## save figure 3
 ggsave(fig_benefit_x_metric,
