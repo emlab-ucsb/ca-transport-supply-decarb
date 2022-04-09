@@ -213,13 +213,29 @@ fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
-  theme(legend.position = c(0.8, 0.2),
+  theme(legend.position = c(0.7, 0.4),
         axis.text.x = element_text(vjust = 0.5, hjust = 1))
 
 ## extract legend
+legend_fig <- ggplot(npv_dt %>% filter(target != 'BAU',
+                                      oil_price_scenario == "reference case",
+                                      !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+                                      title == "Labor: forgone wages",
+                                      measure == "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
+       title = "(E)",
+       y = NULL,
+       # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
+       x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "right",
+        axis.text.x = element_text(vjust = 0.5, hjust = 1))
 
 legend_fig_3 <- get_legend(
-  fig_bxm_f + 
+  legend_fig + 
     theme(legend.title = element_text(size = 10),
           legend.text = element_text(size = 8))
   
@@ -230,7 +246,7 @@ legend_fig_3 <- get_legend(
 ## ---------------------------------
 
 ## shared x axis
-xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)")
+xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 10)
 
 fig3_plot_grid <- plot_grid(
   fig_bxm_a,
@@ -263,11 +279,55 @@ fig3_plot_grid2 <- plot_grid(
 
 
 ## save figure 3
-ggsave(fig_benefit_x_metric,
-       filename = file.path(main_path, fig_path, 'figs/figure3-ref-case.png'),
-       width = 7.5,
-       height = 7.5,
+ggsave(fig3_plot_grid2,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.png'),
+       width = 8,
+       height = 6,
        units = "in")
+
+## ---------------------------------------------
+## v2 
+## ---------------------------------------------
+
+fig3_plot_grid_v2 <- plot_grid(
+  fig_bxm_a,
+  fig_bxm_b,
+  fig_bxm_c,
+  fig_bxm_d + labs(x = NULL),
+  fig_bxm_e + labs(x = NULL) + theme(legend.position = "none"),
+  legend_fig_3,
+  align = 'vh',
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  hjust = -1,
+  nrow = 2,
+  rel_widths = c(1, 1, 1, 1, 1, 1)
+)
+
+fig3_plot_grid2_v2 <- plot_grid(
+  fig3_plot_grid_v2,
+  xaxis_lab,
+  align = "v",
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  # hjust = -1,
+  ncol = 1,
+  rel_heights = c(1, 0.05)
+  # rel_widths = c(1, 1),
+)
+
+
+## save figure 3
+ggsave(fig3_plot_grid2_v2,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case-v2.png'),
+       width = 8,
+       height = 6,
+       units = "in")
+
+
+
 
 ## high and low
 ## ----------------------------------------------
