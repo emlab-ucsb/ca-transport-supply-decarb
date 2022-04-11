@@ -261,7 +261,7 @@ fig3_plot_grid <- plot_grid(
   # label_size = 10,
   hjust = -1,
   nrow = 2,
-  rel_widths = c(1, 1, 1, 1)
+  rel_widths = c(1, 1, 1, 1, 1, 1)
 )
 
 fig3_plot_grid2 <- plot_grid(
