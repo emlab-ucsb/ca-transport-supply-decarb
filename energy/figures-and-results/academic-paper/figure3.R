@@ -11,6 +11,7 @@ library(broom)
 library(cowplot)
 library(rebus)
 library(tidyverse)
+library(egg)
 
 ## source figs
 items <- "figure_themes.R"
@@ -391,30 +392,88 @@ ggsave(fig_benefit_x_metric_high,
 ## -----------------------------------------
 
 ## version 1: relative to BAU
-fig_dac_bau <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
+fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                             oil_price_scenario == "reference case",
                                             type == "DAC share",
-                                            metric %in% c("dac_share_pv", "dac_share_av_pv")), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+                                            metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
+                        mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
+                                                  ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
+                          filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(color = "Policy intervention",
+  # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
        y = "DAC share",
-       x = "GHG emissions reduction target (%, 2045 vs 2019)") +
-  facet_wrap(~category, ncol = 2, scales = "free_y") +
-  # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
+       x = NULL) +
+       # x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+  facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
+  ylim(0.2, 0.35) +
+  # scale_y_continuous(expand = c(0, 0), limits = c(0.2, 0.45)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
-  theme(legend.position = "left",
+  theme(legend.position = c(0.25, 0.2),
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
+fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
+                                            oil_price_scenario == "reference case",
+                                            type == "DAC share",
+                                            metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
+                        mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
+                                                  ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
+                        filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+  geom_point(size = 2, alpha = 0.8) +
+  # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(color = "Policy",
+       y = "DAC share",
+       x = NULL) +
+  facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
+  ylim(0.2, 0.45) +
+  # scale_y_continuous(expand = c(0, 0), limits = c(0.2, 0.45)) +
+  # scale_x_continuous(limits = c(0, NA)) +
+  scale_color_manual(values = policy_colors_subset) +
+  theme_line +
+  theme(legend.position = "none",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(vjust = 0.5, hjust=1))
+
+## plot them together
+## -------------------------------
+
+fig4_plot_grid <- plot_grid(
+  fig_dac_bau_h,
+  fig_dac_bau_l,
+  align = 'vh',
+  labels = c("(A)", "(B)"),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  hjust = -1,
+  nrow = 1,
+  rel_widths = c(1, 1)
+)
+
+fig4_plot_grid2 <- plot_grid(
+  fig4_plot_grid,
+  xaxis_lab,
+  align = "v",
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  # hjust = -1,
+  ncol = 1,
+  rel_heights = c(1, 0.05)
+  # rel_widths = c(1, 1),
+)
+
+
+
 ## save figure 4, v1
-ggsave(fig_dac_bau,
-       filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.png'),
-       width = 5.5,
-       height = 3,
+ggsave(fig4_plot_grid2,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure4-refcase-relBAU.png'),
+       width = 6,
+       height = 3.5,
        units = "in")
 
 ## high and low
