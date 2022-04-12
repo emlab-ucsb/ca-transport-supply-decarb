@@ -538,7 +538,7 @@ prod_fig_high <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
        y = "million bbls",
        color = "Policy",
        lty = "2045 GHG emission target") +
-  scale_linetype_manual(values = c("2%" = "dotted", "21%" = "dashed", "90%" = "dotdash")) +
+  scale_linetype_manual(values = c("2%" = "solid", "21%" = "dashed", "90%" = "dotted")) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
                                         policy_intervention == "BAU",
@@ -566,13 +566,13 @@ ghg_pw_high <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "high oil price"), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   annotate("text", x = 2044, y = 21, label = "BAU", size = 3) +
-  labs(title = "(B) GHG emissions",
+  labs(title = "GHG emissions",
        x = NULL,
        y = bquote(MtCO[2]~e),
        color = "Policy intervention",
        lty = "2045 GHG emission target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("+8%" = "longdash", "2%" = "dotted", "21%" = "dashed", "90%" = "dotdash")) +
+  scale_linetype_manual(values = c("+8%" = "longdash", "2%" = "solid", "21%" = "dashed", "90%" = "dotted")) +
   scale_color_manual(values = policy_colors_subset) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
@@ -582,7 +582,7 @@ ghg_pw_high <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
 
 ghg_cumul_high <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "high oil price"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "(C) Cumulative GHG emissions",
+  labs(title = "Cumulative GHG emissions",
        x = "GHG emissions reduction target (%, 2045 vs 2019)",
        y = bquote(MtCO[2]~e),
        color = "2045 GHG emission target",
@@ -609,7 +609,7 @@ legend_high <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
        y = "million bbls",
        color = "Policy",
        lty = "2045 GHG emission reduction target") +
-  scale_linetype_manual(values = c("2% (= 2,500 ft setback)" = "dotted", "21% (= 1 mile setback)" = "dashed", "90%" = "dotdash")) +
+  scale_linetype_manual(values = c("2% (= 2,500 ft setback)" = "solid", "21% (= 1 mile setback)" = "dashed", "90%" = "dotted")) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
                                         policy_intervention == "BAU",
@@ -658,7 +658,8 @@ fig2_v2_combine_high <- plot_grid(
   ghg_cumul_high + theme(legend.position = "none"),
   legend_pathways_high,
   align = 'vh',
-  # labels = c("A", "B", "C"),
+  labels = c("A", "B", "C", ""),
+  label_size = 10,
   hjust = -1,
   nrow = 2,
   rel_widths = c(1, 1, 1, 1)
@@ -680,11 +681,11 @@ ggsave(high_px_fig,
        units = "in")
 
 ggsave(high_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-high.png'),
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-high.pdf'),
        width = 7,
        height = 7,
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-high.png'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-high.png'))
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-high.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-high.pdf'))
 
