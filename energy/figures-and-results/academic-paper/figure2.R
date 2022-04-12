@@ -376,7 +376,7 @@ prod_fig_low <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
        y = "million bbls",
        color = "Policy",
        lty = "2045 GHG emission target") +
-  scale_linetype_manual(values = c("80%" = "longdash", "85%" = "solid", "90%" = "dashed", "94%" = "dotted")) +
+  scale_linetype_manual(values = c("80%" = "longdash", "85%" = "solid", "90%" = "dotted", "94%" = "dashed")) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
                                         policy_intervention == "BAU",
@@ -410,7 +410,7 @@ ghg_pw_low <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
        color = "Policy intervention",
        lty = "2045 GHG emission target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("80%" = "longdash", "85%" = "solid", "90%" = "dashed", "94%" = "dotted")) +
+  scale_linetype_manual(values = c("80%" = "longdash", "85%" = "solid", "90%" = "dotted", "94%" = "dashed")) +
   scale_color_manual(values = policy_colors_subset) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   theme_line +
@@ -445,7 +445,7 @@ legend_low <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
        y = "million bbls",
        color = "Policy",
        lty = "2045 GHG emission reduction target") +
-  scale_linetype_manual(values = c("85% (= 2,500 ft setback)" = "solid", "90%" = "dashed", "94% (= 1 mile setback)" = "dotted")) +
+  scale_linetype_manual(values = c("85% (= 2,500 ft setback)" = "solid", "90%" = "dotted", "94% (= 1 mile setback)" = "dashed")) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
                                         policy_intervention == "BAU",
@@ -533,7 +533,7 @@ prod_fig_high <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                             oil_price_scenario == "high oil price",
                                             target_label != "-8%"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "(A) Oil production",
+  labs(title = "Oil production",
        x = NULL,
        y = "million bbls",
        color = "Policy",
@@ -679,4 +679,12 @@ ggsave(high_px_fig,
        height = 7,
        units = "in")
 
+ggsave(high_px_fig,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-high.png'),
+       width = 7,
+       height = 7,
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-high.png'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-high.png'))
 
