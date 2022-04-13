@@ -11,7 +11,6 @@ library(broom)
 library(cowplot)
 library(rebus)
 library(tidyverse)
-library(egg)
 
 ## source figs
 items <- "figure_themes.R"
@@ -39,10 +38,10 @@ dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
 # carbon_px <- fread(paste0("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs/", carbon_px_file))
 
 ## cumulative
-npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: avoided climate damage',
+npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: avoided damage',
                                     fifelse(title == "Labor: Compensation", "Labor: forgone wages", "Health: avoided mortality"))]
 
-npv_dt$title <- factor(npv_dt$title, levels = c('Health: avoided mortality', 'Labor: forgone wages', 'Climate: avoided climate damage'))
+npv_dt$title <- factor(npv_dt$title, levels = c('Health: avoided mortality', 'Labor: forgone wages', 'Climate: avoided damage'))
 
 ## pivot longer
 npv_dt <- melt(npv_dt, id.vars = c('scen_id', 'oil_price_scenario', 'policy_intervention', 'target', 'cumul_ghg',  'title', 'ghg_2045_perc_reduction', 'target_label'),
@@ -120,13 +119,14 @@ fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "(A) Health: avoided mortality",
+       title = "Health: avoided mortality",
        y = "NPV (2020 USD billion)",
        x = NULL) +
   ylim(0, 3) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
   theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(vjust = 0.5, hjust = 1)) 
 
 fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
@@ -137,30 +137,32 @@ fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "(B) Labor: forgone wages",
+       title = "Labor: forgone wages",
        y = NULL,
        x = NULL) +
   ylim(-15, 0) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
   theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(vjust = 0.5, hjust = 1)) 
 
 fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
-                                      title == "Climate: avoided climate damage",
+                                      title == "Climate: avoided damage",
                                       measure == "NPV (2020 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "(C) Climate: avoided climate damage",
+       title = "Climate: avoided climate damage",
        y = NULL,
        x = NULL) +
   ylim(0, 8) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
   theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(vjust = 0.5, hjust = 1)) 
 
 bquotelab <- bquote(MtCO[2]~e)
@@ -173,7 +175,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "(D)",
+       title = "",
        # y = expression(NPV~(2020~USD~million)~per~avoied~GHG ~MtCO[2]~e),
        y = bquote('NPV (2020 USD million)\nper avoided GHG MtCO'[2]~e),
        # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
@@ -191,7 +193,7 @@ fig_bxm_e <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "(E)",
+       title = "",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
@@ -203,18 +205,18 @@ fig_bxm_e <- ggplot(npv_dt %>% filter(target != 'BAU',
 fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
-                                      title == "Climate: avoided climate damage",
+                                      title == "Climate: avoided damage",
                                       measure == "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "(F)",
+       title = "",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
-  theme(legend.position = c(0.7, 0.4),
+  theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1))
 
 ## extract legend
@@ -226,13 +228,13 @@ legend_fig <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "(E)",
+       title = "",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
-  theme(legend.position = "right",
+  theme(legend.position = "bottom",
         axis.text.x = element_text(vjust = 0.5, hjust = 1))
 
 legend_fig_3 <- get_legend(
@@ -257,9 +259,9 @@ fig3_plot_grid <- plot_grid(
   fig_bxm_e + labs(x = NULL),
   fig_bxm_f+ labs(x = NULL),
   align = 'vh',
-  # labels = c("(A)", "(B)", "(C)", ""),
+  labels = c("A", "B", "C", "D", "E", "F"),
   # # labels = 'AUTO',
-  # label_size = 10,
+  label_size = 10,
   hjust = -1,
   nrow = 2,
   rel_widths = c(1, 1, 1, 1, 1, 1)
@@ -268,13 +270,14 @@ fig3_plot_grid <- plot_grid(
 fig3_plot_grid2 <- plot_grid(
   fig3_plot_grid,
   xaxis_lab,
+  legend_fig_3,
   align = "v",
   # labels = c("(A)", "(B)", "(C)", ""),
   # # labels = 'AUTO',
   # label_size = 10,
   # hjust = -1,
   ncol = 1,
-  rel_heights = c(1, 0.05)
+  rel_heights = c(1, 0.05, 0.05)
   # rel_widths = c(1, 1),
 )
 
@@ -286,46 +289,59 @@ ggsave(fig3_plot_grid2,
        height = 6,
        units = "in")
 
-## ---------------------------------------------
-## v2 
-## ---------------------------------------------
+ggsave(fig3_plot_grid2,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.pdf'),
+       width = 7,
+       height = 7,
+       units = "in",
+       device = 'pdf')
 
-fig3_plot_grid_v2 <- plot_grid(
-  fig_bxm_a,
-  fig_bxm_b,
-  fig_bxm_c,
-  fig_bxm_d + labs(x = NULL),
-  fig_bxm_e + labs(x = NULL) + theme(legend.position = "none"),
-  legend_fig_3,
-  align = 'vh',
-  # labels = c("(A)", "(B)", "(C)", ""),
-  # # labels = 'AUTO',
-  # label_size = 10,
-  hjust = -1,
-  nrow = 2,
-  rel_widths = c(1, 1, 1, 1, 1, 1)
-)
-
-fig3_plot_grid2_v2 <- plot_grid(
-  fig3_plot_grid_v2,
-  xaxis_lab,
-  align = "v",
-  # labels = c("(A)", "(B)", "(C)", ""),
-  # # labels = 'AUTO',
-  # label_size = 10,
-  # hjust = -1,
-  ncol = 1,
-  rel_heights = c(1, 0.05)
-  # rel_widths = c(1, 1),
-)
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.pdf'))
 
 
-## save figure 3
-ggsave(fig3_plot_grid2_v2,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case-v2.png'),
-       width = 8,
-       height = 6,
-       units = "in")
+
+
+# ## ---------------------------------------------
+# ## v2 
+# ## ---------------------------------------------
+# 
+# fig3_plot_grid_v2 <- plot_grid(
+#   fig_bxm_a,
+#   fig_bxm_b,
+#   fig_bxm_c,
+#   fig_bxm_d + labs(x = NULL),
+#   fig_bxm_e + labs(x = NULL) + theme(legend.position = "none"),
+#   legend_fig_3,
+#   align = 'vh',
+#   # labels = c("(A)", "(B)", "(C)", ""),
+#   # # labels = 'AUTO',
+#   # label_size = 10,
+#   hjust = -1,
+#   nrow = 2,
+#   rel_widths = c(1, 1, 1, 1, 1, 1)
+# )
+# 
+# fig3_plot_grid2_v2 <- plot_grid(
+#   fig3_plot_grid_v2,
+#   xaxis_lab,
+#   align = "v",
+#   # labels = c("(A)", "(B)", "(C)", ""),
+#   # # labels = 'AUTO',
+#   # label_size = 10,
+#   # hjust = -1,
+#   ncol = 1,
+#   rel_heights = c(1, 0.05)
+#   # rel_widths = c(1, 1),
+# )
+# 
+# 
+# ## save figure 3
+# ggsave(fig3_plot_grid2_v2,
+#        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case-v2.png'),
+#        width = 8,
+#        height = 6,
+#        units = "in")
 
 
 
@@ -406,12 +422,12 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
        x = NULL) +
        # x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
-  ylim(0.2, 0.35) +
+  ylim(0.25, 0.35) +
   # scale_y_continuous(expand = c(0, 0), limits = c(0.2, 0.45)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
-  theme(legend.position = c(0.25, 0.2),
+  theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
@@ -429,7 +445,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
        y = "DAC share",
        x = NULL) +
   facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
-  ylim(0.2, 0.45) +
+  ylim(0.3, 0.45) +
   # scale_y_continuous(expand = c(0, 0), limits = c(0.2, 0.45)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = policy_colors_subset) +
