@@ -291,8 +291,8 @@ ggsave(fig3_plot_grid2,
 
 ggsave(fig3_plot_grid2,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.pdf'),
-       width = 7,
-       height = 7,
+       width = 8,
+       height = 6,
        units = "in",
        device = 'pdf')
 
@@ -422,8 +422,9 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
        x = NULL) +
        # x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
-  ylim(0.25, 0.35) +
-  # scale_y_continuous(expand = c(0, 0), limits = c(0.2, 0.45)) +
+  scale_y_continuous(
+    labels = scales::number_format(accuracy = 0.01),
+    limits = c(0.25, 0.35)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
@@ -445,9 +446,9 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
        y = "DAC share",
        x = NULL) +
   facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
-  ylim(0.3, 0.45) +
-  # scale_y_continuous(expand = c(0, 0), limits = c(0.2, 0.45)) +
-  # scale_x_continuous(limits = c(0, NA)) +
+  scale_y_continuous(
+    labels = scales::number_format(accuracy = 0.01),
+    limits = c(0.3, 0.45)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
   theme(legend.position = "none",
@@ -459,10 +460,10 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
 ## -------------------------------
 
 fig4_plot_grid <- plot_grid(
-  fig_dac_bau_h,
+  fig_dac_bau_h + theme(legend.position = "none"),
   fig_dac_bau_l,
   align = 'vh',
-  labels = c("(A)", "(B)"),
+  labels = c("A", "B"),
   # # labels = 'AUTO',
   # label_size = 10,
   hjust = -1,
@@ -479,10 +480,23 @@ fig4_plot_grid2 <- plot_grid(
   # label_size = 10,
   # hjust = -1,
   ncol = 1,
-  rel_heights = c(1, 0.05)
+  rel_heights = c(1, 0.025)
   # rel_widths = c(1, 1),
 )
 
+fig4_plot_grid2 <- plot_grid(
+  fig4_plot_grid2,
+  NULL,
+  legend_fig_3,
+  align = "v",
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  # hjust = -1,
+  ncol = 1,
+  rel_heights = c(1, 0.025, 0.05)
+  # rel_widths = c(1, 1),
+)
 
 
 ## save figure 4, v1
@@ -491,6 +505,22 @@ ggsave(fig4_plot_grid2,
        width = 6,
        height = 3.5,
        units = "in")
+
+ggsave(fig4_plot_grid2,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure4-refcase-relBAU.pdf'),
+       width = 6,
+       height = 3.5,
+       units = "in",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-refcase-relBAU.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-refcase-relBAU.pdf'))
+
+
+
+
+## High and low
+## ---------------------------
 
 ## high and low
 fig_dac_bau_low <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
