@@ -8,6 +8,10 @@ library(sf)
 library(maps)
 library(viridis)
 library(gridExtra)
+library(rebus)
+library(readxl)
+library(data.table)
+library(cowplot)
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
@@ -157,7 +161,7 @@ county_19 <- merge(as_tibble(county_prod), county_boundaries,
 census_tracts <- st_read(file.path(main_path, "data/GIS/raw/census-tract/tl_2019_06_tract.shp")) %>% 
   st_transform(ca_crs) %>%
   rename(census_tract = GEOID) %>%
-  select(census_tract)
+  select(census_tract, ALAND)
 
 ## DAC and CES
 dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
@@ -355,12 +359,13 @@ disp_win2_coord <- st_coordinates(disp_win2_trans)
 
 
 ct_map <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
   # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
-  geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0, alpha = 1, show.legend = TRUE) +
+  geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0.0, color = "white", alpha = 1, show.legend = TRUE) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
-  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
+  geom_sf(data = county_boundaries, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
+  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 1.5, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
   labs(title = 'Population * PM2.5 by census tract',
        fill = 'Population * PM2.5',
@@ -376,12 +381,17 @@ ct_map <- ggplot() +
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
     legend.position = c(0.10, 0.15),
-    legend.title = element_text(size = 9)) +
+    legend.title = element_text(size = 7),
+    plot.title = element_text(size = 11)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal"))
 
-
+# ggsave(ct_map,
+#        filename = file.path(main_path, fig_path, 'ctmap.png'),
+#        width = 3,
+#        height = 4,
+#        units = "in")
 
 
 ## labor
@@ -398,10 +408,10 @@ labor_out <- county_boundaries %>%
          total_comp = ifelse(is.na(total_comp), 0, total_comp))
 
 labor_map <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
   # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
-  geom_sf(data = labor_out, mapping = aes(geometry = geometry, fill = total_comp / 1e6), lwd = 0, alpha = 1, show.legend = TRUE) +
+  geom_sf(data = labor_out, mapping = aes(geometry = geometry, fill = total_comp / 1e6), lwd = 0.05, alpha = 1, show.legend = TRUE) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
@@ -419,18 +429,28 @@ labor_map <- ggplot() +
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
     legend.position = c(0.10, 0.15),
-    legend.title = element_text(size = 9)) +
+    legend.title = element_text(size = 7),
+    plot.title = element_text(size = 11)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal"))
 
 
 ## plot together
-maps2 <-  grid.arrange(ct_map, labor_map, nrow = 2)
+maps2 <- plot_grid(
+  ct_map,
+  labor_map,
+  align = 'vh',
+  labels = c("C", "D"),
+  label_size = 10,
+  hjust = -1,
+  nrow = 2,
+  rel_widths = c(1, 1)
+)
 
 ggsave(maps2,
        filename = file.path(main_path, fig_path, 'figure1_ct_labor.png'),
-       width = 3,
+       width = 4,
        height = 8,
        units = "in")
 
