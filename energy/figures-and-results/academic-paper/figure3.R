@@ -155,7 +155,7 @@ fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "Climate: avoided climate damage",
+       title = "Climate: avoided damage",
        y = NULL,
        x = NULL) +
   ylim(0, 8) +
@@ -181,6 +181,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
        # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
+  ylim(0, 80) +
   theme_line +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1))
@@ -216,6 +217,7 @@ fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   theme_line +
+  ylim(0, 80) +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1))
 

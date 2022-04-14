@@ -12,12 +12,14 @@ library(rebus)
 library(readxl)
 library(data.table)
 library(cowplot)
+library(hrbrthemes)
+library(extrafont)
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 ct_out_path <- 'outputs/academic-out/extraction/extraction_2021-12-06/census-tract-results/'
 county_out_path <- 'outputs/academic-out/extraction/extraction_2021-12-06/county-results/'
-fig_path <- 'outputs/academic-out/extraction/figures/'
+fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/'
 
 ## files
 forecast_file     <- 'field_capex_opex_forecast_revised.csv'
@@ -193,9 +195,10 @@ disp_win_coord <- st_coordinates(disp_win_trans)
 ## make map
 fig1_map <- ggplot() +
   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
+  geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
   geom_sf(data = field_df_long %>% filter(metric == "prod_2019"), mapping = aes(geometry = geometry, fill = value / 1e6), lwd = 0, alpha = 1, show.legend = TRUE) +
+  geom_sf(data = county_boundaries, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
@@ -203,12 +206,12 @@ fig1_map <- ggplot() +
        fill = '2019 oil production\n(million bbls)',
        x = NULL,
        y = NULL) +
-  scale_fill_viridis(option="mako",
+  scale_fill_viridis(option="magma",
                      direction = -1) +
   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
   theme_void() +
-  coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
+  # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+  #          datum = ca_crs, expand = FALSE) +
   theme(
     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
     legend.justification = c(0, 1),
@@ -219,116 +222,159 @@ fig1_map <- ggplot() +
                                 title.hjust = 0,
                                 direction = "horizontal"))
 
-# ggsave(fig1_map,
-#        filename = file.path(main_path, fig_path, 'figure1_prod.png'),
-#        width = 6,
-#        height = 6,
-#        units = "in")
+## DAC legend
+## ------------------------
 
-## ghg intensity
-fig1_ghg_map <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+fig1_dac_legend <- ggplot() +
   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
-  geom_sf(data = field_df_long %>% filter(metric == "upstream_kgCO2e_bbl"), mapping = aes(geometry = geometry, fill = value), lwd = 0, alpha = 1, show.legend = TRUE) +
-  # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
-  # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
-  # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = "GHG emissions intensity",
-       fill = '2019 GHG intensity\n(kgCO2e per bbl)',
+  geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry, fill = ct_type), lwd = 0, show.legend = TRUE) +
+  labs(title = "Oil production",
+       fill = '',
        x = NULL,
        y = NULL) +
-  scale_fill_viridis(option="mako",
-                     direction = -1) +
-  # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-  theme_void() +
-  coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
-  theme(
-    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
-    legend.justification = c(0, 1),
-    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0.15, 0.15),
-    legend.title = element_text(size = 9)) +
-  guides(fill = guide_colourbar(title.position="top", 
-                                title.hjust = 0,
-                                direction = "horizontal"))
+  scale_fill_manual(values = c("DAC" = "#9DBF9E")) 
 
-
-## cost
-fig1_cost_map <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
-  geom_sf(data = field_df_long %>% filter(metric == "sum_cost"), mapping = aes(geometry = geometry, fill = value), lwd = 0, alpha = 1, show.legend = TRUE) +
-  # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
-  # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
-  # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = 'Cost',
-       fill = 'Opex + Capex (USD)',
-       x = NULL,
-       y = NULL) +
-  scale_fill_viridis(option="mako",
-                     direction = -1) +
-  coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
-  # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-  theme_void() +
-  theme(
-    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
-    legend.justification = c(0, 1),
-    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0.15, 0.15),
-    legend.title = element_text(size = 9)) +
-  guides(fill = guide_colourbar(title.position="top", 
-                                title.hjust = 0,
-                                direction = "horizontal"))
-
-
-## setback ------
-##-------------------
-
-## add geometry
-setback_map_df <- field_boundaries %>%
-  left_join(field_df) %>%
-  filter(doc_field_code %in% field_df_long$doc_field_code)
-
-
-fig1_setback_map <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
-  geom_sf(data = setback_map_df, mapping = aes(geometry = geometry, fill = coverage_min), lwd = 0, alpha = 1, show.legend = TRUE) +
-  # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
-  # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
-  # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = 'Setback',
-       fill = 'First setback\nto affect field',
-       x = NULL,
-       y = NULL) +
-  scale_fill_manual(values = c("1000ft" = "#355070",
-                               "2500ft" = "#73ba9b",
-                               "1 mile" = "#e56b6f",
-                               "none" = "grey")) +
-  coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
-  # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-  theme_void() +
-  theme(
-    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
-    legend.justification = c(0, 1),
-    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0.05, 0.40),
-    legend.title = element_text(size = 9)) 
+dac_legend <- get_legend(
+  fig1_dac_legend)
 
 ## plot together
-maps1 <-  grid.arrange(fig1_map, fig1_ghg_map, fig1_cost_map, fig1_setback_map, nrow = 2)
+map_fig_a <- ggdraw(fig1_map) +
+  draw_plot(dac_legend, .17, .1, .1, .5) +
+  draw_plot_label(
+    c("A", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
 
-ggsave(maps1,
-       filename = file.path(main_path, fig_path, 'figure1_policies.png'),
-       width = 6,
-       height = 8,
+ggsave(map_fig_a,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.png'),
+       width = 4,
+       height = 9,
        units = "in")
+
+ggsave(map_fig_a,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'),
+       width = 4,
+       height = 9,
+       units = "in",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'))
+
+
+
+
+
+
+
+
+# ## ghg intensity
+# fig1_ghg_map <- ggplot() +
+#   geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+#   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
+#   # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
+#   geom_sf(data = field_df_long %>% filter(metric == "upstream_kgCO2e_bbl"), mapping = aes(geometry = geometry, fill = value), lwd = 0, alpha = 1, show.legend = TRUE) +
+#   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
+#   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
+#   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
+#   labs(title = "GHG emissions intensity",
+#        fill = '2019 GHG intensity\n(kgCO2e per bbl)',
+#        x = NULL,
+#        y = NULL) +
+#   scale_fill_viridis(option="mako",
+#                      direction = -1) +
+#   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
+#   theme_void() +
+#   coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+#            datum = ca_crs, expand = FALSE) +
+#   theme(
+#     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+#     legend.justification = c(0, 1),
+#     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+#     legend.position = c(0.15, 0.15),
+#     legend.title = element_text(size = 9)) +
+#   guides(fill = guide_colourbar(title.position="top", 
+#                                 title.hjust = 0,
+#                                 direction = "horizontal"))
+# 
+# 
+# ## cost
+# fig1_cost_map <- ggplot() +
+#   geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+#   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
+#   # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
+#   geom_sf(data = field_df_long %>% filter(metric == "sum_cost"), mapping = aes(geometry = geometry, fill = value), lwd = 0, alpha = 1, show.legend = TRUE) +
+#   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
+#   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
+#   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
+#   labs(title = 'Cost',
+#        fill = 'Opex + Capex (USD)',
+#        x = NULL,
+#        y = NULL) +
+#   scale_fill_viridis(option="mako",
+#                      direction = -1) +
+#   coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+#            datum = ca_crs, expand = FALSE) +
+#   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
+#   theme_void() +
+#   theme(
+#     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+#     legend.justification = c(0, 1),
+#     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+#     legend.position = c(0.15, 0.15),
+#     legend.title = element_text(size = 9)) +
+#   guides(fill = guide_colourbar(title.position="top", 
+#                                 title.hjust = 0,
+#                                 direction = "horizontal"))
+# 
+# 
+# ## setback ------
+# ##-------------------
+# 
+# ## add geometry
+# setback_map_df <- field_boundaries %>%
+#   left_join(field_df) %>%
+#   filter(doc_field_code %in% field_df_long$doc_field_code)
+# 
+# 
+# fig1_setback_map <- ggplot() +
+#   geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+#   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
+#   # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
+#   geom_sf(data = setback_map_df, mapping = aes(geometry = geometry, fill = coverage_min), lwd = 0, alpha = 1, show.legend = TRUE) +
+#   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
+#   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
+#   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
+#   labs(title = 'Setback',
+#        fill = 'First setback\nto affect field',
+#        x = NULL,
+#        y = NULL) +
+#   scale_fill_manual(values = c("1000ft" = "#355070",
+#                                "2500ft" = "#73ba9b",
+#                                "1 mile" = "#e56b6f",
+#                                "none" = "grey")) +
+#   coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+#            datum = ca_crs, expand = FALSE) +
+#   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
+#   theme_void() +
+#   theme(
+#     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+#     legend.justification = c(0, 1),
+#     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+#     legend.position = c(0.05, 0.40),
+#     legend.title = element_text(size = 9)) 
+# 
+# ## plot together
+# maps1 <-  grid.arrange(fig1_map, fig1_ghg_map, fig1_cost_map, fig1_setback_map, nrow = 2)
+# 
+# ggsave(maps1,
+#        filename = file.path(main_path, fig_path, 'figure1_policies.png'),
+#        width = 6,
+#        height = 8,
+#        units = "in")
 
 ## health and labor, 2019
 ## -------------------------------------------------
@@ -365,7 +411,7 @@ ct_map <- ggplot() +
   geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0.0, color = "white", alpha = 1, show.legend = TRUE) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   geom_sf(data = county_boundaries, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
-  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 1.5, fontface = "bold", color = "black") +
+  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
   labs(title = 'Population * PM2.5 by census tract',
        fill = 'Population * PM2.5',
@@ -449,8 +495,36 @@ maps2 <- plot_grid(
 )
 
 ggsave(maps2,
-       filename = file.path(main_path, fig_path, 'figure1_ct_labor.png'),
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1_cd.png'),
        width = 4,
-       height = 8,
+       height = 9,
        units = "in")
+
+ggsave(maps2,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1_cd.pdf'),
+       width = 4,
+       height = 9,
+       units = "in",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure1_cd.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure1_cd.pdf'))
+
+
+
+## plot the two maps together
+## -----------------------------------
+
+# ## plot together
+# fig1 <- plot_grid(
+#   map_fig_a,
+#   maps2,
+#   align = 'h',
+#   hjust = -1,
+#   nrow = 1,
+#   rel_widths = c(1, 1)
+# )
+
+
+
 
