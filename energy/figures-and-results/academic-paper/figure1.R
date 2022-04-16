@@ -392,7 +392,7 @@ ct_2019 <- census_tracts %>%
 ## health map
 
 ## blue color pal
-blues_pal <- c("#E0E1DD", "#778DA9", "#415A77", "#1B263B", "#0D1B2A")
+blues_pal <- c("#FAFAFA", "#778DA9", "#415A77", "#1B263B", "#0D1B2A")
 
 
 ## crop area
@@ -486,24 +486,24 @@ labor_map <- ggplot() +
 maps2 <- plot_grid(
   ct_map,
   labor_map,
-  align = 'vh',
-  labels = c("C", "D"),
-  label_size = 10,
-  hjust = -1,
-  nrow = 2,
+  align = 'h',
+  # labels = c("C", "D"),
+  # label_size = 10,
+  # hjust = -1,
+  nrow = 1,
   rel_widths = c(1, 1)
 )
 
 ggsave(maps2,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1_cd.png'),
-       width = 4,
-       height = 9,
+       width = 6,
+       height = 3.5,
        units = "in")
 
 ggsave(maps2,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1_cd.pdf'),
-       width = 4,
-       height = 9,
+       width = 6,
+       height = 3.5,
        units = "in",
        device = 'pdf')
 
