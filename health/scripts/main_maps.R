@@ -1,5 +1,5 @@
 #Danae Hernandez-Cortes hernandezcortes@ucsb.edu
-#INFRASTRUCTURE TO SEND TO THE MODELING TEAM
+#EXTRACTION MAP
 #Libraries
 library(sf)
 library(tidyverse)
@@ -32,13 +32,13 @@ inmapReFiles  <- "C:/Users/dhern125/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_re
 #inmapReFiles  <- "emlab/projects/current-projects/calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm/refining"
 
 #############################################
-# PREPARE FILES FROM INMAP OUTPUT: REFINING
+# PREPARE FILES FROM INMAP OUTPUT: EXTRACTION
 #############################################
 
 #Census tracts
 CA_ct<-st_read("C:/Users/dhern125/Dropbox/UCSB-PhD/emLab/CALEPA/data/census_tracts/census-tract/tl_2019_06_tract.shp")
  
-#Torrance refinery
+#EXTRACTION MAP CLUSTER 1
 sites_vector <- c(1)
 
 read_extraction <- function(buff_site){
