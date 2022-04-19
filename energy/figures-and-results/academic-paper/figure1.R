@@ -649,26 +649,26 @@ california <- states %>% filter(ID == "california") %>%
 all_SC <- st_intersection(california, map2)
 
 
-total_pm25 <- ggplot(data = LA) +
-  geom_sf(data = LA2, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")")))  +
-  scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", na.value = "gray50",
-                      limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
-  #geom_sf(data = LA_contour_cropped, fill="transparent", color="gray65") +
-  geom_sf(data = LA_metro, fill="transparent", color="gray65")+
-  geom_sf(data = field1_intersection, fill="transparent", color="black") 
-pdf("C:/Users/dhern125/Documents/GitHub/ca-transport-supply-decarb/health/outputs/LA_field_cluster_1.pdf")
-print(total_pm25)
-dev.off() 
-plot(total_pm25)
+# total_pm25 <- ggplot(data = LA) +
+#   geom_sf(data = LA2, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")")))  +
+#   scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", na.value = "gray50",
+#                       limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
+#   #geom_sf(data = LA_contour_cropped, fill="transparent", color="gray65") +
+#   geom_sf(data = LA_metro, fill="transparent", color="gray65")+
+#   geom_sf(data = field1_intersection, fill="transparent", color="black") 
+# pdf("C:/Users/dhern125/Documents/GitHub/ca-transport-supply-decarb/health/outputs/LA_field_cluster_1.pdf")
+# print(total_pm25)
+# dev.off() 
+# plot(total_pm25)
 
 total_pm25 <- ggplot (data = LA) +
   geom_sf(data = LA, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
   scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", na.value = "gray50",
                       limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
+  geom_sf(data = dac_map, fill="transparent", color="gray65", size = 0.1) +
   #geom_sf(data = LAcontour, fill="transparent", color="gray65") +
   #geom_sf(data = LA_contour_cropped, fill="transparent", color="gray65") +
-  geom_sf(data = LA_metro, fill="transparent", color="gray65")+
-  geom_sf(data = dac_map, fill="transparent", color="gray65",   size = 0.005)+
+  geom_sf(data = LA_metro, fill="transparent", color="gray65") +
   geom_sf(data = field1_intersection, fill="transparent", color="black") 
 
 pdf("C:/Users/dhern125/Documents/GitHub/ca-transport-supply-decarb/health/outputs/LA_field_cluster_1pop.pdf")
@@ -676,6 +676,8 @@ print(total_pm25)
 dev.off() 
 plot(total_pm25)
 
+
+ggplot(data = dac_map, fill="transparent", color="black",   size = 0.005) + geom_sf()
 
 
 
