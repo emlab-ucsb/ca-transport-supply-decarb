@@ -72,66 +72,67 @@ county_prod <- county_prod[rank <= 5]
 county_prod[, lab := paste0(adj_county_name, " ", round(prod_2019 / 1e6), "m bbls")]
 
 
-## load entry df 
-entry_data = fread(file.path(main_path, 'outputs/stocks-flows', entry_file), header = T)
-entry_data[, doc_field_code := sprintf("%03d", doc_field_code)]
-entry_data <- entry_data[year == 2019, .(doc_field_code, capex_imputed, opex_imputed)]
-entry_data[, sum_cost := capex_imputed + opex_imputed]
+# ## load entry df 
+# entry_data = fread(file.path(main_path, 'outputs/stocks-flows', entry_file), header = T)
+# entry_data[, doc_field_code := sprintf("%03d", doc_field_code)]
+# entry_data <- entry_data[year == 2019, .(doc_field_code, capex_imputed, opex_imputed)]
+# entry_data[, sum_cost := capex_imputed + opex_imputed]
+# 
+# ## load opex/ capex forecast
+# price_data = fread(file.path(main_path, 'outputs/stocks-flows', forecast_file), header = T)
+# price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
+# price_data[, sum_cost := m_opex_imputed + m_capex_imputed]
+# price_data <- price_data[year == 2020, .(doc_field_code, m_opex_imputed, m_capex_imputed, sum_cost)]
+# 
+# ## emissions factors
+# ghg_factors = fread(file.path(main_path, 'outputs/stocks-flows', ghg_file), header = T)
+# ghg_factors[, doc_field_code := sprintf("%03d", doc_field_code)]
+# ghg_factors <- ghg_factors[year == 2019, .(doc_field_code, upstream_kgCO2e_bbl)]
+# 
+# ## setback coverage
+# setback_scens = fread(file.path(main_path, 'outputs/setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
+# setnames(setback_scens, 'rel_coverage', 'area_coverage')
+# setback_scens <- setback_scens[setback_scenario != "no_setback", .(doc_field_code, setback_scenario, area_coverage)]
+# 
+# setback_coverage <- setDT(setback_scens)
+# setback_coverage[, coverage_cat := fifelse(area_coverage > 0, as.numeric(str_extract(setback_scenario, one_or_more(DGT))), 0)]
+# setback_coverage <- setback_coverage[coverage_cat > 0]
+# setback_coverage[, coverage_min := min(coverage_cat), by = .(doc_field_code)]
+# 
+# setback_coverage <- unique(setback_coverage[, .(doc_field_code, coverage_min)])
+# 
+# setback_dt <- tibble(doc_field_code = unique(setback_scens$doc_field_code))
+# setback_dt <- merge(setback_dt, setback_coverage,
+#                     by = "doc_field_code",
+#                     all.x = T)
+# 
+# ## combine by field
+# field_df <- price_data %>%
+#   select(doc_field_code, sum_cost) %>%
+#   left_join(ghg_factors)
+# 
+# field_df <- merge(field_df, field_prod,
+#                   by = "doc_field_code",
+#                   all.x = T)
+# 
+# field_df <- merge(field_df, setback_dt,
+#                   by = "doc_field_code",
+#                   all.x = T)
 
-## load opex/ capex forecast
-price_data = fread(file.path(main_path, 'outputs/stocks-flows', forecast_file), header = T)
-price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
-price_data[, sum_cost := m_opex_imputed + m_capex_imputed]
-price_data <- price_data[year == 2020, .(doc_field_code, m_opex_imputed, m_capex_imputed, sum_cost)]
-
-## emissions factors
-ghg_factors = fread(file.path(main_path, 'outputs/stocks-flows', ghg_file), header = T)
-ghg_factors[, doc_field_code := sprintf("%03d", doc_field_code)]
-ghg_factors <- ghg_factors[year == 2019, .(doc_field_code, upstream_kgCO2e_bbl)]
-
-## setback coverage
-setback_scens = fread(file.path(main_path, 'outputs/setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
-setnames(setback_scens, 'rel_coverage', 'area_coverage')
-setback_scens <- setback_scens[setback_scenario != "no_setback", .(doc_field_code, setback_scenario, area_coverage)]
-
-setback_coverage <- setDT(setback_scens)
-setback_coverage[, coverage_cat := fifelse(area_coverage > 0, as.numeric(str_extract(setback_scenario, one_or_more(DGT))), 0)]
-setback_coverage <- setback_coverage[coverage_cat > 0]
-setback_coverage[, coverage_min := min(coverage_cat), by = .(doc_field_code)]
-
-setback_coverage <- unique(setback_coverage[, .(doc_field_code, coverage_min)])
-
-setback_dt <- tibble(doc_field_code = unique(setback_scens$doc_field_code))
-setback_dt <- merge(setback_dt, setback_coverage,
-                    by = "doc_field_code",
-                    all.x = T)
-
-## combine by field
-field_df <- price_data %>%
-  select(doc_field_code, sum_cost) %>%
-  left_join(ghg_factors)
-
-field_df <- merge(field_df, field_prod,
-                  by = "doc_field_code",
-                  all.x = T)
-
-field_df <- merge(field_df, setback_dt,
-                  by = "doc_field_code",
-                  all.x = T)
-
+field_df <- copy(field_prod)
 field_df[, prod_2019 := fifelse(is.na(prod_2019), 0, prod_2019)]
-field_df[, coverage_min := fifelse(is.na(coverage_min), 0, coverage_min)]
+# field_df[, coverage_min := fifelse(is.na(coverage_min), 0, coverage_min)]
 
-field_df[, coverage_min := fifelse(coverage_min == 1000, "1000ft",
-                                   fifelse(coverage_min == 2500, "2500ft",
-                                           fifelse(coverage_min == 5280, "1 mile", "none")))]
-
+# field_df[, coverage_min := fifelse(coverage_min == 1000, "1000ft",
+#                                    fifelse(coverage_min == 2500, "2500ft",
+#                                            fifelse(coverage_min == 5280, "1 mile", "none")))]
+# 
 
 ## make long format
-field_df_long <- pivot_longer(field_df[, .(doc_field_code, upstream_kgCO2e_bbl,
-                                           sum_cost, prod_2019)], cols = upstream_kgCO2e_bbl:prod_2019,
-                              names_to = "metric",
-                              values_to = "value")
+# field_df_long <- pivot_longer(field_df[, .(doc_field_code, upstream_kgCO2e_bbl,
+#                                            sum_cost, prod_2019)], cols = upstream_kgCO2e_bbl:prod_2019,
+#                               names_to = "metric",
+#                               values_to = "value")
 
 
 
@@ -142,9 +143,13 @@ field_boundaries <- st_read(file.path(main_path, "data/GIS/raw/field-boundaries/
   select(doc_field_code = FIELD_CODE)
 
 ## add geometry
+# field_df_long <- field_boundaries %>%
+#   left_join(field_df_long) %>%
+#   filter(doc_field_code %in% field_df_long$doc_field_code)
+
 field_df_long <- field_boundaries %>%
-  left_join(field_df_long) %>%
-  filter(doc_field_code %in% field_df_long$doc_field_code)
+  left_join(field_df) %>%
+  filter(doc_field_code %in% field_df$doc_field_code)
 
 
 st_transform(field_df_long, ca_crs)
@@ -159,6 +164,10 @@ california <- states %>% filter(ID == "california") %>%
 county_boundaries <- st_read(file.path(main_path, "data/GIS/raw/CA_Counties/CA_Counties_TIGER2016.shp")) %>% 
   st_transform(ca_crs) %>%
   dplyr::select(adj_county_name = NAME)
+
+## counties, no islands
+CA_counties <- st_read(paste0(main_path, "data/GIS/raw/CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
+  st_transform(ca_crs)
 
 
 county_19 <- merge(as_tibble(county_prod), county_boundaries,
@@ -190,21 +199,60 @@ dac_areas <- dac_sp %>%
   filter(dac == "Yes")
 
 
+# ## crop area
+# disp_win_wgs84 <- st_sfc(st_point(c(-123, 33)), st_point(c(-116, 39)),
+#                          crs = 4326)
+# 
+# disp_win_trans <- st_transform(disp_win_wgs84, crs = ca_crs)
+# 
+# disp_win_coord <- st_coordinates(disp_win_trans)
+
 ## crop area
-disp_win_wgs84 <- st_sfc(st_point(c(-123, 33)), st_point(c(-116, 39)),
-                         crs = 4326)
+disp_win2_wgs84 <- st_sfc(st_point(c(-123, 33)), st_point(c(-115, 39)),
+                          crs = 4326)
 
-disp_win_trans <- st_transform(disp_win_wgs84, crs = ca_crs)
+disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
 
-disp_win_coord <- st_coordinates(disp_win_trans)
+disp_win2_coord <- st_coordinates(disp_win2_trans)
+
+## limits for zoom
+xlim <- c(-280615.3, 432427.2) # Set limits for zoom panel
+ylim <- c(-552582.9, 120744.7)
+
+## map inset, CA with box around zoom area
+fig1_inset <- ggplot() +
+  geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
+  # geom_sf(data = disp_win2_wgs84, shape = 0, size = 35, color = "red", stroke = 2) +# Draw box around zoomed region
+  annotate(geom = "rect", 
+           xmin = xlim[1],
+           xmax = xlim[2],
+           ymin = ylim[1],
+           ymax = ylim[2],
+           color = "black", 
+           size = 0.5,
+           fill = NA) +
+  theme_void() +
+  # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+  #          datum = ca_crs, expand = FALSE) +
+  theme(
+    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+    legend.justification = c(0, 1),
+    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+    legend.position = c(0.15, 0.15),
+    legend.title = element_text(size = 9)) +
+  guides(fill = guide_colourbar(title.position="top", 
+                                title.hjust = 0,
+                                direction = "horizontal"))
+
 
 ## make map
 fig1_map <- ggplot() +
   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
-  geom_sf(data = field_df_long %>% filter(metric == "prod_2019"), mapping = aes(geometry = geometry, fill = value / 1e6), lwd = 0, alpha = 1, show.legend = TRUE) +
-  geom_sf(data = county_boundaries, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
+  geom_sf(data = field_df_long, mapping = aes(geometry = geometry, fill = prod_2019 / 1e6), lwd = 0, alpha = 1, show.legend = TRUE) +
+  geom_sf(data = CA_counties, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
@@ -214,6 +262,8 @@ fig1_map <- ggplot() +
        y = NULL) +
   scale_fill_viridis(option="magma",
                      direction = -1) +
+  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
+           datum = ca_crs, expand = FALSE) +
   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
   theme_void() +
   # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
@@ -236,7 +286,7 @@ fig1_dac_legend <- ggplot() +
   geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = dac_areas , mapping = aes(geometry = geometry, fill = ct_type), lwd = 0, show.legend = TRUE) +
   labs(title = "Oil production",
-       fill = '',
+       fill = NULL,
        x = NULL,
        y = NULL) +
   scale_fill_manual(values = c("DAC" = "#9DBF9E")) 
@@ -246,7 +296,8 @@ dac_legend <- get_legend(
 
 ## plot together
 map_fig_a <- ggdraw(fig1_map) +
-  draw_plot(dac_legend, .17, .1, .1, .5) +
+  draw_plot(dac_legend, x = 0.2, y = 0.2, width = 0.05, height = 0.05) +
+  draw_plot(fig1_inset, x = 0.65, y = 0.65, width = 0.3, height = 0.3) +
   draw_plot_label(
     c("A", ""),
     c(0, 0.45),
@@ -257,13 +308,13 @@ map_fig_a <- ggdraw(fig1_map) +
 ggsave(map_fig_a,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.png'),
        width = 4,
-       height = 9,
+       height = 3.5,
        units = "in")
 
 ggsave(map_fig_a,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'),
        width = 4,
-       height = 9,
+       height = 3.5,
        units = "in",
        device = 'pdf')
 
@@ -401,13 +452,13 @@ ct_2019 <- census_tracts %>%
 blues_pal <- c("#FAFAFA", "#778DA9", "#415A77", "#1B263B", "#0D1B2A")
 
 
-## crop area
-disp_win2_wgs84 <- st_sfc(st_point(c(-123, 33)), st_point(c(-115, 39)),
-                         crs = 4326)
-
-disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
-
-disp_win2_coord <- st_coordinates(disp_win2_trans)
+# ## crop area
+# disp_win2_wgs84 <- st_sfc(st_point(c(-123, 33)), st_point(c(-115, 39)),
+#                          crs = 4326)
+# 
+# disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
+# 
+# disp_win2_coord <- st_coordinates(disp_win2_trans)
 
 
 ct_map <- ggplot() +
@@ -588,11 +639,11 @@ dac_population <- read.csv(paste0(main_path, "data/health/raw/ces3results_part.c
 CA_ct$GEOID = as.double(CA_ct$GEOID)
 
 dac_map <- left_join(CA_ct, dac_population, by=c("GEOID"))
-dac_map <- dac_map%>%dplyr::filter(sb535_dac=="Yes" & COUNTYFP=="037")
+dac_map <- dac_map %>% dplyr::filter(sb535_dac=="Yes" & COUNTYFP=="037")
 
 ## counties
-CA_counties<-st_read(paste0(main_path, "data/GIS/raw/CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
-  st_transform(ca_crs)
+# CA_counties<-st_read(paste0(main_path, "data/GIS/raw/CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
+#   st_transform(ca_crs)
 
 LAcontour <- CA_counties %>% subset(COUNTYFP=='037')
 
@@ -625,11 +676,11 @@ LA2 <- st_intersection(LA_metro, LA)
 
 # map2 <- st_transform(ct_map, ca_crs)
 
-## califonia
-states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
-
-california <- states %>% filter(ID == "california") %>%
-  st_transform(ca_crs)
+# ## califonia
+# states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+# 
+# california <- states %>% filter(ID == "california") %>%
+#   st_transform(ca_crs)
 
 
 # all_SC <- st_intersection(california, map2)
@@ -641,11 +692,18 @@ california <- states %>% filter(ID == "california") %>%
 #                       limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
 #   #geom_sf(data = LA_contour_cropped, fill="transparent", color="gray65") +
 #   geom_sf(data = LA_metro, fill="transparent", color="gray65")+
-#   geom_sf(data = field1_intersection, fill="transparent", color="black") 
+#   geom_sf(data = field1_intersection, fill="transparent", color="black")
 # pdf("C:/Users/dhern125/Documents/GitHub/ca-transport-supply-decarb/health/outputs/LA_field_cluster_1.pdf")
 # print(total_pm25)
-# dev.off() 
+# dev.off()
 # plot(total_pm25)
+
+## total pm2.5
+total_pm25 <- ggplot() +
+  geom_sf(data = county_boundaries, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
+  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black")
+
+
 
 total_pm25 <- ggplot (data = LA) +
   geom_sf(data = LA, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
@@ -663,18 +721,20 @@ dev.off()
 plot(total_pm25)
 
 
-ggplot(data = dac_map, fill="transparent", color="black",   size = 0.005) + geom_sf()
+# ggplot(data = dac_map, fill="transparent", color="black",   size = 0.005) + geom_sf()
 
 
 
-total_pm25<-ggplot (data = LA) +
-  geom_sf(data = LA2, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
-  scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", na.value = "gray50",
-                      limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
-  #geom_sf(data = LAcontour, fill="transparent", color="gray65") +
-  geom_sf(data = LA_metro, fill="transparent", color="gray65")+
-  geom_sf(data = dac_map, fill="transparent", color="gray65",   size = 0.005)+
-  geom_sf(data = field1_intersection, fill="transparent", color="black") 
+# total_pm25<-ggplot (data = LA) +
+#   geom_sf(data = LA2, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
+#   scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", na.value = "gray50",
+#                       limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
+#   #geom_sf(data = LAcontour, fill="transparent", color="gray65") +
+#   geom_sf(data = LA_metro, fill="transparent", color="gray65")+
+#   geom_sf(data = dac_map, fill="transparent", color="gray65",   size = 0.005)+
+#   geom_sf(data = field1_intersection, fill="transparent", color="black") +
+#   coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
+#            datum = ca_crs, expand = FALSE) 
 
 pdf("C:/Users/dhern125/Documents/GitHub/ca-transport-supply-decarb/health/outputs/LA_field_cluster_1pop.pdf")
 print(total_pm25)
@@ -733,34 +793,34 @@ plot(total_pm25)
 
 
 
-ct_map <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
-  geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0, alpha = 1, show.legend = TRUE) +
-  # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
-  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
-  # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = 'Population * PM2.5 by census tract',
-       fill = 'Population * PM2.5',
-       x = NULL,
-       y = NULL) +
-  scale_fill_gradientn(colors = blues_pal) +
-  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
-  # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-  theme_void() +
-  theme(
-    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
-    legend.justification = c(0, 1),
-    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0.10, 0.15),
-    legend.title = element_text(size = 9)) +
-  guides(fill = guide_colourbar(title.position="top", 
-                                title.hjust = 0,
-                                direction = "horizontal"))
-
-
-
-
-
+# ct_map <- ggplot() +
+#   geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
+#   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
+#   # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
+#   geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0, alpha = 1, show.legend = TRUE) +
+#   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
+#   geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
+#   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
+#   labs(title = 'Population * PM2.5 by census tract',
+#        fill = 'Population * PM2.5',
+#        x = NULL,
+#        y = NULL) +
+#   scale_fill_gradientn(colors = blues_pal) +
+#   coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
+#            datum = ca_crs, expand = FALSE) +
+#   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
+#   theme_void() +
+#   theme(
+#     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+#     legend.justification = c(0, 1),
+#     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+#     legend.position = c(0.10, 0.15),
+#     legend.title = element_text(size = 9)) +
+#   guides(fill = guide_colourbar(title.position="top", 
+#                                 title.hjust = 0,
+#                                 direction = "horizontal"))
+# 
+# 
+# 
+# 
+# 
