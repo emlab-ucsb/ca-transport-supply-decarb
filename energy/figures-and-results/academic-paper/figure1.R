@@ -20,6 +20,7 @@ main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects
 ct_out_path <- 'outputs/academic-out/extraction/extraction_2021-12-06/census-tract-results/'
 county_out_path <- 'outputs/academic-out/extraction/extraction_2021-12-06/county-results/'
 fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/'
+data_path         <- paste0(main_path, 'outputs/entry-model-results/')
 
 ## for SRM figure
 outputFiles   <- "outputs/academic-out"
@@ -343,13 +344,10 @@ pred_wells_fm <- read_csv(paste0(data_path, "new_wells_pred_revised.csv")) %>%
 
 
 # load historic production
-well_prod_org <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
-                                                                                                     'doc_field_code' = 'character'))
-
-well_prod <- well_prod_org[year == 2019]
+well_prod_19 <- well_prod[year == 2019]
 
 ## top producers in 2019
-prod2019 <- well_prod %>%
+prod2019 <- well_prod_19 %>%
   group_by(doc_field_code, doc_fieldname) %>%
   summarise(prod = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
@@ -359,20 +357,9 @@ prod2019 <- well_prod %>%
   mutate(doc_fieldname = ifelse(doc_fieldname == "Belridge  South", "Belridge South", doc_fieldname)) 
 
 ## field name
-field_name <- well_prod_org %>%
+field_name <- well_prod %>%
   select(doc_field_code, doc_fieldname) %>%
   unique()
-
-
-## join
-# well_n_df <- pred_wells_all %>%
-#   left_join(field_names) %>%
-#   mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_field_name, "Non-top field"),
-#          field_name_adj = ifelse(field_name_adj == "Belridge  South", "Belridge South", field_name_adj)) %>%
-#   select(doc_field_code, doc_field_name, field_name_adj, year, category, label_name, n_wells) %>%
-#   group_by(field_name_adj, year, category, label_name) %>%
-#   summarise(n_wells = sum(n_wells)) %>%
-#   ungroup() 
 
 well_n_df_revised <- pred_wells_fm %>%
   left_join(field_name) %>%
@@ -391,71 +378,6 @@ state_df <- well_n_df_revised %>%
   summarise(n_wells = sum(n_wells)) %>%
   ungroup()
 
-# all_well_entry <- well_n_df %>%
-#   rbind(state_df)
-
-
-# ## facet figure
-# field_cols <- length(unique(well_n_df$field_name_adj))
-# field_value_cols <- colorRampPalette(ucsb_distinct)(field_cols)
-# 
-## factor
-well_n_df_revised$field_name_adj <- factor(well_n_df_revised$field_name_adj, levels = c("Belridge South",
-                                                                                        "Midway-Sunset",
-                                                                                        "Kern River",
-                                                                                        "Cymric",
-                                                                                        "Wilmington",
-                                                                                        "Lost Hills",
-                                                                                        "San Ardo",
-                                                                                        "Elk Hills",
-                                                                                        "Coalinga",
-                                                                                        "Poso Creek",
-                                                                                        "Non-top fields"))
-
-
-## full data set
-well_fig_fs <- 
-  ggplot(well_n_df_revised %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells, color = label_name)) +
-  geom_line(size = 0.6, alpha = 0.8) +
-  labs(y = "Number of wells",
-       x = NULL,
-       color = NULL) +
-  # labs(title = 'Observed and predicted well entry',
-  #      subtitle = 'Training data: 1978-2020') +
-  # geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
-  scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
-  scale_y_continuous(label = comma) +
-  # scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
-  facet_wrap(~field_name_adj, ncol = 3, scales = "free_y") +
-  ylab("Number of wells") +
-  theme_line +
-  theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
-        legend.position = "top")
-
-ggsave(filename =  paste0(save_directory, "pred_fullsample_topfield.png"), well_fig_fs, width = 8, height = 10, units = "in", dpi = 300)
-
-## full data set
-well_fig_fs_fixed <- 
-  ggplot(well_n_df_revised %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells, color = label_name)) +
-  geom_line(size = 0.6, alpha = 0.8) +
-  labs(y = "Number of wells",
-       x = NULL,
-       color = NULL) +
-  # labs(title = 'Observed and predicted well entry',
-  #      subtitle = 'Training data: 1978-2020') +
-  # geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
-  scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
-  scale_y_continuous(label = comma) +
-  # scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
-  facet_wrap(~field_name_adj, ncol = 3) +
-  ylab("Number of wells") +
-  theme_line +
-  theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
-        legend.position = "top")
-
-ggsave(filename =  paste0(save_directory, "pred_fullsample_topfield.png"), well_fig_fs, width = 8, height = 10, units = "in", dpi = 300)
-
-
 ## state no hold out
 state_fig_fs <- 
   ggplot(state_df %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells, color = label_name)) +
@@ -467,21 +389,12 @@ state_fig_fs <-
   #      subtitle = 'Training data: 1978-2020') +
   # geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
   scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
-  scale_y_continuous(label = comma, limits = c(0, 4000)) +
+  scale_y_continuous(label = scales::comma, limits = c(0, 4000)) +
   # scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
   # facet_wrap(~field_name_adj, scales = "free_y") +
   ylab("Number of wells") +
   theme_line +
   theme(legend.position = "top")
-
-ggsave(filename =  paste0(save_directory, "pred_fullsample_state.png"), state_fig_fs, width = 5, height = 4, units = "in", dpi = 300)
-
-
-
-
-
-
-
 
 
 # ## ghg intensity
@@ -623,7 +536,7 @@ ct_map <- ggplot() +
   # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
   geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0.0, color = "white", alpha = 1, show.legend = TRUE) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
-  geom_sf(data = county_boundaries, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
+  geom_sf(data = CA_counties, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
   geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
   labs(title = 'Population * PM2.5 by census tract',
@@ -660,8 +573,9 @@ labor_out <- readRDS(paste0(main_path, county_out_path, county_file))
 labor_out <- labor_out[year == 2019]
 labor_out <- labor_out[, .(scen_id, county, dac_share, year, total_emp, total_comp)]
 
-labor_out <- county_boundaries %>%
-  rename(county = adj_county_name) %>%
+labor_out <- CA_counties %>%
+  select(NAME) %>%
+  rename(county = NAME) %>%
   left_join(labor_out) %>%
   mutate(total_emp = ifelse(is.na(total_emp), 0, total_emp),
          total_comp = ifelse(is.na(total_comp), 0, total_comp))
@@ -699,11 +613,11 @@ labor_map <- ggplot() +
 maps2 <- plot_grid(
   ct_map,
   labor_map,
-  align = 'h',
+  align = 'v',
   # labels = c("C", "D"),
   # label_size = 10,
   # hjust = -1,
-  nrow = 1,
+  nrow = 2,
   rel_widths = c(1, 1)
 )
 
@@ -796,6 +710,33 @@ CA_ct$GEOID = as.double(CA_ct$GEOID)
 
 dac_map <- left_join(CA_ct, dac_population, by=c("GEOID"))
 dac_map <- dac_map %>% dplyr::filter(sb535_dac=="Yes" & COUNTYFP=="037")
+dac_map <- dac_map %>% dplyr::filter(sb535_dac=="Yes")
+
+## merge counties to census tracts
+## -----------------------------------
+county_code <- CA_counties %>%
+  select(COUNTYFP, NAME) %>%
+  st_drop_geometry() %>%
+  unique() %>%
+  rename(county_name = NAME)
+
+ct_map_county <- ct_map %>%
+  left_join(county_code)
+
+## crop
+## -----------------------------------
+disp_win_la_wgs84 <- st_sfc(st_point(c(-119.4, 32)), st_point(c(-117.46, 34.84)),
+                          crs = 4326)
+
+disp_win_la_trans <- st_transform(disp_win_la_wgs84, crs = ca_crs)
+
+disp_win_la_coord <- st_coordinates(disp_win_la_trans)
+
+
+
+ct_cropped <- st_crop(ct_map_county, xmin = 56832.65, xmax = 232132.27, ymin = -667547.6, ymax = -349842.0)
+county_crop <- st_crop(CA_counties, xmin = 56832.65, xmax = 232132.27, ymin = -667547.6, ymax = -349842.0)
+
 
 ## counties
 # CA_counties<-st_read(paste0(main_path, "data/GIS/raw/CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
@@ -855,13 +796,22 @@ LA2 <- st_intersection(LA_metro, LA)
 # plot(total_pm25)
 
 ## total pm2.5
+zoom_c <- c('Los Angeles', 'Ventura', 'Orange', 'San Bernardino', 'Kern')
+
 total_pm25 <- ggplot() +
-  geom_sf(data = county_boundaries, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
-  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black")
+  geom_sf(data = ct_cropped, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
+  scale_fill_gradient(high = "#A84268", low = "#FFFFFF", space = "Lab", na.value = "grey50",
+                      limits = c(min(ct_cropped$total_pm25), max(ct_cropped$total_pm25))) +
+  # geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = county_crop, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
+  geom_sf_text(data = CA_counties %>% filter(NAME %in% c("Los Angeles", "Orange", "Ventura")), mapping = aes(geometry = geometry, label = NAME), size = 2, fontface = "bold", color = "black") +
+  # geom_sf(data = dac_map, fill="transparent", color="gray65", size = 0.1) +
+  # geom_sf(data = LA_metro, fill="transparent", color="gray65") +
+  geom_sf(data = field1, fill="transparent", color="black")
 
-
-
-total_pm25 <- ggplot (data = LA) +
+  
+  
+  total_pm25 <- ggplot (data = LA) +
   geom_sf(data = LA, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
   scale_fill_gradient(high = "#FF0000", low = "#FFFFFF", space = "Lab", na.value = "gray50",
                       limits = c(min(LA$total_pm25), max(LA$total_pm25))) +
