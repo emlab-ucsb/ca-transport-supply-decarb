@@ -171,6 +171,9 @@ county_boundaries <- st_read(file.path(main_path, "data/GIS/raw/CA_Counties/CA_C
 CA_counties <- st_read(paste0(main_path, "data/GIS/raw/CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
   st_transform(ca_crs)
 
+CA_counties_noisl <- CA_counties %>%
+  filter(!OBJECTID %in% c(3, 49))
+
 
 county_19 <- merge(as_tibble(county_prod), county_boundaries,
                    by = "adj_county_name",
@@ -210,21 +213,27 @@ dac_areas <- dac_sp %>%
 # disp_win_coord <- st_coordinates(disp_win_trans)
 
 ## crop area
-disp_win2_wgs84 <- st_sfc(st_point(c(-123, 33)), st_point(c(-115, 39)),
+disp_win2_wgs84 <- st_sfc(st_point(c(-122.5, 33)), st_point(c(-117.5, 38)),
                           crs = 4326)
 
 disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
 
 disp_win2_coord <- st_coordinates(disp_win2_trans)
 
+disp_win_df <- as.data.frame(disp_win2_coord)
+
 ## limits for zoom
-xlim <- c(-280615.3, 432427.2) # Set limits for zoom panel
-ylim <- c(-552582.9, 120744.7)
+xlim <- c(disp_win_df$X[1], disp_win_df$X[2]) # Set limits for zoom panel
+ylim <- c(disp_win_df$Y[1], disp_win_df$Y[2])
+
+## st_union of no island counties
+ca_union <- st_union(CA_counties_noisl)
+
 
 ## map inset, CA with box around zoom area
 fig1_inset <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
+  geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
   # geom_sf(data = disp_win2_wgs84, shape = 0, size = 35, color = "red", stroke = 2) +# Draw box around zoomed region
   annotate(geom = "rect", 
            xmin = xlim[1],
@@ -251,18 +260,58 @@ fig1_inset <- ggplot() +
 ## make map
 fig1_map <- ggplot() +
   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
+  geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
   geom_sf(data = field_df_long, mapping = aes(geometry = geometry, fill = prod_2019 / 1e6), lwd = 0, alpha = 1, show.legend = TRUE) +
-  geom_sf(data = CA_counties, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
+  geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
+  # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
+  # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
+  # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
+  labs(title = NULL,
+       # title = "A. Oil fields and disadvantaged communities (DAC)",
+       fill = 'Oil production (mil. bbls)',
+       x = NULL,
+       y = NULL) +
+  scale_fill_viridis(option="viridis",
+                     direction = -1) +
+  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
+           datum = ca_crs, expand = FALSE) +
+  # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
+  theme_void() +
+  # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+  #          datum = ca_crs, expand = FALSE) +
+  theme(legend.position = "none")
+
+## DAC legend
+## ------------------------
+
+fig1_dac_legend <- ggplot() +
+  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry, fill = ct_type), lwd = 0, show.legend = TRUE) +
+  labs(title = "Oil production",
+       fill = NULL,
+       x = NULL,
+       y = NULL) +
+  scale_fill_manual(values = c("DAC" = "#C0C0C0")) 
+
+dac_legend <- get_legend(
+  fig1_dac_legend)
+
+fig1_oil_legend <- ggplot() +
+  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
+  geom_sf(data = field_df_long, mapping = aes(geometry = geometry, fill = prod_2019 / 1e6), lwd = 0, alpha = 1, show.legend = TRUE) +
+  geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
   labs(title = "Oil production",
-       fill = '2019 oil production\n(million bbls)',
+       fill = 'Oil production (mil. bbls)',
        x = NULL,
        y = NULL) +
-  scale_fill_viridis(option="magma",
+  scale_fill_viridis(option="viridis",
                      direction = -1) +
   coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
            datum = ca_crs, expand = FALSE) +
@@ -280,32 +329,24 @@ fig1_map <- ggplot() +
                                 title.hjust = 0,
                                 direction = "horizontal"))
 
-## DAC legend
-## ------------------------
+oil_prod_legend <- get_legend(
+  fig1_oil_legend)
 
-fig1_dac_legend <- ggplot() +
-  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = dac_areas , mapping = aes(geometry = geometry, fill = ct_type), lwd = 0, show.legend = TRUE) +
-  labs(title = "Oil production",
-       fill = NULL,
-       x = NULL,
-       y = NULL) +
-  scale_fill_manual(values = c("DAC" = "#9DBF9E")) 
 
-dac_legend <- get_legend(
-  fig1_dac_legend)
+
 
 ## plot together
-map_fig_a <- ggdraw(fig1_map) +
-  draw_plot(dac_legend, x = 0.1, y = 0.25, width = 0.03, height = 0.03) +
-  draw_plot(fig1_inset, x = 0.65, y = 0.65, width = 0.3, height = 0.3) +
-  draw_plot_label(
-    c("A", ""),
-    c(0, 0.45),
-    c(1, 0.95),
-    size = 12
-  )
+map_fig_a <- ggdraw(fig1_map, clip = "on") +
+  draw_plot(fig1_inset, x = -0.07, y = 0.15, width = 0.6, height = 0.3) +
+  draw_plot(dac_legend, x = 0.15, y = 0.055, width = 0.025, height = 0.03) +
+  draw_plot(oil_prod_legend, x = 0.3, y = 0.11, width = 0.03, height = 0.03) 
+# +
+#   draw_plot_label(
+#     c("A. Oil fields and disadvantaged communities (DAC)", "", "", ""),
+#     # c(0, 0.45),
+#     # c(1, 0.95),
+#     size = 12
+#   )
 
 ggsave(map_fig_a,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.png'),
@@ -356,7 +397,7 @@ well_n_df_revised <- pred_wells_fm %>%
   mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_fieldname, "Non-top fields"),
          field_name_adj = ifelse(field_name_adj == "Belridge  South", "Belridge South", field_name_adj)) %>%
   pivot_longer(new_wells:new_wells_pred, names_to = "category", values_to = "n_wells") %>%
-  mutate(label_name = ifelse(category == "new_wells", "Observed entry", "Predicted entry")) %>%
+  mutate(label_name = ifelse(category == "new_wells", "Observed", "Predicted")) %>%
   select(doc_field_code, doc_fieldname, field_name_adj, year, category, label_name, n_wells) %>%
   group_by(field_name_adj, year, category, label_name) %>%
   summarise(n_wells = sum(n_wells)) %>%
@@ -370,21 +411,20 @@ state_df <- well_n_df_revised %>%
 
 ## state no hold out
 state_fig_fs <- 
-  ggplot(state_df %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells, color = label_name)) +
+  ggplot(state_df %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells, color = label_name, lty = label_name)) +
   geom_line(size = 1, alpha = 0.8) +
-  labs(y = "Number of wells",
+  scale_color_manual(values = c("Observed" = "black", "Estimated" = "#737373")) +
+  labs(y = "Number of new oil wells",
        x = NULL,
-       color = NULL) +
-  # labs(title = 'Observed and predicted well entry: California',
-  #      subtitle = 'Training data: 1978-2020') +
-  # geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
+       color = NULL,
+       lty = NULL) +
+  guides(color = guide_legend(override.aes = list(lty = c('solid', 'dashed')))) +
+  guides(lty = "none") +
   scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
   scale_y_continuous(label = scales::comma, limits = c(0, 4000)) +
-  # scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
-  # facet_wrap(~field_name_adj, scales = "free_y") +
-  ylab("Number of wells") +
   theme_line +
-  theme(legend.position = "top")
+  theme(legend.key.width = unit(1, 'cm'),
+        legend.position = c(0.2, 0.1))
 
 
 # ## ghg intensity
@@ -649,6 +689,21 @@ embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure1_cd.pdf
 ## recreate Danae's figure
 ## -----------------------------------------------------------
 
+#load and process cross-walk between fields and clusters 
+extraction_field_clusters_10km <- read_csv(paste0(main_path,"data/health/source_receptor_matrix/extraction_fields_clusters_10km.csv",sep="")) %>%
+  select(OUTPUT_FID, INPUT_FID) %>%
+  rename(id = OUTPUT_FID, input_fid = INPUT_FID)
+
+extraction_fields_xwalk <- foreign::read.dbf(paste0(main_path, "data/health/source_receptor_matrix/extraction_fields_xwalk_id.dbf", sep = "")) %>%
+  rename(input_fid = id, doc_field_code = dc_fld_)
+
+extraction_xwalk <- extraction_field_clusters_10km %>%
+  left_join(extraction_fields_xwalk, by = c("input_fid")) 
+
+## cluster 1 (LA cluster)
+la_cluster_fields <- extraction_xwalk %>%
+  filter(id == 1)
+
 #Census tracts
 CA_ct <- st_read(paste0(main_path, "data/GIS/raw/census-tract/tl_2019_06_tract.shp")) %>%
   st_transform(ca_crs)
@@ -718,7 +773,7 @@ ct_map_county <- ct_map %>%
 
 ## crop
 ## -----------------------------------
-disp_win_la_wgs84 <- st_sfc(st_point(c(-119.4, 33.2)), st_point(c(-117, 34.84)),
+disp_win_la_wgs84 <- st_sfc(st_point(c(-119.0, 33.3)), st_point(c(-117.4, 34.6)),
                           crs = 4326)
 
 disp_win_la_trans <- st_transform(disp_win_la_wgs84, crs = ca_crs)
@@ -727,9 +782,11 @@ disp_win_la_coord <- st_coordinates(disp_win_la_trans)
 
 zoom_coord_df <- as.data.frame(disp_win_la_coord)
 
-
+county_crop <- st_crop(CA_counties_noisl, xmin = zoom_coord_df$X[1], xmax = zoom_coord_df$X[2], ymin = zoom_coord_df$Y[1], ymax = zoom_coord_df$Y[2])
 ct_cropped <- st_crop(ct_map_county, xmin = zoom_coord_df$X[1], xmax = zoom_coord_df$X[2], ymin = zoom_coord_df$Y[1], ymax = zoom_coord_df$Y[2])
-county_crop <- st_crop(CA_counties, xmin = zoom_coord_df$X[1], xmax = zoom_coord_df$X[2], ymin = zoom_coord_df$Y[1], ymax = zoom_coord_df$Y[2])
+
+## only include census tracts that are in the crop
+ct_intersect <- st_intersection(ct_map_county, county_crop)
 
 
 ## counties
@@ -794,24 +851,30 @@ field1 <- extraction_clusters %>% dplyr::filter(OBJECTID==1) %>%
 # zoom_c <- c('Los Angeles', 'Ventura', 'Orange', 'San Bernardino', 'Kern')
 
 total_pm25 <- ggplot() +
-  geom_sf(data = ct_cropped, aes(fill=total_pm25), color=NA) + theme_void() + labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
+  geom_sf(data = ct_intersect, aes(fill=total_pm25), color=NA) + 
+  theme_void() + 
+  labs(fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
+  # labs(fill=expression(paste("PM"[2.5], " concentration from LA oil fields emissions (n = 51)"))) +
+  # labs(fill = "PM2.5 concentration from XX oil field emissions") +
   scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
                       limits = c(min(ct_cropped$total_pm25), max(ct_cropped$total_pm25))) +
   # geom_sf(data = california, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = county_crop, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
-  geom_sf_text(data = CA_counties %>% filter(NAME %in% c("Los Angeles", "Orange", "Ventura")), mapping = aes(geometry = geometry, label = NAME), size = 2, fontface = "bold", color = "black") +
+  geom_sf(data = field_boundaries %>% filter(doc_field_code %in% la_cluster_fields$doc_field_code),
+          aes(geometry = geometry), color = "black", fill = "transparent", lwd = 0.2) +
+  geom_sf_text(data = CA_counties %>% filter(NAME %in% c("Los Angeles", "Orange")), mapping = aes(geometry = geometry, label = NAME), size = 2, fontface = "bold", color = "black") +
   # geom_sf(data = dac_map, fill="transparent", color="gray65", size = 0.1) +
   # geom_sf(data = LA_metro, fill="transparent", color="gray65") +
   geom_sf(data = field1, fill="transparent", color="black") +
-  geom_sf_text(data = field1, mapping = aes(geometry = geometry, label = name), 
-               size = 2, fontface = "bold", color = "black", nudge_y = 20000, nudge_x = 10000) +
+  # geom_sf_text(data = field1, mapping = aes(geometry = geometry, label = name), 
+  #              size = 2, fontface = "bold", color = "black", nudge_y = 20000, nudge_x = 10000) +
   theme_void() +
   theme(
     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
     legend.position = c(0.12, 0.2),
-    legend.title = element_text(size = 7),
+    legend.title = element_text(size = 11),
     plot.title = element_text(size = 11)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
