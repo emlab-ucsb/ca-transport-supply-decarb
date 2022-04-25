@@ -33,7 +33,7 @@ cluster_pop_file    = 'extraction_cluster_affectedpop.csv'
 ## read in social cost of carbon
 scc_df <- fread(paste0(main_path, 'data/stocks-flows/processed/', scc_file))
 
-## filter for 3 percent
+## filter for 3 percent, 
 scc_df_filt <- scc_df[discount_rate == 'three_perc_avg', .(year, social_cost_co2)]
 
 ## Create population by year time series
@@ -52,28 +52,34 @@ state_population <- ct_population %>%
   as.data.table()
 
 ## CPI values
-cpi_df <- setDT(read.xlsx(paste0(main_path, 'data/stocks-flows/processed/', carbon_px_file), sheet = 'BLS Data Series', startRow = 12))
+# cpi_df <- setDT(read.xlsx(paste0(main_path, 'data/stocks-flows/processed/', carbon_px_file), sheet = 'BLS Data Series', startRow = 12))
+# 
+# cpi_df <- cpi_df[Year %in% c(2019, 2020), .(Year, Annual)]
+# 
+# setnames(cpi_df, c("Year", "Annual"), c("year", "annual"))
 
-cpi_df <- cpi_df[Year %in% c(2019, 2020), .(Year, Annual)]
+# cpi2020 <- cpi_df %>%
+#   filter(year == 2020) %>%
+#   select(annual) %>%
+#   as.numeric()
+# 
+# cpi2019 <- cpi_df %>%
+#   filter(year == 2019) %>%
+#   select(annual) %>%
+#   as.numeric()
 
-setnames(cpi_df, c("Year", "Annual"), c("year", "annual"))
-
-cpi2020 <- cpi_df %>%
-  filter(year == 2020) %>%
-  select(annual) %>%
-  as.numeric()
-
-cpi2019 <- cpi_df %>%
-  filter(year == 2019) %>%
-  select(annual) %>%
-  as.numeric()
+#(https://fred.stlouisfed.org/series/CPALTT01USA661S)
+cpi2020 <- 109.19519
+cpi2019 <- 107.8645906
+cpi2015 <- 100
 
 ## discount rate
 discount_rate <- 0.03
 
 ## health params
 VSL_2015 <- 8705114.25462459
-VSL_2019 <- VSL_2015 * 107.8645906/100 #(https://fred.stlouisfed.org/series/CPALTT01USA661S)
+VSL_2019 <- VSL_2015 * cpi2019 / cpi2015 #(https://fred.stlouisfed.org/series/CPALTT01USA661S)
+# VSL_2020 <- VSL_2015 * cpi2020 / cpi2015
 income_elasticity_mort <- 0.4
 
 ## for monetary mortality impact
@@ -118,19 +124,22 @@ state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_sc
                                       ccs_scenario, excise_tax_scenario, setback_scenario, target, target_policy, year, total_emp, total_comp, state_pop, total_state_pop)]
 
 
-## calc PV
-state_labor_levels[, total_comp_PV := total_comp / ((1 + discount_rate) ^ (year - 2019))]
+## calc PV and convert labor outputs into 2019 dollars
+state_labor_levels[, total_comp_usd19 := total_comp * cpi2019 / cpi2020]
+
+## discount using discount rate
+state_labor_levels[, total_comp_PV := total_comp_usd19 / ((1 + discount_rate) ^ (year - 2019))]
 
 
-state_labor_levels <- state_labor_levels %>%
-  mutate(total_emp_norm = total_emp / (total_state_pop / 1000),
-         total_comp_norm = total_comp / (total_state_pop / 1000))
+# state_labor_levels <- state_labor_levels %>%
+#   mutate(total_emp_norm = total_emp / (total_state_pop / 1000),
+#          total_comp_norm = total_comp / (total_state_pop / 1000))
 
 ## melt
 state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
                                                            'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
                                                            'target', 'target_policy',  'year'),
-                           measure.vars = c("total_emp", "total_emp_norm", "total_comp", "total_comp_norm", "total_comp_PV"),
+                           measure.vars = c("total_emp", "total_comp_usd19", "total_comp_PV"),
                            variable.name = "metric",
                            value.name = "value")
 
@@ -158,13 +167,13 @@ state_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_s
                                        mortality_level, mortality_delta, cost_2019_PV, cost_PV, state_pop)]
 
 
-## convert to 2020 USD
-state_health_levels[, cost_PV_20 := cost_PV / cpi2019 * cpi2020]
+# ## convert to 2020 USD
+# state_health_levels[, cost_PV_20 := cost_PV / cpi2019 * cpi2020]
 
-state_health_levels <- state_health_levels %>%
-  left_join(state_population) %>%
-  mutate(mortality_level_norm = mortality_level / (total_state_pop * 1000),
-         cost_PV_20_norm = cost_PV_20 / (total_state_pop * 1000))
+# state_health_levels <- state_health_levels %>%
+#   left_join(state_population) %>%
+#   mutate(mortality_level_norm = mortality_level / (total_state_pop * 1000),
+#          cost_PV_20_norm = cost_PV_20 / (total_state_pop * 1000))
 
 
 
@@ -172,8 +181,7 @@ state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_pri
                                                              'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
                                                              'target', 'target_policy', 'year'),
                             measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", 
-                                             "mortality_delta", "cost_2019_PV", "cost_PV", "mortality_level_norm",
-                                             "cost_PV_20_norm", "cost_PV_20"),
+                                             "mortality_delta", "cost_2019_PV", "cost_PV"),
                             variable.name = "metric",
                             value.name = "value")
 
@@ -196,9 +204,9 @@ state_levels[, policy_intervention := fifelse(carbon_price_scenario != "price fl
 ## adjust so that setback is target
 state_levels[, target := fifelse(setback_scenario != 'no_setback' & target == 'no_target', setback_scenario, target)]
 
-## add indicator for normalized
-state_levels[, normalized := fifelse(metric %in% c("total_emp_norm", "total_comp_norm", "mortality_level_norm", "cost_PV_20_norm"),
-                                     "Normalized per 1000 people (>= 30 yo)", "Not normalized")]
+# ## add indicator for normalized
+# state_levels[, normalized := fifelse(metric %in% c("total_emp_norm", "total_comp_norm", "mortality_level_norm", "cost_PV_20_norm"),
+#                                      "Normalized per 1000 people (>= 30 yo)", "Not normalized")]
 
 ## add GHG target name
 ## --------------------------------------------------
@@ -251,14 +259,14 @@ rel_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_sce
                                      ccs_scenario, setback_scenario, excise_tax_scenario, target, target_policy, year,
                                      mean_delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
 
-
-rel_health_levels[, cost_PV_20 := cost_PV / cpi2019 * cpi2020]
+# ## inflate to 2020 USD
+# rel_health_levels[, cost_PV_20 := cost_PV / cpi2019 * cpi2020]
 
 
 rel_health_levels <- melt(rel_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario',
                                                          'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
                                                          'target', 'target_policy', 'year'),
-                          measure.vars = c("mean_delta_total_pm25", "mortality_delta", "cost_2019", "cost", "cost_2019_PV", "cost_PV", "cost_PV_20"),
+                          measure.vars = c("mean_delta_total_pm25", "mortality_delta", "cost_2019", "cost", "cost_2019_PV", "cost_PV"),
                           variable.name = "metric",
                           value.name = "value")
 
@@ -288,7 +296,7 @@ rel_health_levels <- rel_health_levels[, .(scen_id, oil_price_scenario, year, me
 bau_out <- state_levels[target == "no_target" & policy_intervention == "BAU" & metric %in% c("total_state_bbl",
                                                                                        "total_state_ghg_MtCO2",
                                                                                        "total_emp",
-                                                                                       "total_comp",
+                                                                                       "total_comp_usd19",
                                                                                        "total_comp_PV")]
 
 setnames(bau_out, "value", "bau_value")
@@ -298,7 +306,7 @@ bau_out <- bau_out[, .(oil_price_scenario, year, metric, bau_value)]
 rel_vals <- state_levels[metric %in% c("total_state_bbl",
                                        "total_state_ghg_MtCO2",
                                        "total_emp",
-                                       "total_comp",
+                                       "total_comp_usd19",
                                        "total_comp_PV")]
 
 rel_vals <- merge(rel_vals, bau_out,
@@ -328,17 +336,26 @@ scc_value <- merge(scc_value, scc_df_filt,
                    by = 'year',
                    all.x = T)
 
-scc_value[, scc_avoided_ghg := diff_bau * -1e6 * social_cost_co2]
+## deflate to 2019 dollars
+scc_value[, social_cost_usd19 := social_cost_co2 * (cpi2019 / cpi2020)]
+
+scc_value[, scc_avoided_ghg := diff_bau * -1e6 * social_cost_usd19]
+
+## apply discount rate
+scc_value <- scc_value[year > 2019]
+scc_value[, scc_avoided_ghg_pv := scc_avoided_ghg / ((1 + discount_rate) ^ (year - 2019))]
+
 
 ## summarise
-cumul_scc_value <- scc_value[, .(scc_avoided_ghg = sum(scc_avoided_ghg, na.rm = T)), by = .(scen_id, oil_price_scenario,
+cumul_scc_value <- scc_value[, .(scc_avoided_ghg = sum(scc_avoided_ghg, na.rm = T),
+                                 scc_avoided_ghg_pv = sum(scc_avoided_ghg_pv)), by = .(scen_id, oil_price_scenario,
                                                                                             policy_intervention, target)]
 
 
 cumul_rel_vals_bau <- state_rel_vals[, .(diff_bau = sum(diff_bau)), by = .(scen_id, oil_price_scenario, policy_intervention,
                                                                            target, metric)]
 
-cumul_rel_vals_bau <- cumul_rel_vals_bau[metric %in% c("total_state_ghg_MtCO2", "total_comp", "total_comp_PV", "cost_2019",
+cumul_rel_vals_bau <- cumul_rel_vals_bau[metric %in% c("total_state_ghg_MtCO2", "total_comp_usd19", "total_comp_PV", "cost_2019",
                                                        "cost", "cost_2019_PV", "cost_PV", "cost_PV_20")]
 
 cumul_rel_vals_bau <- dcast(cumul_rel_vals_bau, scen_id + oil_price_scenario + policy_intervention + target ~ metric, value.var = "diff_bau")
@@ -361,7 +378,7 @@ cumul_rel_vals_bau <- merge(cumul_rel_vals_bau, ghg_total,
 
 
 ## calc benefit
-cumul_rel_vals_bau[, benefit := (cost_PV_20 * -1) + total_comp_PV + scc_avoided_ghg]
+cumul_rel_vals_bau[, benefit := (cost_PV_20 * -1) + total_comp_PV + scc_avoided_ghg_pv]
 cumul_rel_vals_bau[, benefit_per_ghg := benefit / (-1 * total_state_ghg_MtCO2)]
 cumul_rel_vals_bau[, benefit_per_ghg := fifelse(is.na(benefit_per_ghg), 0, benefit)]
 
@@ -369,7 +386,7 @@ cumul_rel_vals_bau[, benefit_per_ghg := fifelse(is.na(benefit_per_ghg), 0, benef
 ## -----------------------------------------
 
 npv_x_metric <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'oil_price_scenario', 'policy_intervention', 'target', 'cumul_ghg', 'total_state_ghg_MtCO2'),
-                     measure.vars = c("total_comp_PV", "cost_PV_20", "scc_avoided_ghg"),
+                     measure.vars = c("total_comp_PV", "cost_PV_20", "scc_avoided_ghg_pv"),
                      variable.name = "metric",
                      value.name = "value")
 
@@ -432,15 +449,18 @@ labor_scens <- merge(labor_out, unique(state_levels[, .(scen_id, policy_interven
                      by = "scen_id",
                      all.x = T)
 
-labor_scens[, total_comp_PV := total_comp / ((1 + discount_rate) ^ (year - 2019))]
+## convert to 2019 usd
+labor_scens[, total_comp_usd19 := total_comp * cpi2019 / cpi2020]
 
-labor_scens[, dac_comp := total_comp * dac_share]
+labor_scens[, total_comp_PV := total_comp_usd19 / ((1 + discount_rate) ^ (year - 2019))]
+
+labor_scens[, dac_comp := total_comp_usd19 * dac_share]
 labor_scens[, dac_comp_PV := total_comp_PV * dac_share]
 labor_scens[, dac_emp := total_emp * dac_share]
 
 ## state-level cumulative dac and total 
 labor_dac_state <- labor_scens[, .(cumul_dac_comp = sum(dac_comp), 
-                                   cumul_total_comp = sum(total_comp),
+                                   cumul_total_comp = sum(total_comp_usd19),
                                    cumul_dac_comp_PV = sum(dac_comp_PV),
                                    cumul_total_comp_PV = sum(total_comp_PV),
                                    cumul_dac_emp = sum(dac_emp),
@@ -561,19 +581,22 @@ fwrite(dac_df, paste0(save_info_path, 'dac_health_labor_all_oil.csv'))
 ## -------------------------------------------------------
 
 ## bau
-bau_emp <- labor_scens[policy_intervention == "BAU", .(oil_price_scenario, county, year, total_emp, total_comp, total_comp_PV)]
-setnames(bau_emp, c("total_emp", "total_comp", "total_comp_PV"), c("bau_emp", "bau_comp", "bau_pv"))
+bau_emp <- labor_scens[policy_intervention == "BAU", .(oil_price_scenario, county, year, total_emp, total_comp_usd19, total_comp_PV)]
+
+
+
+setnames(bau_emp, c("total_emp", "total_comp_usd19", "total_comp_PV"), c("bau_emp", "bau_comp", "bau_pv"))
 
 ## join
 labor_bau_dac <-  merge(labor_scens[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario,
                                         setback_scenario, excise_tax_scenario, policy_intervention,
                                         target, target_policy, county,
-                                        dac_share, year, total_emp, total_comp, total_comp_PV)], bau_emp,
+                                        dac_share, year, total_emp, total_comp_usd19, total_comp_PV)], bau_emp,
                         by = c("oil_price_scenario", "county", "year"),
                         all.x = T)
 
 labor_bau_dac[, diff_emp := total_emp - bau_emp]
-labor_bau_dac[, diff_comp := total_comp - bau_comp]
+labor_bau_dac[, diff_comp := total_comp_usd19 - bau_comp]
 labor_bau_dac[, diff_pv := total_comp_PV - bau_pv]
 labor_bau_dac[, dac_emp := diff_emp * dac_share]
 labor_bau_dac[, dac_comp := diff_comp * dac_share]
