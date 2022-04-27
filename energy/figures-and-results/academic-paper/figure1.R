@@ -464,13 +464,13 @@ state_fig_fs <-
         axis.title.y = element_text(size = 4, hjust = 0.5),
         plot.margin = margin(0, 2, 0, 8),
         legend.text = element_text(size = 4),
-        plot.title = element_text(hjust = -0.4, face = 'bold', size = 4, vjust = -1))
+        plot.title = element_text(hjust = -0.4, face = 'bold', size = 5, vjust = -1))
 
 ## save
 ggsave(state_fig_fs,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1b.png'),
        width = 50,
-       height = 55,
+       height = 45,
        dpi = 300,
        units = "mm")
 
@@ -662,15 +662,12 @@ ct_health_map <- ggplot() +
            datum = ca_crs, expand = FALSE) +
   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
   theme_void() +
-  guides(fill = guide_colourbar(title.position="top", 
-                                title.hjust = 0,
-                                direction = "horizontal")) +
   theme(
     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0, 0.2),
-    legend.key.width = unit(1, "line"),
+    legend.position = c(-0.02, 0.2),
+    legend.key.width = unit(0.7, "line"),
     legend.key.height = unit(0.5, "line"),
     legend.title = element_text(size = 5),
     legend.text = element_text(size = 5),
@@ -684,22 +681,22 @@ ct_health_map <- ggplot() +
 
 ## save
 ggsave(ct_health_map,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c.png'),
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1d.png'),
        width = 44,
        height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(ct_health_map,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1d.pdf'),
        width = 44,
        height = 55,
        units = "mm",
        dpi = 300,
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1d.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1d.pdf'))
 
 
 
@@ -713,20 +710,26 @@ labor_out <- readRDS(paste0(main_path, county_out_path, county_file))
 labor_out <- labor_out[year == 2019]
 labor_out <- labor_out[, .(scen_id, county, dac_share, year, total_emp, total_comp)]
 
+## deflate to 2019 dollars
+#(https://fred.stlouisfed.org/series/CPALTT01USA661S)
+cpi2020 <- 109.1951913
+cpi2019 <- 107.8645906
+
 labor_out <- CA_counties_noisl %>%
   select(NAME) %>%
   rename(county = NAME) %>%
   left_join(labor_out) %>%
   mutate(total_emp = ifelse(is.na(total_emp), 0, total_emp),
-         total_comp = ifelse(is.na(total_comp), 0, total_comp))
+         total_comp = ifelse(is.na(total_comp), 0, total_comp),
+         total_comp_usd19 = total_comp * cpi2019 / cpi2020)
 
 labor_map <- ggplot() +
-  geom_sf(data = labor_out, mapping = aes(geometry = geometry, fill = total_comp / 1e6), lwd = 0.05, alpha = 1, show.legend = TRUE) +
-  geom_sf_text(data = county_19 %>% filter(adj_county_name != "Kern"), mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
-  geom_sf_text(data = county_19 %>% filter(adj_county_name == "Kern"), mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "#B0B2B8") +
+  geom_sf(data = labor_out, mapping = aes(geometry = geometry, fill = total_comp_usd19 / 1e6), lwd = 0.05, alpha = 1, show.legend = TRUE) +
+  geom_sf_text(data = county_19 %>% filter(adj_county_name != "Kern"), mapping = aes(geometry = geometry, label = adj_county_name), size = 1.25, fontface = "bold", color = "black") +
+  geom_sf_text(data = county_19 %>% filter(adj_county_name == "Kern"), mapping = aes(geometry = geometry, label = adj_county_name), size = 1.25, fontface = "bold", color = "#B0B2B8") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
   labs(
-       title = 'E. Forgone wages from oil extraction',
+       title = 'E. Wages from oil extraction',
        fill = 'USD million',
        x = NULL,
        y = NULL) +
@@ -739,20 +742,37 @@ labor_map <- ggplot() +
     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0.05, 0.2),
-    legend.title = element_text(size = 9),
-    plot.margin = unit(c(0, 0, 0, 0), "cm"),
-    plot.title = element_text(hjust = 0, face = 'bold', size = 10),
-    plot.title.position = 'plot') +
+    legend.position = c(0, 0.2),
+    legend.key.width = unit(0.7, "line"),
+    legend.key.height = unit(0.5, "line"),
+    legend.title = element_text(size = 5),
+    legend.text = element_text(size = 5),
+    plot.margin = margin(0, 2, 0, 8),
+    plot.title = element_text(face = 'bold', size = 5, hjust = -0.15)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
-                                direction = "horizontal"))
+                                direction = "horizontal",
+                                ticks.colour = "black", frame.colour = "black"))
 
+## save
 ggsave(labor_map,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1e.png'),
-       width = 3,
-       height = 4,
-       units = "in")
+       width = 44,
+       height = 55,
+       dpi = 300,
+       units = "mm")
+
+ggsave(labor_map,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1e.pdf'),
+       width = 44,
+       height = 55,
+       units = "mm",
+       dpi = 300,
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1e.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1e.pdf'))
+
 
 
 # ## plot together
@@ -932,7 +952,7 @@ total_pm25 <- ggplot() +
   theme_void() + 
   labs(title = expression(bold(paste("C. PM"[2.5], " concentration from Ventura cluster"))),
        fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")")),
-       size = "Oil production") +
+       size = "Oil production (mil. bbls)") +
   # labs(fill=expression(paste("PM"[2.5], " concentration from LA oil fields emissions (n = 51)"))) +
   # labs(fill = "PM2.5 concentration from XX oil field emissions") +
   scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
@@ -941,14 +961,14 @@ total_pm25 <- ggplot() +
   geom_sf(data = county_crop, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
   annotate(
     geom = "text", x = 75000, y = -375000, 
-    label = "Ventura", hjust = 0, vjust = 1, size = 3, fontface = "bold"
+    label = "Ventura", hjust = 0, vjust = 1, size = 1.25, fontface = "bold"
   ) +
   # geom_sf(data = field_boundaries %>% filter(doc_field_code %in% cluster_fields$doc_field_code),
   #         aes(geometry = geometry), color = "black", fill = "transparent", lwd = 0.2) +
-  geom_sf(data = field_cluster_prod, mapping = aes(geometry = geometry, size = prod_2019 / 1e6)) +
-  scale_size_continuous(range = c(0.25, 3)) +
+  geom_sf(data = field_cluster_prod, mapping = aes(geometry = geometry, size = prod_2019 / 1e6), alpha = 0.5, pch = 16) +
+  scale_size_continuous(range = c(0.1, 2)) +
   # geom_sf_text(data = CA_counties %>% filter(NAME %in% c( "Ventura")), mapping = aes(geometry = geometry, label = NAME), size = 2, fontface = "bold", color = "black", vjust = 1) +
-  geom_sf(data = cluster_bound, fill="transparent", color="black") +
+  geom_sf(data = cluster_bound, fill="transparent", color="black", lwd = 0.3) +
   # geom_sf_text(data = field1, mapping = aes(geometry = geometry, label = name), 
   #              size = 2, fontface = "bold", color = "black", nudge_y = 20000, nudge_x = 10000) +
   theme_void() +
@@ -957,35 +977,114 @@ total_pm25 <- ggplot() +
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
     legend.position = c(0.05, 0.32),
-    ## legend key size
-    legend.key.width = unit(0.5, 'cm'),
-    legend.title = element_text(size = 9),
-    plot.margin = unit(c(0, 0, 0, 0), "cm"),
-    plot.title = element_text(hjust = 0, face = 'bold', size = 10),
-    plot.title.position = 'plot') +
+    legend.key.width = unit(0.7, "line"),
+    legend.key.height = unit(0.5, "line"),
+    legend.title = element_text(size = 5),
+    legend.text = element_text(size = 5),
+    plot.margin = margin(0, 2, 0, 8),
+    plot.title = element_text(face = 'bold', size = 5, hjust = -0.05)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
-                                direction = "horizontal"),
+                                direction = "horizontal",
+                                ticks.colour = "black", frame.colour = "black",
+                                order = 1),
          size = guide_legend(title.position = "top",
                              title.hjust = 0,
-                             direction = "horizontal"))
+                             direction = "horizontal",
+                             order = 2))
 
   
 ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1_exposure.png'),
-       width = 3.5,
-       height = 3.8,
-       units = "in")
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c.png'),
+       width = 50,
+       height = 55,
+       dpi = 300,
+       units = "mm")
 
 ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1_exposure.pdf'),
-       width = 3.5,
-       height = 3.8,
-       units = "in",
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'),
+       width = 50,
+       height = 55,
+       dpi = 300,
+       units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1_exposure.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1_exposure.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'))
+
+## v2
+## ------------------------------
+
+## figure
+total_pm25_v2 <- ggplot() +
+  geom_sf(data = ct_intersect, aes(fill=total_pm25), color=NA) + 
+  theme_void() + 
+  labs(title = expression(bold(paste("C. PM"[2.5], " concentration from Ventura cluster"))),
+       fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")")),
+       size = "Oil production (mil. bbls)",
+       color = NULL) +
+  # labs(fill=expression(paste("PM"[2.5], " concentration from LA oil fields emissions (n = 51)"))) +
+  # labs(fill = "PM2.5 concentration from XX oil field emissions") +
+  scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
+                      limits = c(min(ct_cropped$total_pm25), max(ct_cropped$total_pm25)),
+                      breaks = c(0.00025, 0.00125)) +
+  geom_sf(data = county_crop, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
+  annotate(
+    geom = "text", x = 75000, y = -375000, 
+    label = "Ventura", hjust = 0, vjust = 1, size = 1.25, fontface = "bold"
+  ) +
+  geom_sf(data = field_boundaries %>% 
+            filter(doc_field_code %in% cluster_fields$doc_field_code) %>%
+            mutate(cluster = "Field boudnary"),
+          aes(geometry = geometry, color = cluster), fill = "transparent", lwd = 0.2) +
+  scale_color_manual(values = "#4361ee") +
+  # geom_sf(data = field_cluster_prod, mapping = aes(geometry = geometry, size = prod_2019 / 1e6), alpha = 0.5, pch = 16) +
+  # scale_size_continuous(range = c(0.1, 2)) +
+  # geom_sf_text(data = CA_counties %>% filter(NAME %in% c( "Ventura")), mapping = aes(geometry = geometry, label = NAME), size = 2, fontface = "bold", color = "black", vjust = 1) +
+  geom_sf(data = cluster_bound, fill="transparent", color="black", lwd = 0.3) +
+  # geom_sf_text(data = field1, mapping = aes(geometry = geometry, label = name), 
+  #              size = 2, fontface = "bold", color = "black", nudge_y = 20000, nudge_x = 10000) +
+  theme_void() +
+  theme(
+    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+    legend.justification = c(0, 1),
+    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+    legend.position = c(0.05, 0.32),
+    legend.key.width = unit(0.7, "line"),
+    legend.key.height = unit(0.5, "line"),
+    legend.title = element_text(size = 5),
+    legend.text = element_text(size = 5),
+    plot.margin = margin(0, 2, 0, 8),
+    plot.title = element_text(face = 'bold', size = 5, hjust = -0.01)) +
+  guides(fill = guide_colourbar(title.position="top", 
+                                title.hjust = 0,
+                                direction = "horizontal",
+                                ticks.colour = "black", frame.colour = "black",
+                                order = 2),
+         color = guide_legend(order = 1))
+
+
+ggsave(total_pm25_v2,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c_v2.png'),
+       width = 50,
+       height = 55,
+       dpi = 300,
+       units = "mm")
+
+ggsave(total_pm25_v2,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c_v2.pdf'),
+       width = 50,
+       height = 55,
+       dpi = 300,
+       units = "mm",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c_v2.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c_v2.pdf'))
+
+
+
+
 
 
 ## -----------------------------------------------------------
@@ -998,7 +1097,8 @@ fig1be <- plot_grid(
   ct_health_map,
   total_pm25,
   labor_map,
-  rel_widths = c(1, 1.3, 1, 1),
+  rel_widths = c(1, 1),
+  rel_heights = c(1, 1, 1, 1),
   align = 'hv',
   # labels = be_labs,
   # label_size = 10,
@@ -1008,9 +1108,10 @@ fig1be <- plot_grid(
 
 ggsave(fig1be,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1_be.png'),
-       width = 7,
-       height = 8,
-       units = "in")
+       width = 100,
+       height = 110,
+       units = "mm")
+
 
 ## add main fig
 ##--------------------------------
@@ -1029,9 +1130,9 @@ fig1_all <- plot_grid(
 
 ggsave(fig1_all,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1_all.png'),
-       width = 14,
-       height = 8,
-       units = "in")
+       width = 100,
+       height = 110,
+       units = "mm")
 
 
 ggsave(fig1_all,
