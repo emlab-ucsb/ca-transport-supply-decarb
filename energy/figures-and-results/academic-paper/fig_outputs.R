@@ -69,7 +69,7 @@ state_population <- ct_population %>%
 #   as.numeric()
 
 #(https://fred.stlouisfed.org/series/CPALTT01USA661S)
-cpi2020 <- 109.19519
+cpi2020 <- 109.1951913
 cpi2019 <- 107.8645906
 cpi2015 <- 100
 
@@ -356,7 +356,7 @@ cumul_rel_vals_bau <- state_rel_vals[, .(diff_bau = sum(diff_bau)), by = .(scen_
                                                                            target, metric)]
 
 cumul_rel_vals_bau <- cumul_rel_vals_bau[metric %in% c("total_state_ghg_MtCO2", "total_comp_usd19", "total_comp_PV", "cost_2019",
-                                                       "cost", "cost_2019_PV", "cost_PV", "cost_PV_20")]
+                                                       "cost", "cost_2019_PV", "cost_PV")]
 
 cumul_rel_vals_bau <- dcast(cumul_rel_vals_bau, scen_id + oil_price_scenario + policy_intervention + target ~ metric, value.var = "diff_bau")
 
@@ -378,7 +378,7 @@ cumul_rel_vals_bau <- merge(cumul_rel_vals_bau, ghg_total,
 
 
 ## calc benefit
-cumul_rel_vals_bau[, benefit := (cost_PV_20 * -1) + total_comp_PV + scc_avoided_ghg_pv]
+cumul_rel_vals_bau[, benefit := (cost_2019_PV * -1) + total_comp_PV + scc_avoided_ghg_pv]
 cumul_rel_vals_bau[, benefit_per_ghg := benefit / (-1 * total_state_ghg_MtCO2)]
 cumul_rel_vals_bau[, benefit_per_ghg := fifelse(is.na(benefit_per_ghg), 0, benefit)]
 
@@ -386,16 +386,16 @@ cumul_rel_vals_bau[, benefit_per_ghg := fifelse(is.na(benefit_per_ghg), 0, benef
 ## -----------------------------------------
 
 npv_x_metric <- melt(cumul_rel_vals_bau, id.vars = c('scen_id', 'oil_price_scenario', 'policy_intervention', 'target', 'cumul_ghg', 'total_state_ghg_MtCO2'),
-                     measure.vars = c("total_comp_PV", "cost_PV_20", "scc_avoided_ghg_pv"),
+                     measure.vars = c("total_comp_PV", "cost_2019_PV", "scc_avoided_ghg_pv"),
                      variable.name = "metric",
                      value.name = "value")
 
-npv_x_metric[, value := fifelse(metric == 'cost_PV_20', value * -1, value)]
+npv_x_metric[, value := fifelse(metric == 'cost_2019_PV', value * -1, value)]
 npv_x_metric[, value_per_ghg := value / (total_state_ghg_MtCO2 * -1)]
 npv_x_metric[, value_billion := value / 1e9]
 npv_x_metric[, value_per_ghg_million := value_per_ghg / 1e6]
 npv_x_metric[, title := fifelse(metric == "total_comp_PV", "Labor: Compensation",
-                                fifelse(metric == "cost_PV_20", "Health: Avoided mortality", "Abated GHG"))]
+                                fifelse(metric == "cost_2019_PV", "Health: Avoided mortality", "Abated GHG"))]
 
 
 npv_x_metric[, value_per_ghg_million := fifelse(is.na(value_per_ghg_million), 0, value_per_ghg_million)]
