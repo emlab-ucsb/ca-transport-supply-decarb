@@ -83,7 +83,9 @@ prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
-        legend.box="vertical") 
+        legend.box="vertical",
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 
 ## for joint legend:
@@ -120,7 +122,9 @@ prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl
         legend.key.width= unit(1, 'cm'),
         legend.box="vertical",
         legend.text = element_text(size = 8),
-        legend.title = element_text(size = 8)) 
+        legend.title = element_text(size = 8),
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 
 
@@ -176,7 +180,9 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
-        legend.box="vertical") 
+        legend.box="vertical",
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 
 ## part C: cumulative GHG x 2045 reductions
@@ -224,7 +230,9 @@ ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "reference
   # scale_y_continuous(limits = c(NA, 0)) +
   theme(legend.position = "none",
         # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        legend.background = element_rect(fill = "white", color = "grey")) 
+        legend.background = element_rect(fill = "white", color = "grey"),
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 
 
@@ -384,14 +392,16 @@ prod_fig_low <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "low oil price"), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   
-  annotate("text", x = 2044, y = 44, label = "BAU", size = 2) +
+  annotate("text", x = 2042, y = 49, label = "BAU - low price", size = 2) +
   scale_color_manual(values = c(policy_colors_subset)) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
-        legend.box="vertical") 
+        legend.box="vertical",
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 
 ## v2 ghg
@@ -405,7 +415,7 @@ ghg_pw_low <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         year > 2019,
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "low oil price"), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  annotate("text", x = 2044, y = 5, label = "BAU", size = 2) +
+  annotate("text", x = 2042, y = 5.5, label = "BAU - low price", size = 2) +
   labs(title = "B. GHG emissions",
        x = NULL,
        y = bquote(MtCO[2]~e),
@@ -418,7 +428,9 @@ ghg_pw_low <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
-        legend.box="vertical") 
+        legend.box="vertical",
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 ghg_cumul_low <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "low oil price"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
@@ -428,13 +440,15 @@ ghg_cumul_low <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "low oil pric
        color = "2045 GHG emission target",
        shape = "Policy intervention") +
   theme_line_n +
-  annotate("text", x = 77.7, y = 208, label = "BAU", size = 2) +
+  annotate("text", x = 78.7, y = 208, label = "BAU - low price", size = 2) +
   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_y_continuous(limits = c(NA, 0)) +
   theme(legend.position = "none",
         # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        legend.background = element_rect(fill = "white", color = "grey")) 
+        legend.background = element_rect(fill = "white", color = "grey"),
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 ## label
 legend_low <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
@@ -453,7 +467,7 @@ legend_low <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "low oil price"), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   
-  annotate("text", x = 2044, y = 44, label = "BAU", size = 2) +
+  annotate("text", x = 2044, y = 44, label = "BAU - low price", size = 2) +
   scale_color_manual(values = c(policy_colors_subset)) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
@@ -461,7 +475,9 @@ legend_low <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
   guides(lty = guide_legend(order = 1), colour = guide_legend(order = 2)) +
   theme(legend.position = "left",
         legend.key.width= unit(1, 'cm'),
-        legend.box="vertical") 
+        legend.box="vertical",
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 legend_pathways_low <- get_legend(
   legend_low + 
@@ -547,14 +563,16 @@ prod_fig_high <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "high oil price"), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   
-  annotate("text", x = 2045, y = 170, label = "BAU", size = 2) +
+  annotate("text", x = 2043.5, y = 220, label = "BAU - high price", size = 2) +
   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
-        legend.box="vertical") 
+        legend.box="vertical",
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 
 ## v2 ghg
@@ -568,7 +586,7 @@ ghg_pw_high <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         year > 2019,
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "high oil price"), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  annotate("text", x = 2044, y = 21, label = "BAU", size = 3) +
+  annotate("text", x = 2025, y = 15.5, label = "BAU - high price", size = 2) +
   labs(title = "GHG emissions",
        x = NULL,
        y = bquote(MtCO[2]~e),
@@ -581,7 +599,9 @@ ghg_pw_high <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
-        legend.box="vertical") 
+        legend.box="vertical",
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) 
 
 ghg_cumul_high <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "high oil price"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
@@ -591,14 +611,15 @@ ghg_cumul_high <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "high oil pr
        color = "2045 GHG emission target",
        shape = "Policy intervention") +
   theme_line_n +
-  annotate("text", x = -8, y = 470, label = "BAU", size = 2) +
+  annotate("text", x = -4, y = 470, label = "BAU - high price", size = 2) +
   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_y_continuous(limits = c(NA, 0)) +
   theme(legend.position = "none",
         # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        legend.background = element_rect(fill = "white", color = "grey")) 
-
+        legend.background = element_rect(fill = "white", color = "grey"),
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm'))
 
 ## label
 legend_high <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
@@ -681,7 +702,7 @@ ggsave(high_px_fig,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-high.png'),
        width = 180,
        height = 185,
-       units = "mm",)
+       units = "mm")
 
 ggsave(high_px_fig,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-high.pdf'),
