@@ -1130,7 +1130,7 @@ fig1_all <- plot_grid(
 
 ggsave(fig1_all,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1_all.png'),
-       width = 100,
+       width = 180,
        height = 110,
        units = "mm")
 
