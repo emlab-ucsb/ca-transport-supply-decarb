@@ -451,9 +451,9 @@ state_fig_fs <-
   guides(lty = "none") +
   scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
   scale_y_continuous(label = scales::comma, limits = c(0, 4)) +
-  # theme_line +
-  theme_ipsum(base_family = 'Arial',
-              grid = 'Y') +
+  theme_line_n +
+  # theme_ipsum(base_family = 'Arial',
+  #             grid = 'Y') +
   theme(axis.line.y = element_line(color = 'black', size = 0.2),
         axis.line.x = element_line(color = 'black', size = 0.2),
         # legend.key.width = unit(1, 'cm'),
@@ -464,7 +464,9 @@ state_fig_fs <-
         axis.title.y = element_text(size = 4, hjust = 0.5),
         plot.margin = margin(0, 2, 0, 8),
         legend.text = element_text(size = 4),
-        plot.title = element_text(hjust = -0.4, face = 'bold', size = 5, vjust = -1))
+        plot.title = element_text(hjust = 0, face = 'bold', size = 5, vjust = -1),
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm'))
 
 ## save
 ggsave(state_fig_fs,
@@ -477,14 +479,13 @@ ggsave(state_fig_fs,
 ggsave(state_fig_fs,
        filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'),
        width = 50,
-       height = 55,
+       height = 45,
        units = "mm",
        dpi = 300,
        device = 'pdf')
 
 embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'),
             outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'))
-
 
 
 
