@@ -73,6 +73,9 @@ setnames(county_income, "estimate", "median_hh_income")
 refin_scens <- fread(paste0(ref_save_path, refin_file))
 refin_scens <- refin_scens[, .(scen_id, BAU_scen, subset_scens)]
 
+## oil px plus scen
+refin_oil_scen <- fread(paste0(ref_save_path, refin_file)) %>%
+  select(scen_id, oil_price_scenario)
 
 #  Load extraction source receptor matrix (srm) #######
 n_cores <- availableCores() - 1
@@ -617,13 +620,35 @@ if(run_pm25_exposure == 1) {
 ## make comparisons to BAU
 ## read in refining pm25 BAU
 
-bau_scen_name <- refin_scens[BAU_scen == 1, scen_id]
+bau_scen_name <- refin_scens %>%
+  filter(BAU_scen == 1) %>%
+  select(scen_id)
 
-refining_BAU <- readRDS(paste0(main_path, "/outputs/academic-out/refining/", pm25_folder,  bau_scen_name, "_ct_results.rds"))
+bau_out_list <- list()
+
+for (i in 1:nrow(bau_scen_name)) {
+  
+  print(i)
+  
+  id_bau_tmp <- bau_scen_name[i]
+  
+  refining_BAU_tmp <- readRDS(paste0(main_path, "/outputs/academic-out/refining/", pm25_folder,  id_bau_tmp, "_ct_results.rds"))
+
+  bau_out_list[[i]]     <- refining_BAU_tmp
+  
+}
+  
+## bind
+refining_BAU <- rbindlist(bau_out_list)
 
 setnames(refining_BAU, c("total_pm25"), c("bau_total_pm25"))
 
-refining_BAU <- refining_BAU[, .(census_tract, year, bau_total_pm25)]
+## add oil price
+refining_BAU <- merge(refining_BAU, refin_oil_scen,
+                      by = "scen_id")
+
+
+refining_BAU <- refining_BAU[, .(oil_price_scenario, census_tract, year, bau_total_pm25)]
 
 ## calculate health indicators for the subset
 refining_sub <- refin_scens[BAU_scen == 1 | subset_scens == 1, .(scen_id)]
@@ -639,9 +664,13 @@ for (i in 1:length(refining_sub_vec)) {
   ct_scen_out <- readRDS(paste0(compiled_save_path_refining, "/census-tract-results/", scen_tmp, "_ct_results.rds"))
   setDT(ct_scen_out)
   
+  ## merge with oil px
+  ct_scen_out <- merge(ct_scen_out, refin_oil_scen,
+                       by = "scen_id")
+  
   ## refining pm25 difference
   deltas_refining <- merge(ct_scen_out, refining_BAU,
-                           by = c("census_tract", "year"),
+                           by = c("oil_price_scenario", "census_tract", "year"),
                            all.x = T)
 
   deltas_refining[, delta_total_pm25 := total_pm25 - bau_total_pm25]
@@ -650,7 +679,7 @@ for (i in 1:length(refining_sub_vec)) {
   ## (2.2) Merge demographic data to pollution scenarios
   
   deltas_refining <- deltas_refining %>%
-    select(scen_id, census_tract, median_hh_income, year, total_pm25, bau_total_pm25, delta_total_pm25) %>%
+    select(scen_id, oil_price_scenario, census_tract, median_hh_income, year, total_pm25, bau_total_pm25, delta_total_pm25) %>%
     left_join(ces3, by = c("census_tract" = "census_tract")) %>%
     right_join(ct_inc_pop_45_weighted, by = c("census_tract" = "ct_id", "year" = "year")) %>%
     # remove census tracts that are water area only tracts (no population)
@@ -676,7 +705,7 @@ for (i in 1:length(refining_sub_vec)) {
   
   ## final census tract level health outputs
   deltas_refining <- deltas_refining %>%
-    select(scen_id, census_tract, CES3_score, disadvantaged, median_hh_income, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+    select(scen_id, oil_price_scenario, census_tract, CES3_score, disadvantaged, median_hh_income, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
            mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
     as.data.table()
   
@@ -697,7 +726,7 @@ subset_health_impacts <- rbindlist(health_impacts_list)
 ## health  
 health_state <- subset_health_impacts[, lapply(.SD, sum, na.rm = T), .SDcols = c("mortality_delta", "mortality_level", 
                                                                                  "cost_2019", "cost", 
-                                                                                 "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
+                                                                                 "cost_2019_PV", "cost_PV"), by = .(scen_id,  year)]
   
 
 health_state_pm25 <- subset_health_impacts[, lapply(.SD, mean, na.rm = T), .SDcols = c("total_pm25", "bau_total_pm25",
@@ -734,7 +763,7 @@ state_out <- merge(labor_state, refined_state,
                    all.x = T)
 
 state_out <- merge(state_out, health_state,
-                   by = c("scen_id", "year"),
+                   by = c("scen_id",  "year"),
                    all.x = T)
   
 setcolorder(state_out, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
