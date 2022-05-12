@@ -10,7 +10,7 @@ library(tidyverse)
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-refining_folder_path <- 'outputs/academic-out/refining/refining_2021-11-22/'
+refining_folder_path <- 'outputs/academic-out/refining/refining_2022-05-11/'
 state_save_path     = paste0(main_path, refining_folder_path)
 
 ## create a folder to store outputs
@@ -100,25 +100,6 @@ state_population <- ct_population %>%
   summarize(total_state_pop = sum(pop, na.rm = T)) %>%
   ungroup() %>%
   as.data.table()
-
-## health params
-VSL_2015 <- 8705114.25462459
-VSL_2019 <- VSL_2015 * cpi2019 / cpi2015 #(https://fred.stlouisfed.org/series/CPALTT01USA661S)
-# VSL_2020 <- VSL_2015 * cpi2020 / cpi2015
-income_elasticity_mort <- 0.4
-
-## for monetary mortality impact
-growth_rates <- read.csv(paste0(main_path, "data/benmap/processed/growth_rates.csv"), stringsAsFactors = FALSE) %>%
-  filter(year > 2018) %>%
-  mutate(growth = ifelse(year == 2019, 0, growth_2030),
-         cum_growth = cumprod(1 + growth)) %>%
-  select(-growth_2030, -growth) %>%
-  as.data.table()
-
-## function for health impacts
-future_WTP <- function(elasticity, growth_rate, WTP){
-  return(elasticity * growth_rate * WTP + WTP) 
-}
 
 ## 2019 emissions
 refin_file <- 'ref_scenario_id_list.csv'
@@ -250,6 +231,39 @@ fwrite(state_levels, paste0(save_info_path, 'state_levels_subset_refining.csv'))
 rel_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
                                      ccs_scenario, demand_scenario, refining_scenario, year,
                                      mean_delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
+
+# 
+# ## BAU values (one for each oil px scenario)
+# bau_health_scens <- health_scens[carbon_price_scenario == "price floor" & ccs_scenario == "no ccs" &
+#                                    demand_scenario == "BAU" & refining_scenario == "historic production", .(oil_price_scenario, census_tract, year, total_pm25)]
+# 
+# setnames(bau_health_scens, "total_pm25", "bau_pm25")
+# 
+# 
+# ## merge and recalculate health outcomes
+# health_scens_update <- health_scens[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario,
+#                                         demand_scenario, refining_scenario, census_tract, disadvantaged,
+#                                         weighted_incidence, pop, total_pm25, year)]
+# 
+# health_scens_update <- merge(health_scens_update, bau_health_scens,
+#                              by = c("oil_price_scenario", "census_tract", "year"),
+#                              all.x = T)
+# ## calculate health impact
+# health_scens_update[, delta_total_pm25 := total_pm25 - bau_pm25]
+# health_scens_update[, mortality_delta := ((exp(beta * delta_total_pm25) - 1)) * weighted_incidence * pop]
+# 
+# health_scens_update <- health_scens_update %>%
+#   left_join(growth_rates, by = c("year"="year")) %>%
+#   mutate(VSL = future_WTP(income_elasticity_mort, 
+#                           (cum_growth-1),
+#                           VSL_2019),
+#          cost_2019 = mortality_delta * VSL_2019,
+#          cost = mortality_delta * VSL)%>%
+#   group_by(year)%>%
+#   mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
+#          cost_PV = cost/((1+discount_rate)^(year-2019))) %>%
+#   ungroup()
+
 
 
 

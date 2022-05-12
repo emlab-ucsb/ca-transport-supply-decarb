@@ -1,6 +1,6 @@
 ## Tracey Mangin
-## December 6, 2021
-## fig 1: map of CA
+## May 11, 2022
+## Refining fig 1: map of CA
 
 
 library(tidyverse)
@@ -77,6 +77,17 @@ refin_locations <- st_read(paste0(main_path, "data/GIS/raw/Petroleum_Refineries_
 
 ## site out
 site_out <- fread(paste0(main_path, refin_out_path, site_out_file))
+
+## 2019 info
+site_out_2019 <- site_out %>% 
+  filter(year == 2019,
+         carbon_price_scenario == "price floor",
+         ccs_scenario == "no ccs",
+         demand_scenario == "BAU",
+         refining_scenario == "historic production",
+         oil_price_scenario == "reference case",
+         innovation_scenario == "low innovation") 
+  
 
 ## capacity
 refin_capacity <- fread(paste0(main_path, 'data/stocks-flows/processed/', refin_cap_file)) %>%
@@ -172,15 +183,15 @@ fig1_inset <- ggplot() +
 fig1_map <- ggplot() +
   # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
-  geom_sf(data = refin_capacity, mapping = aes(geometry = geometry, size = barrels_per_day), lwd = 0, alpha = 1, show.legend = TRUE) +
+  geom_sf(data = dac_areas, mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
+  geom_sf(data = refin_capacity, mapping = aes(geometry = geometry, size = barrels_per_day), alpha = 0.5, pch = 16) +
   geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = "A. Oil fields and disadvantaged communities (DAC)",
+  labs(title = "A. Refinery capacity",
        # title = "A. Oil fields and disadvantaged communities (DAC)",
-       fill = 'Oil production (mil. bbls)',
+       size = 'Capacity (bbls per day)',
        x = NULL,
        y = NULL) +
   scale_fill_viridis(option="viridis",
