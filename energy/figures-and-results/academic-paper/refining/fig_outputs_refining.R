@@ -232,40 +232,6 @@ rel_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_sce
                                      ccs_scenario, demand_scenario, refining_scenario, year,
                                      mean_delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
 
-# 
-# ## BAU values (one for each oil px scenario)
-# bau_health_scens <- health_scens[carbon_price_scenario == "price floor" & ccs_scenario == "no ccs" &
-#                                    demand_scenario == "BAU" & refining_scenario == "historic production", .(oil_price_scenario, census_tract, year, total_pm25)]
-# 
-# setnames(bau_health_scens, "total_pm25", "bau_pm25")
-# 
-# 
-# ## merge and recalculate health outcomes
-# health_scens_update <- health_scens[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario,
-#                                         demand_scenario, refining_scenario, census_tract, disadvantaged,
-#                                         weighted_incidence, pop, total_pm25, year)]
-# 
-# health_scens_update <- merge(health_scens_update, bau_health_scens,
-#                              by = c("oil_price_scenario", "census_tract", "year"),
-#                              all.x = T)
-# ## calculate health impact
-# health_scens_update[, delta_total_pm25 := total_pm25 - bau_pm25]
-# health_scens_update[, mortality_delta := ((exp(beta * delta_total_pm25) - 1)) * weighted_incidence * pop]
-# 
-# health_scens_update <- health_scens_update %>%
-#   left_join(growth_rates, by = c("year"="year")) %>%
-#   mutate(VSL = future_WTP(income_elasticity_mort, 
-#                           (cum_growth-1),
-#                           VSL_2019),
-#          cost_2019 = mortality_delta * VSL_2019,
-#          cost = mortality_delta * VSL)%>%
-#   group_by(year)%>%
-#   mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
-#          cost_PV = cost/((1+discount_rate)^(year-2019))) %>%
-#   ungroup()
-
-
-
 
 rel_health_levels <- melt(rel_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario',
                                                          'carbon_price_scenario', 'ccs_scenario', 'demand_scenario', 'refining_scenario', 'year'),
@@ -468,11 +434,13 @@ labor_scens <-  merge(labor_scens, bau_emp,
                       by = c("oil_price_scenario", "county", "year"),
                       all.x = T)
 
+## convert outputs to 2019 USD and discount
 labor_scens[, total_comp_usd19 := total_comp * cpi2019 / cpi2020]
 labor_scens[, total_comp_PV := total_comp_usd19 / ((1 + discount_rate) ^ (year - 2019))]
+
+## calc difference and dac share
 labor_scens[, diff_pv := total_comp_PV - bau_comp_PV]
 labor_scens[, dac_pv := diff_pv * dac_share]
-
 
 
 ## calculate dac share, labor FTE
@@ -482,6 +450,7 @@ labor_scens[, dac_pv := diff_pv * dac_share]
 #                                                                        demand_scenario, scenario, county, median_hh_income)]
 # 
 
+## summarise labor outcomes (total and DAC)
 labor_dac_state <- labor_scens[, .(cumul_dac_pv_loss = sum(dac_pv),
                                    cumul_total_pv_loss = sum(diff_pv)), by = .(scen_id, oil_price_scenario, ccs_scenario, 
                                                                                            carbon_price_scenario, refining_scenario,
@@ -567,55 +536,23 @@ for (i in 1:length(files_to_process)) {
 health_scens <- rbindlist(health_out)
 
 ## add columns for filtering
-id_columns <- unique(state_levels[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, demand_scenario,
+id_columns <- unique(state_levels[, .(scen_id, carbon_price_scenario, ccs_scenario, demand_scenario,
                                refining_scenario)])
 
 health_scens <- merge(id_columns, health_scens,
                       by = c('scen_id'),
                       all.x = T)
 
-## BAU values (one for each oil px scenario)
-bau_health_scens <- health_scens[carbon_price_scenario == "price floor" & ccs_scenario == "no ccs" &
-                         demand_scenario == "BAU" & refining_scenario == "historic production", .(oil_price_scenario, census_tract, year, total_pm25)]
-
-setnames(bau_health_scens, "total_pm25", "bau_pm25")
-
-
-## merge and recalculate health outcomes
-health_scens_update <- health_scens[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario,
-                                        demand_scenario, refining_scenario, census_tract, disadvantaged,
-                                        weighted_incidence, pop, total_pm25, year)]
-
-health_scens_update <- merge(health_scens_update, bau_health_scens,
-                             by = c("oil_price_scenario", "census_tract", "year"),
-                             all.x = T)
-## calculate health impact
-health_scens_update[, delta_total_pm25 := total_pm25 - bau_pm25]
-health_scens_update[, mortality_delta := ((exp(beta * delta_total_pm25) - 1)) * weighted_incidence * pop]
-
-health_scens_update <- health_scens_update %>%
-  left_join(growth_rates, by = c("year"="year")) %>%
-  mutate(VSL = future_WTP(income_elasticity_mort, 
-                          (cum_growth-1),
-                          VSL_2019),
-         cost_2019 = mortality_delta * VSL_2019,
-         cost = mortality_delta * VSL)%>%
-  group_by(year)%>%
-  mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
-         cost_PV = cost/((1+discount_rate)^(year-2019))) %>%
-  ungroup()
 
 ## calculate DAC
 
-setDT(health_scens_update)
+health_scens[, dac_multiplier := fifelse(disadvantaged == "Yes", 1, 0)]
 
-health_scens_update[, dac_multiplier := fifelse(disadvantaged == "Yes", 1, 0)]
-
-health_scens_update[, dac_share_mortality := dac_multiplier * cost_PV]
+health_scens[, dac_share_mortality := dac_multiplier * cost_PV]
 
 
 ## calculate dac share, mortality
-health_dac_state <- health_scens_update[, .(cumul_dac_mortality = sum(dac_share_mortality, na.rm = T), 
+health_dac_state <- health_scens[, .(cumul_dac_mortality = sum(dac_share_mortality, na.rm = T), 
                                             cumul_total_mortality = sum(cost_PV, na.rm = T)), by = .(scen_id, oil_price_scenario,
                                                                                                      ccs_scenario, carbon_price_scenario,
                                                                                                      refining_scenario, demand_scenario)]
@@ -684,6 +621,12 @@ health_dac_state[, category := "Health"]
 
 ## bind
 dac_df <- rbind(labor_dac_state, health_dac_state)
+
+## merge with ghg
+dac_df <- merge(dac_df, ghg_2045,
+                by = c('scen_id'))
+
+
 
 fwrite(dac_df, paste0(save_info_path, 'dac_health_labor_refining.csv'))
 
