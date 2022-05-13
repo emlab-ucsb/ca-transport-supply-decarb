@@ -43,12 +43,31 @@ altair <- 'c(33.90000142538856, -118.15028819686157)'
 ph66_su <- 'c(-122.255632, 38.0434740000001)' ## same location as 342
 glblce <- 'c(35.380165,-119.072434)'
 
-refineries_out <- refineries_out %>%
+refineries_out2 <- refineries_out %>%
   mutate(geometry = ifelse(site_id == "3422", ph66_sm,
                            ifelse(site_id == "t-800", altair,
                                   ifelse(site_id == "342-2", ph66_su,
                                          ifelse(site_id == "99999", glblce, geometry)))))
 
-fwrite(refineries_out, file.path(main_path, "/data/stocks-flows/processed/refinery_lat_long.csv"), row.names = F)
+fwrite(refineries_out2, file.path(main_path, "/data/stocks-flows/processed/refinery_lat_long.csv"), row.names = F)
+
+## revise to have the coordinates in the right order
+## -------------------------------------------------------
+
+## manually add lat/longs for refineries without info
+
+ph66_sm <- 'c(-120.5896056369663, 35.040050501373045)'
+altair <- 'c(-118.15028819686157, 33.90000142538856)'
+ph66_su <- 'c(-122.255632, 38.0434740000001)' ## same location as 342
+glblce <- 'c(-119.072434, 35.380165)'
+
+refineries_out_revised <- refineries_out %>%
+  mutate(geometry = ifelse(site_id == "3422", ph66_sm,
+                           ifelse(site_id == "t-800", altair,
+                                  ifelse(site_id == "342-2", ph66_su,
+                                         ifelse(site_id == "99999", glblce, geometry)))))
+
+fwrite(refineries_out_revised, file.path(main_path, "/data/stocks-flows/processed/refinery_lat_long_revised.csv"), row.names = F)
+
 
 
