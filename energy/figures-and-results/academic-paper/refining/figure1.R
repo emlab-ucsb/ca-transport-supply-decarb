@@ -14,6 +14,7 @@ library(data.table)
 library(cowplot)
 library(hrbrthemes)
 library(extrafont)
+library(xlsx)
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
@@ -74,6 +75,13 @@ california <- states %>% filter(ID == "california") %>%
 refin_locations <- st_read(paste0(main_path, "data/GIS/raw/Petroleum_Refineries_US_EIA/", refinery_locs)) 
 
 refin_crs <- st_crs(refin_locations)
+
+## capacities
+renewable_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/processed/renewable_refinery_capacity.xlsx"), sheetIndex = 1))
+
+
+alt_air_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/raw/altair_refinery_capacity.xlsx"), sheetIndex = 1))
+
 
 
 ## Refineries plus
@@ -156,58 +164,68 @@ dac_sp <- left_join(census_tracts, dac_ces)
 dac_areas <- dac_sp %>%
   filter(dac == "Yes")
 
-## crop area
-disp_win2_wgs84 <- st_sfc(st_point(c(-122.5, 33)), st_point(c(-117, 39)),
-                          crs = 4326)
 
-disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
 
-disp_win2_coord <- st_coordinates(disp_win2_trans)
+## --------------- update crop area
 
-disp_win_df <- as.data.frame(disp_win2_coord)
+# ## crop area
+# disp_win2_wgs84 <- st_sfc(st_point(c(-122.5, 33)), st_point(c(-117, 39)),
+#                           crs = 4326)
+# 
+# disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
+# 
+# disp_win2_coord <- st_coordinates(disp_win2_trans)
+# 
+# disp_win_df <- as.data.frame(disp_win2_coord)
+# 
+# ## limits for zoom
+# xlim <- c(disp_win_df$X[1], disp_win_df$X[2]) # Set limits for zoom panel
+# ylim <- c(disp_win_df$Y[1], disp_win_df$Y[2])
 
-## limits for zoom
-xlim <- c(disp_win_df$X[1], disp_win_df$X[2]) # Set limits for zoom panel
-ylim <- c(disp_win_df$Y[1], disp_win_df$Y[2])
+## ---------------
 
 ## st_union of no island counties
 ca_union <- st_union(CA_counties_noisl)
 
 
-## map inset, CA with box around zoom area
-fig1_inset <- ggplot() +
-  geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
-  # geom_sf(data = disp_win2_wgs84, shape = 0, size = 35, color = "red", stroke = 2) +# Draw box around zoomed region
-  annotate(geom = "rect", 
-           xmin = xlim[1],
-           xmax = xlim[2],
-           ymin = ylim[1],
-           ymax = ylim[2],
-           color = "black", 
-           size = 0.5,
-           fill = NA) +
-  theme_void() +
-  # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
-  #          datum = ca_crs, expand = FALSE) +
-  theme(
-    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
-    legend.justification = c(0, 1),
-    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0.15, 0.15),
-    legend.title = element_text(size = 7),
-    plot.title = element_text(hjust = 0, face = 'bold'),
-    plot.title.position = 'plot') +
-  guides(fill = guide_colourbar(title.position="top", 
-                                title.hjust = 0,
-                                direction = "horizontal"))
 
+# ## --------------- update zoom box fig
+# 
+# ## map inset, CA with box around zoom area
+# fig1_inset <- ggplot() +
+#   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+#   geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
+#   # geom_sf(data = disp_win2_wgs84, shape = 0, size = 35, color = "red", stroke = 2) +# Draw box around zoomed region
+#   annotate(geom = "rect", 
+#            xmin = xlim[1],
+#            xmax = xlim[2],
+#            ymin = ylim[1],
+#            ymax = ylim[2],
+#            color = "black", 
+#            size = 0.5,
+#            fill = NA) +
+#   theme_void() +
+#   # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+#   #          datum = ca_crs, expand = FALSE) +
+#   theme(
+#     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+#     legend.justification = c(0, 1),
+#     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+#     legend.position = c(0.15, 0.15),
+#     legend.title = element_text(size = 7),
+#     plot.title = element_text(hjust = 0, face = 'bold'),
+#     plot.title.position = 'plot') +
+#   guides(fill = guide_colourbar(title.position="top", 
+#                                 title.hjust = 0,
+#                                 direction = "horizontal"))
+# 
+# ## -------------------------------------------------------
 
 ## make map
 fig1_map <- ggplot() +
   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = dac_areas, mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
-  geom_sf(data = refin_capacity, mapping = aes(geometry = geometry), alpha = 0.5, pch = 16, color = 'red') +
+  geom_sf(data = refin_capacity, mapping = aes(geometry = geometry), alpha = 0.5, pch = 15, color = 'black') +
   geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
@@ -622,104 +640,6 @@ ggsave(labor_map,
 
 embed_fonts(paste0(main_path, fig_path, 'fig1/fig1e.pdf'),
             outfile = paste0(main_path, fig_path, 'fig1/fig1e.pdf'))
-
-
-
-
-
-## --------------------------------------------------
-## figure 1b - well entry model
-## --------------------------------------------------
-
-## final model
-pred_wells_fm <- read_csv(paste0(data_path, "new_wells_pred_revised.csv")) %>%
-  mutate(doc_field_code = paste0("00", doc_field_code),
-         doc_field_code = as.character(str_sub(doc_field_code, start= -3))) 
-
-# load historic production
-well_prod_19 <- well_prod[year == 2019]
-
-## top producers in 2019
-prod2019 <- well_prod_19 %>%
-  group_by(doc_field_code, doc_fieldname) %>%
-  summarise(prod = sum(OilorCondensateProduced, na.rm = T)) %>%
-  ungroup() %>%
-  mutate(rank = rank(-prod)) %>%
-  filter(rank <= 10) %>%
-  arrange(rank) %>%
-  mutate(doc_fieldname = ifelse(doc_fieldname == "Belridge  South", "Belridge South", doc_fieldname)) 
-
-## field name
-field_name <- well_prod %>%
-  select(doc_field_code, doc_fieldname) %>%
-  unique()
-
-well_n_df_revised <- pred_wells_fm %>%
-  left_join(field_name) %>%
-  mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_fieldname, "Non-top fields"),
-         field_name_adj = ifelse(field_name_adj == "Belridge  South", "Belridge South", field_name_adj)) %>%
-  pivot_longer(new_wells:new_wells_pred, names_to = "category", values_to = "n_wells") %>%
-  mutate(label_name = ifelse(category == "new_wells", "Observed", "Predicted")) %>%
-  select(doc_field_code, doc_fieldname, field_name_adj, year, category, label_name, n_wells) %>%
-  group_by(field_name_adj, year, category, label_name) %>%
-  summarise(n_wells = sum(n_wells)) %>%
-  ungroup() 
-
-state_df <- well_n_df_revised %>%
-  mutate(field_name_adj = "California") %>%
-  group_by(field_name_adj, year, category, label_name) %>%
-  summarise(n_wells = sum(n_wells)) %>%
-  ungroup()
-
-## state no hold out
-state_fig_fs <- 
-  ggplot(state_df %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells/1000, color = label_name, lty = label_name)) +
-  geom_line(size = 0.4, alpha = 0.8) +
-  scale_color_manual(values = c("Observed" = "black", "Estimated" = "#737373")) +
-  labs(title = "B. Observed and modeled oil wells",
-       y = "Number of new oil wells (thousand)",
-       x = NULL,
-       color = NULL,
-       lty = NULL) +
-  guides(color = guide_legend(override.aes = list(lty = c('solid', 'dashed')))) +
-  guides(lty = "none") +
-  scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
-  scale_y_continuous(label = scales::comma, limits = c(0, 4)) +
-  theme_line_n +
-  # theme_ipsum(base_family = 'Arial',
-  #             grid = 'Y') +
-  theme(axis.line.y = element_line(color = 'black', size = 0.2),
-        axis.line.x = element_line(color = 'black', size = 0.2),
-        # legend.key.width = unit(1, 'cm'),
-        legend.position = c(0.4, 0.1),
-        legend.direction="horizontal", 
-        axis.text.x = element_text(size = 4),
-        axis.text.y = element_text(size = 4),
-        axis.title.y = element_text(size = 4, hjust = 0.5),
-        plot.margin = margin(0, 2, 0, 8),
-        legend.text = element_text(size = 4),
-        plot.title = element_text(hjust = 0, face = 'bold', size = 5, vjust = -1),
-        axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm'))
-
-## save
-ggsave(state_fig_fs,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1b.png'),
-       width = 50,
-       height = 45,
-       dpi = 300,
-       units = "mm")
-
-ggsave(state_fig_fs,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'),
-       width = 50,
-       height = 45,
-       units = "mm",
-       dpi = 300,
-       device = 'pdf')
-
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'))
 
 
 
