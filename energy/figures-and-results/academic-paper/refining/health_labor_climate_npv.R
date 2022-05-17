@@ -78,9 +78,14 @@ npv_dt[, measure_unit := fifelse(unit == "value_billion", "2019 USD billion", "2
 ## color for refining scenario
 refin_colors <- c('historic exports' = '#2F4858', 'historic production' = '#F6AE2D', 'low exports' = '#F26419')
 
+## filter out these BAU scenarios
+bau_scens <- c('BAU historic production low innovation price floor no ccs reference case',
+               'LC1 historic production low innovation price floor no ccs reference case')
+
+
 
 # figure
-fig_benefit_x_metric <- ggplot(npv_dt %>% filter(scen_id != 'BAU historic production low innovation price floor no ccs reference case'), 
+fig_benefit_x_metric <- ggplot(npv_dt %>% filter(!scen_id %in% bau_scens), 
                                aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
@@ -104,7 +109,7 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(scen_id != 'BAU historic produc
 ## -------------------------------------------------------------------
 fig_bxm_a <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_point(data = npv_dt %>% filter(scen_id != 'BAU historic production low innovation price floor no ccs reference case',
+  geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Health: avoided mortality",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value,  color = refining_scenario, shape = demand_scenario),
              size = 3, alpha = 0.8) +
@@ -125,7 +130,7 @@ fig_bxm_a <- ggplot() +
 
 fig_bxm_b <- ggplot() + 
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_point(data = npv_dt %>% filter(scen_id != 'BAU historic production low innovation price floor no ccs reference case',
+  geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Labor: forgone wages",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   labs(color = "Policy",
@@ -144,7 +149,7 @@ fig_bxm_b <- ggplot() +
 
 fig_bxm_c <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_point(data = npv_dt %>% filter(scen_id != 'BAU historic production low innovation price floor no ccs reference case',
+  geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Climate: avoided damage",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
@@ -164,7 +169,7 @@ fig_bxm_c <- ggplot() +
 
 fig_bxm_d <- ggplot() + 
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_point(data = npv_dt %>% filter(scen_id != 'BAU historic production low innovation price floor no ccs reference case',
+  geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Health: avoided mortality",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   labs(color = "Policy",
@@ -182,7 +187,7 @@ fig_bxm_d <- ggplot() +
 
 fig_bxm_e <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_point(data = npv_dt %>% filter(scen_id != 'BAU historic production low innovation price floor no ccs reference case',
+  geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Labor: forgone wages",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   labs(color = "Policy",
@@ -200,7 +205,7 @@ fig_bxm_e <- ggplot() +
 
 fig_bxm_f <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_point(data = npv_dt %>% filter(scen_id != 'BAU historic production low innovation price floor no ccs reference case',
+  geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Climate: avoided damage",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   labs(color = "Policy",
@@ -220,7 +225,7 @@ fig_bxm_f <- ggplot() +
 ## extract legend
 legend_fig <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  geom_point(data = npv_dt %>% filter(scen_id != 'BAU historic production low innovation price floor no ccs reference case',
+  geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                        title == "Labor: forgone wages",
                                        measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = scenario, shape = scenario), size = 3, alpha = 0.8) +
   labs(title = "",
@@ -231,26 +236,23 @@ legend_fig <- ggplot() +
                      labels = c("BAU demand - historic exports", 
                                 "BAU demand - low exports", 
                                 "Low C. demand - historic exports", 
-                                "Low C. demand - low exports",
-                                "Low C. demand - historic production"),
+                                "Low C. demand - low exports"),
                      values = c("BAU demand - historic exports" = "#2F4858", 
                                 "BAU demand - low exports" = "#F26419", 
                                 "Low C. demand - historic exports" = "#2F4858",
-                                "Low C. demand - low exports" = "#F26419",
-                                "Low C. demand - historic production" = "#F6AE2D")) +   
+                                "Low C. demand - low exports" = "#F26419")) +   
   scale_shape_manual(name = "",
                         labels = c("BAU demand - historic exports", 
                                    "BAU demand - low exports", 
                                    "Low C. demand - historic exports", 
-                                   "Low C. demand - low exports",
-                                   "Low C. demand - historic production"),
-                        values = c(16, 16, 17, 17, 17)) +
+                                   "Low C. demand - low exports"),
+                        values = c(16, 16, 17, 17)) +
   theme_line_n +
   theme(legend.position = "bottom",
         axis.text.x = element_text(vjust = 0.5, hjust = 0.5),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm')) +
-  guides(color = guide_legend(nrow = 2, byrow = FALSE))
+  guides(color = guide_legend(nrow = 1, byrow = FALSE))
 
 
 legend_fig_3 <- get_legend(
