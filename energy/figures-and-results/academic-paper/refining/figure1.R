@@ -287,7 +287,7 @@ dac_legend <- get_legend(
 
 fig1_refing_legend <- ggplot() +
   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
+  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
   geom_sf(data = refin_capacity, mapping = aes(geometry = geometry, size = barrels_per_day / 1000, color = installation), alpha = 0.8, pch = 17) +
   geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
@@ -314,7 +314,7 @@ fig1_refing_legend <- ggplot() +
                                 title.hjust = 0,
                                 direction = "horizontal",
                                 ticks.colour = "black", frame.colour = "black"),
-         size = guide_legend(direction = "horizontal"))
+         size = guide_legend(direction = "horizontal")) 
 
 refin_legend <- get_legend(
   fig1_refing_legend)
