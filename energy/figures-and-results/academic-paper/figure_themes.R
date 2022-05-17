@@ -87,5 +87,48 @@ macro_pal <- c("#233d4d", "#fe7f2d", "#fcca46", "#a1c181", "#619b8a")
 ## distinct ucsb
 ucsb_distinct <- c("#1295D8", "#FFB511", "#FF6E1B", "#E44C9A", "#00778B")
 
+## refining fig colors
+# plot theme & palettes ------
+
+pal_scenarios = c('BAU' = '#576b81',
+                  'Mid Case' = '#576b81',
+                  'LC1' = '#50a727',
+                  'Low Case' = '#50a727',
+                  'High Case' = '#f05c0b',
+                  'crude' = '#f6ac0e',
+                  'crude (energy intensity equation)' = '#dd1e24',
+                  'crude (regression)' = '#305ff0')
+
+pal_region = c('North' = '#3baeba',
+               'South' = '#05426f',
+               'Renewables' = '#ffa440')
+
+pal_fuel = c('gasoline' = '#4bbbe6', 
+             'drop-in gasoline' = '#c2eaf7', 
+             'diesel' = '#fda89c', 
+             'renewable diesel' = '#fddad5', 
+             'jet' = '#169486', 
+             'sustainable aviation fuel' = '#61c8c1',
+             'exports' = '#dadbdf')
+
+pal_fuel_title = c('Gasoline' = '#4bbbe6', 
+                   'Drop-in gasoline' = '#c2eaf7', 
+                   'Diesel' = '#fda89c', 
+                   'Renewable diesel' = '#fddad5', 
+                   'Jet fuel' = '#169486', 
+                   'Sustainable aviation fuel' = '#61c8c1',
+                   'Exports' = '#dadbdf')
+
+pal_crude = c('crude (traditional)' = '#096497',
+              'crude (residual renewable)' = '#29b9cd',
+              'crude (main renewable)' = '#99c1d5',
+              'traditional' = '#096497',
+              'residual renewable' = '#29b9cd',
+              'main renewable' = '#99c1d5')
+
+# pal_refinery = c(unikn::seecol(pal_unikn_pair)[1:16], '#ebd74e')
+# names(pal_refinery) = unique(c(dt_refcap[, refinery_name], dt_renref[, refinery_name], 'AltAir Paramount'))
+
+
 
 
