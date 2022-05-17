@@ -31,6 +31,7 @@ inmapRefFiles  <- "health/source_receptor_matrix/inmap_processed_srm/refining"
 ## files
 refinery_locs <- 'Petroleum_Refineries_US_2019_v2.shp'
 refinery_plus_locs <- '/data/stocks-flows/processed/refinery_lat_long_revised.csv'
+refin_manual_file <- 'refinery_loc_cap_manual.csv'
 site_out_file <- 'site_refining_outputs.csv'
 refin_cap_file <- 'refinery_loc_cap.csv'
 # ct_file           <- "reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_ct_results.rds"
@@ -70,6 +71,14 @@ california <- states %>% filter(ID == "california") %>%
 
 ## read in dfs
 ## ------------------
+
+## Manual refineries capacity
+refin_locs_manuel <- fread(paste0(main_path, "/data/stocks-flows/processed/", refin_manual_file))
+
+man_capacity <- refin_locs_manuel %>%
+  filter(site_id %in% c(3422, 342)) %>%
+  select(site_id, barrels_per_day)
+
 
 ## Refineries
 refin_locations <- st_read(paste0(main_path, "data/GIS/raw/Petroleum_Refineries_US_EIA/", refinery_locs)) 
@@ -118,14 +127,35 @@ county_out_2019 <- county_out %>%
          oil_price_scenario == "reference case",
          innovation_scenario == "low innovation")   
 
+###
+## alt air 2021 capacity
+aa_cap <- alt_air_capacity %>%
+  filter(year == 2021) %>%
+  mutate(site_id  = 't-800') %>%
+  select(site_id, barrels_per_day, installation_year = year)
+
+renewable_cap <- renewable_capacity %>%
+  filter(site_id %in% c('342-2', '99999')) %>%
+  select(site_id, barrels_per_day = installation_capacity_bpd, installation_year) 
+
+## future capacity
+fut_cap <- rbind(aa_cap, renewable_cap)
+
 ## capacity
 refin_capacity <- fread(paste0(main_path, 'data/stocks-flows/processed/', refin_cap_file)) %>%
+  mutate(site_id = as.character(site_id)) %>%
   filter(State == 'California') %>%
   select(site_id, barrels_per_day) %>%
-  mutate(site_id = as.character(site_id)) 
+  filter(!site_id %in% man_capacity$site_id) %>%
+  full_join(man_capacity %>% mutate(site_id = as.character(site_id))) %>%
+  full_join(fut_cap) %>%
+  mutate(installation_year = ifelse(is.na(installation_year), 'pre 2020', as.character(installation_year)))
 
+
+## join with locations
 refin_capacity <- refin_new_locations %>%
-  left_join(refin_capacity)
+  left_join(refin_capacity) %>%
+  mutate(installation = ifelse(installation_year == 'pre 2020', 'Existing capacity', 'Future capacity'))
 
 ## counties boundaries
 county_boundaries <- st_read(file.path(main_path, "data/GIS/raw/CA_Counties/CA_Counties_TIGER2016.shp")) %>% 
@@ -165,84 +195,74 @@ dac_areas <- dac_sp %>%
   filter(dac == "Yes")
 
 
+## crop area
+disp_win2_wgs84 <- st_sfc(st_point(c(-122.5, 33)), st_point(c(-117, 39)),
+                          crs = 4326)
 
-## --------------- update crop area
+disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
 
-# ## crop area
-# disp_win2_wgs84 <- st_sfc(st_point(c(-122.5, 33)), st_point(c(-117, 39)),
-#                           crs = 4326)
-# 
-# disp_win2_trans <- st_transform(disp_win2_wgs84, crs = ca_crs)
-# 
-# disp_win2_coord <- st_coordinates(disp_win2_trans)
-# 
-# disp_win_df <- as.data.frame(disp_win2_coord)
-# 
-# ## limits for zoom
-# xlim <- c(disp_win_df$X[1], disp_win_df$X[2]) # Set limits for zoom panel
-# ylim <- c(disp_win_df$Y[1], disp_win_df$Y[2])
+disp_win2_coord <- st_coordinates(disp_win2_trans)
 
-## ---------------
+disp_win_df <- as.data.frame(disp_win2_coord)
+
+## limits for zoom
+xlim <- c(disp_win_df$X[1], disp_win_df$X[2]) # Set limits for zoom panel
+ylim <- c(disp_win_df$Y[1], disp_win_df$Y[2])
+
 
 ## st_union of no island counties
 ca_union <- st_union(CA_counties_noisl)
 
 
 
-# ## --------------- update zoom box fig
-# 
-# ## map inset, CA with box around zoom area
-# fig1_inset <- ggplot() +
-#   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
-#   geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
-#   # geom_sf(data = disp_win2_wgs84, shape = 0, size = 35, color = "red", stroke = 2) +# Draw box around zoomed region
-#   annotate(geom = "rect", 
-#            xmin = xlim[1],
-#            xmax = xlim[2],
-#            ymin = ylim[1],
-#            ymax = ylim[2],
-#            color = "black", 
-#            size = 0.5,
-#            fill = NA) +
-#   theme_void() +
-#   # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
-#   #          datum = ca_crs, expand = FALSE) +
-#   theme(
-#     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
-#     legend.justification = c(0, 1),
-#     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-#     legend.position = c(0.15, 0.15),
-#     legend.title = element_text(size = 7),
-#     plot.title = element_text(hjust = 0, face = 'bold'),
-#     plot.title.position = 'plot') +
-#   guides(fill = guide_colourbar(title.position="top", 
-#                                 title.hjust = 0,
-#                                 direction = "horizontal"))
-# 
-# ## -------------------------------------------------------
+## map inset, CA with box around zoom area
+fig1_inset <- ggplot() +
+  geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
+  # geom_sf(data = disp_win2_wgs84, shape = 0, size = 35, color = "red", stroke = 2) +# Draw box around zoomed region
+  annotate(geom = "rect",
+           xmin = xlim[1],
+           xmax = xlim[2],
+           ymin = ylim[1],
+           ymax = ylim[2],
+           color = "black",
+           size = 0.5,
+           fill = NA) +
+  theme_void() +
+  # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
+  #          datum = ca_crs, expand = FALSE) +
+  theme(
+    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
+    legend.justification = c(0, 1),
+    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
+    legend.position = c(0.15, 0.15),
+    legend.title = element_text(size = 7),
+    plot.title = element_text(hjust = 0, face = 'bold'),
+    plot.title.position = 'plot') +
+  guides(fill = guide_colourbar(title.position="top",
+                                title.hjust = 0,
+                                direction = "horizontal"))
+
 
 ## make map
 fig1_map <- ggplot() +
   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = dac_areas, mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
-  geom_sf(data = refin_capacity, mapping = aes(geometry = geometry), alpha = 0.5, pch = 15, color = 'black') +
+  geom_sf(data = refin_capacity, mapping = aes(geometry = geometry, size = barrels_per_day / 1000, color = installation), alpha = 0.8, pch = 17) +
   geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
   labs(title = "A. Refinery capacity",
-       # title = "A. Oil fields and disadvantaged communities (DAC)",
-       size = 'Capacity (bbls per day)',
+       color = NULL,
+       size = 'Capacity (thous. bbls per day)',
        x = NULL,
        y = NULL) +
-  scale_fill_viridis(option="viridis",
-                     direction = -1) +
+  scale_color_manual(values = c('#3D5A6C', '#F9564F')) +
   coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
            datum = ca_crs, expand = FALSE) +
-  # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
+  scale_size_continuous(range = c(2, 6)) +
   theme_void() +
-  # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
-  #          datum = ca_crs, expand = FALSE) +
   theme(legend.position = "none",
         plot.margin = margin(0, 2, 0, 8),
         legend.title = element_text(size = 7),
@@ -265,19 +285,20 @@ fig1_dac_legend <- ggplot() +
 dac_legend <- get_legend(
   fig1_dac_legend)
 
-fig1_oil_legend <- ggplot() +
+fig1_refing_legend <- ggplot() +
   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
   geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
-  # geom_sf(data = field_df_long %>% filter(prod_2019 > 0), mapping = aes(geometry = geometry, fill = prod_2019 / 1e6), lwd = 0, alpha = 1, show.legend = TRUE) +
-  geom_sf(data = field_df_long, mapping = aes(geometry = geometry, fill = prod_2019 / 1e6), lwd = 0, alpha = 1, show.legend = TRUE) +
+  geom_sf(data = refin_capacity, mapping = aes(geometry = geometry, size = barrels_per_day / 1000, color = installation), alpha = 0.8, pch = 17) +
   geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.05, fill = NA) +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = NULL,
-       fill = 'Oil production (mil. bbls)',
+  labs(title = "A. Refinery capacity",
+       color = NULL,
+       size = 'Capacity (thous. bbls per day)',
        x = NULL,
        y = NULL) +
-  scale_fill_viridis(option="viridis",
-                     direction = -1) +
+  scale_size_continuous(range = c(2, 6),
+                        breaks = c(10, 100, 300)) +
+  scale_color_manual(values = c('#3D5A6C', '#F9564F')) +
   coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
            datum = ca_crs, expand = FALSE) +
   theme_void() +
@@ -285,26 +306,27 @@ fig1_oil_legend <- ggplot() +
     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0.15, 0.15),
+    legend.position = c(0, 0.2),
     legend.text = element_text(size = 7),
     legend.title = element_text(size = 7),
     plot.title = element_text(hjust = -0.1, face = 'bold', size = 7)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal",
-                                ticks.colour = "black", frame.colour = "black"))
+                                ticks.colour = "black", frame.colour = "black"),
+         size = guide_legend(direction = "horizontal"))
 
-oil_prod_legend <- get_legend(
-  fig1_oil_legend)
+refin_legend <- get_legend(
+  fig1_refing_legend)
 
 
 
 
 ## plot together
 map_fig_a <- ggdraw(fig1_map, clip = "on") +
-  draw_plot(fig1_inset, x = 0.05, y = 0.20, width = 0.25, height = 0.35) +
-  draw_plot(dac_legend, x = 0.15, y = 0.12, width = 0.02, height = 0.025) +
-  draw_plot(oil_prod_legend, x = 0.3, y = 0.18, width = 0.025, height = 0.025) 
+  draw_plot(fig1_inset, x = 0.7, y = 0.7, width = 0.2, height = 0.35) +
+  draw_plot(dac_legend, x = 0.15, y = 0.21, width = 0.05, height = 0.01) +
+  draw_plot(refin_legend, x = 0.1, y = 0.18, width = 0.025, height = 0.025) 
 # +
 #   draw_plot_label(
 #     c("A. Oil fields and disadvantaged communities (DAC)", "", "", ""),
@@ -314,22 +336,22 @@ map_fig_a <- ggdraw(fig1_map, clip = "on") +
 #   )
 
 ggsave(map_fig_a,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.png'),
+       filename = file.path(main_path, fig_path, 'fig1/figure1a.png'),
        width = 88,
        height = 110,
        dpi = 300,
        units = "mm")
 
 ggsave(map_fig_a,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'),
+       filename = file.path(main_path, fig_path, 'fig1/figure1a.pdf'),
        width = 88,
        height = 110,
        units = "mm",
        dpi = 300,
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'fig1/figure1a.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1/figure1a.pdf'))
 
 
 
