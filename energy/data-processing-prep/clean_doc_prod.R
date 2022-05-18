@@ -1,8 +1,9 @@
 ## Tracey Mangin
 ## April 21, 2020
 ## Data cleaning -- oil production and injection data
-## Data from DOC -- contact: David Slayter
+## Data from DOC
 
+## libraries
 library(tidyverse)
 library(readr)
 library(lubridate)
@@ -42,7 +43,7 @@ prod_18 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2018/CaliforniaOil
 prod_19 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2019/CaliforniaOilAndGasWellMonthlyProduction.csv"))
 
 
-## rbind
+## bind rows
 monthly_prod <- rbind(prod_7785, prod_8689, prod_9094, prod_9599, prod_0004, prod_0509, prod_1514, prod_15, prod_16, prod_17,
                       prod_18, prod_19)
 
@@ -88,7 +89,7 @@ inj_17 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2017/CaliforniaOilA
 inj_18 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2018/CaliforniaOilAndGasWellMonthlyInjection.csv"))
 inj_19 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2019/CaliforniaOilAndGasWellMonthlyInjection.csv"))
 
-## rbind
+## bind rows
 monthly_inj <- rbind(inj_7785, inj_8689, inj_9094, inj_9599, inj_0004, inj_0509, inj_1514, inj_15, inj_16, inj_17,
                       inj_18, inj_19)
 
