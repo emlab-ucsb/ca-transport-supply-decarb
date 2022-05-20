@@ -55,13 +55,6 @@ scen_id_list = fread(file.path(academic_out, scen_id_file), header = T)
 ## filter for scenarios to run
 selected_scens <- scen_id_list[subset_scens == 1]
 
-# ## filter for test
-# selected_scens <- selected_scens[oil_price_scenario == 'high oil price' &
-#                              setback_scenario == "no_setback" &
-#                              carbon_price_scenario == 'central SCC' &
-#                              excise_tax_scenario %in% c('tax_setback_1000ft',
-#                                                         'tax_setback_2500ft')]
-
 
 # step 1: run extraction model and get outputs -------
 

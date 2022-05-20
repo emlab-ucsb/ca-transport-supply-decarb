@@ -139,6 +139,7 @@ setback_scens[, setback_scenario := fifelse(setback_scenario == "no_setback", se
 
 # load production quota file
 prod_quota_scens = fread(file.path(scen_path, prod_quota_file), header = T)
+prod_quota_scens <- prod_quota_scens[, .(year, prod_quota_scenario, quota)]
 
 # load excise tax file
 excise_tax_scens = fread(file.path(scen_path, excise_tax_file), header = T)
