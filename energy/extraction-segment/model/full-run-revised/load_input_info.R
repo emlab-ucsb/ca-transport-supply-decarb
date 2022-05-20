@@ -18,7 +18,8 @@ prod_vintage_file = 'pred_prod_no_exit_2020-2045_field_start_year_revised.csv'
 histprod_file     = 'crude_prod_x_field_revised.csv'
 exit_file         = 'exit_regression_coefficients.csv'
 ccs_capture_rate  = 0.61
-forecast_file     = 'field_capex_opex_forecast_final.csv'
+# forecast_file     = 'field_capex_opex_forecast_final.csv'
+forecast_file     = 'field_capex_opex_forecast_revised.csv'
 resource_file     = 'field_resource.csv'
 oil_price_file    = 'oil_price_projections_revised.xlsx'
 inn_file          = 'innovation_scenarios.csv'
@@ -26,7 +27,8 @@ carbon_file       = 'carbon_prices_revised.csv'
 ccs_ext_file      = 'ccs_extraction_scenarios_revised.csv' ## revised includes ccs cost = inf
 ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
 setback_file      = 'setback_coverage_R.csv'
-prod_quota_file   = 'prod_quota_scenarios_with_sb.csv'
+# prod_quota_file   = 'prod_quota_scenarios_with_sb.csv'
+prod_quota_file   = 'prod_quota_scenarios.csv'
 excise_tax_file   = 'excise_tax_non_target_scens.csv' 
 incentive_file    = 'CCS_LCFS_45Q.xlsx'
 n_wells_file      = 'n_wells_area.csv'
@@ -103,7 +105,7 @@ ccs_scens = ccs_scens[, c('year', 'ccs_scenario', 'ccs_price_usd_per_kg')]
 ccs_scens[, ccs_scenario := factor(ccs_scenario, levels = c('no ccs', 'high CCS cost', 'medium CCS cost', 'low CCS cost'))]
 
 ## load price data
-price_data = fread(file.path(outputs_path, 'stocks-flows', forecast_file), header = T)
+price_data = fread(file.path(outputs_path, 'stocks-flows/entry-input-df/final/', forecast_file), header = T)
 
 ## load resource data
 resource_data = fread(file.path(outputs_path, 'entry-model-results', resource_file), header = T)

@@ -22,7 +22,7 @@ inn_file          = 'innovation_scenarios.csv'
 carbon_file       = 'carbon_prices_revised.csv' 
 ccs_ext_file      = 'ccs_extraction_scenarios_revised.csv'
 setback_file      = 'setback_coverage_R.csv'
-prod_quota_file   = 'prod_quota_scenarios_with_sb.csv' 
+prod_quota_file   = 'prod_quota_scenarios.csv' 
 excise_tax_file   = 'excise_tax_non_target_scens.csv' 
 incentive_file    = 'CCS_LCFS_45Q.xlsx'
 
