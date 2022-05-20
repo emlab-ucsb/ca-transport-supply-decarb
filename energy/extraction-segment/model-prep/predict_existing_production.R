@@ -1,6 +1,6 @@
 ## meas meng
 ## september 22, 2020
-## predict production from existing wells with exit
+## predict production from existing wells without exit
 
 # inputs ------
 

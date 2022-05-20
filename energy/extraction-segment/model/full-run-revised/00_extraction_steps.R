@@ -41,10 +41,10 @@ library(foreach)
 # source from other scripts -------
 
 # source load_input_info.R to load input info
-source(here::here('energy', 'extraction-segment', 'full-run-revised', 'load_input_info.R'))
+source(here::here('energy', 'extraction-segment', 'model', 'full-run-revised', 'load_input_info.R'))
 
 # source function to predict extraction
-source(here::here('energy', 'extraction-segment', 'full-run-revised', 'fun_extraction_model_targets.R'))
+source(here::here('energy', 'extraction-segment', 'model', 'full-run-revised', 'fun_extraction_model_targets.R'))
 
 
 # step 0: load the inputs

@@ -27,10 +27,10 @@
 # source from other scripts -------
   
   # source function to predict extraction
-    source(here::here('energy', 'extraction-segment', 'fun_extraction_model.R'))
+    source(here::here('energy', 'extraction-segment', 'model', 'v1', 'fun_extraction_model.R'))
   
   # source function to predict extraction
-    source(here::here('energy', 'extraction-segment', 'fun_process_extraction.R'))
+    source(here::here('energy', 'extraction-segment', 'model', 'v1', 'fun_process_extraction.R'))
   
 # load libraries ------
 
@@ -50,7 +50,7 @@
   library(cowplot)
   
   # source function to predict extraction
-  source(here::here('energy', 'extraction-segment', 'fun_diagnostic_plot.R'))
+  source(here::here('energy', 'extraction-segment', 'model', 'v1', 'fun_diagnostic_plot.R'))
   
   if (run_diagnostic_figs == 1) {
   
@@ -63,7 +63,7 @@
   }
   
   
-  source(here::here('energy', 'extraction-segment', 'fun_benchmark.R'))
+  source(here::here('energy', 'extraction-segment', 'model', 'v1', 'fun_benchmark.R'))
   
   if (run_benchmark_figs == 1) {
     
@@ -78,7 +78,7 @@
   
     
 # step 3: process outputs for health and labor ------
-  source(here::here('energy', 'compile-outputs', 'compile_extraction_outputs.R'))
+  source(here::here('energy', 'compile-outputs', 'model', 'v1', 'compile_extraction_outputs.R'))
   
   if (processes_out == 1) {
     

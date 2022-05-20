@@ -35,7 +35,7 @@
 # source from other scripts -------
   
   # source function to predict extraction
-    source(here::here('energy', 'extraction-segment', 'full-run', 'fun_extraction_model_full.R'))
+    source(here::here('energy', 'extraction-segment', 'model', 'v2', 'fun_extraction_model_full.R'))
   
   
 # load libraries ------

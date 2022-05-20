@@ -22,7 +22,7 @@ forecast_file     = 'field_capex_opex_forecast_final.csv'
 resource_file     = 'field_resource.csv'
 oil_price_file    = 'oil_price_projections_revised.xlsx'
 inn_file          = 'innovation_scenarios.csv'
-carbon_file       = 'carbon_prices_revised.csv' ## includes equiv setback and 90%
+carbon_file       = 'carbon_prices_revised.csv' 
 ccs_ext_file      = 'ccs_extraction_scenarios_revised.csv' ## revised includes ccs cost = inf
 ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
 setback_file      = 'setback_coverage_R.csv'
@@ -43,8 +43,8 @@ emis_reduc_file     = 'emission_reduction_90.csv'
 source(here::here('energy', 'scenario-prep', 'ccs_parameterization.R'))
 
 ## source all functions for optimization
-items <- list.files(here::here("energy", "extraction-segment", "full-run-revised", "target-functions"))
-walk(items, ~ here::here("energy", "extraction-segment", "full-run-revised", "target-functions", .x) %>% source()) 
+items <- list.files(here::here("energy", "extraction-segment", "model", "full-run-revised", "target-functions"))
+walk(items, ~ here::here("energy", "extraction-segment", "model", "full-run-revised", "target-functions", .x) %>% source()) 
 
 # # source function to create matrix of scenarios and forecasted variables
 #   source(here::here('energy', 'extraction-segment', 'full-run', 'fun_input_scenarios_full.R'))

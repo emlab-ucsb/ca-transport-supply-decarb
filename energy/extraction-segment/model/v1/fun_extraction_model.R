@@ -28,7 +28,7 @@ run_extraction_model <- function(scenario_selection) {
       source(here::here('energy', 'scenario-prep', 'ccs_parameterization.R'))
     
     # source function to create matrix of scenarios and forecasted variables
-      source(here::here('energy', 'extraction-segment', 'fun_input_scenarios.R'))
+      source(here::here('energy', 'extraction-segment', 'model', 'v1', 'fun_input_scenarios.R'))
     
     ## exit function
     calc_num_well_exits <- function(fe_val, bhat, p_oil, op_hat, opex_val, dhat, depl_val) {

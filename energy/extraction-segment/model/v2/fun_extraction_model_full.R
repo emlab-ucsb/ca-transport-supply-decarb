@@ -26,11 +26,11 @@ run_extraction_model <- function(scenario_selection) {
     # brent_file        = 'brent_oil_price_projections_real.xlsx'
     oil_price_file    = 'oil_price_projections_revised.xlsx'
     inn_file          = 'innovation_scenarios.csv'
-    # carbon_file       = 'carbon_prices_revised.csv'
-    carbon_file       = 'final_carbon_tax_scenarios.csv' ## includes equiv setback and 90%
+    carbon_file       = 'carbon_prices_revised.csv'
+    # carbon_file       = 'final_carbon_tax_scenarios.csv' ## includes equiv setback and 90%
     # carbon_file       = 'carbon_px_scens_search.csv' ## carbon price search
     ccs_ext_file      = 'ccs_extraction_scenarios_revised.csv' ## revised includes ccs cost = inf
-    ccs_ref_file      = 'ccs_refining_scenarios.csv'
+    # ccs_ref_file      = 'ccs_refining_scenarios.csv'
     ghg_file          = 'ghg_emissions_x_field_2018-2045.csv'
     setback_file      = 'setback_coverage_R.csv'
     # prod_quota_file   = 'prod_quota_scenarios.csv'
@@ -54,7 +54,7 @@ run_extraction_model <- function(scenario_selection) {
     #   source(here::here('energy', 'extraction-segment', 'full-run', 'fun_input_scenarios_full.R'))
     
     # source function to filter scenario selection
-     source(here::here('energy', 'extraction-segment', 'full-run', 'fun_filter_scenarios.R'))
+     source(here::here('energy', 'extraction-segment', 'model', 'v2', 'fun_filter_scenarios.R'))
     
     ## functions and info for calculating ccs info
     a = 4
