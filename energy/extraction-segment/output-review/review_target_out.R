@@ -10,9 +10,9 @@ library(tidyverse)
 save_external <- 1
 
 ## path names, ## UPDATE THESE WITH NEW RUNS!!!!!
-extraction_folder_path <- 'outputs/predict-production/extraction_2021-12-06/'
-extraction_folder_name <- 'subset_target_scens/'
-external_path <- 'extraction-out/extraction_2022-02-07/all-target/'
+# extraction_folder_path <- 'outputs/predict-production/extraction_2021-12-06/'
+# extraction_folder_name <- 'subset_target_scens/'
+external_path <- 'extraction-out/extraction_2022-05-20/all-target/'
 
 
 ## current date
@@ -80,6 +80,11 @@ ggplot(state_subset_all, aes(x = year, y = carbon_price_usd_per_kg * 1000, color
   labs(y = "carbon price usd per mt")
 
 
+## production
+prod <- ggplot(state_subset_all, aes(x = year, y = total_prod_bbl / 1e6, color = target_policy, group = scen_id)) +
+  geom_line() +
+  facet_wrap(~oil_price_scenario)
 
+plotly::ggplotly(prod)
 
 
