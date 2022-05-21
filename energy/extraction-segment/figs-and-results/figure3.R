@@ -15,26 +15,26 @@ library(tidyverse)
 ## source figs
 items <- "figure_themes.R"
 
-walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/'
+fig_path <- 'outputs/academic-out/extraction/figures/manuscript-update/'
 
 ## csv names
 # levels_file <- 'state_levels_subset.csv'
 npv_file <- 'npv_x_metric_all_oil.csv'
-dac_file <- 'dac_health_labor_all_oil.csv' ## DAC shares not relative to BAU
+# dac_file <- 'dac_health_labor_all_oil.csv' ## DAC shares not relative to BAU
 dac_bau_file <- 'dac_bau_health_labor_all_oil.csv' ## DAC shares relative to BAU
-dac_pop_file <- 'state_dac_ratios.csv'
+# dac_pop_file <- 'state_dac_ratios.csv'
 # carbon_px_file <- "final_carbon_tax_scenarios.csv"
 
 
 ## read in data
 npv_dt <- fread(paste0(main_path, fig_path, npv_file))
-dac_dt <- fread(paste0(main_path, fig_path, dac_file))
+# dac_dt <- fread(paste0(main_path, fig_path, dac_file))
 dac_bau_dt <- fread(paste0(main_path, fig_path, dac_bau_file))
-dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
+# dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
 # carbon_px <- fread(paste0("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs/", carbon_px_file))
 
 ## cumulative
@@ -301,20 +301,20 @@ fig3_plot_grid2 <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure3-ref-case.png'),
        width = 180,
        height = 150,
        units = "mm",)
 
 ggsave(fig3_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure3-ref-case.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure3-ref-case.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'))
 
 
 
@@ -533,20 +533,20 @@ fig3_plot_grid2_l <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-low.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure3-low.png'),
        width = 180,
        height = 150,
        units = "mm")
 
 ggsave(fig3_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-low.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure3-low.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure3-low.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure3-low.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure3-low.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure3-low.pdf'))
 
 
 ## high 
@@ -717,20 +717,20 @@ fig3_plot_grid2_h <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-high.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure3-high.png'),
        width = 180,
        height = 150,
        units = "mm")
 
 ggsave(fig3_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure3-high.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure3-high.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure3-high.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure3-high.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure3-high.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure3-high.pdf'))
 
 
 
@@ -897,20 +897,20 @@ fig4_plot_grid2 <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure4-refcase-relBAU.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.png'),
        width = 100,
        height = 70,
        units = "mm")
 
 ggsave(fig4_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure4-refcase-relBAU.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'),
        width = 100,
        height = 70,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-refcase-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-refcase-relBAU.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'))
 
 
 
@@ -1022,20 +1022,20 @@ fig4_plot_grid2_h <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure4-high-relBAU.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure4-high-relBAU.png'),
        width = 100,
        height = 70,
        units = "mm")
 
 ggsave(fig4_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure4-high-relBAU.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
        width = 100,
        height = 70,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-high-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-high-relBAU.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'))
 
 ## low
 
@@ -1141,20 +1141,20 @@ fig4_plot_grid2_l <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure4-low-relBAU.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure4-low-relBAU.png'),
        width = 100,
        height = 70,
        units = "mm")
 
 ggsave(fig4_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure4-low-relBAU.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'),
        width = 100,
        height = 70,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-high-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-high-relBAU.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'))
 
 
 
@@ -1212,6 +1212,12 @@ embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure4-high-r
 #        width = 5.5,
 #        height = 3,
 #        units = "in")
+
+
+
+
+
+
 
 
 
