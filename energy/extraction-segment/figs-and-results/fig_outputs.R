@@ -12,14 +12,14 @@ library(openxlsx)
 
 ## paths 
 main_path              = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-02-08/'
+extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-05-20/'
 state_save_path        = paste0(main_path, extraction_folder_path, 'state-results/')
-field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-02-07/all-target/field-out/")
+field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-05-20/all-target/field-out/")
 health_out             = paste0(main_path, "outputs/academic-out/health/")
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
-save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/all-oil-px/')
+save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/manuscript-update/')
 dir.create(save_info_path, showWarnings = FALSE)  
 
 ## files
@@ -791,47 +791,47 @@ fwrite(dac_pop_time, paste0(save_info_path, 'state_dac_ratios.csv'))
 
 
 
-### --------------------------------------------------------------------
-## avg # of people/workers affected per bbl (remaining field, exiting field)
-## --------------------------------------------------------------------
-
-## excise, carbon, setback 1-mile
-
-field_files <- paste0(field_out, c("reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_field.rds",
-                                   "reference case-setback_5280ft-no quota-price floor-no ccs-low innovation-no tax_field.rds",
-                                   "reference case-no_setback-no quota-carbon_target_setback_5280ft-no ccs-low innovation-no tax_field.rds",
-                                   "reference case-no_setback-no quota-price floor-no ccs-low innovation-tax_setback_5280ft_field.rds"))
-
-field_dt = setDT(rbindlist(lapply(field_files, readRDS)))
-
-field_dt <- field_dt[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario,
-                                                                       excise_tax_scenario, doc_field_code, doc_fieldname,
-                                                                       year)]
-
-## people affected
-
-##  cross walk between >200 oil fields and ~20 field cluster. 
-## Use this crosswalk to go from oil fields up to field clusters.
-field_cluster_xwalk <- fread(paste0(health_out, field_cluster_file))
-field_cluster_xwalk[, NAME := NULL]
-field_cluster_xwalk[, input_fid := NULL]
-field_cluster_xwalk[, doc_field_code := sprintf("%03d", doc_field_code)]
-
-
-## cluster-level number of affected population, called affected_pop (from a single pulse of PM25) 
-## and population weighted DAC share, called share_dac_weighted. Use these two variables.
-cluster_pop_dt <- fread(paste0(health_out, cluster_pop_file))
-
-## join the data sets
-field_dt_health <- merge(field_dt, field_cluster_xwalk,
-                         by = "doc_field_code",
-                         all.x = T)
-
-field_dt_health <-  merge(field_dt_health, cluster_pop_dt,
-                          by = "id",
-                          all.x = T)
-
-## save
-fwrite(field_dt_health, paste0(save_info_path, 'field_dt_health.csv'))
-
-
+# ### --------------------------------------------------------------------
+# ## avg # of people/workers affected per bbl (remaining field, exiting field)
+# ## --------------------------------------------------------------------
+# 
+# ## excise, carbon, setback 1-mile
+# 
+# field_files <- paste0(field_out, c("reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_field.rds",
+#                                    "reference case-setback_5280ft-no quota-price floor-no ccs-low innovation-no tax_field.rds",
+#                                    "reference case-no_setback-no quota-carbon_target_setback_5280ft-no ccs-low innovation-no tax_field.rds",
+#                                    "reference case-no_setback-no quota-price floor-no ccs-low innovation-tax_setback_5280ft_field.rds"))
+# 
+# field_dt = setDT(rbindlist(lapply(field_files, readRDS)))
+# 
+# field_dt <- field_dt[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario,
+#                                                                        excise_tax_scenario, doc_field_code, doc_fieldname,
+#                                                                        year)]
+# 
+# ## people affected
+# 
+# ##  cross walk between >200 oil fields and ~20 field cluster. 
+# ## Use this crosswalk to go from oil fields up to field clusters.
+# field_cluster_xwalk <- fread(paste0(health_out, field_cluster_file))
+# field_cluster_xwalk[, NAME := NULL]
+# field_cluster_xwalk[, input_fid := NULL]
+# field_cluster_xwalk[, doc_field_code := sprintf("%03d", doc_field_code)]
+# 
+# 
+# ## cluster-level number of affected population, called affected_pop (from a single pulse of PM25) 
+# ## and population weighted DAC share, called share_dac_weighted. Use these two variables.
+# cluster_pop_dt <- fread(paste0(health_out, cluster_pop_file))
+# 
+# ## join the data sets
+# field_dt_health <- merge(field_dt, field_cluster_xwalk,
+#                          by = "doc_field_code",
+#                          all.x = T)
+# 
+# field_dt_health <-  merge(field_dt_health, cluster_pop_dt,
+#                           by = "id",
+#                           all.x = T)
+# 
+# ## save
+# fwrite(field_dt_health, paste0(save_info_path, 'field_dt_health.csv'))
+# 
+# 
