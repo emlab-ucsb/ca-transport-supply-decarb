@@ -15,11 +15,11 @@ library(extrafont)
 ## source figs
 items <- "figure_themes.R"
 
-walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/'
+fig_path <- 'outputs/academic-out/extraction/figures/manuscript-update/'
 
 ## csv names
 levels_name <- 'state_levels_all_oil.csv'
@@ -78,7 +78,7 @@ prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
   
   annotate("text", x = 2044, y = 85, label = "BAU", size = 2) +
   scale_color_manual(values = policy_colors_subset) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
   theme(legend.position = "bottom",
@@ -114,7 +114,7 @@ prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl
   # facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("60% (= 2,500 ft setback)" = "solid", "75% (= 1 mile setback)" = "dashed", "90%" = "dotted")) +
   scale_color_manual(values = c(policy_colors_subset)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
   guides(lty = guide_legend(order = 1), colour = guide_legend(order = 2)) +
@@ -176,7 +176,7 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
   # facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("60%" = "solid", "75%" = "dashed", "90%" = "dotted")) +
   scale_color_manual(values = policy_colors_subset) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 15)) +
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
@@ -354,20 +354,20 @@ fig2_v2_combine <- plot_grid(
 
 
 ggsave(fig2_v2_combine,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-ref-case.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure2-ref-case.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(fig2_v2_combine,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-ref-case.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure2-ref-case.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-ref-case.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'))
 
 
 
@@ -394,7 +394,7 @@ prod_fig_low <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
   
   annotate("text", x = 2042, y = 49, label = "BAU - low price", size = 2) +
   scale_color_manual(values = c(policy_colors_subset)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
   theme(legend.position = "bottom",
@@ -424,7 +424,7 @@ ghg_pw_low <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
   # facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("80%" = "longdash", "85%" = "solid", "90%" = "dotted", "94%" = "dashed")) +
   scale_color_manual(values = policy_colors_subset) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 15)) +
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
@@ -440,8 +440,9 @@ ghg_cumul_low <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "low oil pric
        color = "2045 GHG emission target",
        shape = "Policy intervention") +
   theme_line_n +
-  annotate("text", x = 78.7, y = 208, label = "BAU - low price", size = 2) +
+  annotate("text", x = 78.7, y = 210, label = "BAU - low price", size = 2) +
   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 220)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_y_continuous(limits = c(NA, 0)) +
   theme(legend.position = "none",
@@ -469,7 +470,7 @@ legend_low <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
   
   annotate("text", x = 2044, y = 44, label = "BAU - low price", size = 2) +
   scale_color_manual(values = c(policy_colors_subset)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
   guides(lty = guide_legend(order = 1), colour = guide_legend(order = 2)) +
@@ -526,20 +527,20 @@ low_px_fig <- plot_grid(
 
 
 ggsave(low_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-low.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure2-low.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(low_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-low.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure2-low.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-low.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-low.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure2-low.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure2-low.pdf'))
 
 
 
@@ -563,9 +564,9 @@ prod_fig_high <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "high oil price"), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   
-  annotate("text", x = 2043.5, y = 220, label = "BAU - high price", size = 2) +
+  annotate("text", x = 2040, y = 235, label = "BAU - high price", size = 2) +
   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 250)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
   theme(legend.position = "bottom",
@@ -586,7 +587,7 @@ ghg_pw_high <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         year > 2019,
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "high oil price"), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  annotate("text", x = 2025, y = 15.5, label = "BAU - high price", size = 2) +
+  annotate("text", x = 2040, y = 22.5, label = "BAU - high price", size = 2) +
   labs(title = "GHG emissions",
        x = NULL,
        y = bquote(MtCO[2]~e),
@@ -595,7 +596,7 @@ ghg_pw_high <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
   # facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c("+8%" = "longdash", "2%" = "solid", "21%" = "dashed", "90%" = "dotted")) +
   scale_color_manual(values = policy_colors_subset) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 25)) +
   theme_line_n +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
@@ -611,7 +612,8 @@ ghg_cumul_high <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "high oil pr
        color = "2045 GHG emission target",
        shape = "Policy intervention") +
   theme_line_n +
-  annotate("text", x = -4, y = 470, label = "BAU - high price", size = 2) +
+  annotate("text", x = -4, y = 475, label = "BAU - high price", size = 2) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 500)) +
   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_y_continuous(limits = c(NA, 0)) +
@@ -699,18 +701,18 @@ high_px_fig <- plot_grid(
 
 
 ggsave(high_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-high.png'),
+       filename = file.path(main_path, fig_path, 'figs/figure2-high.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(high_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure2-high.pdf'),
+       filename = file.path(main_path, fig_path, 'figs/figure2-high.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-high.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure2-high.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure2-high.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure2-high.pdf'))
 
