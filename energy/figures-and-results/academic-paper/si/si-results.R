@@ -40,7 +40,7 @@ well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file)
 
 
 ## oil price
-oilpx_scens = setDT(read.xlsx(file.path(data_path, oil_price_file), sheet = 'nominal', cols = c(1, 7:9)))
+oilpx_scens = setDT(read.xlsx(file.path(data_path, oil_price_file), 'nominal', colIndex = c(1, 7:9)))
 colnames(oilpx_scens) = c('year', 'reference_case', 'high_oil_price', 'low_oil_price')
 oilpx_scens = melt(oilpx_scens, measure.vars = c('reference_case', 'high_oil_price', 'low_oil_price'), 
                    variable.name = 'oil_price_scenario', value.name = 'oil_price_usd_per_bbl')
