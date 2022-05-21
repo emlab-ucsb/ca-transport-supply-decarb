@@ -23,7 +23,7 @@ cur_date              = Sys.Date()
 main_path     <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 
 ## UPDATE THESE WITH NEW RUNS!!!!!
-extraction_folder_path <- 'outputs/predict-production/extraction_2022-02-07/'
+extraction_folder_path <- 'outputs/predict-production/extraction_2022-05-20/'
 extraction_folder_name <- 'all-target/'
 data_path  <-'data/stocks-flows/processed/'
 
