@@ -380,7 +380,7 @@ fig_bxm_a_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        y = "NPV (2019 USD billion)",
        x = NULL) +
   ylim(0, 3) +
-  xlim(75, 100) +
+  xlim(80, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -401,7 +401,7 @@ fig_bxm_b_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        y = NULL,
        x = NULL) +
   ylim(-6, 0) +
-  xlim(75, 100) +
+  xlim(80, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -422,7 +422,7 @@ fig_bxm_c_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        y = NULL,
        x = NULL) +
   ylim(0, 4) +
-  xlim(75, 100) +
+  xlim(80, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -446,7 +446,7 @@ fig_bxm_d_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   ylim(0, 80) +
-  xlim(75, 100) +
+  xlim(80, 100) +
   theme_line_n +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
@@ -467,7 +467,7 @@ fig_bxm_e_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
-  xlim(75, 100) +
+  xlim(80, 100) +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
         axis.ticks.length.y = unit(0.1, 'cm'),
@@ -487,7 +487,7 @@ fig_bxm_f_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
-  xlim(75, 100) +
+  xlim(80, 100) +
   ylim(0, 50) +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
@@ -564,7 +564,7 @@ fig_bxm_a_h <- ggplot(npv_dt %>% filter(target != 'BAU',
        y = "NPV (2019 USD billion)",
        x = NULL) +
   ylim(0, 5) +
-  scale_x_continuous(breaks = c(-20, 0, 20, 40, 60, 80, 100), limits = c(-25, 101)) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -585,7 +585,7 @@ fig_bxm_b_h <- ggplot(npv_dt %>% filter(target != 'BAU',
        y = NULL,
        x = NULL) +
   ylim(-70, 0) +
-  scale_x_continuous(breaks = c(-20, 0, 20, 40, 60, 80, 100), limits = c(-25, 101)) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -606,7 +606,7 @@ fig_bxm_c_h <- ggplot(npv_dt %>% filter(target != 'BAU',
        y = NULL,
        x = NULL) +
   ylim(0, 15) +
-  scale_x_continuous(breaks = c(-20, 0, 20, 40, 60, 80, 100), limits = c(-25, 101)) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -629,8 +629,7 @@ fig_bxm_d_h <- ggplot(npv_dt %>% filter(target != 'BAU',
        # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
-  ylim(0, 60) +
-  scale_x_continuous(breaks = c(-20, 0, 20, 40, 60, 80, 100), limits = c(-25, 101)) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
   theme_line_n +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
@@ -651,7 +650,7 @@ fig_bxm_e_h <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
-  scale_x_continuous(breaks = c(-20, 0, 20, 40, 60, 80, 100), limits = c(-25, 101)) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
         axis.ticks.length.y = unit(0.1, 'cm'),
@@ -671,7 +670,7 @@ fig_bxm_f_h <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
-  scale_x_continuous(breaks = c(-20, 0, 20, 40, 60, 80, 100), limits = c(-25, 101)) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
   ylim(0, 50) +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
@@ -940,7 +939,7 @@ fig_dac_bau_h_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
     labels = scales::number_format(accuracy = 0.01),
     limits = c(0.25, 0.35)) +
   # scale_x_continuous(limits = c(0, NA)) +
-  scale_x_continuous(breaks = c(-20, 0, 20, 40, 60, 80, 100), limits = c(-25, 101)) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "bottom",
@@ -967,7 +966,7 @@ fig_dac_bau_l_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
   scale_y_continuous(
     labels = scales::number_format(accuracy = 0.01),
     limits = c(0.3, 0.45)) +
-  scale_x_continuous(breaks = c(-20, 0, 20, 40, 60, 80, 100), limits = c(-25, 101)) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -1059,7 +1058,7 @@ fig_dac_bau_h_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
     labels = scales::number_format(accuracy = 0.01),
     limits = c(0.25, 0.35)) +
   # scale_x_continuous(limits = c(0, NA)) +
-  xlim(75, 100) +
+  xlim(80, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "bottom",
@@ -1086,7 +1085,7 @@ fig_dac_bau_l_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
   scale_y_continuous(
     labels = scales::number_format(accuracy = 0.01),
     limits = c(0.3, 0.45)) +
-  xlim(75, 100) +
+  xlim(80, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
