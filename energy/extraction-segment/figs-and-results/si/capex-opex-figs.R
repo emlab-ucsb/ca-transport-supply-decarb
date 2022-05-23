@@ -9,11 +9,11 @@ library(openxlsx)
 ## source figs
 items <- "figure_themes.R"
 
-walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+walk(items, ~ here::here("energy", "extraction-segment",  "figs-and-results", .x) %>% source()) # load local items
 
 
 ## data path
-data_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/'
+data_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-input-df/final/'
 save_directory    <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/figures/si-figs/'
 
 
