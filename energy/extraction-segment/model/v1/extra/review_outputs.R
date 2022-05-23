@@ -30,7 +30,7 @@ prod_quota_scens = subset(prod_quota_scens, select = -units)
 prod_hist = fread(file.path(model_path, 'stocks-flows', histprod_file), header = T)
 
 ## load entry df
-entry_df <- fread(file.path(model_path, 'stocks-flows', entry_df_file), header = T)
+entry_df <- fread(file.path(model_path, 'stocks-flows', 'entry-input-df', 'final', entry_df_file), header = T)
 
 ## pad field codes
 vintage_base[, doc_field_code := sprintf("%03s", doc_field_code)]

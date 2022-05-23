@@ -100,7 +100,7 @@ county_prod[, lab := paste0(adj_county_name, " ", round(prod_2019 / 1e6), "m bbl
 
 
 # ## load entry df 
-# entry_data = fread(file.path(main_path, 'outputs/stocks-flows', entry_file), header = T)
+# entry_data = fread(file.path(main_path, 'outputs/stocks-flows/entry-input-df/final/', entry_file), header = T)
 # entry_data[, doc_field_code := sprintf("%03d", doc_field_code)]
 # entry_data <- entry_data[year == 2019, .(doc_field_code, capex_imputed, opex_imputed)]
 # entry_data[, sum_cost := capex_imputed + opex_imputed]
