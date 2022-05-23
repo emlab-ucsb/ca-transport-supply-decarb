@@ -62,7 +62,7 @@ bau_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction
 county_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2021-11-09/county-results/', labor_file))
 
 ## load opex/ capex
-price_data = fread(file.path(main_path, 'outputs/stocks-flows', forecast_file), header = T)
+price_data = fread(file.path(main_path, 'outputs/stocks-flows/entry-input-df/final/', forecast_file), header = T)
 price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
 price_data[, sum_cost := m_opex_imputed + m_capex_imputed]
 price_data <- price_data[year == 2020, .(doc_field_code, m_opex_imputed, m_capex_imputed, sum_cost)]

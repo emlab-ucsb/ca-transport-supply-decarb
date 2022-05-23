@@ -106,7 +106,7 @@ county_prod[, lab := paste0(adj_county_name, " ", round(prod_2019 / 1e6), "m bbl
 # entry_data[, sum_cost := capex_imputed + opex_imputed]
 # 
 # ## load opex/ capex forecast
-# price_data = fread(file.path(main_path, 'outputs/stocks-flows', forecast_file), header = T)
+# price_data = fread(file.path(main_path, 'outputs/stocks-flows/entry-input-df/final/', forecast_file), header = T)
 # price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
 # price_data[, sum_cost := m_opex_imputed + m_capex_imputed]
 # price_data <- price_data[year == 2020, .(doc_field_code, m_opex_imputed, m_capex_imputed, sum_cost)]
