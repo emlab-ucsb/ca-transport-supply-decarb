@@ -12,9 +12,9 @@ main_path         <- '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current
 academic_out_path      <- file.path(main_path, 'outputs/academic-out/extraction/')
 
 ## read in saved rds files - updates as needed
-extraction_folder = 'extraction_2022-05-20'
+extraction_folder = 'extraction_2022-05-24'
 
-external_path <- '/Volumes/calepa/academic-out/extraction_2022-05-20/'
+external_path <- '/Volumes/calepa/academic-out/extraction_2022-05-24/'
 
 ## get correct path
 
