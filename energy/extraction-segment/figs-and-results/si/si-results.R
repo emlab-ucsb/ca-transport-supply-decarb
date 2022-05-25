@@ -16,11 +16,11 @@ library(rebus)
 ## source figs
 items <- "figure_themes.R"
 
-walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/predict-production/extraction_2022-02-07/'
+extraction_folder_path <- 'outputs/predict-production/extraction_2022-05-24/'
 extraction_folder_name <- 'all-target/'
 fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/'
 save_path <- 'outputs/academic-out/extraction/figures/si-figs/'

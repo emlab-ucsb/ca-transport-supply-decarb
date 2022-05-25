@@ -46,23 +46,23 @@ cluster_fig <- ggplot() +
     plot.margin = margin(0, 2, 0, 8),
     plot.title = element_text(face = 'bold', size = 5, hjust = -0.05))
 
-ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c.png'),
+ggsave(cluster_fig,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/cluster_fig.png'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm")
 
-ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'),
+ggsave(cluster_fig,
+       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/cluster_fig.pdf'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/cluster_fig.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/cluster_fig.pdf'))
 
 
 
