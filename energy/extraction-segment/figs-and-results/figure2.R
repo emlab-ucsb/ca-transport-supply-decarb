@@ -62,7 +62,7 @@ levels_dt <- levels_dt[, target_label := fifelse(target_label == "no_target", "B
 prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
                                         oil_price_scenario == "reference case",
-                                        target_label != "62%"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+                                        target_label != "63%"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
   labs(title = "A. Oil production",
        x = NULL,
@@ -97,7 +97,7 @@ levels_dt_legend <- levels_dt %>%
 ## legend figure
 prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
                                            year > 2019,
-                                           target_label != "62%",
+                                           target_label != "63%",
                                            oil_price_scenario == "reference case"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = legend_lab)) +
   geom_line(size = 0.65, alpha = 0.9) +
   geom_point() +
@@ -160,7 +160,7 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                           year > 2019,
                                           policy_intervention != "BAU",
                                           oil_price_scenario == "reference case",
-                                          target_label != "55%"), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
+                                          target_label != "63%"), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.8) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         year > 2019,
@@ -192,7 +192,7 @@ cumul_ghg <- levels_dt[metric == "total_state_ghg_MtCO2" & year > 2019, .(cumul_
                                                                                                          ghg_2045_perc, target_label)]
 
 
-cumul_ghg$target_label <- factor(cumul_ghg$target_label, levels = c("BAU", "62%",
+cumul_ghg$target_label <- factor(cumul_ghg$target_label, levels = c("BAU", "63%",
                                                                     "66%", "81%",
                                                                     "90%"))
 
@@ -551,7 +551,7 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure2-low.pdf'),
 prod_fig_high <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                             year > 2019,
                                             oil_price_scenario == "high oil price",
-                                            target_label != "8%"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+                                            target_label != "7%"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
   labs(title = "A. Oil production",
        x = NULL,
@@ -581,7 +581,7 @@ ghg_pw_high <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                           year > 2019,
                                           policy_intervention != "BAU",
                                           oil_price_scenario == "high oil price",
-                                          target_label != "8%"), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
+                                          target_label != "7%"), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.8) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         year > 2019,
