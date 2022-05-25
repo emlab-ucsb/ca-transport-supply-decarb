@@ -12,9 +12,9 @@ library(openxlsx)
 
 ## paths 
 main_path              = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-05-20/'
+extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-05-24/'
 state_save_path        = paste0(main_path, extraction_folder_path, 'state-results/')
-field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-05-20/all-target/field-out/")
+field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-05-24/all-target/field-out/")
 health_out             = paste0(main_path, "outputs/academic-out/health/")
 
 ## create a folder to store outputs
