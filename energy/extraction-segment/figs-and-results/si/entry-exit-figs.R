@@ -15,7 +15,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 ## data path
 main_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 data_path         <- paste0(main_path, 'outputs/entry-model-results/')
-save_directory    <- paste0(main_path, 'outputs/academic-out/extraction/figures/si-figs/')
+save_directory    <- paste0(main_path, 'outputs/academic-out/extraction/figures/manuscript-update/figs/si/')
 
 ## files
 prod_file           <- 'well_prod_m_processed.csv'

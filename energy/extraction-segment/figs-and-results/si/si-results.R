@@ -22,8 +22,8 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 extraction_folder_path <- 'outputs/predict-production/extraction_2022-05-24/'
 extraction_folder_name <- 'all-target/'
-fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/'
-save_path <- 'outputs/academic-out/extraction/figures/si-figs/'
+fig_path <- 'outputs/academic-out/extraction/figures/manuscript-update/figs/si/'
+save_path <- 'outputs/academic-out/extraction/figures/manuscript-update/'
 data_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
 scen_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
 
@@ -40,7 +40,7 @@ well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file)
 
 
 ## oil price
-oilpx_scens = setDT(read.xlsx(file.path(data_path, oil_price_file), 'nominal', colIndex = c(1, 7:9)))
+oilpx_scens = setDT(read.xlsx(file.path(data_path, oil_price_file), 'nominal', cols = c(1, 7:9)))
 colnames(oilpx_scens) = c('year', 'reference_case', 'high_oil_price', 'low_oil_price')
 oilpx_scens = melt(oilpx_scens, measure.vars = c('reference_case', 'high_oil_price', 'low_oil_price'), 
                    variable.name = 'oil_price_scenario', value.name = 'oil_price_usd_per_bbl')
@@ -73,7 +73,7 @@ carbonpx_scens[, names := fifelse(carbon_price_scenario == "price floor", "price
 
 
 ## read in data
-levels_dt <- fread(paste0(main_path, fig_path, levels_name))
+levels_dt <- fread(paste0(main_path, save_path, levels_name))
 
 ## filter for BAU, oil price scens
 levels_dt_oilpx <- levels_dt[policy_intervention == 'BAU']
@@ -112,7 +112,7 @@ prod_oil_fig <- ggplot(levels_dt_oilpx %>% filter(metric == "total_state_bbl",
         legend.box="vertical") 
 
 ggsave(prod_oil_fig,
-       filename = file.path(main_path, save_path, 'si-oil-prod-oilpx.png'),
+       filename = file.path(main_path, fig_path, 'si-oil-prod-oilpx.png'),
        width = 5,
        height = 4,
        units = "in")
@@ -128,7 +128,7 @@ ghg_oil_fig <- ggplot(levels_dt_oilpx %>% filter(metric == "total_state_ghg_MtCO
        y = expression(paste("Million metric tonnes of ", CO[2], "e")),
        color = NULL) +
   # scale_color_manual(values = policy_colors_subset) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 20)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
    theme_line +
   theme(legend.position = "bottom",
@@ -136,7 +136,7 @@ ghg_oil_fig <- ggplot(levels_dt_oilpx %>% filter(metric == "total_state_ghg_MtCO
         legend.box="vertical") 
 
 ggsave(ghg_oil_fig,
-       filename = file.path(main_path, save_path, 'si-ghg-oilpx.png'),
+       filename = file.path(main_path, fig_path, 'si-ghg-oilpx.png'),
        width = 5,
        height = 4,
        units = "in")

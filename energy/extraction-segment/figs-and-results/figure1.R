@@ -19,7 +19,7 @@ library(extrafont)
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-05-24/census-tract-results/'
 county_out_path <- 'outputs/academic-out/extraction/extraction_2022-05-24/county-results/'
-fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/'
+fig_path <- 'outputs/academic-out/extraction/figures/manuscript-update/figs/'
 data_path         <- paste0(main_path, 'outputs/entry-model-results/')
 
 ## for SRM figure

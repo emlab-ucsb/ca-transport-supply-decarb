@@ -14,7 +14,7 @@ walk(items, ~ here::here("energy", "extraction-segment",  "figs-and-results", .x
 
 ## data path
 data_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-input-df/final/'
-save_directory    <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/figures/si-figs/'
+save_directory    <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/figures/manuscript-update/figs/si/'
 
 
 ## read in data
