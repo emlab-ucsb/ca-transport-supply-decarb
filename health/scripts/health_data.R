@@ -1,7 +1,7 @@
 # CA transportation decarb: Mortality impacts data processing
 # vthivierge@ucsb.edu
 # created: 08/25/2021
-# updated: 09/13/2021
+# updated: 05/26/2022
 
 # set up environment ########################################
 
@@ -21,7 +21,7 @@ lapply(1:length(packages), function(x)
 #Set directory
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) 
-setwd('../../../..') #Goes back to home project directory
+setwd('../../..') #Goes back to home project directory
 getwd()
 
 # Load and process data #####################################
