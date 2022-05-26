@@ -146,10 +146,8 @@ ggsave(ghg_oil_fig,
 
 # levels_dt_carbon <- levels_dt[oil_price_scenario == 'reference case' &
 #                               carbon_price_scenario %in% c("")]
-
-
-
-levels_dt_carbon[, oil_name := paste0('EIA ', oil_price_scenario)]
+# 
+# levels_dt_carbon[, oil_name := paste0('EIA ', oil_price_scenario)]
 
 ## factor
 levels_dt$oil_name <- factor(levels_dt$oil_name , levels = c("EIA low oil price", "EIA reference case", "EIA high oil price"))
@@ -189,7 +187,7 @@ setback_fig <- ggplot(levels_dt_sb %>% filter(metric == "total_state_bbl",
         legend.box="vertical") 
 
 ggsave(setback_fig,
-       filename = file.path(main_path, save_path, 'si-prod-setback.png'),
+       filename = file.path(main_path, fig_path, 'si-prod-setback.png'),
        width = 5,
        height = 4,
        units = "in")
@@ -210,7 +208,7 @@ setback_ghg_fig <- ggplot(levels_dt_sb %>% filter(metric == "total_state_ghg_MtC
         legend.box="vertical") 
 
 ggsave(setback_ghg_fig,
-       filename = file.path(main_path, save_path, 'si-ghg-setback.png'),
+       filename = file.path(main_path, fig_path, 'si-ghg-setback.png'),
        width = 5,
        height = 4,
        units = "in")

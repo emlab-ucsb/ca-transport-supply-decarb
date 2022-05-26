@@ -40,12 +40,12 @@ inmap_ex_path  <- paste0(main_path, "data/health/source_receptor_matrix/inmap_pr
 
 
 ## update these as needed
-save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/exploratory-figs/figs_2021-11-09/srm')
-# ref_save_info_path <- paste0(main_path, 'outputs/academic-out/refining/exploratory-figs/figs_2021-11-15/srm')
+save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/figures/manuscript-update/')
+
 
 ## files
-bau_file <- 'reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_field_results.rds'
-labor_file <- 'reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_county_results.rds'
+bau_file <- 'reference case-no_setback-no quota_price floor-no ccs_low innovation-no tax_field_results.rds'
+labor_file <- 'reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_county_results.rds'
 forecast_file     <- 'field_capex_opex_forecast_revised.csv'
 ghg_file          <- 'ghg_emissions_x_field_2018-2045.csv'
 setback_file      <- 'setback_coverage_R.csv'
@@ -56,10 +56,10 @@ well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file)
                                                                                                  'doc_field_code' = 'character'))
 
 ## read in bau field out
-bau_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2021-11-09/field-results/', bau_file))
+bau_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2022-05-24/field-results/', bau_file))
 
 ## county out
-county_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2021-11-09/county-results/', labor_file))
+county_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2022-05-24/county-results/', labor_file))
 
 ## load opex/ capex
 price_data = fread(file.path(main_path, 'outputs/stocks-flows/entry-input-df/final/', forecast_file), header = T)
