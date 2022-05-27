@@ -27,7 +27,6 @@ ghg_file            = 'indust_emissions_2000-2019.csv'
 scc_file            = 'social_cost_carbon.csv'
 carbon_px_file      = 'carbon_price_scenarios_revised.xlsx'
 field_cluster_file  = 'extraction_field_cluster_xwalk.csv'
-cluster_pop_file    = 'extraction_cluster_affectedpop.csv'
 
 
 ## read in social cost of carbon

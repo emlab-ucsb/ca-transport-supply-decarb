@@ -1220,118 +1220,118 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
 
 
 
-## version 2, not relative
-## -----------------------------------------------------
-
-## 2019 DAC line
-dac_line <- dac_pop_dt %>% 
-  filter(year == 2019) %>%
-  select(pop_type, year, dac_ratio) %>%
-  mutate(category = ifelse(pop_type == "ct_pop_all", "Employment", "Mortality"),
-         measure = "DAC share",
-         text = paste0("2019 DAC ratio = ", round(dac_ratio, 2)))
-
-reduction_df <- tibble(ghg_2045_perc_reduction = c(100, 100, 50, 50),
-                       category = c("Employment", "Mortality", "Employment", "Mortality")) %>%
-  left_join(dac_line)
-
-
-# dac_line_df <- npv_dac_dt %>%
-#   filter(measure == "DAC share") %>%
-#   mutate(value = dac_line,
-#          text = paste0("2019 DAC ratio = ", round(dac_line, 2)))
-
-dac_dt$category <- factor(dac_dt$category, levels = c("Mortality", "Employment"))
-reduction_df$category <- factor(reduction_df$category, levels = c("Mortality", "Employment"))
-
-## DAC, PV, not relative to BAU
-dac_fig_v2 <- ggplot(dac_dt %>% filter(type == "DAC share",
-                                       metric %in% c("dac_share_pv", "dac_comp_pv_share"),
-                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
-                                       oil_price_scenario == "reference case"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.6) +
-  labs(x = 'GHG emissions reduction target (%, 2045 vs 2019)',
-       y = "DAC share",
-       color = "Policy intervention") +
-  facet_wrap(~category, scales = "free_y") +
-  scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
-  geom_line(data = reduction_df, aes(x = ghg_2045_perc_reduction, y = dac_ratio), inherit.aes = F, color = "darkgray", size = 0.5) +
-  geom_text(data = reduction_df %>% filter(ghg_2045_perc_reduction == 50), aes(x = ghg_2045_perc_reduction + 25,
-                                                                                y = dac_ratio,
-                                                                                label = text), vjust = 0, size = 2, inherit.aes = F) +
-  theme_line +
-  # scale_y_continuous(limits = c(0, NA)) +
-  theme(legend.position = "left",
-        legend.box = "vertical",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-
-## save figure 4, v2
-ggsave(dac_fig_v2,
-       filename = file.path(main_path, fig_path, 'figs/figure4-refcase.png'),
-       width = 5.5,
-       height = 3,
-       units = "in")
-
-## high and low
-## -----------------------------------------------
-
-dac_fig_v2_low <- ggplot(dac_dt %>% filter(type == "DAC share",
-                                       metric %in% c("dac_share_pv", "dac_comp_pv_share"),
-                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
-                                       oil_price_scenario == "low oil price"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.6) +
-  labs(x = 'GHG emissions reduction target (%, 2045 vs 2019)',
-       y = "DAC share",
-       color = "Policy intervention") +
-  facet_wrap(~category, scales = "free_y") +
-  scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
-  geom_line(data = reduction_df, aes(x = ghg_2045_perc_reduction, y = dac_ratio), inherit.aes = F, color = "darkgray", size = 0.5) +
-  geom_text(data = reduction_df %>% filter(ghg_2045_perc_reduction == 50), aes(x = ghg_2045_perc_reduction + 25,
-                                                                               y = dac_ratio,
-                                                                               label = text), vjust = 0, size = 2, inherit.aes = F) +
-  theme_line +
-  # scale_y_continuous(limits = c(0, NA)) +
-  theme(legend.position = "left",
-        legend.box = "vertical",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-
-## save figure 4, v2
-ggsave(dac_fig_v2_low,
-       filename = file.path(main_path, fig_path, 'figs/figure4-low.png'),
-       width = 5.5,
-       height = 3,
-       units = "in")
-
-dac_fig_v2_high <- ggplot(dac_dt %>% filter(type == "DAC share",
-                                           metric %in% c("dac_share_pv", "dac_comp_pv_share"),
-                                           !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
-                                           oil_price_scenario == "high oil price"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.6) +
-  labs(x = 'GHG emissions reduction target (%, 2045 vs 2019)',
-       y = "DAC share",
-       color = "Policy intervention") +
-  facet_wrap(~category, scales = "free_y") +
-  scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
-  geom_line(data = reduction_df, aes(x = ghg_2045_perc_reduction, y = dac_ratio), inherit.aes = F, color = "darkgray", size = 0.5) +
-  geom_text(data = reduction_df %>% filter(ghg_2045_perc_reduction == 50), aes(x = ghg_2045_perc_reduction + 25,
-                                                                               y = dac_ratio,
-                                                                               label = text), vjust = 0, size = 2, inherit.aes = F) +
-  theme_line +
-  # scale_y_continuous(limits = c(0, NA)) +
-  theme(legend.position = "left",
-        legend.box = "vertical",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-
-## save figure 4, v2
-ggsave(dac_fig_v2_high,
-       filename = file.path(main_path, fig_path, 'figs/figure4-high.png'),
-       width = 5.5,
-       height = 3,
-       units = "in")
-
+# ## version 2, not relative
+# ## -----------------------------------------------------
+# 
+# ## 2019 DAC line
+# dac_line <- dac_pop_dt %>% 
+#   filter(year == 2019) %>%
+#   select(pop_type, year, dac_ratio) %>%
+#   mutate(category = ifelse(pop_type == "ct_pop_all", "Employment", "Mortality"),
+#          measure = "DAC share",
+#          text = paste0("2019 DAC ratio = ", round(dac_ratio, 2)))
+# 
+# reduction_df <- tibble(ghg_2045_perc_reduction = c(100, 100, 50, 50),
+#                        category = c("Employment", "Mortality", "Employment", "Mortality")) %>%
+#   left_join(dac_line)
+# 
+# 
+# # dac_line_df <- npv_dac_dt %>%
+# #   filter(measure == "DAC share") %>%
+# #   mutate(value = dac_line,
+# #          text = paste0("2019 DAC ratio = ", round(dac_line, 2)))
+# 
+# dac_dt$category <- factor(dac_dt$category, levels = c("Mortality", "Employment"))
+# reduction_df$category <- factor(reduction_df$category, levels = c("Mortality", "Employment"))
+# 
+# ## DAC, PV, not relative to BAU
+# dac_fig_v2 <- ggplot(dac_dt %>% filter(type == "DAC share",
+#                                        metric %in% c("dac_share_pv", "dac_comp_pv_share"),
+#                                        !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+#                                        oil_price_scenario == "reference case"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.6) +
+#   labs(x = 'GHG emissions reduction target (%, 2045 vs 2019)',
+#        y = "DAC share",
+#        color = "Policy intervention") +
+#   facet_wrap(~category, scales = "free_y") +
+#   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+#   geom_line(data = reduction_df, aes(x = ghg_2045_perc_reduction, y = dac_ratio), inherit.aes = F, color = "darkgray", size = 0.5) +
+#   geom_text(data = reduction_df %>% filter(ghg_2045_perc_reduction == 50), aes(x = ghg_2045_perc_reduction + 25,
+#                                                                                 y = dac_ratio,
+#                                                                                 label = text), vjust = 0, size = 2, inherit.aes = F) +
+#   theme_line +
+#   # scale_y_continuous(limits = c(0, NA)) +
+#   theme(legend.position = "left",
+#         legend.box = "vertical",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+# 
+# ## save figure 4, v2
+# ggsave(dac_fig_v2,
+#        filename = file.path(main_path, fig_path, 'figs/figure4-refcase.png'),
+#        width = 5.5,
+#        height = 3,
+#        units = "in")
+# 
+# ## high and low
+# ## -----------------------------------------------
+# 
+# dac_fig_v2_low <- ggplot(dac_dt %>% filter(type == "DAC share",
+#                                        metric %in% c("dac_share_pv", "dac_comp_pv_share"),
+#                                        !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+#                                        oil_price_scenario == "low oil price"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.6) +
+#   labs(x = 'GHG emissions reduction target (%, 2045 vs 2019)',
+#        y = "DAC share",
+#        color = "Policy intervention") +
+#   facet_wrap(~category, scales = "free_y") +
+#   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+#   geom_line(data = reduction_df, aes(x = ghg_2045_perc_reduction, y = dac_ratio), inherit.aes = F, color = "darkgray", size = 0.5) +
+#   geom_text(data = reduction_df %>% filter(ghg_2045_perc_reduction == 50), aes(x = ghg_2045_perc_reduction + 25,
+#                                                                                y = dac_ratio,
+#                                                                                label = text), vjust = 0, size = 2, inherit.aes = F) +
+#   theme_line +
+#   # scale_y_continuous(limits = c(0, NA)) +
+#   theme(legend.position = "left",
+#         legend.box = "vertical",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+# 
+# ## save figure 4, v2
+# ggsave(dac_fig_v2_low,
+#        filename = file.path(main_path, fig_path, 'figs/figure4-low.png'),
+#        width = 5.5,
+#        height = 3,
+#        units = "in")
+# 
+# dac_fig_v2_high <- ggplot(dac_dt %>% filter(type == "DAC share",
+#                                            metric %in% c("dac_share_pv", "dac_comp_pv_share"),
+#                                            !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
+#                                            oil_price_scenario == "high oil price"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.6) +
+#   labs(x = 'GHG emissions reduction target (%, 2045 vs 2019)',
+#        y = "DAC share",
+#        color = "Policy intervention") +
+#   facet_wrap(~category, scales = "free_y") +
+#   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+#   geom_line(data = reduction_df, aes(x = ghg_2045_perc_reduction, y = dac_ratio), inherit.aes = F, color = "darkgray", size = 0.5) +
+#   geom_text(data = reduction_df %>% filter(ghg_2045_perc_reduction == 50), aes(x = ghg_2045_perc_reduction + 25,
+#                                                                                y = dac_ratio,
+#                                                                                label = text), vjust = 0, size = 2, inherit.aes = F) +
+#   theme_line +
+#   # scale_y_continuous(limits = c(0, NA)) +
+#   theme(legend.position = "left",
+#         legend.box = "vertical",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+# 
+# ## save figure 4, v2
+# ggsave(dac_fig_v2_high,
+#        filename = file.path(main_path, fig_path, 'figs/figure4-high.png'),
+#        width = 5.5,
+#        height = 3,
+#        units = "in")
+# 
 
 
 ## figure 6, setback + tax
@@ -1357,11 +1357,11 @@ ggsave(dac_fig_v2_high,
 ## filter and pivot wider x measure
 csb_npv_dt <- npv_dt %>%
   filter(policy_intervention %in% c('carbon tax & setback', 'carbon tax'),
-         target_label == "90%",
-         title != "Climate: Abated GHG emissions") %>%
+         title != "Climate: avoided damage",
+         target_label == "90%") %>%
   mutate(sb_dist = str_extract(scen_id, pattern = one_or_more(DGT) %R% 'ft'),
          sb_dist = ifelse(is.na(sb_dist), "0ft", sb_dist),
-         sector = ifelse(title == "Labor: Compensation", "labor", "health")) %>%
+         sector = ifelse(title == "Labor: forgone wages", "labor", "health")) %>%
   select(oil_price_scenario, sb_dist, sector, value, measure, measure_unit) %>%
   pivot_wider(names_from = sector, values_from = value) %>%
   mutate(scenario_name = paste0("Carbon tax + ", sb_dist, " setback"))
@@ -1371,8 +1371,8 @@ csb_npv_dt <- npv_dt %>%
 # fig
 fig_carbon_sb <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "reference case"), aes(x = labor, y = health, color = scenario_name)) +
   geom_point(size = 3, alpha = 0.8) +
-  labs(y = "Health: value of avoided mortalities",
-       x = "Labor: value of compensation loss",
+  labs(y = "Health: avoided mortality",
+       x = "Labor: forgone wages",
        color = NULL) +
   facet_wrap(~ measure, ncol = 2, scales = "free") +
   scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
@@ -1391,7 +1391,7 @@ fig_carbon_sb <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "reference c
 
 ## save figure 3
 ggsave(fig_carbon_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure6-refcase.png'),
+       filename = file.path(main_path, fig_path, 'figs/si/figure6-refcase.png'),
        width = 6.5,
        height = 5,
        units = "in")
@@ -1423,7 +1423,7 @@ fig_carbon_sb_low <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "low oil
 
 ## save figure 3
 ggsave(fig_carbon_sb_low,
-       filename = file.path(main_path, fig_path, 'figs/figure6-low.png'),
+       filename = file.path(main_path, fig_path, 'figs/si/figure6-low.png'),
        width = 6.5,
        height = 5,
        units = "in")
@@ -1453,7 +1453,7 @@ fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high o
 
 ## save figure 3
 ggsave(fig_carbon_sb_high,
-       filename = file.path(main_path, fig_path, 'figs/figure6-high.png'),
+       filename = file.path(main_path, fig_path, 'figs/si/figure6-high.png'),
        width = 6.5,
        height = 5,
        units = "in")
@@ -1844,7 +1844,7 @@ fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
 
 
 ggsave(fig_benefit_x_metric2,
-       filename = file.path(main_path, fig_path, 'figs/figure5a-refcase.png'),
+       filename = file.path(main_path, fig_path, 'figs/si/figure5a-refcase.png'),
        width = 8,
        height = 8,
        units = "in")
@@ -1870,7 +1870,7 @@ fig_benefit_x_metric2_low <- ggplot(npv_90 %>% filter(target != 'BAU',
 
 
 ggsave(fig_benefit_x_metric2_low,
-       filename = file.path(main_path, fig_path, 'figs/figure5a-low.png'),
+       filename = file.path(main_path, fig_path, 'figs/si/figure5a-low.png'),
        width = 8,
        height = 8,
        units = "in")
@@ -1894,7 +1894,7 @@ fig_benefit_x_metric2_high <- ggplot(npv_90 %>% filter(target != 'BAU',
 
 
 ggsave(fig_benefit_x_metric2_high,
-       filename = file.path(main_path, fig_path, 'figs/figure5a-high.png'),
+       filename = file.path(main_path, fig_path, 'figs/si/figure5a-high.png'),
        width = 8,
        height = 8,
        units = "in")
