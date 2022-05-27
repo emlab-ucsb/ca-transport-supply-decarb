@@ -31,7 +31,7 @@ outputs_path    <- 'outputs/academic-out/extraction/'
 source_path     <- paste0(main_path, 'data/health/source_receptor_matrix/')
 
 ## results path (update this)
-ct_results <- 'extraction_2022-02-08/census-tract-results/'
+ct_results <- 'extraction_2022-05-24/census-tract-results/'
 
 ## files
 ghg_file            <- 'ghg_emissions_x_field_2018-2045.csv'
@@ -46,7 +46,7 @@ monthly_inj_file    <- 'well_inj_m_processed.csv'
 
 ## paths
 data_path  <-'data/stocks-flows/processed/'
-fig_path <- 'outputs/academic-out/extraction/figures/all-oil-px/figs/'
+fig_path <- 'outputs/academic-out/extraction/figures/manuscript-update/figs/si/'
 
 ## figures - county-level indicator x 2019 production, add 90th percentile line
 ## ghg emission intensity, costs, employment multipliers, pm2.5?, setbacks?
@@ -284,14 +284,14 @@ ggsave(county_ghg_plot,
 ## -----------------------------------
 
 county_cost_plot <- ggplot(county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_cost)) +
-  geom_point(alpha = 0.8) +
+  geom_point(alpha = 0.7) +
   labs(x = "2019 production (million bbls)",
        y = "County-level cost per bbl",
        caption = "Figure includes all counties that produced >= 1 million bbls in 2019") +
   ggrepel::geom_text_repel(data = county_summaries %>% filter(total_prod_bbl >= 1e6), aes(x = total_prod_bbl / 1e6, y = wm_cost, label = adj_county_name), 
                            hjust = 0, nudge_x = 0.1, size = 3) +
   geom_hline(yintercept = state_summaries$wm_cost, lty = "dashed", color = "#848C8E") +
-  annotate("text", x = 30, y = 36, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
+  annotate("text", x = 50, y = 30, label= "State weighted average (weight = production)", color = "#848C8E", size = 2.5) + 
   scale_y_continuous(limits = c(0, 60)) +
   theme_line
 
