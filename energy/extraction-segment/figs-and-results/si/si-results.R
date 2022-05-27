@@ -296,7 +296,7 @@ excise_fig <- ggplot(excise_tax_paths %>% filter(year == 2020), aes(x = target_n
   theme(legend.title = element_blank()) +
   scale_color_manual(values = rev(macro_pal)) 
 
-ggsave(filename =  paste0(main_path, save_path, "si-excise-tax-fig.png"), excise_fig, width = 5, height = 4, units = "in", dpi = 300)
+ggsave(filename =  paste0(main_path, save_path, "figs/si/si-excise-tax-fig.png"), excise_fig, width = 5, height = 4, units = "in", dpi = 300)
 
 
 ## carbon tax values
@@ -354,7 +354,7 @@ carbon_tax_fig <- plot_grid(
 )
 
 ggsave(carbon_tax_fig,
-       filename = file.path(main_path, save_path, "si-carbon-tax-fig.png"),
+       filename = file.path(main_path, save_path, "figs/si/si-carbon-tax-fig.png"),
        width = 10,
        height = 10,
        units = "in")
@@ -414,7 +414,7 @@ prod_plot <-
                                'Existing wells' = '#FED766',
                                'New wells' = '#009FB7'))
 
-ggsave(filename =  paste0(main_path, save_path, "hist-future-prod.png"), prod_plot, width = 6, height = 10, units = "in", dpi = 300)
+ggsave(filename =  paste0(main_path, save_path, "figs/si/hist-future-prod.png"), prod_plot, width = 6, height = 10, units = "in", dpi = 300)
 
 
 
