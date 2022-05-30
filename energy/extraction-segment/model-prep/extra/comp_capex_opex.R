@@ -525,3 +525,49 @@ ggsave(asset_opex_fig,
 embed_fonts(paste0(main_path, fig_path, 'asset_opex_comp.pdf'),
             outfile = paste0(main_path, fig_path, 'asset_opex_comp.pdf'))
 
+## filter for values taht are different
+## ----------------------------------------
+
+opex_comp_filt <- asset_comp %>%
+  filter(cost == 'opex') %>%
+  select(original_asset_name, year, version, usd) %>%
+  pivot_wider(names_from = 'version', values_from = usd) %>%
+  mutate(diff = Current - Previous) %>%
+  filter(year == 2045) %>%
+  filter(diff > 0)
+
+
+## plot ones with different values
+## ------------------------------------
+
+asset_opex_filt_fig <- ggplot(asset_comp %>% filter(cost == "opex" & original_asset_name %in% unique(opex_comp_filt$original_asset_name)), aes(x = year, y = usd, lty = version)) +
+  geom_line(size = 0.5, alpha = 0.9) +
+  geom_hline(yintercept = 0, lty = 'dashed', color = "grey") +
+  geom_vline(xintercept = 2020, color = "darkgrey") +
+  facet_wrap( ~ original_asset_name, scales = "free_y") +
+  labs(title = 'Historic and projected opex for Rystad assets',
+       color = NULL,
+       lty = NULL,
+       x = NULL,
+       y = 'USD') +
+  scale_linetype_manual(values = c('solid', 'dotted')) +
+  scale_color_discrete(guide = "none") +
+  theme_bw() +
+  theme(legend.position = 'bottom') 
+
+## save
+ggsave(asset_opex_filt_fig,
+       filename = file.path(main_path, fig_path, 'asset_opex_comp_filt.pdf'),
+       width = 15,
+       height = 12,
+       units = "in",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'asset_opex_comp_filt.pdf'),
+            outfile = paste0(main_path, fig_path, 'asset_opex_comp_filt.pdf'))
+
+
+
+
+
+
