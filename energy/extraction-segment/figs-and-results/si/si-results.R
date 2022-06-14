@@ -33,6 +33,7 @@ levels_name       <- 'state_levels_all_oil.csv'
 oil_price_file    <- 'oil_price_projections_revised.xlsx'
 carbon_file       <- 'carbon_prices_revised.csv'
 prod_file         <- "well_prod_m_processed.csv"
+tax_file          <- "tax_values.csv"
 
 ## monthly well production
 well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
@@ -81,6 +82,11 @@ levels_dt_oilpx[, oil_name := paste0('EIA ', oil_price_scenario)]
 
 ## factor
 levels_dt_oilpx$oil_name <- factor(levels_dt_oilpx$oil_name , levels = c("EIA low oil price", "EIA reference case", "EIA high oil price"))
+
+## tax data
+tax_df <- fread(paste0(main_path, save_path, tax_file))
+
+
 
 ## production difference (2019 vs 2045, BAU)
 prod_diff <- levels_dt_oilpx %>%
@@ -277,6 +283,7 @@ for (i in 1:length(state_files_to_process)) {
 
 state_subset_all <- rbindlist(state_out_list)
 
+
 ## excise tax values
 excise_tax_paths <- state_subset_all %>%
   filter(target_policy == "excise_tax" & setback_scenario == "no_setback") %>%
@@ -297,6 +304,22 @@ excise_fig <- ggplot(excise_tax_paths %>% filter(year == 2020), aes(x = target_n
   scale_color_manual(values = rev(macro_pal)) 
 
 ggsave(filename =  paste0(main_path, save_path, "figs/si/si-excise-tax-fig.png"), excise_fig, width = 5, height = 4, units = "in", dpi = 300)
+
+## ---
+## figure
+excise_fig2 <- ggplot(excise_tax_paths, aes(x = year, y = tax_val, color = scenario_name)) +
+  geom_line(alpha = 0.8, size = 1) +
+  labs(y = "Excise tax (USD)",
+       x = NULL) +
+  facet_wrap(~target_name, scales = "free_y") +
+  # scale_y_continuous(expand = c(0, 0), limits = c(0, 1.25)) +
+  theme(legend.title = element_blank()) +
+  scale_color_manual(values = rev(macro_pal)) +
+  theme_bw()
+
+ggsave(filename =  paste0(main_path, save_path, "figs/si/si-excise-tax-val-fig.png"), excise_fig2, width = 5, height = 4, units = "in", dpi = 300)
+
+
 
 
 ## carbon tax values

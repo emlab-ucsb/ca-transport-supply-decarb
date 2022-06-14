@@ -5,6 +5,7 @@
 ## libraries
 library(data.table)
 library(tidyverse)
+library(openxlsx)
 
 ## model output location
 save_external <- 1
@@ -21,6 +22,10 @@ cur_date              = Sys.Date()
 ## paths 
 main_path  <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 data_path  <-'data/stocks-flows/processed/'
+
+
+## files
+oil_price_file    <- 'oil_price_projections_revised.xlsx'
 
 ## external paths
 main_path_external <- '/Volumes/calepa/'
@@ -45,6 +50,49 @@ for (i in 1:length(state_files_to_process)) {
 }
 
 state_subset_all <- rbindlist(state_out_list)
+
+## save a version with the tax values
+## ---------------------------------------------
+
+## add oil price
+oilpx_scens = setDT(read.xlsx(paste0(main_path, data_path, oil_price_file), 'nominal', cols = c(1, 7:9)))
+colnames(oilpx_scens) = c('year', 'reference_case', 'high_oil_price', 'low_oil_price')
+oilpx_scens = melt(oilpx_scens, measure.vars = c('reference_case', 'high_oil_price', 'low_oil_price'), 
+                   variable.name = 'oil_price_scenario', value.name = 'oil_price_usd_per_bbl')
+oilpx_scens[, oil_price_scenario := gsub('_', ' ', oil_price_scenario)]
+oilpx_scens[, oil_price_scenario := factor(oil_price_scenario, levels = c('reference case', 'high oil price', 'low oil price'))]
+oilpx_scens <- oilpx_scens[year > 2019]
+setorderv(oilpx_scens, c('oil_price_scenario', 'year'))
+
+oilpx_scens <- oilpx_scens %>%
+  mutate(scenario_name = ifelse(oil_price_scenario == "reference case", "EIA reference case",
+                                ifelse(oil_price_scenario == "high oil price", "EIA high case",
+                                       ifelse(oil_price_scenario == "low oil price", "EIA low case", "NA"))))
+
+oilpx_scens$scenario_name <- factor(oilpx_scens$scenario_name, levels = c('EIA low case', 'EIA reference case', 'EIA high case'))
+
+oilpx_scens <- oilpx_scens[, .(year, oil_price_scenario, oil_price_usd_per_bbl)]
+
+## -------------------------------------
+
+tax_val_df <- state_subset_all %>%
+  select(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario,
+         excise_tax_scenario, year, total_prod_bbl, total_ghg_mtCO2e, target_policy,
+         target, target_val, tax_rate, carbon_price_usd_per_kg) %>%
+  left_join(oilpx_scens) %>%
+  mutate(excise_tax_val = tax_rate * oil_price_usd_per_bbl) %>%
+  select(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario,
+         excise_tax_scenario, target_policy, target, target_val,
+         year, total_prod_bbl, total_ghg_mtCO2e, tax_rate, oil_price_usd_per_bbl,
+         excise_tax_val, carbon_price_usd_per_kg)
+
+fwrite(tax_val_df, paste0(save_info_path, 'state_levels_all_oil.csv'))
+
+
+fwrite(tax_val_df, paste0(main_path, 'outputs/academic-out/extraction/figures/manuscript-update/tax_values.csv'))
+
+
+
 
 ## check 2045 values
 state_out_2045 <- state_subset_all[year == 2045, .(scen_id, oil_price_scenario, innovation_scenario,
