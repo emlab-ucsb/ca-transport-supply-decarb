@@ -12,10 +12,10 @@ library(cowplot)
 library(rebus)
 library(tidyverse)
 
-# ## source figs
-# items <- "figure_themes.R"
-# 
-# walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+## source figs
+items <- "figure_themes.R"
+
+walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results" .x) %>% source()) # load local items
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
