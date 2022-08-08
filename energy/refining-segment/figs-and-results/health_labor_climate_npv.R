@@ -353,7 +353,16 @@ fig_dac_bau_h <- ggplot(dac_dt %>% filter(scenario %in% scens,
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        plot.background = element_rect(color="white")) 
+
+ggsave(fig_dac_bau_h,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_h.png'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'png')
 
 ggsave(fig_dac_bau_h,
        filename = file.path(main_path, fig_path, 'fig_dac_bau_h.pdf'),
@@ -394,8 +403,17 @@ fig_dac_bau_l <- ggplot(dac_dt %>% filter(scenario %in% scens,
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        plot.background = element_rect(color="white")) 
   
+ggsave(fig_dac_bau_l,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_l.png'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'png')
+
 ggsave(fig_dac_bau_l,
        filename = file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'),
        width = 5,
