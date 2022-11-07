@@ -18,8 +18,9 @@ items <- "figure_themes.R"
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## paths
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/refining/figures/'
+# main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path <- '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn/'
+fig_path <- 'outputs/academic-out/refining/figures/manuscript'
 
 ## csv names
 npv_file <- 'npv_x_metric_refining.csv'
@@ -352,7 +353,28 @@ fig_dac_bau_h <- ggplot(dac_dt %>% filter(scenario %in% scens,
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        plot.background = element_rect(color="white")) 
+
+ggsave(fig_dac_bau_h,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_h.png'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'png')
+
+ggsave(fig_dac_bau_h,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_h.pdf'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'pdf')
+
+embed_fonts(file.path(main_path, fig_path, 'fig_dac_bau_h.pdf'),
+            outfile = file.path(main_path, fig_path, 'fig_dac_bau_h.pdf'))
+
 
 fig_dac_bau_l <- ggplot(dac_dt %>% filter(scenario %in% scens,
                                           oil_price_scenario == "reference case",
@@ -381,9 +403,28 @@ fig_dac_bau_l <- ggplot(dac_dt %>% filter(scenario %in% scens,
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        plot.background = element_rect(color="white")) 
   
-  
+ggsave(fig_dac_bau_l,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_l.png'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'png')
+
+ggsave(fig_dac_bau_l,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'pdf')
+
+embed_fonts(file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'),
+            outfile = file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'))
+
   
 ## below is not updated
 ## ---------------------------------
