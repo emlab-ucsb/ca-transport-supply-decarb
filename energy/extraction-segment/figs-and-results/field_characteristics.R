@@ -44,7 +44,7 @@ save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/figures/man
 
 
 ## files
-bau_file <- 'reference case-no_setback-no quota_price floor-no ccs_low innovation-no tax_field_results.rds'
+bau_file <- 'reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_field_results.rds'
 labor_file <- 'reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_county_results.rds'
 forecast_file     <- 'field_capex_opex_forecast_revised.csv'
 ghg_file          <- 'ghg_emissions_x_field_2018-2045.csv'
