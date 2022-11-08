@@ -41,7 +41,7 @@ ca_crs <- 3488
 ## source figs
 items <- "figure_themes.R"
 
-walk(items, ~ here::here("energy", "extraction-segment" "figs-and-results", .x) %>% source()) # load local items
+walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## plot title theme
 plot_title_theme <- theme_ipsum(base_family = 'Arial',

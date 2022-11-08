@@ -79,7 +79,11 @@ ghg_factors <- ghg_factors[year == 2019, .(doc_field_code, upstream_kgCO2e_bbl)]
 ## merge
 indicators_df <- full_join(mean_prod_field, price_data) %>%
   left_join(ghg_factors) %>%
-  filter(!is.na(m_opex_imputed) & mean_prod > 0)
+  filter(!is.na(m_opex_imputed)) %>%
+  select(doc_field_code, doc_fieldname, mean_prod, m_opex_imputed:upstream_kgCO2e_bbl)
+
+## save
+write_csv(indicators_df, paste0(save_revision_path, "ghg_cost_df.csv"))
 
 ## plot
 ghg_v_cost_fig <- ggplot(indicators_df, aes(x = m_opex_imputed, y = upstream_kgCO2e_bbl, size = mean_prod / 1e6)) +
