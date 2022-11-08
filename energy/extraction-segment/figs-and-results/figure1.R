@@ -17,9 +17,9 @@ library(extrafont)
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-05-24/census-tract-results/'
-county_out_path <- 'outputs/academic-out/extraction/extraction_2022-05-24/county-results/'
-fig_path <- 'outputs/academic-out/extraction/figures/manuscript-update/figs/'
+ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-07/census-tract-results/'
+county_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-07/county-results/'
+fig_path <- 'outputs/academic-out/extraction/figures/revision-replicate/figs/'
 data_path         <- paste0(main_path, 'outputs/entry-model-results/')
 
 ## for SRM figure
@@ -325,22 +325,22 @@ map_fig_a <- ggdraw(fig1_map, clip = "on") +
 #   )
 
 ggsave(map_fig_a,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.png'),
+       filename = file.path(main_path, fig_path, 'figure1a.png'),
        width = 88,
        height = 110,
        dpi = 300,
        units = "mm")
 
 ggsave(map_fig_a,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'),
+       filename = file.path(main_path, fig_path, 'figure1a.pdf'),
        width = 88,
        height = 110,
        units = "mm",
        dpi = 300,
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure1a.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figure1a.pdf'),
+            outfile = paste0(main_path, fig_path, 'figure1a.pdf'))
 
 
 ## --------------------------------------------------
@@ -420,22 +420,22 @@ state_fig_fs <-
 
 ## save
 ggsave(state_fig_fs,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1b.png'),
+       filename = file.path(main_path, fig_path, 'figure1b.png'),
        width = 50,
        height = 45,
        dpi = 300,
        units = "mm")
 
 ggsave(state_fig_fs,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'),
+       filename = file.path(main_path, fig_path, 'figure1b.pdf'),
        width = 50,
        height = 45,
        units = "mm",
        dpi = 300,
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/figure1b.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figure1b.pdf'),
+            outfile = paste0(main_path, fig_path, 'figure1b.pdf'))
 
 
 
@@ -528,22 +528,22 @@ ct_health_map <- ggplot() +
 
 ## save
 ggsave(ct_health_map,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1d.png'),
+       filename = file.path(main_path, fig_path, 'fig1d.png'),
        width = 44,
        height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(ct_health_map,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1d.pdf'),
+       filename = file.path(main_path, fig_path, 'fig1d.pdf'),
        width = 44,
        height = 55,
        units = "mm",
        dpi = 300,
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1d.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1d.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'fig1d.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1d.pdf'))
 
 
 
@@ -603,22 +603,22 @@ labor_map <- ggplot() +
 
 ## save
 ggsave(labor_map,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1e.png'),
+       filename = file.path(main_path, fig_path, 'fig1e.png'),
        width = 44,
        height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(labor_map,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1e.pdf'),
+       filename = file.path(main_path, fig_path, 'fig1e.pdf'),
        width = 44,
        height = 55,
        units = "mm",
        dpi = 300,
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1e.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1e.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'fig1e.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1e.pdf'))
 
 
 
@@ -842,22 +842,22 @@ total_pm25 <- ggplot() +
 
   
 ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c.png'),
+       filename = file.path(main_path, fig_path, 'fig1c.png'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'),
+       filename = file.path(main_path, fig_path, 'fig1c.pdf'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'fig1c.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1c.pdf'))
 
 ## v2
 ## ------------------------------
@@ -912,22 +912,22 @@ total_pm25_v2 <- ggplot() +
 
 
 ggsave(total_pm25_v2,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c_v2.png'),
+       filename = file.path(main_path, fig_path, 'fig1c_v2.png'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(total_pm25_v2,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1c_v2.pdf'),
+       filename = file.path(main_path, fig_path, 'fig1c_v2.pdf'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c_v2.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1c_v2.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'fig1c_v2.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1c_v2.pdf'))
 
 
 
@@ -954,7 +954,7 @@ fig1be <- plot_grid(
 )
 
 ggsave(fig1be,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1_be.png'),
+       filename = file.path(main_path, fig_path, 'fig1_be.png'),
        width = 100,
        height = 110,
        units = "mm")
@@ -976,21 +976,21 @@ fig1_all <- plot_grid(
 )
 
 ggsave(fig1_all,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1_all.png'),
+       filename = file.path(main_path, fig_path, 'fig1_all.png'),
        width = 180,
        height = 110,
        units = "mm")
 
 
 ggsave(fig1_all,
-       filename = file.path(main_path, fig_path, 'figs/main-text-revisions/fig1_all.pdf'),
+       filename = file.path(main_path, fig_path, 'fig1_all.pdf'),
        width = 12,
        height = 7.5,
        units = "in",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/main-text-revisions/fig1_all.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/main-text-revisions/fig1_all.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'fig1_all.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1_all.pdf'))
 
 
 

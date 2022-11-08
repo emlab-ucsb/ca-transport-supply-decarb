@@ -1,7 +1,7 @@
 # inputs -----
 
 # args = commandArgs(trailingOnly = TRUE)
-run_name = "all-target"
+run_name = "revision-full-test"
 
 # outputs -------
 

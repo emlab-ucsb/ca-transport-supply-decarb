@@ -19,7 +19,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/manuscript-update/'
+fig_path <- 'outputs/academic-out/extraction/figures/revision-replicate/'
 
 ## csv names
 levels_name <- 'state_levels_all_oil.csv'

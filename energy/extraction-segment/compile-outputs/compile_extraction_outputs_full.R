@@ -23,8 +23,8 @@ cur_date              = Sys.Date()
 main_path     <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 
 ## UPDATE THESE WITH NEW RUNS!!!!!
-extraction_folder_path <- 'outputs/predict-production/extraction_2022-05-24/'
-extraction_folder_name <- 'all-target/'
+extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-07/'
+extraction_folder_name <- 'revision-full-test/'
 data_path  <-'data/stocks-flows/processed/'
 
 ## health code paths
@@ -37,7 +37,7 @@ main_path_external <- '/Volumes/calepa/'
 if(save_external == 1) {
   
   ## UPDATE THIS WITH NEW RUNS!!!!!
-  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2022-05-24/all-target/')
+  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2022-11-07/revision-full-test/')
   
   dir.create(paste0(main_path_external, 'academic-out/'), showWarnings = FALSE)
   compiled_save_path  <- paste0(main_path_external, 'academic-out/extraction_', cur_date, '/')

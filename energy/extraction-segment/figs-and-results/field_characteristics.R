@@ -40,7 +40,7 @@ inmap_ex_path  <- paste0(main_path, "data/health/source_receptor_matrix/inmap_pr
 
 
 ## update these as needed
-save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/figures/manuscript-update/')
+save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/figures/revision-replicate/')
 
 
 ## files
@@ -56,10 +56,10 @@ well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file)
                                                                                                  'doc_field_code' = 'character'))
 
 ## read in bau field out
-bau_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2022-05-24/field-results/', bau_file))
+bau_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2022-11-07/field-results/', bau_file))
 
 ## county out
-county_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2022-05-24/county-results/', labor_file))
+county_out <- readRDS(paste0(main_path, 'outputs/academic-out/extraction/extraction_2022-11-07/county-results/', labor_file))
 
 ## load opex/ capex
 price_data = fread(file.path(main_path, 'outputs/stocks-flows/entry-input-df/final/', forecast_file), header = T)
