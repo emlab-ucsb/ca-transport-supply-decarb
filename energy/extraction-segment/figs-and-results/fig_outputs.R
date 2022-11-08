@@ -19,7 +19,7 @@ health_out             = paste0(main_path, "outputs/academic-out/health/")
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
-save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/revision-replicate/')
+save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/original_model/')
 dir.create(save_info_path, showWarnings = FALSE)  
 
 ## files
