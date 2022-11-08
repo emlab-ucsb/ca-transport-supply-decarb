@@ -79,13 +79,13 @@ ghg_factors <- ghg_factors[year == 2019, .(doc_field_code, upstream_kgCO2e_bbl)]
 ## merge
 indicators_df <- full_join(mean_prod_field, price_data) %>%
   left_join(ghg_factors) %>%
-  filter(!is.na(m_opex_imputed))
+  filter(!is.na(m_opex_imputed) & mean_prod > 0)
 
 ## plot
 ghg_v_cost_fig <- ggplot(indicators_df, aes(x = m_opex_imputed, y = upstream_kgCO2e_bbl, size = mean_prod / 1e6)) +
   geom_point(alpha = 0.6) +
-  geom_smooth(method = lm, mapping = aes(weight = mean_prod), show.legend = F) +
-  labs(subtitle = "trend line weighted by mean production",
+  geom_smooth(method = lm, show.legend = F) +
+  labs(subtitle = "Fields with 0 production 2015-2019 removed",
        size = "Mean annual oil production\n2015-2019 (million bbls)",
        x = "2020 forecasted opex (USD per bbl)",
        y = "2019 GHG intensity (CO2e per bbl)") +
