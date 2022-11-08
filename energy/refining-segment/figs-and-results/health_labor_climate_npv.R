@@ -15,17 +15,20 @@ library(tidyverse)
 ## source figs
 items <- "figure_themes.R"
 
-walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## paths
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/refining/figures/'
+# main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path <- '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn/'
+fig_path <- 'outputs/academic-out/refining/figures/manuscript'
 
 ## csv names
 npv_file <- 'npv_x_metric_refining.csv'
+dac_file <- 'dac_health_labor_refining.csv'
 
 ## read in data
 npv_dt <- fread(paste0(main_path, fig_path, npv_file))
+dac_dt <- fread(paste0(main_path, fig_path, dac_file))
 
 ## cumulative
 npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: avoided damage',
@@ -316,6 +319,180 @@ ggsave(fig3_plot_grid2,
 
 embed_fonts(paste0(main_path, fig_path, 'health_labor_climate_impacts_fig.pdf'),
             outfile = paste0(main_path, fig_path, 'health_labor_climate_impacts_fig.pdf'))
+
+
+## DAC figure
+## ----------------------------------------
+
+scens <- c("historic exports - BAU demand", "low exports - BAU demand", "historic exports - LC1 demand", "low exports - LC1 demand")
+
+fig_dac_bau_h <- ggplot(dac_dt %>% filter(scenario %in% scens,
+                                              oil_price_scenario == "reference case",
+                                              type == "DAC share",
+                                              metric %in% c("dac_share_emp", "dac_share_health"),
+                                          ccs_scenario == "no ccs") %>%
+                          mutate(facet_lab = ifelse(category == "Health", "Health: avoided mortalities",
+                                                    ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
+                          filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario)) +
+  geom_point(size = 2, alpha = 0.8) +
+  # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(title = "A. Health: avoided mortalities",
+       color = "Refining scenario",
+       shape = "Demand scenario",
+       y = "DAC share",
+       x = NULL) +
+  scale_color_manual(values = refin_colors) +
+  # x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+  # facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
+  scale_y_continuous(
+    labels = scales::number_format(accuracy = 0.01),
+    limits = c(0.42, 0.44)) +
+  theme_line_n +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(vjust = 0.5, hjust=1),
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        plot.background = element_rect(color="white")) 
+
+ggsave(fig_dac_bau_h,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_h.png'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'png')
+
+ggsave(fig_dac_bau_h,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_h.pdf'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'pdf')
+
+embed_fonts(file.path(main_path, fig_path, 'fig_dac_bau_h.pdf'),
+            outfile = file.path(main_path, fig_path, 'fig_dac_bau_h.pdf'))
+
+
+fig_dac_bau_l <- ggplot(dac_dt %>% filter(scenario %in% scens,
+                                          oil_price_scenario == "reference case",
+                                          type == "DAC share",
+                                          metric %in% c("dac_share_emp", "dac_share_health"),
+                                          ccs_scenario == "no ccs") %>%
+                          mutate(facet_lab = ifelse(category == "Health", "Health: avoided mortalities",
+                                                    ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
+                          filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario)) +
+  geom_point(size = 2, alpha = 0.8) +
+  # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  labs(title = "B. Labor: forgone wages",
+       color = "Refining scenario",
+       shape = "Demand scenario",
+       y = "DAC share",
+       x = NULL) +
+  scale_color_manual(values = refin_colors) +
+  # x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+  # facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
+  scale_y_continuous(
+    labels = scales::number_format(accuracy = 0.01),
+    limits = c(0.39, 0.49)) +
+  theme_line_n +
+  theme(legend.position = "bottom",
+        legend.box = "vertical",
+        legend.key.width= unit(1, 'cm'),
+        axis.text.x = element_text(vjust = 0.5, hjust=1),
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        plot.background = element_rect(color="white")) 
+  
+ggsave(fig_dac_bau_l,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_l.png'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'png')
+
+ggsave(fig_dac_bau_l,
+       filename = file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'),
+       width = 5,
+       height = 5.2,
+       dpi = 400,
+       units = "in",
+       device = 'pdf')
+
+embed_fonts(file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'),
+            outfile = file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'))
+
+  
+## below is not updated
+## ---------------------------------
+ 
+
+# ## plot them together
+# ## -------------------------------
+# 
+# fig4_plot_grid <- plot_grid(
+#   fig_dac_bau_h + theme(legend.position = "none"),
+#   fig_dac_bau_l,
+#   align = 'vh',
+#   # labels = c("A", "B"),
+#   # # labels = 'AUTO',
+#   # label_size = 10,
+#   hjust = -1,
+#   nrow = 1,
+#   rel_widths = c(1, 1)
+# )
+# 
+# fig4_plot_grid2 <- plot_grid(
+#   fig4_plot_grid,
+#   xaxis_lab,
+#   align = "v",
+#   # labels = c("(A)", "(B)", "(C)", ""),
+#   # # labels = 'AUTO',
+#   # label_size = 10,
+#   # hjust = -1,
+#   ncol = 1,
+#   rel_heights = c(1, 0.025)
+#   # rel_widths = c(1, 1),
+# )
+# 
+# fig4_plot_grid2 <- plot_grid(
+#   fig4_plot_grid2,
+#   NULL,
+#   legend_fig_3,
+#   align = "v",
+#   # labels = c("(A)", "(B)", "(C)", ""),
+#   # # labels = 'AUTO',
+#   # label_size = 10,
+#   # hjust = -1,
+#   ncol = 1,
+#   rel_heights = c(1, 0.025, 0.05)
+#   # rel_widths = c(1, 1),
+# )
+# 
+# 
+# ## save figure 4, v1
+# ggsave(fig4_plot_grid2,
+#        filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.png'),
+#        width = 100,
+#        height = 70,
+#        units = "mm")
+# 
+# ggsave(fig4_plot_grid2,
+#        filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'),
+#        width = 100,
+#        height = 70,
+#        units = "mm",
+#        device = 'pdf')
+# 
+# embed_fonts(paste0(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'),
+#             outfile = paste0(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'))
+# 
+# 
+
+
 
 
 
