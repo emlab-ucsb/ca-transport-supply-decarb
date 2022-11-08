@@ -60,8 +60,10 @@ mean_prod_field <- well_prod %>%
   summarise(prod = sum(OilorCondensateProduced, na.rm = T), .groups = 'drop') %>%
   right_join(prod_x_field) %>%
   mutate(prod = ifelse(is.na(prod), 0, prod)) %>%
-  group_by(doc_fieldname, doc_field_code) %>%
+  group_by(doc_field_code) %>%
   summarise(mean_prod = mean(prod), .groups = 'drop') 
+
+mean_prod_field <- left_join(mean_prod_field, fnames)
 
 ## load opex/ capex
 price_data = fread(file.path(main_path, 'outputs/stocks-flows/entry-input-df/final/', forecast_file), header = T)
@@ -75,15 +77,16 @@ ghg_factors[, doc_field_code := sprintf("%03d", doc_field_code)]
 ghg_factors <- ghg_factors[year == 2019, .(doc_field_code, upstream_kgCO2e_bbl)]
 
 ## merge
-indicators_df <- left_join(mean_prod_field, price_data) %>%
+indicators_df <- full_join(mean_prod_field, price_data) %>%
   left_join(ghg_factors) %>%
-  filter(!is.na(m_opex_imputed) & mean_prod > 0)
+  filter(!is.na(m_opex_imputed))
 
 ## plot
 ghg_v_cost_fig <- ggplot(indicators_df, aes(x = m_opex_imputed, y = upstream_kgCO2e_bbl, size = mean_prod / 1e6)) +
   geom_point(alpha = 0.6) +
-  geom_smooth(method = lm, show.legend = F) +
-  labs(size = "Mean annual oil production\n2015-2019 (million bbls)",
+  geom_smooth(method = lm, mapping = aes(weight = mean_prod), show.legend = F) +
+  labs(subtitle = "trend line weighted by mean production",
+       size = "Mean annual oil production\n2015-2019 (million bbls)",
        x = "2020 forecasted opex (USD per bbl)",
        y = "2019 GHG intensity (CO2e per bbl)") +
        # color = "GHG emission target",
@@ -104,29 +107,29 @@ embed_fonts(paste0(save_revision_path, 'ghg_x_production_cost.pdf'),
             outfile = paste0(save_revision_path, 'ghg_x_production_cost.pdf'))
 
 
-## capex + opex
-ghg_v_cost2_fig <- ggplot(indicators_df, aes(x = sum_cost, y = upstream_kgCO2e_bbl, size = mean_prod / 1e6)) +
-  geom_point(alpha = 0.6) +
-  labs(size = "Mean annual oil production\n2015-2019 (million bbls)",
-       x = "2020 forecasted opex + capex (USD per bbl)",
-       y = "2019 GHG intensity (CO2e per bbl)") +
-  # color = "GHG emission target",
-  # shape = "Policy intervention") +
-  theme_line +
-  scale_y_continuous(limits = c(0, NA)) +
-  # scale_x_continuous(limits = c(0, NA)) +
-  theme(legend.position = "bottom",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
-ggsave(ghg_v_cost2_fig,
-       filename = file.path(save_revision_path, 'ghg_x_capex_plus_opex.pdf'),
-       width = 6,
-       height = 6)
-
-embed_fonts(paste0(save_revision_path, 'ghg_x_capex_plus_opex.pdf'),
-            outfile = paste0(save_revision_path, 'ghg_x_capex_plus_opex.pdf'))
-
+# ## capex + opex
+# ghg_v_cost2_fig <- ggplot(indicators_df, aes(x = sum_cost, y = upstream_kgCO2e_bbl, size = mean_prod / 1e6)) +
+#   geom_point(alpha = 0.6) +
+#   labs(size = "Mean annual oil production\n2015-2019 (million bbls)",
+#        x = "2020 forecasted opex + capex (USD per bbl)",
+#        y = "2019 GHG intensity (CO2e per bbl)") +
+#   # color = "GHG emission target",
+#   # shape = "Policy intervention") +
+#   theme_line +
+#   scale_y_continuous(limits = c(0, NA)) +
+#   # scale_x_continuous(limits = c(0, NA)) +
+#   theme(legend.position = "bottom",
+#         legend.key.width= unit(1, 'cm'),
+#         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# 
+# ggsave(ghg_v_cost2_fig,
+#        filename = file.path(save_revision_path, 'ghg_x_capex_plus_opex.pdf'),
+#        width = 6,
+#        height = 6)
+# 
+# embed_fonts(paste0(save_revision_path, 'ghg_x_capex_plus_opex.pdf'),
+#             outfile = paste0(save_revision_path, 'ghg_x_capex_plus_opex.pdf'))
+# 
 
 
 
