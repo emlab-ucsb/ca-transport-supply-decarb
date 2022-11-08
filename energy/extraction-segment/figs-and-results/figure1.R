@@ -30,8 +30,8 @@ inmapExFiles  <- "health/source_receptor_matrix/inmap_processed_srm/extraction"
 
 ## files
 prod_file         <- "well_prod_m_processed.csv"
-ct_file           <- "reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_ct_results.rds"
-county_file       <- "reference case_no_setback_no quota_price floor_no ccs_low innovation_no tax_county_results.rds"
+ct_file           <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_ct_results.rds"
+county_file       <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_county_results.rds"
 extract_fields     <- "extraction_fields.shp"
 
 ## projection for ca: transform to NAD83(NSRS2007) / California Albers

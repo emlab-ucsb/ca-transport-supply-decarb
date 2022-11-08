@@ -421,9 +421,13 @@ county_df <- prod_x_county %>%
          mean_capex_2020, wm_capex_2020, mean_opex_2020, wm_opex_2020, setback_scenario, mean_area_coverage, wm_area_coverage)
 
 
-
-
 ## save 
-fwrite(field_df, paste0(main_path, 'outputs/academic-out/extraction/srm-info/field_characteristics.csv'))
+fwrite(field_df, paste0(save_info_path, 'field_characteristics.csv'))
 
-fwrite(county_df, paste0(main_path, 'outputs/academic-out/extraction/srm-info/county_characteristics.csv'))
+fwrite(county_df, paste0(save_info_path, 'county_characteristics.csv'))
+
+
+# ## save 
+# fwrite(field_df, paste0(main_path, 'outputs/academic-out/extraction/srm-info/field_characteristics.csv'))
+# 
+# fwrite(county_df, paste0(main_path, 'outputs/academic-out/extraction/srm-info/county_characteristics.csv'))
