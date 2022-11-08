@@ -1,0 +1,263 @@
+id,input_fid,NAME,doc_field_code
+1,0,Bandini,34
+1,1,"Los Angeles, East",426
+1,2,Montebello,478
+1,3,Walnut,820
+1,4,Whittier,836
+1,5,Sansinena,660
+1,6,Brea-Olinda,70
+1,7,Yorba Linda (ABD),856
+1,8,"Coyote, East",178
+1,9,"Coyote, West (ABD)",180
+1,10,Richfield,598
+1,11,Santa Fe Springs,666
+1,12,Newgate (ABD),496
+1,13,Olive,522
+1,14,Kraemer (ABD),360
+1,15,Esperanza,240
+1,16,Chino-Soquel,142
+1,17,Mahala,440
+1,18,Prado-Corona,572
+1,19,Sunset Beach (ABD),728
+1,20,Belmont Offshore,48
+1,21,Long Beach Airport,414
+1,22,Los Angeles City,422
+1,23,Beverly Hills,54
+1,24,Cheviot Hills,136
+1,25,Sawtelle,682
+1,26,"Salt Lake, South",642
+1,27,Salt Lake,640
+1,28,San Vicente,674
+1,29,Los Angeles Downtown,424
+1,30,Las Cienegas,382
+1,31,Inglewood,324
+1,32,Potrero (ABD),568
+1,33,Playa Del Rey,554
+1,34,Venice Beach (ABD),812
+1,35,Union Station (ABD),804
+1,36,Hyperion,322
+1,37,El Segundo,232
+1,38,Lawndale (ABD),394
+1,39,Alondra (ABD),12
+1,40,Howard Townsite,316
+1,41,Rosecrans,618
+1,42,"Rosecrans, South",622
+1,43,Dominguez,208
+1,44,"Rosecrans, East",620
+1,178,Long Beach,412
+1,187,Seal Beach,688
+1,190,Torrance,782
+1,191,Wilmington,849
+1,256,Huntington Beach,320
+1,257,"Newport, West",504
+2,45,Holser,304
+2,46,Ramona,586
+2,47,Placerita,550
+2,48,Tapia,742
+2,49,Honor Rancho,308
+2,50,Saugus (ABD),680
+2,51,Wayside Canyon,824
+2,52,Oak Canyon,508
+2,53,Castaic Hills,124
+2,54,"Ramona, North",588
+2,55,Hasley Canyon,298
+2,56,Del Valle,198
+2,57,Castaic Junction (ABD),126
+2,58,Lyon Canyon (ABD),438
+2,59,Cascade,120
+2,60,Oat Mountain,519
+2,61,Aliso Canyon,10
+2,62,Summerland Offshore (ABD),726
+2,63,Carpinteria Offshore (ABD),118
+2,64,Pacoima (ABD),531
+2,65,Canton Creek (ABD),110
+2,66,Rincon,600
+2,67,Las Llajas,384
+2,188,Newhall-Potrero,500
+2,189,Newhall,498
+2,222,San Miguelito,658
+2,223,South Mountain,714
+2,224,West Mountain,830
+2,225,Fillmore,246
+2,226,Bardsdale,36
+2,227,Shiells Canyon,708
+2,228,Sespe,694
+2,229,Chaffee Canyon,130
+2,230,Torrey Canyon,784
+2,231,Oakridge,514
+2,232,Tapo Ridge,748
+2,233,Santa Susana,672
+2,234,"Tapo Canyon, South",746
+2,235,Big Mountain,56
+2,236,Oak Park,512
+2,237,Simi,710
+2,238,Hopper Canyon,310
+2,239,Piru (ABD),546
+2,240,Temescal,764
+2,241,Piru Creek (ABD),548
+2,242,"Tapo, North",744
+2,243,Eureka Canyon,242
+2,244,El Rio (ABD),230
+2,245,Oxnard,530
+2,246,Santa Clara Avenue,662
+2,247,Moorpark West,485
+2,248,Las Posas (ABD),386
+2,249,Timber Canyon,774
+2,250,Ventura,814
+2,251,Canada Larga,102
+2,252,Santa Paula (ABD),670
+2,253,Ojai,520
+2,254,Cabrillo,91
+2,255,Saticoy,678
+2,258,"Montalvo, West",476
+2,259,Rincon Creek (ABD),601
+3,71,Ant Hill,18
+3,72,Antelope Hills,20
+3,73,Asphalto,32
+3,74,Beer Nose,40
+3,75,Belgian Anticline,42
+3,76,Bellevue,44
+3,77,Blackwells Corner,60
+3,78,Bowerbank,66
+3,79,Buena Vista,80
+3,80,Calders Corner,96
+3,81,Canal,104
+3,82,Canfield Ranch,106
+3,83,Capitola Park (ABD),115
+3,84,Carneros Creek,117
+3,85,Chico-Martinez,140
+3,86,Comanche Point,160
+3,87,Cymric,190
+3,89,Devils Den,204
+3,90,Eagle Rest (ABD),221
+3,91,Edison,222
+3,92,English Colony (ABD),238
+3,93,Fruitvale,256
+3,94,Gonyer Anticline (ABD),272
+3,95,Goosloo,274
+3,96,Greeley,280
+3,97,Jasmin,328
+3,98,Jerry Slough,332
+3,99,Kern River,340
+3,100,Kern Bluff,336
+3,101,Kern Front,338
+3,102,Lakeside (ABD),372
+3,103,Landslide,375
+3,104,Los Lobos,428
+3,105,McDonald Anticline,450
+3,106,McKittrick,454
+3,107,Mountain View,490
+3,108,"Antelope Hills, North",22
+3,109,"Belridge, North",50
+3,110,"Coles Levee, North",156
+3,112,"Tejon, North",758
+3,113,"Edison, Northeast",224
+3,114,"Lost Hills, Northwest",434
+3,115,Paloma,532
+3,116,Pioneer,544
+3,117,Pleito,560
+3,118,Poso Creek,566
+3,119,Rio Bravo,602
+3,120,Rio Viejo,608
+3,121,Rosedale,624
+3,122,Rosedale Ranch,626
+3,123,Semitropic,690
+3,124,Seventh Standard,696
+3,125,"Coles Levee, South",158
+3,126,Stockdale,716
+3,127,Strand,720
+3,128,Tejon,752
+3,129,Tejon Hills,756
+3,130,Temblor Hills,760
+3,131,Temblor Ranch,762
+3,132,Ten Section,766
+3,133,Union Avenue,798
+3,134,Valpredo,808
+3,135,Wasco,822
+3,136,Welcome Valley,826
+3,137,"Bellevue, West",46
+3,138,"Jasmin, West (ABD)",330
+3,139,Wheeler Ridge,832
+3,140,White Wolf,834
+3,141,Yowlumne,858
+3,142,Rose,617
+3,143,Midway-Sunset,464
+3,146,Cienaga Canyon,146
+3,152,Kettleman Middle Dome,346
+3,153,Kettleman City (ABD),344
+3,154,Pyramid Hills,578
+3,156,Tulare Lake,794
+3,157,Kreyenhagen (ABD),366
+3,158,Jacalitos,326
+3,159,Guijarral Hills,288
+3,160,Pleasant Valley,558
+3,161,"Coalinga, East, Extension",152
+3,162,Coalinga,150
+3,173,Kettleman North Dome,348
+3,174,Dyer Creek,220
+3,175,Mount Poso,488
+3,176,Railroad Gap,582
+3,177,Elk Hills,228
+3,179,"Shafter, North",699
+3,180,Temblor East (ABD),759
+3,181,Round Mountain,628
+3,182,Lost Hills,432
+3,185,San Emidio Nose,648
+3,186,Monument Junction,479
+3,261,"Belridge, South",52
+4,70,"Elwood, South, Offshore",236
+4,220,Capitan (ABD),114
+4,221,Elwood,234
+5,68,Alegria Offshore (ABD),8
+6,209,Morales Canyon,486
+6,213,Russell Ranch,632
+6,216,"Cuyama, South",188
+6,260,Taylor Canyon (ABD),750
+7,69,Point Conception (ABD),562
+8,194,Guadalupe (ABD),286
+8,195,Santa Maria Valley,668
+8,197,Barham Ranch,38
+8,198,Careaga Canyon,116
+8,199,Casmalia,122
+8,200,Cat Canyon,128
+8,201,Four Deer (ABD),250
+8,202,Jesus Maria,334
+8,204,Lompoc,410
+8,205,Los Alamos,420
+8,210,"Harris Canyon, Northwest (ABD)",295
+8,211,Orcutt,524
+8,215,Sisquoc Ranch (ABD),711
+8,217,Zaca,860
+9,172,Sargent,676
+10,149,La Honda,370
+10,150,Half Moon Bay,290
+11,88,Deer Creek,194
+11,111,"Deer Creek, North",196
+12,218,Huasna,318
+13,193,Bitterwater,58
+14,144,Brentwood,72
+15,145,Livermore,404
+16,196,Arroyo Grande,28
+17,148,Oil Creek,518
+18,147,Petaluma (ABD),538
+19,163,Turk Anticline (ABD),800
+19,164,Cantua Nueva (ABD),113
+20,165,Camden,100
+20,166,Five Points (ABD),248
+20,167,"Burrel, Southeast",86
+20,168,Burrel,84
+20,169,Riverdale,614
+20,170,Raisin City,584
+20,171,San Joaquin,654
+20,183,Helm,300
+20,184,Van Ness Slough,809
+21,151,Petrolia,540
+22,155,Westhaven (ABD),831
+23,208,Monroe Swell,474
+24,192,Vallecitos,806
+25,206,Lynch Canyon,436
+25,207,McCool Ranch,448
+25,214,San Ardo,644
+25,219,Paris Valley,534
+26,203,King City (ABD),350
+26,212,Quinado Canyon (ABD),580
