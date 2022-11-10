@@ -34,7 +34,7 @@ main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects
 
 ## update these as needed
 # save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/figures/manuscript-update/')
-save_revision_path <- paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/')
+save_revision_path <- paste0(main_path, 'outputs/academic-out/extraction/nature-energy-rev-outputs/')
 
 ## files
 ghg_file        <- 'ghg_emissions_x_field_2018-2045.csv'
