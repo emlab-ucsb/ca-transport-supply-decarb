@@ -10,7 +10,7 @@ calc_2045_ghg <- function(inputs, scen) {
   
   
   depl_2019_z = inputs[year == 2020, .(doc_field_code,  oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                 setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+                                                 setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)]
   
   depl_2019_z = merge(depl_2019_z, entry_dt[year == 2019, .(doc_field_code, depl)],
                       by = 'doc_field_code')
@@ -20,12 +20,12 @@ calc_2045_ghg <- function(inputs, scen) {
   prod_2019_z = prod_hist[year == 2019, .(doc_field_code, total_bbls)]
   
   trr_2020_z = unique(inputs[year == 2020, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, 
-                                                       ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, resource)])
+                                                       ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, resource)])
   
   depl_2020_z = prod_2019_z[trr_2020_z, on = 'doc_field_code']
   depl_2020_z = depl_2020_z[depl_2019_z, on = .(doc_field_code, 
                                                 oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+                                                setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)]
   
   depl_2020_z = depl_2020_z[!is.na(resource)]
   depl_2020_z = depl_2020_z[is.na(total_bbls), total_bbls := 0]
@@ -35,7 +35,7 @@ calc_2045_ghg <- function(inputs, scen) {
   
   dt_depl_z = depl_2020_z[, .(doc_field_code, 
                               oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                              setback_scenario, prod_quota_scenario, excise_tax_scenario, 
+                              setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, 
                               year, depl)]
   
   # calculate ccs costs in 2020 using 2019 production ------
@@ -62,7 +62,7 @@ calc_2045_ghg <- function(inputs, scen) {
   dt_info_z[, upstream_mtCO2e := upstream_kgCO2e/1e3]
   dt_info_z[, mean_b := solve_mean_b(a, ccs_price_usd_per_kg*1e3, 'extraction'), 
             by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, 
-                   prod_quota_scenario, excise_tax_scenario)]
+                   setback_existing, prod_quota_scenario, excise_tax_scenario)]
   dt_info_z[, total_cost := solve_tc(a, mean_b, upstream_mtCO2e)]
   # dt_info[, b := solve_b(a, ccs_price_usd_per_kg*1e3, upstream_mtCO2e)]
   # dt_info[, mean_b := mean(b, na.rm = T), 
@@ -124,17 +124,34 @@ calc_2045_ghg <- function(inputs, scen) {
   
   ## set keys
   setkey(dt_info_z, doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-         setback_scenario, prod_quota_scenario, excise_tax_scenario, year)
+         setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, year)
   
   setkey(dt_depl_z, doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-         setback_scenario, prod_quota_scenario, excise_tax_scenario, year)
+         setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, year)
   
   setkey(inputs, doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-         setback_scenario, prod_quota_scenario, excise_tax_scenario, year)
+         setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, year)
   
   ## filter prod_existing_vintage
   setback_scen <- unique(scen[, setback_scenario])
-  prod_existing_vintage_z = prod_existing_vintage[setback_scenario %in% setback_scen]
+  
+  ## determine if setback should apply to new and existing wells or just new wells
+  sb_toggle <- unique(scen[, setback_existing])
+  
+  ## select appropriate existing production based on setback scen and toggle
+  if(sb_toggle == 1) {
+    
+    ## apply setback to existing wells
+    prod_existing_vintage_z = prod_existing_vintage[setback_scenario %in% setback_scen]
+    prod_existing_vintage_z[, setback_existing := sb_toggle]
+    
+  } else {
+    
+    prod_existing_vintage_z = prod_existing_vintage[setback_scenario == "no_setback"]
+    prod_existing_vintage_z[, setback_scenario := setback_scen]
+    prod_existing_vintage_z[, setback_existing := sb_toggle]
+    
+  }
   
   ## add column with original year (for diagnostic purposes)
   prod_existing_vintage_z[, orig_year := year]
@@ -154,7 +171,7 @@ calc_2045_ghg <- function(inputs, scen) {
     new_wells = dt_info_z[year == t]
     new_wells = new_wells[dt_depl_z[year == t], on = .(doc_field_code,
                                                        oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                                       setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                                       setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario,
                                                        year), nomatch = 0]
     new_wells = new_wells[coefs_dt, on = .(doc_field_code, doc_fieldname), nomatch = 0]
     
@@ -225,7 +242,7 @@ calc_2045_ghg <- function(inputs, scen) {
     exit_save[, year := t]
     exit_save = merge(dt_info_z[year == t, .(doc_field_code, doc_fieldname, oil_price_scenario,
                                              innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                             setback_scenario, prod_quota_scenario, excise_tax_scenario)],
+                                             setback_scenario, setback_existing,  prod_quota_scenario, excise_tax_scenario)],
                       exit_save,
                       by = "doc_field_code",
                       all.x = T)
@@ -248,7 +265,7 @@ calc_2045_ghg <- function(inputs, scen) {
     exit_dt_t[, modify_wells := fifelse(n_well_exit >= cumul_wells, no_wells_after_exit,
                                         fifelse(n_well_exit < cumul_wells & pos_wells == 1, n_well_exit, 0)), by = doc_field_code]
     exit_dt_t[, cumul_exit := cumsum(modify_wells), by = doc_field_code]
-    exit_dt_t[, prev_modify_wells := shift(modify_wells, n = 1, type = 'lag'), by = doc_field_code]
+    exit_dt_t[, prev_modify_wells := data.table::shift(modify_wells, n = 1, type = 'lag'), by = doc_field_code]
     
     ## modify to partially exit from vintage, if necessary
     exit_dt_t[, modify_wells := fifelse(!is.na(prev_modify_wells) & modify_wells == 0 & cumul_exit < n_well_exit & prev_modify_wells > 0, n_well_exit - cumul_exit,
@@ -352,7 +369,7 @@ calc_2045_ghg <- function(inputs, scen) {
     dtt = unique(dt_info_z[year == t,
                            .(doc_field_code, doc_fieldname, m_capex_imputed, m_opex_imputed_adj,
                              oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                             setback_scenario, prod_quota_scenario, excise_tax_scenario)])
+                             setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)])
     ## create columns: cost for existing wells and cost for new wells
     dtt[, cost_existing := m_opex_imputed_adj]
     dtt[, cost_new := m_capex_imputed + m_opex_imputed_adj]
@@ -360,9 +377,9 @@ calc_2045_ghg <- function(inputs, scen) {
     dtt_long = melt(dtt, measure.vars = c('cost_new', 'cost_existing'), variable.name = 'cost_type', value.name = 'cost')
     ## rank field (existing and new) costs -- note that multiple fields have same cost
     dtt_long[, cost_rank := rank(unclass(cost)), by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                        setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+                                                        setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)]
     ## wide format
-    dt_info_rank = dcast(dtt_long, doc_field_code + doc_fieldname + m_capex_imputed + m_opex_imputed_adj + oil_price_scenario + innovation_scenario +  carbon_price_scenario + ccs_scenario +  setback_scenario + prod_quota_scenario + excise_tax_scenario ~ cost_type, 
+    dt_info_rank = dcast(dtt_long, doc_field_code + doc_fieldname + m_capex_imputed + m_opex_imputed_adj + oil_price_scenario + innovation_scenario +  carbon_price_scenario + ccs_scenario +  setback_scenario +  setback_existing + prod_quota_scenario + excise_tax_scenario ~ cost_type, 
                          value.var = c('cost', 'cost_rank'))
     ## rename
     setnames(dt_info_rank, 'cost_rank_cost_new', 'cost_new_rank')
@@ -371,7 +388,7 @@ calc_2045_ghg <- function(inputs, scen) {
     ## select columns
     temp_dt_info_rank = dt_info_rank[, c("doc_field_code","doc_fieldname",
                                          "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario", 
-                                         "setback_scenario", "prod_quota_scenario", "excise_tax_scenario",
+                                         "setback_scenario", "setback_existing", "prod_quota_scenario", "excise_tax_scenario",
                                          "cost_existing_rank","cost_new_rank")]
     
     # set up copy of dataframe for newly predicted wells for time t
@@ -380,7 +397,7 @@ calc_2045_ghg <- function(inputs, scen) {
     temp_new_wells_prod = new_wells_prod[year==t & m_new_wells_pred > 0 & peak_production > 0] 
     temp_new_wells_prod = temp_new_wells_prod[,c("doc_field_code", "doc_fieldname", 
                                                  "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario", 
-                                                 "setback_scenario", "prod_quota_scenario", "excise_tax_scenario", 
+                                                 "setback_scenario", "setback_existing", "prod_quota_scenario", "excise_tax_scenario", 
                                                  "innovation_multiplier", "quota", "ccs_adopted", "ccs_scalar",  "upstream_kgCO2e_bbl", "upstream_kgCO2e_bbl_inno_adj", 
                                                  "upstream_kgCO2e_bbl_inno_ccs_adj", "m_new_wells_pred","peak_production")]
     setnames(temp_new_wells_prod, "peak_production", "production_bbl")
@@ -394,15 +411,15 @@ calc_2045_ghg <- function(inputs, scen) {
     
     ## filter dt_info_z for year t since actual quota number, ccs adoption, and ghg emissions intensity change year to year
     temp_prod_existing_vintage = dt_info_z[year == t, . (doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario, 
-                                                         ccs_scenario, prod_quota_scenario, excise_tax_scenario, setback_scenario, quota, innovation_multiplier,
+                                                         ccs_scenario, prod_quota_scenario, excise_tax_scenario, setback_scenario, setback_existing, quota, innovation_multiplier,
                                                          ccs_adopted, ccs_scalar, upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj)]
     ## filter existing vintage production for year t
     existing_vintage_prod_t = prod_existing_vintage_z[year == t]
-    existing_vintage_prod_t = existing_vintage_prod_t[, .(setback_scenario, doc_field_code, vintage, production_bbl)]
+    existing_vintage_prod_t = existing_vintage_prod_t[, .(setback_scenario, setback_existing, doc_field_code, vintage, production_bbl)]
     
     ## merge field info for time t with production for time t
     temp_prod_existing_vintage = merge(temp_prod_existing_vintage, existing_vintage_prod_t,
-                                       by = c("doc_field_code", "setback_scenario"),
+                                       by = c("doc_field_code", "setback_scenario", "setback_existing"),
                                        all.x = T,
                                        allow.cartesian = T)
     ## add number of wells column, == 1
@@ -413,7 +430,7 @@ calc_2045_ghg <- function(inputs, scen) {
     ## select, reorder columns
     temp_prod_existing_vintage = temp_prod_existing_vintage[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
                                                                 innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                                setback_scenario, prod_quota_scenario, excise_tax_scenario, 
+                                                                setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, 
                                                                 quota, innovation_multiplier, ccs_adopted, 
                                                                 ccs_scalar, upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, 
                                                                 upstream_kgCO2e_bbl_inno_ccs_adj, num_wells, production_bbl, vintage)]
@@ -431,7 +448,7 @@ calc_2045_ghg <- function(inputs, scen) {
       temp_prod_new_vintage_info = dt_info_z[year == t, . (doc_field_code, oil_price_scenario, 
                                                            innovation_scenario, carbon_price_scenario, 
                                                            ccs_scenario, prod_quota_scenario, excise_tax_scenario, 
-                                                           setback_scenario, quota, innovation_multiplier, ccs_adopted, ccs_scalar, 
+                                                           setback_scenario, setback_existing, quota, innovation_multiplier, ccs_adopted, ccs_scalar, 
                                                            upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj)]
       
       temp_prod_new_vintage_t <- prod_new_vintage_z[year == t]
@@ -439,7 +456,7 @@ calc_2045_ghg <- function(inputs, scen) {
       temp_prod_new_vintage_t <- merge(temp_prod_new_vintage_t, temp_prod_new_vintage_info,
                                        by = c("doc_field_code", "oil_price_scenario", 
                                               "innovation_scenario", "carbon_price_scenario", 
-                                              "ccs_scenario", "setback_scenario", 
+                                              "ccs_scenario", "setback_scenario", "setback_existing",
                                               "prod_quota_scenario", "excise_tax_scenario"),
                                        all.x = T)
       
@@ -447,7 +464,7 @@ calc_2045_ghg <- function(inputs, scen) {
       
       temp_prod_new_vintage_t <- temp_prod_new_vintage_t[, .(doc_field_code, doc_fieldname, oil_price_scenario, 
                                                              innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                             setback_scenario, prod_quota_scenario, excise_tax_scenario, 
+                                                             setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, 
                                                              innovation_multiplier, quota, ccs_adopted, 
                                                              ccs_scalar, upstream_kgCO2e_bbl, upstream_kgCO2e_bbl_inno_adj, 
                                                              upstream_kgCO2e_bbl_inno_ccs_adj, num_wells, production_bbl,
@@ -468,7 +485,7 @@ calc_2045_ghg <- function(inputs, scen) {
     # join production dataframe to cost rankings
     temp_prod_quota = merge(temp_prod_quota, temp_dt_info_rank, 
                             by = c("doc_field_code", "doc_fieldname", "oil_price_scenario", "innovation_scenario", 
-                                   "carbon_price_scenario", "ccs_scenario", "setback_scenario", "prod_quota_scenario", 
+                                   "carbon_price_scenario", "ccs_scenario", "setback_scenario", "setback_existing", "prod_quota_scenario", 
                                    "excise_tax_scenario"),
                             all.x = T)
     
@@ -481,7 +498,7 @@ calc_2045_ghg <- function(inputs, scen) {
     # (i.e. assume that within a field, older vintages get shut first)
     setkey(temp_prod_quota, doc_field_code,
            oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-           setback_scenario, prod_quota_scenario, excise_tax_scenario)
+           setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)
     
     ## calculate cumulative sum by scenario, arranging by cost rank and cost vintage rank
     temp_prod_quota = temp_prod_quota[!is.na(cost_rank)]
@@ -498,7 +515,7 @@ calc_2045_ghg <- function(inputs, scen) {
     ## calculate cumulative sum of extraction
     temp_prod_quota[, prod_cumsum := cumsum(production_bbl), by = .(oil_price_scenario, innovation_scenario, 
                                                                     carbon_price_scenario, ccs_scenario, 
-                                                                    setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+                                                                    setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)]
     
     
     ## new column for how much is produced under prod quota
@@ -515,10 +532,10 @@ calc_2045_ghg <- function(inputs, scen) {
     
     ## create column with previous cumulative production
     ## create column of cumulative sum of over_quota_ranks to identify first field vintage to bust quota
-    temp_prod_quota[, ':=' (last_prod = shift(prod_cumsum, n = 1, fill = NA, type = "lag"),
+    temp_prod_quota[, ':=' (last_prod = data.table::shift(prod_cumsum, n = 1, fill = NA, type = "lag"),
                             sum_over = cumsum(over_quota_ranks)), by = .(oil_price_scenario, innovation_scenario, 
                                                                          carbon_price_scenario, ccs_scenario, 
-                                                                         setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+                                                                         setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)]
     
     ## calculate and use remainder of quota for field-vintage that "busts" quota
     ## all other field-vintages over the quota produce 0
@@ -538,12 +555,12 @@ calc_2045_ghg <- function(inputs, scen) {
     ## update existing vintage production years to reflect if a field-vintage doesn't produce due to the quota
     ## start by creating df filtered for "existing" vintages
     zero_prod_quota_old <- temp_prod_quota[vintage != "new", .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, 
-                                                               ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                                               ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario,
                                                                vintage, zero_prod_quota)]
     
     ## merge prod existing with previous dt
     prod_existing_vintage_z <- merge(prod_existing_vintage_z, zero_prod_quota_old,
-                                     by = c('doc_field_code', 'vintage', 'setback_scenario'),
+                                     by = c('doc_field_code', 'vintage', 'setback_scenario', 'setback_existing'),
                                      all.x = T)
     
     
@@ -572,7 +589,7 @@ calc_2045_ghg <- function(inputs, scen) {
     ## select and rename columns
     temp_prod_quota = temp_prod_quota[, .(year, doc_field_code, doc_fieldname, vintage, 
                                           vintage_start, oil_price_scenario, innovation_scenario, 
-                                          carbon_price_scenario, ccs_scenario, setback_scenario, 
+                                          carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing,
                                           prod_quota_scenario, excise_tax_scenario, 
                                           quota, innovation_multiplier, ccs_adopted, 
                                           ccs_scalar, upstream_kgCO2e_bbl_inno_adj, upstream_kgCO2e_bbl_inno_ccs_adj,
@@ -614,7 +631,7 @@ calc_2045_ghg <- function(inputs, scen) {
                                by = c("doc_field_code", "year", 
                                       "doc_fieldname", "oil_price_scenario", 
                                       "innovation_scenario", "carbon_price_scenario", 
-                                      "ccs_scenario", "setback_scenario", 
+                                      "ccs_scenario", "setback_scenario", "setback_existing",
                                       "prod_quota_scenario", "excise_tax_scenario"),
                                all.x = T)
     
@@ -632,7 +649,7 @@ calc_2045_ghg <- function(inputs, scen) {
     
     ## cumulative wells
     cumulative_wells_dt = new_wells_prod_new[, .(doc_field_code, year, oil_price_scenario, innovation_scenario,
-                                                 carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario,
+                                                 carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario,
                                                  excise_tax_scenario, cumulative_wells, wells_km2)]
     
     
@@ -673,13 +690,13 @@ calc_2045_ghg <- function(inputs, scen) {
     ## get rid of wm_new_wells_pred
     new_wells_prod_new = new_wells_prod_new[, c('vintage_start', 'doc_field_code', 'doc_fieldname', 
                                                 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario', 
-                                                'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                                                'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario', 
                                                 'oil_price_usd_per_bbl', 'm_new_wells_pred', as.character(2020:2045))]
     
     # melt longer
     new_wells_prod_long = melt(new_wells_prod_new, id.vars = c('vintage_start', 'doc_field_code', 'doc_fieldname', 
                                                                'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario', 
-                                                               'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                                                               'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario', 
                                                                'oil_price_usd_per_bbl', 'm_new_wells_pred'),
                                measure.vars = as.character(2020:2045), variable.name = 'year', value.name = 'production_bbl')
     
@@ -688,7 +705,7 @@ calc_2045_ghg <- function(inputs, scen) {
     
     ## store future production of new vintages
     list_pred_prod[[i]] = new_wells_prod_long[year > t,  .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, 
-                                                           carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario,
+                                                           carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario,
                                                            excise_tax_scenario, vintage_start, year, m_new_wells_pred, production_bbl)]
     
     ## update production curve years for new vintages (vintage start 2020 on) based on quota
@@ -707,14 +724,14 @@ calc_2045_ghg <- function(inputs, scen) {
     
     ## select columns
     zero_prod_quota_new <- zero_prod_quota_new[, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, 
-                                                   ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                                   ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario,
                                                    vintage, vintage_start, zero_prod_quota)]
     
     setorder(prod_new_vintage_z, doc_field_code, vintage_start, year)
     prod_new_vintage_z <- merge(prod_new_vintage_z, zero_prod_quota_new,
                                 by = c("doc_field_code", "oil_price_scenario", 
                                        "innovation_scenario", "carbon_price_scenario", 
-                                       "ccs_scenario", "setback_scenario", 
+                                       "ccs_scenario", "setback_scenario", 'setback_existing',
                                        "prod_quota_scenario", "excise_tax_scenario",
                                        "vintage", "vintage_start"),
                                 all.x = T)
@@ -732,7 +749,7 @@ calc_2045_ghg <- function(inputs, scen) {
       prod_new = list_prod_new[[i]]
       prod_new = prod_new[, .(production_bbl = sum(production_bbl, na.rm = T)),
                           by = .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario, 
-                                 ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year)]
+                                 ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, year)]
       setnames(prod_new, 'production_bbl', 'new_bbl')
       # prod_new[, year := as.numeric(as.character(year))]
       
@@ -740,7 +757,7 @@ calc_2045_ghg <- function(inputs, scen) {
       prod_old = list_prod_existing[[i]]
       prod_old = prod_old[, .(old_bbl = sum(production_bbl, na.rm = T)),
                           by = .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, 
-                                 carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, year)]
+                                 carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, year)]
       # prod_old[, year := as.numeric(year)]
       
       ## merge prod_new and prod_old
@@ -748,7 +765,7 @@ calc_2045_ghg <- function(inputs, scen) {
                              by = c("doc_field_code", "doc_fieldname", 
                                     "oil_price_scenario", "innovation_scenario", 
                                     "carbon_price_scenario", "ccs_scenario", 
-                                    "setback_scenario", "prod_quota_scenario", 
+                                    "setback_scenario", "setback_existing", "prod_quota_scenario", 
                                     "excise_tax_scenario", "year"),
                              all = T)
       
@@ -760,12 +777,12 @@ calc_2045_ghg <- function(inputs, scen) {
       prod_next_year[, production_bbl := old_bbl + new_bbl]
       prod_next_year = prod_next_year[, .(doc_field_code, 
                                           oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                          setback_scenario, prod_quota_scenario, excise_tax_scenario, year, production_bbl)]
+                                          setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, year, production_bbl)]
       
       
       ## filter depletion df for year t
       depl_prev = dt_depl_z[year == t, .(doc_field_code, oil_price_scenario, innovation_scenario, 
-                                         carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario, depl)]
+                                         carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, depl)]
       setnames(depl_prev, 'depl', 'depl_prev')
       depl_prev = unique(depl_prev)
       
@@ -773,17 +790,17 @@ calc_2045_ghg <- function(inputs, scen) {
       ## filter total recoverable resource for year t
       trr_prev = unique(inputs[year == t, .(doc_field_code, oil_price_scenario, 
                                                       innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                      setback_scenario, prod_quota_scenario, excise_tax_scenario, resource)])
+                                                      setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, resource)])
       trr_prev = unique(trr_prev)
       
       ## merge previous depl and trr 
       prod_next_year = prod_next_year[depl_prev, on = .(doc_field_code, 
                                                         oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                        setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+                                                        setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)]
       
       prod_next_year = prod_next_year[trr_prev, on = .(doc_field_code, 
                                                        oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                       setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+                                                       setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)]
       
       ## fill in missing info
       prod_next_year[, ':=' (year = fifelse(is.na(year), t, year),
@@ -797,7 +814,7 @@ calc_2045_ghg <- function(inputs, scen) {
       ## select depl column, update year to be t + 1
       depl_next_year = prod_next_year[, .(doc_field_code, 
                                           oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                          setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                          setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario,
                                           year, depl)]
       depl_next_year[, year := t + 1]
       depl_next_year = unique(depl_next_year)
@@ -816,22 +833,22 @@ calc_2045_ghg <- function(inputs, scen) {
       info_next_year = merge(info_next_year,
                              prod_next_year[, .(doc_field_code, 
                                                 oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                                setback_scenario, prod_quota_scenario, excise_tax_scenario, production_bbl)],
+                                                setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, production_bbl)],
                              by = c('doc_field_code',  
                                     'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario', 
-                                    'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario'))
+                                    'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario'))
       
       setnames(info_next_year, 'production_bbl', 'total_bbls')
       
       ## ccs adoption in time t
       ccs_prev = dt_info_z[year == t, .(doc_field_code, doc_fieldname, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, 
-                                        setback_scenario, prod_quota_scenario, excise_tax_scenario, ccs_adoption)]
+                                        setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, ccs_adoption)]
       setnames(ccs_prev, 'ccs_adoption', 'adoption_prev')
       
       ## merge with info next year dt
       info_next_year = merge(info_next_year, ccs_prev, 
                              by = c('doc_field_code', 'doc_fieldname', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                                    'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario'))
+                                    'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario'))
       
       
       
@@ -844,7 +861,7 @@ calc_2045_ghg <- function(inputs, scen) {
       ## first update dt_info_z
       dt_info_z = merge(dt_info_z, cumul_wells_end,
                         by = c('doc_field_code', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                               'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 'year'),
+                               'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario', 'year'),
                         all = T)
       
       dt_info_z = dt_info_z[, cumulative_wells := fifelse(is.na(cumul_wells_end), cumulative_wells, cumul_wells_end)]
@@ -854,11 +871,11 @@ calc_2045_ghg <- function(inputs, scen) {
       
       ## add updated cumulative wells and density
       density_start_next = dt_info_z[year == t, .(doc_field_code, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                                  setback_scenario, prod_quota_scenario, excise_tax_scenario, cumulative_wells, wells_km2)]
+                                                  setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, cumulative_wells, wells_km2)]
       
       info_next_year = merge(info_next_year, density_start_next,
                              by = c('doc_field_code', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                                    'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario'),
+                                    'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario'),
                              all = T)
       
       
@@ -877,7 +894,7 @@ calc_2045_ghg <- function(inputs, scen) {
       info_next_year[, upstream_kgCO2e := upstream_kgCO2e_bbl_inno_adj * total_bbls]
       info_next_year[, upstream_mtCO2e := upstream_kgCO2e / 1e3]
       info_next_year[, mean_b := solve_mean_b(a, ccs_price_usd_per_kg * 1e3, 'extraction'), 
-                     by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario)]
+                     by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)]
       info_next_year[, total_cost := solve_tc(a, mean_b, upstream_mtCO2e)]
       
       
@@ -933,11 +950,11 @@ calc_2045_ghg <- function(inputs, scen) {
   
   
   existing_prod_dt = rbindlist(list_prod_existing)[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                                       setback_scenario, prod_quota_scenario, quota, excise_tax_scenario, doc_field_code, 
+                                                       setback_scenario, setback_existing, prod_quota_scenario, quota, excise_tax_scenario, doc_field_code, 
                                                        doc_fieldname, vintage, vintage_start, year, ccs_adopted, production_bbl, 
                                                        zero_prod_quota, n_wells, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
   new_prod_dt = rbindlist(list_prod_new)[, .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                             setback_scenario, prod_quota_scenario, quota, excise_tax_scenario, doc_field_code, 
+                                             setback_scenario, setback_existing, prod_quota_scenario, quota, excise_tax_scenario, doc_field_code, 
                                              doc_fieldname, vintage, vintage_start, year, ccs_adopted, production_bbl, 
                                              zero_prod_quota, n_wells, upstream_kgCO2e, upstream_kgCO2e_inno_adj, upstream_kgCO2e_inno_ccs_adj)]
   
@@ -947,7 +964,7 @@ calc_2045_ghg <- function(inputs, scen) {
   
   vintage_all <- rbind(existing_prod_dt, new_prod_dt)
   setorder(vintage_all, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-           setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code, 
+           setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, doc_field_code, 
            doc_fieldname, year, vintage_start)
 
   
@@ -956,18 +973,18 @@ calc_2045_ghg <- function(inputs, scen) {
   field_existing_info = existing_prod_dt[, .(existing_prod_bbl = sum(production_bbl, na.rm = T),
                                              existing_ghg_kgCO2e = sum(upstream_kgCO2e_inno_ccs_adj, na.rm = T)), 
                                          by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                                setback_scenario, prod_quota_scenario, excise_tax_scenario, 
+                                                setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, 
                                                 doc_field_code, doc_fieldname, year, ccs_adopted)]
   
   field_new_info = new_prod_dt[, .(new_prod_bbl = sum(production_bbl, na.rm = T),
                                    new_ghg_kgCO2e = sum(upstream_kgCO2e_inno_ccs_adj, na.rm = T)),
                                by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                      setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                      setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario,
                                       doc_field_code, doc_fieldname, year, ccs_adopted)]
   
   field_all = merge(field_existing_info, field_new_info,
                     by = c('oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                           'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                           'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario', 
                            'doc_field_code', 'doc_fieldname', 'ccs_adopted', 'year'),
                     all = T)
   
@@ -984,7 +1001,7 @@ calc_2045_ghg <- function(inputs, scen) {
            'existing_ghg_kgCO2e', 'new_ghg_kgCO2e', 'total_ghg_kgCO2e')
   state_all = field_all[ , lapply(.SD, sum, na.rm = T), .SDcols = cols,
                          by = .(oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                setback_scenario, prod_quota_scenario, excise_tax_scenario, year)] 
+                                setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, year)] 
   
   state_all[, total_ghg_mtCO2e := total_ghg_kgCO2e/1e9]
   

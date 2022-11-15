@@ -12,13 +12,17 @@ library(openxlsx)
 ## paths
 main_path       <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 academic_out    <- paste0(main_path, 'outputs/academic-out/extraction')
-outputs_path    <- 'outputs/academic-out/extraction/extraction_2021-09-07/'
+# outputs_path    <- 'outputs/academic-out/extraction/extraction_2021-09-07/'
+outputs_path    <- 'outputs/predict-production/extraction_2022-11-15/revision-sb-test/'
 data_path       <-'data/stocks-flows/processed/'
 labor_processed <- 'data/labor/processed/implan-results/academic-paper-multipliers/processed/'
+revision_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/nature-energy-rev-outputs'
 
 ## files
 oil_price_file  <- 'oil_price_projections_revised.xlsx'
 scen_file       <- 'scenario_id_list.csv'
+scen_id_file      = 'scenario_id_list_targets.csv'
+
 
 ## oil prices
 oilpx_scens = setDT(read.xlsx(file.path(main_path, data_path, oil_price_file), sheet = 'real', cols = c(1:4)))
@@ -46,9 +50,16 @@ total_multipliers_ext <- read_xlsx(paste0(main_path, labor_processed, 'ica_multi
 
 
 ## scenario list
-scen_list <- fread(file.path(academic_out, scen_file), header = T) 
+# scen_list <- fread(file.path(academic_out, scen_file), header = T) 
 
-subset_list <- scen_list[BAU_scen == 1 | subset_scens == 1]
+# subset_list <- scen_list[BAU_scen == 1 | subset_scens == 1]
+
+## for testing
+scen_id_list = fread(file.path(revision_path, scen_id_file), header = T)
+
+subset_list <- scen_id_list[subset_scens == 1 & 
+                                 oil_price_scenario == "reference case" & setback_scenario == "setback_2500ft"]
+
 
 subset_ids <- subset_list[, scen_id]
 
@@ -64,13 +75,13 @@ for (i in 1:length(subset_ids)) {
   
   id_name_tmp <- subset_ids[i]
   
-  field_out_tmp <- readRDS(paste0(main_path, outputs_path, 'field-results/subset/', id_name_tmp, '_field_results.rds'))
+  field_out_tmp <- readRDS(paste0(main_path, outputs_path, 'field-results/', id_name_tmp, '_field_results.rds'))
   
   
-  county_out_tmp <- readRDS(paste0(main_path, outputs_path, 'county-results/subset/', id_name_tmp, '_county_results.rds'))
+  county_out_tmp <- readRDS(paste0(main_path, outputs_path, 'county-results/', id_name_tmp, '_county_results.rds'))
   
   
-  state_out_tmp <- readRDS(paste0(main_path, outputs_path, 'state-results/subset/', id_name_tmp, '_state_results.rds'))
+  state_out_tmp <- readRDS(paste0(main_path, outputs_path, 'state-results/', id_name_tmp, '_state_results.rds'))
   
   
   field_out_list[[i]] <- field_out_tmp

@@ -8,6 +8,7 @@ scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-p
 outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
 data_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
 academic_out      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/'
+revision_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/nature-energy-rev-outputs'
 
 # file names  
 entry_file        = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
@@ -115,8 +116,38 @@ resource_data = resource_data[, c('doc_field_code', 'resource')]
 ghg_factors = fread(file.path(outputs_path, 'stocks-flows', ghg_file), header = T)
 # ghg_factors = ghg_factors[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
 
+## adjust setback files to include setback toggle
+## -----------------------------------------------------------
+
 # load n wells in setbacks and setback coverage file
 n_wells_setbacks = fread(file.path(outputs_path, 'predict-production', 'existing_production', n_wells_file), header = T, colClasses = c('doc_field_code' = 'character'))
+
+## setback applies to existing wells
+n_wells_setbacks[, setback_existing := 1]
+
+## setback does not apply to existing wells
+n_wells_setbacks0 <- n_wells_setbacks[setback_scenario == "no_setback"]
+
+n_wells_setbacks0[, setback_existing := 0]
+
+adj_setback <- expand.grid(adj_setback_scen = unique(n_wells_setbacks$setback_scenario),
+                           doc_field_code = unique(n_wells_setbacks0$doc_field_code))
+
+n_wells_setbacks0 <- merge(adj_setback, n_wells_setbacks0,
+                           by = c('doc_field_code'),
+                           all = T)
+
+setDT(n_wells_setbacks0)
+
+n_wells_setbacks0[, setback_scenario := adj_setback_scen]
+
+n_wells_setbacks0 <- n_wells_setbacks0[, .(setback_scenario, doc_field_code, doc_fieldname, 
+                                           n_wells, n_wells_in_setback, adj_no_wells,
+                                           setback_existing)]
+
+
+n_wells_setbacks <- rbind(n_wells_setbacks, n_wells_setbacks0)
+
 
 ## load setback scenarios
 setback_scens = fread(file.path(outputs_path, 'setback', 'model-inputs', setback_file), header = T, colClasses = c('doc_field_code' = 'character'))
@@ -134,6 +165,9 @@ setback_scens[, n_wells_in_setback := NULL]
 setnames(setback_scens, 'n_wells', 'n_wells_start')
 setnames(setback_scens, 'adj_no_wells', 'n_wells_setback')
 
+setback_scens[, doc_field_code := as.character(doc_field_code)]
+setback_scens[, setback_scenario := as.character(setback_scenario)]
+                             
 setback_scens[, setback_scenario := fifelse(setback_scenario == "no_setback", setback_scenario, paste0(setback_scenario, "ft"))]
 
 

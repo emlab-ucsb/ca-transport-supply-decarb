@@ -11,7 +11,7 @@ library(openxlsx)
 save_external <- 1
 
 ## path names, ## UPDATE THESE WITH NEW RUNS!!!!!
-# extraction_folder_path <- 'outputs/predict-production/extraction_2021-12-06/'
+extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-15/revision-sb-test/'
 # extraction_folder_name <- 'subset_target_scens/'
 external_path <- 'extraction-out/extraction_2022-05-24/all-target/'
 
@@ -35,7 +35,7 @@ state_out_list <- list()
 
 ## files to process
 state_files_to_process <- list.files(paste0(main_path_external, external_path, 'state-out/'))
-
+state_files_to_process <- list.files(paste0(main_path, extraction_folder_path, 'state-out/'))
 
 for (i in 1:length(state_files_to_process)) {
   
@@ -43,7 +43,8 @@ for (i in 1:length(state_files_to_process)) {
   
   state_file_name <- state_files_to_process[i]
   
-  state_scen_out <- readRDS(paste0(main_path_external, external_path, 'state-out/', state_file_name))
+  # state_scen_out <- readRDS(paste0(main_path_external, external_path, 'state-out/', state_file_name))
+  state_scen_out <- readRDS(paste0(main_path, extraction_folder_path, 'state-out/', state_file_name))
   
   state_out_list[[i]]  <- state_scen_out
   
@@ -76,12 +77,12 @@ oilpx_scens <- oilpx_scens[, .(year, oil_price_scenario, oil_price_usd_per_bbl)]
 ## -------------------------------------
 
 tax_val_df <- state_subset_all %>%
-  select(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario,
+  select(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario, setback_existing,
          excise_tax_scenario, year, total_prod_bbl, total_ghg_mtCO2e, target_policy,
          target, target_val, tax_rate, carbon_price_usd_per_kg) %>%
   left_join(oilpx_scens) %>%
   mutate(excise_tax_val = tax_rate * oil_price_usd_per_bbl) %>%
-  select(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario,
+  select(scen_id, oil_price_scenario, carbon_price_scenario, setback_scenario, setback_existing,
          excise_tax_scenario, target_policy, target, target_val,
          year, total_prod_bbl, total_ghg_mtCO2e, tax_rate, oil_price_usd_per_bbl,
          excise_tax_val, carbon_price_usd_per_kg)
@@ -96,7 +97,7 @@ fwrite(tax_val_df, paste0(main_path, 'outputs/academic-out/extraction/figures/ma
 
 ## check 2045 values
 state_out_2045 <- state_subset_all[year == 2045, .(scen_id, oil_price_scenario, innovation_scenario,
-                                                   carbon_price_scenario, ccs_scenario, setback_scenario,
+                                                   carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing,
                                                    prod_quota_scenario, excise_tax_scenario, target, 
                                                    target_policy, year, target_val, total_ghg_mtCO2e, tax_rate)]
 
@@ -116,7 +117,8 @@ state_subset_all[, target_policy := fifelse(setback_scenario != "no_setback" & t
                                      "setback_scenario", target_policy)]
 
 ## ghgs
-ghgs <- ggplot(state_subset_all, aes(x = year, y = total_ghg_mtCO2e, color = target_policy, group = scen_id)) +
+ghgs <- ggplot(state_subset_all, aes(x = year, y = total_ghg_mtCO2e, 
+                                     color = target_policy, group = scen_id, lty = as.character(setback_existing))) +
   geom_line() +
   facet_wrap(~oil_price_scenario)
 

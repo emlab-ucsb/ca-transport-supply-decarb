@@ -1,12 +1,12 @@
 # inputs -----
 
 # args = commandArgs(trailingOnly = TRUE)
-run_name = "revision-full-test"
+run_name = "revision-sb-test"
 
 # outputs -------
 
-# save_path             = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
-save_path             = '/Volumes/calepa/extraction-out/'
+save_path             = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+# save_path             = '/Volumes/calepa/extraction-out/'
 
 # create save path that is based on the specified path and the run date ------
 
@@ -47,13 +47,17 @@ source(here::here('energy', 'extraction-segment', 'model', 'full-run-revised', '
 source(here::here('energy', 'extraction-segment', 'model', 'full-run-revised', 'fun_extraction_model_targets.R'))
 
 
-# step 0: load the inputs
+## step 0: load the inputs
 
 scen_id_file      = 'scenario_id_list_targets.csv'
-scen_id_list = fread(file.path(academic_out, scen_id_file), header = T)
+scen_id_list = fread(file.path(revision_path, scen_id_file), header = T)
 
 ## filter for scenarios to run
 selected_scens <- scen_id_list[subset_scens == 1]
+
+## for testing
+selected_scens <- scen_id_list[subset_scens == 1 & 
+                                 oil_price_scenario == "reference case" & setback_scenario == "setback_2500ft"]
 
 
 # step 1: run extraction model and get outputs -------

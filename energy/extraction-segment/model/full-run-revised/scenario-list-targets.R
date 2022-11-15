@@ -15,6 +15,7 @@ outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-p
 data_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
 scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
 academic_out      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/'
+save_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/nature-energy-rev-outputs'
 
 ## file names  
 oil_price_file    = 'oil_price_projections_revised.xlsx'
@@ -241,12 +242,22 @@ target_scens <- rbind(excise_target_df, carbon_target_df)
 ## --------------------------------------------------
 scen_sel <- rbind(scen_sel, target_scens)
 
+
+## add toggle that determines if setbacks apply to existing and new wells or just new wells
+setback_toggle <- expand.grid(scen_id = unique(scen_sel$scen_id),
+                              setback_existing = c(1, 0))
+
+scen_sel_toggle <- left_join(setback_toggle, scen_sel) %>%
+  mutate(scen_id = paste(scen_id, setback_existing, sep = "-")) %>%
+  as.data.table()
+
+
 ## find scen selection
 ## ------------------------------
 
 ## 
 subset_dt = unique(## non-taget (all oil, all setback, all carbon px, no tax, low inno, no ccs, no quota)
-  scen_sel[(innovation_scenario == 'low innovation' &
+  scen_sel_toggle[(innovation_scenario == 'low innovation' &
             carbon_price_scenario == "price floor" &
             ccs_scenario %in% c("no ccs") & 
             excise_tax_scenario == 'no tax' &
@@ -261,11 +272,12 @@ subset_dt = unique(## non-taget (all oil, all setback, all carbon px, no tax, lo
 
 
 ## indicate scenarios
-scen_sel[, subset_scens := fifelse(scen_id %in% subset_dt[, scen_id], 1, 0)]
+scen_sel_toggle[, subset_scens := fifelse(scen_id %in% subset_dt[, scen_id], 1, 0)]
 
 ## set col order
-setcolorder(scen_sel, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'prod_quota_scenario',
+setcolorder(scen_sel_toggle, c('scen_id', 'oil_price_scenario', 'setback_scenario', 'prod_quota_scenario',
                          'carbon_price_scenario', 'ccs_scenario', 'innovation_scenario', 'excise_tax_scenario', 'target', 'target_policy', 'subset_scens', 'BAU_scen'))
 
 
-fwrite(scen_sel, file.path(academic_out, 'scenario_id_list_targets.csv'), row.names = F)
+# fwrite(scen_sel_toggle, file.path(academic_out, 'scenario_id_list_targets.csv'), row.names = F)
+fwrite(scen_sel_toggle, file.path(save_path, 'scenario_id_list_targets.csv'), row.names = F)
