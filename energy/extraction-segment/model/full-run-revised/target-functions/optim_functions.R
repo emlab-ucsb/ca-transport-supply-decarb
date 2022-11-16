@@ -96,7 +96,7 @@ find_carbonpx_start <- function(scen_z) {
   if(target_z != "90perc_reduction") {
     
     target_scen <- scen_z %>%
-      select(oil_price_scenario:excise_tax_scenario) %>%
+      select(oil_price_scenario:excise_tax_scenario, setback_existing) %>%
       mutate(carbon_price_scenario = "price floor",
              setback_scenario = target_z)
     

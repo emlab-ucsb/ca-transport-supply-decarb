@@ -10,11 +10,12 @@ external_save <- 1
 ## paths
 main_path         <- '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
 academic_out_path      <- file.path(main_path, 'outputs/academic-out/extraction/')
+input_path        <- file.path(main_path, 'outputs/academic-out/extraction/nature-energy-rev-outputs/')
 
 ## read in saved rds files - updates as needed
-extraction_folder = 'extraction_2022-11-07'
+# extraction_folder = 'extraction_2022-11-07'
 
-external_path <- '/Volumes/calepa/academic-out/extraction_2022-11-07/'
+external_path <- '/Volumes/calepa/academic-out/extraction_2022-11-16/'
 
 ## get correct path
 
@@ -38,7 +39,7 @@ ct_path        = paste0(compiled_path, 'census-tract-results/')
 scen_file <- 'scenario_id_list_targets.csv'
 
 ## load files
-scen_list <- fread(file.path(academic_out_path, scen_file), header = T) 
+scen_list <- fread(file.path(input_path, scen_file), header = T) 
 
 subset_list <- scen_list[BAU_scen == 1 | subset_scens == 1]
 

@@ -11,9 +11,9 @@ library(openxlsx)
 save_external <- 1
 
 ## path names, ## UPDATE THESE WITH NEW RUNS!!!!!
-extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-15/revision-sb-test/'
+# extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-15/revision-sb-test/'
 # extraction_folder_name <- 'subset_target_scens/'
-external_path <- 'extraction-out/extraction_2022-05-24/all-target/'
+external_path <- 'extraction-out/extraction_2022-11-15/revision-setbacks/'
 
 
 ## current date
@@ -43,8 +43,8 @@ for (i in 1:length(state_files_to_process)) {
   
   state_file_name <- state_files_to_process[i]
   
-  # state_scen_out <- readRDS(paste0(main_path_external, external_path, 'state-out/', state_file_name))
-  state_scen_out <- readRDS(paste0(main_path, extraction_folder_path, 'state-out/', state_file_name))
+  state_scen_out <- readRDS(paste0(main_path_external, external_path, 'state-out/', state_file_name))
+  # state_scen_out <- readRDS(paste0(main_path, extraction_folder_path, 'state-out/', state_file_name))
   
   state_out_list[[i]]  <- state_scen_out
   
@@ -90,7 +90,7 @@ tax_val_df <- state_subset_all %>%
 fwrite(tax_val_df, paste0(save_info_path, 'state_levels_all_oil.csv'))
 
 
-fwrite(tax_val_df, paste0(main_path, 'outputs/academic-out/extraction/figures/manuscript-update/tax_values.csv'))
+fwrite(tax_val_df, paste0(main_path, 'outputs/academic-out/extraction/nature-energy-rev-outputs/tax_values.csv'))
 
 
 

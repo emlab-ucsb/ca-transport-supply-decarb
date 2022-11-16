@@ -37,7 +37,7 @@ main_path_external <- '/Volumes/calepa/'
 if(save_external == 1) {
   
   ## UPDATE THIS WITH NEW RUNS!!!!!
-  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2022-11-07/revision-full-test/')
+  extraction_path <- paste0(main_path_external, 'extraction-out/extraction_2022-11-15/revision-setbacks/')
   
   dir.create(paste0(main_path_external, 'academic-out/'), showWarnings = FALSE)
   compiled_save_path  <- paste0(main_path_external, 'academic-out/extraction_', cur_date, '/')
@@ -391,7 +391,7 @@ for (i in 1:length(field_files_to_process)) {
   # 
   ## prepare projection outputs
   site_out <- field_scen_out[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                            setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code,
+                            setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, doc_field_code,
                             year, total_prod_bbl, total_ghg_kgCO2e)]
   
   full_site_df <- expand.grid(scen_id = unique(site_out$scen_id),
@@ -401,7 +401,7 @@ for (i in 1:length(field_files_to_process)) {
   setDT(full_site_df)
   
   scen_info <- distinct(site_out[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                     setback_scenario, prod_quota_scenario, excise_tax_scenario)])
+                                     setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario)])
   
   scenario_id_tmp <- scen_info[ , scen_id]
   
@@ -412,7 +412,7 @@ for (i in 1:length(field_files_to_process)) {
   ## add scenario information using id
   full_site_df <- merge(full_site_df, site_out,
                         by = c("scen_id", 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 
-                               'ccs_scenario', 'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario',  
+                               'ccs_scenario', 'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario',  
                                'year', 'doc_field_code'),
                         all.x = T)
   
@@ -424,7 +424,7 @@ for (i in 1:length(field_files_to_process)) {
                              all.x = T)
   
   full_site_df_2019 <- merge(full_site_df_2019[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                                                   setback_scenario, prod_quota_scenario, excise_tax_scenario, doc_field_code,
+                                                   setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, doc_field_code,
                                                    doc_fieldname, year)], init_prod,
                              by = c("doc_field_code", "year"),
                              all.x = T)
@@ -433,7 +433,7 @@ for (i in 1:length(field_files_to_process)) {
   full_site_df_2019[,':=' (total_ghg_kgCO2e = fifelse(is.na(total_ghg_kgCO2e), 0, total_ghg_kgCO2e))]
   
   setcolorder(full_site_df_2019, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
-                              "setback_scenario", "prod_quota_scenario", "excise_tax_scenario", "doc_field_code", 
+                              "setback_scenario", "setback_existing", "prod_quota_scenario", "excise_tax_scenario", "doc_field_code", 
                               "doc_fieldname", "year", "total_prod_bbl", "total_ghg_kgCO2e"))
   
   
@@ -458,7 +458,7 @@ for (i in 1:length(field_files_to_process)) {
   full_site_out[, oil_price_usd_per_bbl := NULL]
   
   setcolorder(full_site_out, c("scen_id", "oil_price_scenario", "innovation_scenario", "carbon_price_scenario", "ccs_scenario",
-                                   "setback_scenario", "prod_quota_scenario", "excise_tax_scenario", "doc_field_code", 
+                                   "setback_scenario", "setback_existing", "prod_quota_scenario", "excise_tax_scenario", "doc_field_code", 
                                    "doc_fieldname", "year", "total_prod_bbl", "revenue", "total_ghg_kgCO2e"))
   
   setorder(full_site_out, "scen_id", "doc_field_code", "year")
@@ -477,7 +477,7 @@ for (i in 1:length(field_files_to_process)) {
                       allow.cartesian = T)
   
   setcolorder(county_out, c('scen_id', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                            'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                            'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario', 
                             'year', 'doc_field_code', 'doc_fieldname', 'total_prod_bbl', 'adj_county_name', 'rel_prod'))
   
   ## summarise at the county level
@@ -486,7 +486,7 @@ for (i in 1:length(field_files_to_process)) {
   
   county_out <- county_out[, .(total_county_bbl = sum(county_prod_bbl),
                                total_county_ghg_kgCO2e = sum(county_ghg_kgCO2e)), by = .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                                                                         ccs_scenario, setback_scenario, prod_quota_scenario, excise_tax_scenario,
+                                                                                         ccs_scenario, setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario,
                                                                                          year, adj_county_name)]
   
   ## add oil price
@@ -497,7 +497,7 @@ for (i in 1:length(field_files_to_process)) {
   county_out[, revenue := total_county_bbl * oil_price_usd_per_bbl]
   
   setcolorder(county_out, c('scen_id', 'oil_price_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario',
-                            'setback_scenario', 'prod_quota_scenario', 'excise_tax_scenario', 
+                            'setback_scenario', 'setback_existing', 'prod_quota_scenario', 'excise_tax_scenario', 
                             'year', 'adj_county_name', 'total_county_bbl', 'oil_price_usd_per_bbl', 'revenue'))
   
   setorder(county_out, "scen_id", "adj_county_name", "year")
@@ -557,7 +557,7 @@ for (i in 1:length(field_files_to_process)) {
   
   ## 
   county_out <- county_out[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario,
-                               setback_scenario, prod_quota_scenario, excise_tax_scenario, county, dac_share, median_hh_income,
+                               setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, county, dac_share, median_hh_income,
                                year, county_pop, total_county_bbl, total_county_ghg_kgCO2e, revenue,
                                c.dire_emp, c.indi_emp, c.indu_emp, c.dire_comp, c.indi_comp, c.indu_comp, total_emp, total_comp)]
   
@@ -580,7 +580,7 @@ for (i in 1:length(field_files_to_process)) {
   ## summarize extraction production per cluster
   total_clusters <- health_site_out[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(id, year, scen_id, oil_price_scenario,
                                                                                       carbon_price_scenario, ccs_scenario, setback_scenario,
-                                                                                      excise_tax_scenario)] 
+                                                                                      setback_existing, excise_tax_scenario)] 
   
   ## calculate air pollution using emission factors
   total_clusters <- total_clusters %>%
@@ -604,12 +604,12 @@ for (i in 1:length(field_files_to_process)) {
     ## Adjust mismatch of census tract ids between inmap and benmap (census ID changed in 2012 
     ## http://www.diversitydatakids.org/sites/default/files/2020-02/ddk_coi2.0_technical_documentation_20200212.pdf)
     mutate(GEOID = ifelse(GEOID == "06037137000", "06037930401", GEOID)) %>%
-    group_by(GEOID, year, scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, excise_tax_scenario) %>%
+    group_by(GEOID, year, scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario) %>%
     summarize(total_pm25 = sum(total_pm25, na.rm = T), 
               prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
     ungroup() %>%
     rename(census_tract = GEOID) %>%
-    select(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, excise_tax_scenario,
+    select(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario,
            census_tract, year, total_pm25)
   
   ## add ces score, income, and dac
@@ -625,7 +625,7 @@ for (i in 1:length(field_files_to_process)) {
   
   setorder(ct_exposure, "census_tract", "year")
   
-  setcolorder(ct_exposure, c("scen_id", "oil_price_scenario", "carbon_price_scenario", "ccs_scenario", "setback_scenario",
+  setcolorder(ct_exposure, c("scen_id", "oil_price_scenario", "carbon_price_scenario", "ccs_scenario", "setback_scenario", "setback_existing",
                              "excise_tax_scenario", "census_tract", "disadvantaged", "CES3_score", "median_hh_income", "year", "total_pm25"))
   
   
@@ -646,7 +646,7 @@ for (i in 1:length(field_files_to_process)) {
                                                                      "c.indi_comp", "c.indu_comp",
                                                                      "total_emp", "total_comp"), by = .(scen_id, oil_price_scenario, innovation_scenario,
                                                                                                            carbon_price_scenario, ccs_scenario,
-                                                                                                           setback_scenario, prod_quota_scenario, excise_tax_scenario, year)]
+                                                                                                           setback_scenario, setback_existing, prod_quota_scenario, excise_tax_scenario, year)]
   
   setnames(state_out, c("county_pop", "total_county_bbl", "revenue",  "total_county_ghg_kgCO2e"), c("state_pop", "total_state_bbl", "total_state_revenue", "total_state_ghg_kgCO2"))
                                                 
@@ -667,9 +667,12 @@ print(elapsed_time)
 
 ## get BAU vals for all three oil price scenarios
 
-bau_scens <- c('reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_ct_results.rds',
-               'low oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax_ct_results.rds',
-               'high oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax_ct_results.rds')
+bau_scens <- c('reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ct_results.rds',
+               'low oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ct_results.rds',
+               'high oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ct_results.rds',
+               'reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-1_ct_results.rds',
+               'low oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax-1_ct_results.rds',
+               'high oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax-1_ct_results.rds')
 
 bau_out <- list()
 
@@ -679,7 +682,7 @@ for(i in 1:length(bau_scens)) {
   
   bau_tmp <- readRDS(paste0(ct_save_path, scen_tmp)) %>%
     rename(bau_total_pm25 = total_pm25) %>%
-    select(oil_price_scenario, census_tract, year, bau_total_pm25) %>% 
+    select(oil_price_scenario, setback_existing, census_tract, year, bau_total_pm25) %>% 
     as.data.table()
   
   bau_out[[i]] <- bau_tmp
@@ -708,7 +711,7 @@ for (i in 1:length(field_files_to_process)) {
   
   ## calculate delta pm 2.5
   delta_extraction <- merge(ct_scen_out, bau_out,
-                            by = c("oil_price_scenario", "census_tract", "year"),
+                            by = c("oil_price_scenario", "setback_existing", "census_tract", "year"),
                             all.x = T)
   
   delta_extraction[, delta_total_pm25 := total_pm25 - bau_total_pm25]

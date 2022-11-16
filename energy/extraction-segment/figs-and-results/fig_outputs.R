@@ -12,14 +12,14 @@ library(openxlsx)
 
 ## paths 
 main_path              = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-11-07/'
+extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-11-16/'
 state_save_path        = paste0(main_path, extraction_folder_path, 'state-results/')
-field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-11-07/revision-full-test/field-out/")
+field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-11-15/revision-setbacks/field-out/")
 health_out             = paste0(main_path, "outputs/academic-out/health/")
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
-save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/original_model/')
+save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/')
 dir.create(save_info_path, showWarnings = FALSE)  
 
 ## files
@@ -120,7 +120,7 @@ state_scens <- merge(state_out, state_population,
                      all.x = T)
 
 state_labor_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                      ccs_scenario, excise_tax_scenario, setback_scenario, target, target_policy, year, total_emp, total_comp, state_pop, total_state_pop)]
+                                      ccs_scenario, excise_tax_scenario, setback_scenario, setback_existing, target, target_policy, year, total_emp, total_comp, state_pop, total_state_pop)]
 
 
 ## calc PV and convert labor outputs into 2019 dollars
@@ -136,7 +136,8 @@ state_labor_levels[, total_comp_PV := total_comp_usd19 / ((1 + discount_rate) ^ 
 
 ## melt
 state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
-                                                           'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
+                                                           'carbon_price_scenario', 'ccs_scenario', 'setback_scenario',
+                                                           'setback_existing', 'excise_tax_scenario',
                                                            'target', 'target_policy',  'year'),
                            measure.vars = c("total_emp", "total_comp_usd19", "total_comp_PV"),
                            variable.name = "metric",
@@ -146,13 +147,14 @@ state_labor_levels <- melt(state_labor_levels, id.vars = c('scen_id', 'oil_price
 ## emissions and extraction
 ## ------------------------------
 state_extract_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                        ccs_scenario, setback_scenario, excise_tax_scenario, target, target_policy, year, total_state_bbl, total_state_ghg_kgCO2)]
+                                        ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario, target, target_policy, year, total_state_bbl, total_state_ghg_kgCO2)]
 
 state_extract_levels[, total_state_ghg_MtCO2 := total_state_ghg_kgCO2 / (1000 * 1e6)]
 state_extract_levels[, total_state_ghg_kgCO2 := NULL]
 
 state_extract_levels <- melt(state_extract_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
-                                                               'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
+                                                               'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 
+                                                               'setback_existing', 'excise_tax_scenario',
                                                                'target', 'target_policy', 'year'),
                              measure.vars = c("total_state_bbl", "total_state_ghg_MtCO2"),
                              variable.name = "metric",
@@ -161,7 +163,7 @@ state_extract_levels <- melt(state_extract_levels, id.vars = c('scen_id', 'oil_p
 ## health
 ## ------------------------------
 state_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                       ccs_scenario, setback_scenario, excise_tax_scenario, target, target_policy,
+                                       ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario, target, target_policy,
                                        year, mean_total_pm25, mean_delta_total_pm25, 
                                        mortality_level, mortality_delta, cost_2019_PV, cost_PV, state_pop)]
 
@@ -177,7 +179,8 @@ state_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_s
 
 
 state_health_levels <- melt(state_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario', 
-                                                             'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
+                                                             'carbon_price_scenario', 'ccs_scenario', 'setback_scenario',
+                                                             'setback_existing', 'excise_tax_scenario',
                                                              'target', 'target_policy', 'year'),
                             measure.vars = c("mean_total_pm25", "mean_delta_total_pm25", "mortality_level", 
                                              "mortality_delta", "cost_2019_PV", "cost_PV"),
@@ -255,7 +258,7 @@ fwrite(state_levels, paste0(save_info_path, 'state_levels_all_oil.csv'))
 ## select health outputs
 
 rel_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_scenario, carbon_price_scenario,
-                                     ccs_scenario, setback_scenario, excise_tax_scenario, target, target_policy, year,
+                                     ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario, target, target_policy, year,
                                      mean_delta_total_pm25, mortality_delta, cost_2019, cost, cost_2019_PV, cost_PV)]
 
 # ## inflate to 2020 USD
@@ -263,7 +266,8 @@ rel_health_levels <- state_scens[, .(scen_id, oil_price_scenario, innovation_sce
 
 
 rel_health_levels <- melt(rel_health_levels, id.vars = c('scen_id', 'oil_price_scenario', 'innovation_scenario',
-                                                         'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 'excise_tax_scenario',
+                                                         'carbon_price_scenario', 'ccs_scenario', 'setback_scenario', 
+                                                         'setback_existing', 'excise_tax_scenario',
                                                          'target', 'target_policy', 'year'),
                           measure.vars = c("mean_delta_total_pm25", "mortality_delta", "cost_2019", "cost", "cost_2019_PV", "cost_PV"),
                           variable.name = "metric",
@@ -464,7 +468,7 @@ labor_dac_state <- labor_scens[, .(cumul_dac_comp = sum(dac_comp),
                                    cumul_total_comp_PV = sum(total_comp_PV),
                                    cumul_dac_emp = sum(dac_emp),
                                    cumul_total_emp = sum(total_emp)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
-                                                                             setback_scenario, excise_tax_scenario,
+                                                                             setback_scenario, setback_existing, excise_tax_scenario,
                                                                              target, target_policy, policy_intervention)]
 
 labor_dac_state[, dac_comp_share := cumul_dac_comp / cumul_total_comp]
@@ -588,7 +592,7 @@ setnames(bau_emp, c("total_emp", "total_comp_usd19", "total_comp_PV"), c("bau_em
 
 ## join
 labor_bau_dac <-  merge(labor_scens[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario,
-                                        setback_scenario, excise_tax_scenario, policy_intervention,
+                                        setback_scenario, setback_existing, excise_tax_scenario, policy_intervention,
                                         target, target_policy, county,
                                         dac_share, year, total_emp, total_comp_usd19, total_comp_PV)], bau_emp,
                         by = c("oil_price_scenario", "county", "year"),
@@ -608,7 +612,7 @@ labor_bau_dac <- labor_bau_dac[, .(cumul_dac_emp_loss = sum(dac_emp),
                                    cumul_total_comp_loss = sum(diff_comp),
                                    cumul_dac_pv_loss = sum(dac_pv),
                                    cumul_total_pv_loss = sum(diff_pv)), by = .(scen_id, oil_price_scenario, carbon_price_scenario,
-                                                                           setback_scenario, excise_tax_scenario,
+                                                                           setback_scenario, setback_existing, excise_tax_scenario,
                                                                            target, target_policy, policy_intervention)]
 
 labor_bau_dac[, dac_share_emp := cumul_dac_emp_loss / cumul_total_emp_loss]
