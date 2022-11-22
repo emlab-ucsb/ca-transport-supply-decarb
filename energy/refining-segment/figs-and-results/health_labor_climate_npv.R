@@ -82,9 +82,9 @@ npv_dt[, measure_unit := fifelse(unit == "value_billion", "2019 USD billion", "2
 refin_colors <- c('historic exports' = '#2F4858', 'historic production' = '#F6AE2D', 'low exports' = '#F26419')
 
 ## filter out these BAU scenarios
-bau_scens <- c('BAU historic production low innovation price floor no ccs reference case',
-               'LC1 historic production low innovation price floor no ccs reference case')
-
+# bau_scens <- c('BAU historic production low innovation price floor no ccs reference case',
+#                'LC1 historic production low innovation price floor no ccs reference case')
+bau_scens <- c('LC1 historic production low innovation price floor no ccs reference case')
 
 
 # figure
@@ -234,22 +234,27 @@ legend_fig <- ggplot() +
   labs(title = "",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
-       x = "GHG emissions reduction target (%, 2045 vs 2019)") +
-  scale_color_manual(name = "",
-                     labels = c("BAU demand - historic exports", 
-                                "BAU demand - low exports", 
-                                "Low C. demand - historic exports", 
-                                "Low C. demand - low exports"),
-                     values = c("BAU demand - historic exports" = "#2F4858", 
-                                "BAU demand - low exports" = "#F26419", 
-                                "Low C. demand - historic exports" = "#2F4858",
-                                "Low C. demand - low exports" = "#F26419")) +   
-  scale_shape_manual(name = "",
-                        labels = c("BAU demand - historic exports", 
-                                   "BAU demand - low exports", 
-                                   "Low C. demand - historic exports", 
-                                   "Low C. demand - low exports"),
-                        values = c(16, 16, 17, 17)) +
+       x = "GHG emissions reduction target (%, 2045 vs 2019)",
+       color = NULL,
+       shape = NULL) +
+  scale_shape_manual(values = c(16, 16, 16, 17, 17)) +
+  # scale_color_manual(name = "",
+  #                    labels = c("BAU demand - historic exports", 
+  #                               "BAU demand - historic production",
+  #                               "BAU demand - low exports", 
+  #                               "Low C. demand - historic exports", 
+  #                               "Low C. demand - low exports"),
+  #                    values = c("BAU demand - historic exports" = "#2F4858", 
+  #                               "BAU demand - low exports" = "#F26419", 
+  #                               "Low C. demand - historic exports" = "#2F4858",
+  #                               "Low C. demand - low exports" = "#F26419")) +   
+  # scale_shape_manual(name = "",
+  #                       labels = c("BAU demand - historic exports", 
+  #                                  "BAU demand - historic production",
+  #                                  "BAU demand - low exports", 
+  #                                  "Low C. demand - historic exports", 
+  #                                  "Low C. demand - low exports"),
+  #                       values = c(16, 16, 16, 17, 17)) +
   theme_line_n +
   theme(legend.position = "bottom",
         axis.text.x = element_text(vjust = 0.5, hjust = 0.5),
