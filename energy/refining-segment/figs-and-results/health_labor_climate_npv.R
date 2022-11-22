@@ -19,16 +19,16 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 
 ## paths
 # main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-main_path <- '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn/'
-fig_path <- 'outputs/academic-out/refining/figures/manuscript'
+main_path <- '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
+fig_path <- 'outputs/academic-out/refining/figures'
 
 ## csv names
 npv_file <- 'npv_x_metric_refining.csv'
 dac_file <- 'dac_health_labor_refining.csv'
 
 ## read in data
-npv_dt <- fread(paste0(main_path, fig_path, npv_file))
-dac_dt <- fread(paste0(main_path, fig_path, dac_file))
+npv_dt <- fread(file.path(main_path, fig_path, npv_file))
+dac_dt <- fread(file.path(main_path, fig_path, dac_file))
 
 ## cumulative
 npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: avoided damage',
