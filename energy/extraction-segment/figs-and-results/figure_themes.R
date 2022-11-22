@@ -74,6 +74,12 @@ policy_colors_subset <-  c('setback' = '#4a6c6f',
                            'excise tax' = '#ff5e5b',
                            'carbon tax' = "#fcb97d")
 
+policy_colors_subset_2sb <- c('setback (new wells)' = '#2a9d8f',
+                              'setback (all wells)' = '#4a6c6f',
+                              'excise tax' = '#ff5e5b',
+                              'carbon tax' = "#fcb97d")
+
+
 
 policy_symbols <- c("BAU" = 16,
                     "carbon tax" = 17,

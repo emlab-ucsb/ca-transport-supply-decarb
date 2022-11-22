@@ -31,6 +31,18 @@ levels_dt <- fread(paste0(main_path, fig_path, levels_name))
 levels_dt <- levels_dt[!policy_intervention %in% c('carbon tax & setback', 'excise tax & setback')]
 levels_dt <- levels_dt[, target_label := fifelse(target_label == "no_target", "BAU", target_label)]
 
+## update setback policy intervention (if setback_existing == 1, all wells)
+levels_dt[, policy_intervention := fifelse((policy_intervention == "setback" &
+                                              setback_existing == 1), "setback (all wells)",
+                                           policy_intervention)]
+
+levels_dt[, policy_intervention := fifelse((policy_intervention == "setback" &
+                                              setback_existing == 0), "setback (new wells)",
+                                           policy_intervention)]
+
+## remove duplicate of 90% reduction and BAU
+levels_dt <- levels_dt[!(target == "90perc_reduction" & setback_existing == 0)]
+levels_dt <- levels_dt[!(target == "no_target" & setback_existing == 0)]
 
 ## horizontal panel, A) production; B) GHG emissions; C) Cumulative GHG emissions x 2045 emissions reduction
 
@@ -62,8 +74,7 @@ levels_dt <- levels_dt[, target_label := fifelse(target_label == "no_target", "B
 prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
                                         oil_price_scenario == "reference case",
-                                        target_label != "63%",
-                                        setback_existing == 1), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+                                        target != "setback_1000ft"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
   labs(title = "A. Oil production",
        x = NULL,
@@ -71,7 +82,11 @@ prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
        color = "Policy",
        lty = "2045 GHG emission target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("66%" = "solid", "81%" = "dashed", "90%" = "dotted")) +
+  scale_linetype_manual(values = c("65%" = "dotdash",
+                                   "66%" = "solid",
+                                   "72%" = "longdash",
+                                   "81%" = "dashed", 
+                                   "90%" = "dotted")) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
                                         policy_intervention == "BAU",
@@ -79,7 +94,7 @@ prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         setback_existing == 1), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   
   annotate("text", x = 2044, y = 74, label = "BAU", size = 2) +
-  scale_color_manual(values = policy_colors_subset) +
+  scale_color_manual(values = policy_colors_subset_2sb) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
@@ -89,48 +104,48 @@ prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm')) 
 
-## other version: setbacks only apply to new wells
-prod_fig_v2_sb <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
-                                           year > 2019,
-                                           oil_price_scenario == "reference case",
-                                           target_label != "62%",
-                                           setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
-  geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "A. Oil production",
-       x = NULL,
-       y = "Barrels (million)",
-       color = "Policy",
-       lty = "2045 GHG emission target") +
-  # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("65%" = "solid", "72%" = "dashed", "90%" = "dotted")) +
-  geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
-                                        year > 2019,
-                                        policy_intervention == "BAU",
-                                        oil_price_scenario == "reference case",
-                                        setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  
-  annotate("text", x = 2044, y = 74, label = "BAU", size = 2) +
-  scale_color_manual(values = policy_colors_subset) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
-  # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line_n +
-  theme(legend.position = "bottom",
-        legend.key.width= unit(1, 'cm'),
-        legend.box="vertical",
-        axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
-
+# ## other version: setbacks only apply to new wells
+# prod_fig_v2_sb <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
+#                                            year > 2019,
+#                                            oil_price_scenario == "reference case",
+#                                            target_label != "62%",
+#                                            setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+#   geom_line(size = 0.65, alpha = 0.9) +
+#   labs(title = "A. Oil production",
+#        x = NULL,
+#        y = "Barrels (million)",
+#        color = "Policy",
+#        lty = "2045 GHG emission target") +
+#   # facet_wrap(~ccs_option) +
+#   scale_linetype_manual(values = c("65%" = "solid", "72%" = "dashed", "90%" = "dotted")) +
+#   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
+#                                         year > 2019,
+#                                         policy_intervention == "BAU",
+#                                         oil_price_scenario == "reference case",
+#                                         setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
+#   
+#   annotate("text", x = 2044, y = 74, label = "BAU", size = 2) +
+#   scale_color_manual(values = policy_colors_subset) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
+#   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line_n +
+#   theme(legend.position = "bottom",
+#         legend.key.width= unit(1, 'cm'),
+#         legend.box="vertical",
+#         axis.ticks.length.y = unit(0.1, 'cm'),
+#         axis.ticks.length.x = unit(0.1, 'cm')) 
+# 
 
 ## for joint legend:
 ## version 2, categorical colors for policy
 levels_dt_legend <- levels_dt %>%
-  mutate(legend_lab = ifelse(target_label %in% c("16%", "66%", "88%"), paste0(target_label, " (= 2,500 ft setback)"),
-                             ifelse(target_label %in% c("35%", "81%", "94%"), paste0(target_label, " (= 1 mile setback)"), target_label)))
+  mutate(legend_lab = ifelse(target_label %in% c("15%", "16%", "65%", "66%", "85%", "88%"), paste0(target_label, " (= 2,500 ft setback)"),
+                             ifelse(target_label %in% c("33%", "35%", "72%", "81%", "89%", "94%"), paste0(target_label, " (= 1 mile setback)"), target_label)))
 
 ## legend figure
 prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
                                            year > 2019,
-                                           target_label != "63%",
+                                           target != "setback_1000ft",
                                            oil_price_scenario == "reference case",
                                            setback_existing == 1), aes(x = year, y = value / 1e6, color = policy_intervention, lty = legend_lab)) +
   geom_line(size = 0.65, alpha = 0.9) +
@@ -147,8 +162,12 @@ prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl
        color = "Policy",
        lty = "2045 GHG emission reduction target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("66% (= 2,500 ft setback)" = "solid", "81% (= 1 mile setback)" = "dashed", "90%" = "dotted")) +
-  scale_color_manual(values = c(policy_colors_subset)) +
+  scale_linetype_manual(values = c("65%" = "dotdash",
+                                   "66%" = "solid",
+                                   "72%" = "longdash",
+                                   "81%" = "dashed", 
+                                   "90%" = "dotted")) +
+  scale_color_manual(values = c(policy_colors_subset_2sb)) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
   theme_line_n +
@@ -161,46 +180,45 @@ prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm')) 
 
-## for joint legend:
-## version 2, categorical colors for policy
-levels_dt_legend_sb <- levels_dt %>%
-  mutate(legend_lab = ifelse(target_label %in% c("15%", "65%", "85%"), paste0(target_label, " (= 2,500 ft setback)"),
-                             ifelse(target_label %in% c("33%", "89%", "72%"), paste0(target_label, " (= 1 mile setback)"), target_label)))
-
-## legend figure
-prod_fig_legend_sb <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
-                                                      year > 2019,
-                                                      target_label != "62%",
-                                                      oil_price_scenario == "reference case",
-                                                      setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = legend_lab)) +
-  geom_line(size = 0.65, alpha = 0.9) +
-  geom_point() +
-  geom_line(data = levels_dt_legend %>% filter(metric == "total_state_bbl",
-                                               year > 2019,
-                                               policy_intervention == "BAU",
-                                               oil_price_scenario == "reference case",
-                                               setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  annotate("text", x = 2044, y = 85, label = "BAU", size = 2) +
-  labs(title = "(A) Oil production",
-       x = NULL,
-       y = "million bbls",
-       color = "Policy",
-       lty = "2045 GHG emission reduction target") +
-  # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("65% (= 2,500 ft setback)" = "solid", "72% (= 1 mile setback)" = "dashed", "90%" = "dotted")) +
-  scale_color_manual(values = c(policy_colors_subset)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
-  # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line_n +
-  guides(lty = guide_legend(order = 1), colour = guide_legend(order = 2)) +
-  theme(legend.position = "left",
-        legend.key.width= unit(1, 'cm'),
-        legend.box="vertical",
-        legend.text = element_text(size = 8),
-        legend.title = element_text(size = 8),
-        axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
-
+# ## for joint legend:
+# ## version 2, categorical colors for policy
+# levels_dt_legend_sb <- levels_dt %>%
+#   mutate(legend_lab = ifelse(target_label %in% c("15%", "65%", "85%"), paste0(target_label, " (= 2,500 ft setback)"),
+#                              ifelse(target_label %in% c("33%", "89%", "72%"), paste0(target_label, " (= 1 mile setback)"), target_label)))
+# 
+# ## legend figure
+# prod_fig_legend_sb <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
+#                                                       year > 2019,
+#                                                       target != "setback_1000ft",
+#                                                       oil_price_scenario == "reference case"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = legend_lab)) +
+#   geom_line(size = 0.65, alpha = 0.9) +
+#   geom_point() +
+#   geom_line(data = levels_dt_legend %>% filter(metric == "total_state_bbl",
+#                                                year > 2019,
+#                                                policy_intervention == "BAU",
+#                                                oil_price_scenario == "reference case",
+#                                                setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
+#   annotate("text", x = 2044, y = 85, label = "BAU", size = 2) +
+#   labs(title = "(A) Oil production",
+#        x = NULL,
+#        y = "million bbls",
+#        color = "Policy",
+#        lty = "2045 GHG emission reduction target") +
+#   # facet_wrap(~ccs_option) +
+#   scale_linetype_manual(values = c("65% (= 2,500 ft setback)" = "solid", "72% (= 1 mile setback)" = "dashed", "90%" = "dotted")) +
+#   scale_color_manual(values = c(policy_colors_subset)) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
+#   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
+#   theme_line_n +
+#   guides(lty = guide_legend(order = 1), colour = guide_legend(order = 2)) +
+#   theme(legend.position = "left",
+#         legend.key.width= unit(1, 'cm'),
+#         legend.box="vertical",
+#         legend.text = element_text(size = 8),
+#         legend.title = element_text(size = 8),
+#         axis.ticks.length.y = unit(0.1, 'cm'),
+#         axis.ticks.length.x = unit(0.1, 'cm')) 
+# 
 
 ## GHG
 ## ----------------------------------------------------------------
@@ -234,8 +252,7 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                           year > 2019,
                                           policy_intervention != "BAU",
                                           oil_price_scenario == "reference case",
-                                          target_label != "63%",
-                                          setback_existing == 1), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
+                                          target != "setback_1000ft"), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.8) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         year > 2019,
@@ -250,8 +267,12 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
        color = "Policy intervention",
        lty = "2045 GHG emission target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("66%" = "solid", "81%" = "dashed", "90%" = "dotted")) +
-  scale_color_manual(values = policy_colors_subset) +
+  scale_linetype_manual(values =  c("65%" = "dotdash",
+                                    "66%" = "solid",
+                                    "72%" = "longdash",
+                                    "81%" = "dashed", 
+                                    "90%" = "dotted")) +
+  scale_color_manual(values = c(policy_colors_subset_2sb)) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 15)) +
   theme_line_n +
   theme(legend.position = "bottom",
@@ -260,53 +281,54 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm')) 
 
-ghg_pw_fig_v2_sb <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
-                                             year > 2019,
-                                             policy_intervention != "BAU",
-                                             oil_price_scenario == "reference case",
-                                             target_label != "63%",
-                                             setback_existing == 0
-                                             ), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
-  geom_line(size = 0.65, alpha = 0.8) +
-  geom_line(data = levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
-                                        year > 2019,
-                                        policy_intervention == "BAU",
-                                        oil_price_scenario == "reference case",
-                                        setback_existing == 0), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  annotate("text", x = 2044, y = 7.5, label = "BAU", size = 2) +
-  labs(title = "B. GHG emissions",
-       x = NULL,
-       # y = "MtCO2e",
-       y = bquote(MtCO[2]~e),
-       color = "Policy intervention",
-       lty = "2045 GHG emission target") +
-  # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("65%" = "solid", "72%" = "dashed", "90%" = "dotted")) +
-  scale_color_manual(values = policy_colors_subset) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 15)) +
-  theme_line_n +
-  theme(legend.position = "bottom",
-        legend.key.width= unit(1, 'cm'),
-        legend.box="vertical",
-        axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
-
-
+# ghg_pw_fig_v2_sb <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
+#                                              year > 2019,
+#                                              policy_intervention != "BAU",
+#                                              oil_price_scenario == "reference case",
+#                                              target_label != "63%",
+#                                              setback_existing == 0
+#                                              ), aes(x = year, y = value , color = policy_intervention, lty = target_label)) +
+#   geom_line(size = 0.65, alpha = 0.8) +
+#   geom_line(data = levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
+#                                         year > 2019,
+#                                         policy_intervention == "BAU",
+#                                         oil_price_scenario == "reference case",
+#                                         setback_existing == 0), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
+#   annotate("text", x = 2044, y = 7.5, label = "BAU", size = 2) +
+#   labs(title = "B. GHG emissions",
+#        x = NULL,
+#        # y = "MtCO2e",
+#        y = bquote(MtCO[2]~e),
+#        color = "Policy intervention",
+#        lty = "2045 GHG emission target") +
+#   # facet_wrap(~ccs_option) +
+#   scale_linetype_manual(values = c("65%" = "solid", "72%" = "dashed", "90%" = "dotted")) +
+#   scale_color_manual(values = policy_colors_subset) +
+#   scale_y_continuous(expand = c(0, 0), limits = c(0, 15)) +
+#   theme_line_n +
+#   theme(legend.position = "bottom",
+#         legend.key.width= unit(1, 'cm'),
+#         legend.box="vertical",
+#         axis.ticks.length.y = unit(0.1, 'cm'),
+#         axis.ticks.length.x = unit(0.1, 'cm')) 
+# 
+# 
 
 ## part C: cumulative GHG x 2045 reductions
 ## ---------------------------------------------------------
 
-cumul_ghg <- levels_dt[metric == "total_state_ghg_MtCO2" & 
-                         year > 2019 & setback_existing == 1, .(cumul_ghg = sum(value)), by = .(scen_id, oil_price_scenario,  policy_intervention,
+cumul_ghg <- levels_dt[(metric == "total_state_ghg_MtCO2" & 
+                         year > 2019), .(cumul_ghg = sum(value)), by = .(scen_id, setback_existing, oil_price_scenario,  policy_intervention,
                                                                                                          ghg_2045_perc, target_label)]
 
 
-cumul_ghg$target_label <- factor(cumul_ghg$target_label, levels = c("BAU", "63%",
-                                                                    "66%", "81%",
-                                                                    "90%"))
+cumul_ghg$target_label <- factor(cumul_ghg$target_label, levels = c("BAU", "62%",
+                                                                    "63%", "65%",
+                                                                    "66%", "72%", 
+                                                                    "81%", "90%"))
 
 cumul_ghg$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = c("BAU", "excise tax", "carbon tax", 
-                                                                    "setback"))
+                                                                    "setback (all wells)", "setback (new wells)"))
 
 ## ghg
 # ghg_cumul_fig <- ggplot(cumul_ghg %>% filter(target_label != "55%"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = target_label, shape = policy_intervention)) +
@@ -334,7 +356,7 @@ ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "reference
        shape = "Policy intervention") +
   theme_line_n +
   annotate("text", x = 59, y = 255, label = "BAU", size = 2) +
-  scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+  scale_color_manual(values = c("BAU" = "black", policy_colors_subset_2sb)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_y_continuous(limits = c(150, 270)) +
   theme(legend.position = "none",
@@ -343,36 +365,36 @@ ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% filter(oil_price_scenario == "reference
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm')) 
 
-## setback version
-cumul_ghg_sb <- levels_dt[metric == "total_state_ghg_MtCO2" & 
-                         year > 2019 & setback_existing == 0, .(cumul_ghg = sum(value)), by = .(scen_id, oil_price_scenario,  policy_intervention,
-                                                                                                ghg_2045_perc, target_label)]
-
-
-cumul_ghg_sb$target_label <- factor(cumul_ghg$target_label, levels = c("BAU", "62%",
-                                                                    "65%", "72%",
-                                                                    "90%"))
-
-cumul_ghg_sb$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = c("BAU", "excise tax", "carbon tax", 
-                                                                                  "setback"))
-
-ghg_cumul_fig_v2_sb <- ggplot(cumul_ghg_sb %>% filter(oil_price_scenario == "reference case"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
-  geom_point(size = 2, alpha = 0.8) +
-  labs(title = "C. Cumulative GHG emissions",
-       x = "GHG emissions reduction target (%, 2045 vs 2019)",
-       y = bquote(MtCO[2]~e),
-       color = "2045 GHG emission target",
-       shape = "Policy intervention") +
-  theme_line_n +
-  annotate("text", x = 59, y = 255, label = "BAU", size = 2) +
-  scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
-  # scale_x_continuous(limits = c(0, NA)) +
-  scale_y_continuous(limits = c(150, 270)) +
-  theme(legend.position = "none",
-        # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        legend.background = element_rect(fill = "white", color = "grey"),
-        axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+# ## setback version
+# cumul_ghg_sb <- levels_dt[metric == "total_state_ghg_MtCO2" & 
+#                          year > 2019 & setback_existing == 0, .(cumul_ghg = sum(value)), by = .(scen_id, oil_price_scenario,  policy_intervention,
+#                                                                                                 ghg_2045_perc, target_label)]
+# 
+# 
+# cumul_ghg_sb$target_label <- factor(cumul_ghg$target_label, levels = c("BAU", "62%",
+#                                                                     "65%", "72%",
+#                                                                     "90%"))
+# 
+# cumul_ghg_sb$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = c("BAU", "excise tax", "carbon tax", 
+#                                                                                   "setback"))
+# 
+# ghg_cumul_fig_v2_sb <- ggplot(cumul_ghg_sb %>% filter(oil_price_scenario == "reference case"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
+#   geom_point(size = 2, alpha = 0.8) +
+#   labs(title = "C. Cumulative GHG emissions",
+#        x = "GHG emissions reduction target (%, 2045 vs 2019)",
+#        y = bquote(MtCO[2]~e),
+#        color = "2045 GHG emission target",
+#        shape = "Policy intervention") +
+#   theme_line_n +
+#   annotate("text", x = 59, y = 255, label = "BAU", size = 2) +
+#   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
+#   # scale_x_continuous(limits = c(0, NA)) +
+#   scale_y_continuous(limits = c(150, 270)) +
+#   theme(legend.position = "none",
+#         # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+#         legend.background = element_rect(fill = "white", color = "grey"),
+#         axis.ticks.length.y = unit(0.1, 'cm'),
+#         axis.ticks.length.x = unit(0.1, 'cm')) 
 
 
 # ghg_cumul_fig <- ggplot(cumul_ghg, aes(x = target_label, y = cumul_ghg, color = target_label, shape = policy_intervention)) +
