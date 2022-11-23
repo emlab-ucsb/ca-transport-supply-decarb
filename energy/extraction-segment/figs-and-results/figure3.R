@@ -63,8 +63,22 @@ npv_dt$target <- factor(npv_dt$target, levels = c('setback_1000ft', 'setback_250
 
 # npv_dt$target_label <- factor(npv_dt$target_label, levels = c("55%", "60%", "75%", "90%"))
 # 
+
+## update setback policy intervention (if setback_existing == 1, all wells)
+npv_dt[, policy_intervention := fifelse((policy_intervention == "setback" &
+                                           setback_existing == 1), "setback (all wells)",
+                                        policy_intervention)]
+
+npv_dt[, policy_intervention := fifelse((policy_intervention == "setback" &
+                                           setback_existing == 0), "setback (new wells)",
+                                        policy_intervention)]
+
+
 npv_dt$policy_intervention <- factor(npv_dt$policy_intervention, levels = c("carbon tax", "excise tax",
-                                                                                  "setback", "carbon tax & setback", "excise tax & setback"))
+                                                                                  "setback (new wells)", "setback (all wells)", "carbon tax & setback", "excise tax & setback"))
+
+
+
 
 # ## bind with dac
 # npv_dt_bind <- npv_dt[, .(scen_id, ccs_option, policy_intervention, title, ghg_2045_perc_reduction,
@@ -174,6 +188,7 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure3-sb-new.pdf'),
 ## -------------------------------------------------------------------
 fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Health: avoided mortality",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -183,7 +198,7 @@ fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
        title = "A. Health: avoided mortality",
        y = "NPV (2019 USD billion)",
        x = NULL) +
-  ylim(0, 3) +
+  ylim(0, 2) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -194,6 +209,7 @@ fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Labor: forgone wages",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -214,6 +230,7 @@ fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Climate: avoided damage",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -235,6 +252,7 @@ fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
 bquotelab <- bquote(MtCO[2]~e)
 fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Health: avoided mortality",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -247,7 +265,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
        # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
-  ylim(0, 80) +
+  ylim(0, 50) +
   theme_line_n +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
@@ -256,6 +274,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_e <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Labor: forgone wages",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -275,6 +294,7 @@ fig_bxm_e <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Climate: avoided damage",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -296,7 +316,7 @@ fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
 ## extract legend
 legend_fig <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
-                                      setback_existing == 1,
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Labor: forgone wages",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -430,6 +450,7 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'),
 
 fig_bxm_a_l <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "low oil price",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Health: avoided mortality",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -439,7 +460,7 @@ fig_bxm_a_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        title = "A. Health: avoided mortality",
        y = "NPV (2019 USD billion)",
        x = NULL) +
-  ylim(0, 3) +
+  ylim(0, 1) +
   xlim(80, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
@@ -451,6 +472,7 @@ fig_bxm_a_l <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_b_l <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "low oil price",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Labor: forgone wages",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -460,7 +482,7 @@ fig_bxm_b_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        title = "B. Labor: forgone wages",
        y = NULL,
        x = NULL) +
-  ylim(-6, 0) +
+  ylim(-2, 0) +
   xlim(80, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
@@ -472,6 +494,7 @@ fig_bxm_b_l <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_c_l <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "low oil price",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Climate: avoided damage",
                                       measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -481,7 +504,7 @@ fig_bxm_c_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        title = "C. Climate: avoided damage",
        y = NULL,
        x = NULL) +
-  ylim(0, 4) +
+  ylim(0, 2) +
   xlim(80, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
@@ -493,6 +516,7 @@ fig_bxm_c_l <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_d_l <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "low oil price",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Health: avoided mortality",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -505,7 +529,7 @@ fig_bxm_d_l <- ggplot(npv_dt %>% filter(target != 'BAU',
        # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
-  ylim(0, 80) +
+  ylim(0, 60) +
   xlim(80, 100) +
   theme_line_n +
   theme(legend.position = "none",
@@ -515,6 +539,7 @@ fig_bxm_d_l <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_e_l <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "low oil price",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Labor: forgone wages",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -535,6 +560,7 @@ fig_bxm_e_l <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_f_l <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "low oil price",
+                                      setback_existing == 0,
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                       title == "Climate: avoided damage",
                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -614,6 +640,7 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure3-low.pdf'),
 
 fig_bxm_a_h <- ggplot(npv_dt %>% filter(target != 'BAU',
                                         oil_price_scenario == "high oil price",
+                                        setback_existing == 0,
                                         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                         title == "Health: avoided mortality",
                                         measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -635,6 +662,7 @@ fig_bxm_a_h <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_b_h <- ggplot(npv_dt %>% filter(target != 'BAU',
                                         oil_price_scenario == "high oil price",
+                                        setback_existing == 0,
                                         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                         title == "Labor: forgone wages",
                                         measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -656,6 +684,7 @@ fig_bxm_b_h <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_c_h <- ggplot(npv_dt %>% filter(target != 'BAU',
                                         oil_price_scenario == "high oil price",
+                                        setback_existing == 0,
                                         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                         title == "Climate: avoided damage",
                                         measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -677,6 +706,7 @@ fig_bxm_c_h <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_d_h <- ggplot(npv_dt %>% filter(target != 'BAU',
                                         oil_price_scenario == "high oil price",
+                                        setback_existing == 0,
                                         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                         title == "Health: avoided mortality",
                                         measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -690,6 +720,7 @@ fig_bxm_d_h <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   scale_color_manual(values = policy_colors_subset) +
   scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
+  ylim(0, 50) +
   theme_line_n +
   theme(legend.position = "none",
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
@@ -698,6 +729,7 @@ fig_bxm_d_h <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_e_h <- ggplot(npv_dt %>% filter(target != 'BAU',
                                         oil_price_scenario == "high oil price",
+                                        setback_existing == 0,
                                         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                         title == "Labor: forgone wages",
                                         measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -718,6 +750,7 @@ fig_bxm_e_h <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 fig_bxm_f_h <- ggplot(npv_dt %>% filter(target != 'BAU',
                                         oil_price_scenario == "high oil price",
+                                        setback_existing == 0,
                                         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback'),
                                         title == "Climate: avoided damage",
                                         measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
@@ -856,10 +889,25 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure3-high.pdf'),
 ## figure 4: DAC, two versions
 ## -----------------------------------------
 
+dac_bau_dt[, policy_intervention := fifelse((policy_intervention == "setback" &
+                                           setback_existing == 1), "setback (all wells)",
+                                        policy_intervention)]
+
+dac_bau_dt[, policy_intervention := fifelse((policy_intervention == "setback" &
+                                           setback_existing == 0), "setback (new wells)",
+                                        policy_intervention)]
+
+
+dac_bau_dt$policy_intervention <- factor(dac_bau_dt$policy_intervention, levels = c("carbon tax", "excise tax",
+                                                                            "setback (new wells)", "setback (all wells)", "carbon tax & setback", "excise tax & setback"))
+
+
+
+
 ## version 1: relative to BAU
 fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                             oil_price_scenario == "reference case",
-                                            setback_existing == 1,
+                                            setback_existing == 0,
                                             type == "DAC share",
                                             metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
                         mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
@@ -888,7 +936,7 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
 
 fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                             oil_price_scenario == "reference case",
-                                            setback_existing == 1,
+                                            setback_existing == 0,
                                             type == "DAC share",
                                             metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
                         mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
@@ -903,7 +951,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   # facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
   scale_y_continuous(
     labels = scales::number_format(accuracy = 0.01),
-    limits = c(0.3, 0.45)) +
+    limits = c(0.3, 0.40)) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
@@ -1102,6 +1150,7 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure5-comparison.pdf'),
 ## version 1: relative to BAU
 fig_dac_bau_h_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                               oil_price_scenario == "high oil price",
+                                              setback_existing == 0,
                                               type == "DAC share",
                                               metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
                           mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
@@ -1131,6 +1180,7 @@ fig_dac_bau_h_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
 
 fig_dac_bau_l_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                               oil_price_scenario == "high oil price",
+                                              setback_existing == 0,
                                               type == "DAC share",
                                               metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
                           mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
@@ -1222,6 +1272,7 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
 fig_dac_bau_h_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                                 oil_price_scenario == "low oil price",
                                                 type == "DAC share",
+                                                setback_existing == 0,
                                                 metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
                             mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
                                                       ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
@@ -1250,6 +1301,7 @@ fig_dac_bau_h_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
 
 fig_dac_bau_l_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                                 oil_price_scenario == "low oil price",
+                                                setback_existing == 0,
                                                 type == "DAC share",
                                                 metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
                             mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
@@ -1542,23 +1594,27 @@ csb_npv_dt <- npv_dt %>%
   mutate(sb_dist = str_extract(scen_id, pattern = one_or_more(DGT) %R% 'ft'),
          sb_dist = ifelse(is.na(sb_dist), "0ft", sb_dist),
          sector = ifelse(title == "Labor: forgone wages", "labor", "health")) %>%
-  select(oil_price_scenario, sb_dist, sector, value, measure, measure_unit) %>%
+  select(oil_price_scenario, setback_existing, sb_dist, sector, value, measure, measure_unit) %>%
   pivot_wider(names_from = sector, values_from = value) %>%
-  mutate(scenario_name = paste0("Carbon tax + ", sb_dist, " setback"))
+  mutate(scenario_name = paste0("Carbon tax + ", sb_dist, " setback"),
+         scenario_name = ifelse(setback_existing == 0 & sb_dist != "0ft", paste0(scenario_name, " (new wells)"),
+                                ifelse(setback_existing == 1 & sb_dist != "0ft", paste0(scenario_name, " (all wells)"),
+                                       scenario_name)))
 
 
 
 # fig
-fig_carbon_sb <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "reference case"), aes(x = labor, y = health, color = scenario_name)) +
+fig_carbon_sb <- ggplot(csb_npv_dt %>% 
+                          filter(oil_price_scenario == "reference case" & setback_existing == 0), aes(x = labor, y = health, color = scenario_name)) +
   geom_point(size = 3, alpha = 0.8) +
   labs(y = "Health: avoided mortality",
        x = "Labor: forgone wages",
        color = NULL) +
   facet_wrap(~ measure, ncol = 2, scales = "free") +
   scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
-                                "Carbon tax + 1000ft setback" = "#73C9AC",
-                                "Carbon tax + 2500ft setback" = "#3B7C87", 
-                                "Carbon tax + 5280ft setback" = "#0B3866")) +
+                                "Carbon tax + 1000ft setback (new wells)" = "#73C9AC",
+                                "Carbon tax + 2500ft setback (new wells)" = "#3B7C87", 
+                                "Carbon tax + 5280ft setback (new wells)" = "#0B3866")) +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_color_manual(values = policy_colors_subset) +
@@ -1580,7 +1636,8 @@ ggsave(fig_carbon_sb,
 
 
 ## high and low
-fig_carbon_sb_low <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "low oil price"), aes(x = labor, y = health, color = scenario_name)) +
+fig_carbon_sb_low <- ggplot(csb_npv_dt %>% 
+                              filter(oil_price_scenario == "low oil price" & setback_existing == 0), aes(x = labor, y = health, color = scenario_name)) +
   geom_point(size = 2) +
   labs(title = "Low oil price",
        y = "Health: value of avoided mortalities",
@@ -1588,9 +1645,9 @@ fig_carbon_sb_low <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "low oil
        color = NULL) +
   facet_wrap(~ measure, scales = "free") +
   scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
-                                "Carbon tax + 1000ft setback" = "#73C9AC",
-                                "Carbon tax + 2500ft setback" = "#3B7C87", 
-                                "Carbon tax + 5280ft setback" = "#0B3866")) +
+                                "Carbon tax + 1000ft setback (new wells)" = "#73C9AC",
+                                "Carbon tax + 2500ft setback (new wells)" = "#3B7C87", 
+                                "Carbon tax + 5280ft setback (new wells)" = "#0B3866")) +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_color_manual(values = policy_colors_subset) +
@@ -1610,7 +1667,7 @@ ggsave(fig_carbon_sb_low,
 
 
 ## high and low
-fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high oil price"), aes(x = labor, y = health, color = scenario_name)) +
+fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high oil price" & setback_existing == 0), aes(x = labor, y = health, color = scenario_name)) +
   geom_point(size = 2) +
   labs(title = "High oil price",
        y = "Health: value of avoided mortalities",
@@ -1618,9 +1675,9 @@ fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high o
        color = NULL) +
   facet_wrap(~ measure, scales = "free") +
   scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
-                                "Carbon tax + 1000ft setback" = "#73C9AC",
-                                "Carbon tax + 2500ft setback" = "#3B7C87", 
-                                "Carbon tax + 5280ft setback" = "#0B3866")) +
+                                "Carbon tax + 1000ft setback (new wells)" = "#73C9AC",
+                                "Carbon tax + 2500ft setback (new wells)" = "#3B7C87", 
+                                "Carbon tax + 5280ft setback (new wells)" = "#0B3866")) +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_x_continuous(limits = c(0, NA)) +
   # scale_color_manual(values = policy_colors_subset) +
@@ -1821,28 +1878,28 @@ ggsave(fig_carbon_sb_high,
 #         legend.key.width= unit(1, 'cm'),
 #         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
-## extract the legend
-legend <- get_legend(
-  fig_benefit_x_metric_v2 
-  
-)
+# ## extract the legend
+# legend <- get_legend(
+#   fig_benefit_x_metric_v2 
+#   
+# )
+# 
+# ## combine the figures
+# ## ---------------------------------
+# 
+# fig3b_combine <- plot_grid(
+#   fig_benefit_x_metric_v2 + theme(legend.position="none"),
+#   dac_fig_v2 + theme(legend.position="none"),
+#   nrow = 2,
+#   rel_heights = c(1, 1)
+# )
 
-## combine the figures
-## ---------------------------------
-
-fig3b_combine <- plot_grid(
-  fig_benefit_x_metric_v2 + theme(legend.position="none"),
-  dac_fig_v2 + theme(legend.position="none"),
-  nrow = 2,
-  rel_heights = c(1, 1)
-)
-
-
-ggsave(fig3b_combine,
-       filename = file.path(main_path, fig_path, 'figure3.png'),
-       width = 5.5,
-       height = 6,
-       units = "in")
+# 
+# ggsave(fig3b_combine,
+#        filename = file.path(main_path, fig_path, 'figure3.png'),
+#        width = 5.5,
+#        height = 6,
+#        units = "in")
 
 # ## legend on left plot for slides
 # 
@@ -1986,22 +2043,27 @@ npv_90[, setback_dist := str_extract(scen_id, pattern = 'setback_' %R% one_or_mo
 npv_90 <- npv_90[policy_intervention != 'excise tax & setback']
 
 npv_90 <- npv_90 %>%
-  mutate(scen_name = ifelse(policy_intervention == 'carbon tax & setback', paste0('Carbon tax + ', str_extract(setback_dist, one_or_more(DIGIT)), 'ft setback'), as.character(policy_intervention))) %>%
+  mutate(sb_name = ifelse(setback_existing == 0, "(new wells)", "(all_wells)"),
+         scen_name = ifelse(policy_intervention == 'carbon tax & setback', paste0('Carbon tax + ', str_extract(setback_dist, one_or_more(DIGIT)), 'ft setback', ' ', sb_name), as.character(policy_intervention))) %>%
   setDT()
 
 npv_90 <- npv_90 %>%
   mutate(scen_name = ifelse(policy_intervention == 'carbon tax', 'Carbon tax + 0ft setback', scen_name))
   
 npv_90$scen_name <- factor(npv_90$scen_name, levels = c("excise tax", "Carbon tax + 0ft setback", 
-                                                        "Carbon tax + 1000ft setback", 
-                                                        "Carbon tax + 2500ft setback", 
-                                                        "Carbon tax + 5280ft setback"))
+                                                        "Carbon tax + 1000ft setback (new wells)", 
+                                                        "Carbon tax + 2500ft setback (new wells)", 
+                                                        "Carbon tax + 5280ft setback (new wells)",
+                                                        "Carbon tax + 1000ft setback (all wells)", 
+                                                        "Carbon tax + 2500ft setback (all wells)", 
+                                                        "Carbon tax + 5280ft setback (all wells)"))
 
 
 ## fig
 fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
                                                   oil_price_scenario == "reference case",
-                                                  scen_name != "excise tax"), aes(x = scen_name, y = value)) +
+                                                  scen_name != "excise tax",
+                                                  setback_existing == 0), aes(x = scen_name, y = value)) +
   geom_point(size = 2, alpha = 0.8, color = "#1d577e") +
   labs(color = NULL,
        y = NULL,
@@ -2034,7 +2096,8 @@ ggsave(fig_benefit_x_metric2,
 
 fig_benefit_x_metric2_low <- ggplot(npv_90 %>% filter(target != 'BAU',
                                                   oil_price_scenario == "low oil price",
-                                                  scen_name != "excise tax"), aes(x = scen_name, y = value)) +
+                                                  scen_name != "excise tax",
+                                                  setback_existing == 0), aes(x = scen_name, y = value)) +
   geom_point(size = 2, alpha = 0.8, color = "#1d577e") +
   labs(title = "Low oil price",
        color = NULL,
@@ -2058,7 +2121,8 @@ ggsave(fig_benefit_x_metric2_low,
 ## high
 fig_benefit_x_metric2_high <- ggplot(npv_90 %>% filter(target != 'BAU',
                                                       oil_price_scenario == "high oil price",
-                                                      scen_name != "excise tax"), aes(x = scen_name, y = value)) +
+                                                      scen_name != "excise tax",
+                                                      setback_existing == 0), aes(x = scen_name, y = value)) +
   geom_point(size = 2, alpha = 0.8, color = "#1d577e") +
   labs(title = "High oil price",
        color = NULL,
