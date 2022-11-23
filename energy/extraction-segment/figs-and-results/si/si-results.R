@@ -20,10 +20,11 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path <- 'outputs/predict-production/extraction_2022-05-24/'
-extraction_folder_name <- 'all-target/'
-fig_path <- 'outputs/academic-out/extraction/figures/manuscript-update/figs/si/'
-save_path <- 'outputs/academic-out/extraction/figures/manuscript-update/'
+extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-15/'
+extraction_folder_name <- 'revision-setbacks/'
+fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/figs/si/'
+save_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/'
+out_path <- 'outputs/academic-out/extraction/nature-energy-rev-outputs/'
 data_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
 scen_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
 
@@ -84,7 +85,7 @@ levels_dt_oilpx[, oil_name := paste0('EIA ', oil_price_scenario)]
 levels_dt_oilpx$oil_name <- factor(levels_dt_oilpx$oil_name , levels = c("EIA low oil price", "EIA reference case", "EIA high oil price"))
 
 ## tax data
-tax_df <- fread(paste0(main_path, save_path, tax_file))
+tax_df <- fread(paste0(main_path, out_path, tax_file))
 
 
 
@@ -94,7 +95,7 @@ prod_diff <- levels_dt_oilpx %>%
          target == 'no_target',
          year %in% c(2019, 2045),
          metric == "total_state_bbl") %>%
-  select(scen_id, year, value) %>%
+  select(scen_id, setback_existing, year, value) %>%
   mutate(year = paste0('X', year)) %>%
   pivot_wider(names_from = year, values_from = value) %>%
   mutate(perc_diff = (X2045 - X2019) / X2019)
@@ -104,7 +105,8 @@ prod_diff <- levels_dt_oilpx %>%
 
 ## plot production
 prod_oil_fig <- ggplot(levels_dt_oilpx %>% filter(metric == "total_state_bbl",
-                                           year > 2019), aes(x = year, y = value / 1e6, color = oil_name)) +
+                                           year > 2019,
+                                           setback_existing == 0), aes(x = year, y = value / 1e6, color = oil_name)) +
   geom_line(size = 0.8, alpha = 0.9) +
   labs(x = NULL,
        y = "Oil production (million bbls)",
@@ -128,7 +130,8 @@ ggsave(prod_oil_fig,
 
 ## plot ghg
 ghg_oil_fig <- ggplot(levels_dt_oilpx %>% filter(metric == "total_state_ghg_MtCO2",
-                                            year > 2019), aes(x = year, y = value, color = oil_name)) +
+                                            year > 2019,
+                                            setback_existing == 0), aes(x = year, y = value, color = oil_name)) +
   geom_line(size = 0.8, alpha = 0.9) +
   labs(x = NULL,
        y = expression(paste("Million metric tonnes of ", CO[2], "e")),
@@ -166,19 +169,31 @@ levels_dt_sb <- levels_dt[oil_price_scenario == 'reference case' &
                           carbon_price_scenario %in% c("price floor") &
                           excise_tax_scenario == "no tax"]
 
+levels_dt_sb[, sb_type := fifelse(setback_existing == 0, " (new wells)", " (all wells)")]
+
 levels_dt_sb[, sb_name := fifelse(setback_scenario == 'no_setback', '0ft setback',
                                   fifelse(setback_scenario == 'setback_1000ft', '1000ft setback',
                                           fifelse(setback_scenario == 'setback_2500ft', '2500ft setback', '5280ft setback')))]
 
+levels_dt_sb[, sb_name := ifelse(setback_scenario == "no_setback", sb_name, paste0(sb_name, sb_type))]
+
+
 
 ## factor
 levels_dt_sb$sb_name <- factor(levels_dt_sb$sb_name, 
-                               levels = c("0ft setback", "1000ft setback", "2500ft setback", "5280ft setback"))
+                               levels = c("0ft setback", 
+                                          "1000ft setback (new wells)", 
+                                          "2500ft setback (new wells)", 
+                                          "5280ft setback (new wells)",
+                                          "1000ft setback (all wells)", 
+                                          "2500ft setback (all wells)", 
+                                          "5280ft setback (all wells)"))
 
 
 ## plot ghg
 setback_fig <- ggplot(levels_dt_sb %>% filter(metric == "total_state_bbl",
-                                                 year > 2019), aes(x = year, y = value / 1e6, color = sb_name)) +
+                                                 year > 2019,
+                                              setback_existing == 0), aes(x = year, y = value / 1e6, color = sb_name)) +
   geom_line(size = 0.8, alpha = 0.9) +
   labs(x = NULL,
        y = 'Oil production (million bbls)',
@@ -199,7 +214,8 @@ ggsave(setback_fig,
        units = "in")
 
 setback_ghg_fig <- ggplot(levels_dt_sb %>% filter(metric == "total_state_ghg_MtCO2",
-                                              year > 2019), aes(x = year, y = value, color = sb_name)) +
+                                              year > 2019,
+                                              setback_existing == 0), aes(x = year, y = value, color = sb_name)) +
   geom_line(size = 0.8, alpha = 0.9) +
   labs(x = NULL,
        y = expression(paste("Million metric tonnes of ", CO[2], "e")),
@@ -225,17 +241,28 @@ ggsave(setback_ghg_fig,
 targets <- levels_dt[setback_scenario != "no_setback" &
                        year == 2045 &
                        metric == "total_state_ghg_MtCO2" &
-                       policy_intervention == "setback", .(oil_price_scenario, setback_scenario, value,
+                       policy_intervention == "setback", .(oil_price_scenario, setback_existing, setback_scenario, value,
                                                           ghg_2045_perc, ghg_2045_perc_reduction, target_label)]
+
+targets[, sb_type := fifelse(setback_existing == 0, " (new wells)", " (all wells)")]
 
 
 targets[, sb_name := fifelse(setback_scenario == 'no_setback', '0ft setback',
                                   fifelse(setback_scenario == 'setback_1000ft', '1000ft setback',
                                           fifelse(setback_scenario == 'setback_2500ft', '2500ft setback', '5280ft setback')))]
 
+targets[, sb_name := ifelse(setback_scenario == "no_setback", sb_name, paste0(sb_name, sb_type))]
+
 ## factor
 targets$sb_name <- factor(targets$sb_name, 
-                               levels = c("0ft setback", "1000ft setback", "2500ft setback", "5280ft setback"))
+                               levels = c("0ft setback", 
+                                          "1000ft setback (new wells)", 
+                                          "2500ft setback (new wells)", 
+                                          "5280ft setback (new wells)",
+                                          "1000ft setback (all wells)", 
+                                          "2500ft setback (all wells)", 
+                                          "5280ft setback (all wells)"))
+
 
 targets$oil_price_scenario <- factor(targets$oil_price_scenario, 
                           levels = rev(c("reference case", "low oil price", "high oil price")))
@@ -247,14 +274,15 @@ targets2 <- targets %>%
   mutate(ghg_2045_perc = round(ghg_2045_perc * 100, 1),
          ghg_2045_perc = ifelse(ghg_2045_perc > 0, paste0("+", ghg_2045_perc), as.character(ghg_2045_perc)),
          value = round(value, 1)) %>%
-  select(oil_price_scenario, sb_name, value, ghg_2045_perc) %>%
+  select(oil_price_scenario, setback_existing, sb_name, value, ghg_2045_perc) %>%
   arrange(rev(oil_price_scenario))
 
 ## 90 percent reduction target
 target_90 <- levels_dt[target == "90perc_reduction" &
                        year == 2045 &
                        oil_price_scenario == "reference case" &
-                       metric == "total_state_ghg_MtCO2", .(value, ghg_2045_perc, ghg_2045_perc_reduction, target_label)]
+                       metric == "total_state_ghg_MtCO2" & 
+                       setback_existing == 0, .(setback_existing, value, ghg_2045_perc, ghg_2045_perc_reduction, target_label)]
 
 target_90 <- target_90[1,]
 
@@ -287,37 +315,41 @@ state_subset_all <- rbindlist(state_out_list)
 ## excise tax values
 excise_tax_paths <- state_subset_all %>%
   filter(target_policy == "excise_tax" & setback_scenario == "no_setback") %>%
-  select(scen_id, oil_price_scenario, target, year, tax_rate) %>%
+  select(scen_id, setback_existing, oil_price_scenario, target, year, tax_rate) %>%
   left_join(oilpx_scens) %>%
   mutate(tax_val = tax_rate * oil_price_usd_per_bbl,
          target_name = ifelse(target == "90perc_reduction", "90% reduction",
-                              paste0(str_extract(target, pattern = one_or_more(DGT)), 'ft setback')))
+                              ifelse(target != "90perc_reduction" & setback_existing == 0, paste0(str_extract(target, pattern = one_or_more(DGT)), 'ft setback\n(new wells)'),
+                                     paste0(str_extract(target, pattern = one_or_more(DGT)), 'ft setback\n(all wells)'))))
 
 ## figure
-excise_fig <- ggplot(excise_tax_paths %>% filter(year == 2020), aes(x = target_name, y = tax_rate, color = scenario_name)) +
+excise_fig <- ggplot(excise_tax_paths %>% 
+                       filter(year == 2020 & setback_existing == 0), aes(x = target_name, y = tax_rate, color = scenario_name)) +
   geom_point(alpha = 0.8, size = 2) +
   labs(y = "Excise tax rate",
        x = NULL) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 1.25)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
   theme_line +
   theme(legend.title = element_blank()) +
   scale_color_manual(values = rev(macro_pal)) 
 
-ggsave(filename =  paste0(main_path, save_path, "figs/si/si-excise-tax-fig.png"), excise_fig, width = 5, height = 4, units = "in", dpi = 300)
+ggsave(filename =  paste0(main_path, fig_path, "si-excise-tax-fig.png"), excise_fig, width = 5, height = 4, units = "in", dpi = 300)
 
 ## ---
 ## figure
-excise_fig2 <- ggplot(excise_tax_paths, aes(x = year, y = tax_val, color = scenario_name)) +
+excise_fig2 <- ggplot(excise_tax_paths %>% filter(setback_existing == 0), aes(x = year, y = tax_val, color = scenario_name)) +
   geom_line(alpha = 0.8, size = 1) +
   labs(y = "Excise tax (USD)",
-       x = NULL) +
+       x = NULL,
+       color = "") +
   facet_wrap(~target_name, scales = "free_y") +
   # scale_y_continuous(expand = c(0, 0), limits = c(0, 1.25)) +
-  theme(legend.title = element_blank()) +
   scale_color_manual(values = rev(macro_pal)) +
-  theme_bw()
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") 
 
-ggsave(filename =  paste0(main_path, save_path, "figs/si/si-excise-tax-val-fig.png"), excise_fig2, width = 5, height = 4, units = "in", dpi = 300)
+ggsave(filename =  paste0(main_path, fig_path, "si-excise-tax-val-fig.png"), excise_fig2, width = 5, height = 4, units = "in", dpi = 300)
 
 
 
@@ -325,17 +357,19 @@ ggsave(filename =  paste0(main_path, save_path, "figs/si/si-excise-tax-val-fig.p
 ## carbon tax values
 carbon_tax_paths <- state_subset_all %>%
   filter(target_policy == "carbon_tax") %>%
-  select(scen_id, oil_price_scenario, setback_scenario, target, year, carbon_price_usd_per_kg) %>%
+  select(scen_id, oil_price_scenario, setback_existing, setback_scenario, target, year, carbon_price_usd_per_kg) %>%
   left_join(oilpx_scens) %>%
   mutate(target_name = ifelse(target == "90perc_reduction", "90% reduction",
-                              paste0(str_extract(target, pattern = one_or_more(DGT)), 'ft setback')),
-         setback_name = paste0(str_extract(setback_scenario, pattern = one_or_more(DGT)), 'ft setback'))
+                              ifelse(target != "90perc_reduction" & setback_existing == 0, paste0(str_extract(target, pattern = one_or_more(DGT)), 'ft setback\n(new wells)'),
+                                     paste0(str_extract(target, pattern = one_or_more(DGT)), 'ft setback\n(all wells)'))),
+         setback_name = paste0(str_extract(setback_scenario, pattern = one_or_more(DGT)), 'ft setback (new wells)'),
+         setback_name = str_replace(setback_name, "NA", "0"))
 
 
 
 
 ## figure
-carbon_fig <- ggplot(carbon_tax_paths %>% filter(setback_scenario == "no_setback"), aes(x = year, y = carbon_price_usd_per_kg, color = target_name, group = scen_id)) +
+carbon_fig <- ggplot(carbon_tax_paths %>% filter(setback_scenario == "no_setback" & setback_existing == 0), aes(x = year, y = carbon_price_usd_per_kg, color = target_name, group = scen_id)) +
   geom_line(alpha = 0.8, size = 1) +
   labs(y = "Carbon tax (USD per kg)",
        x = NULL,
@@ -349,7 +383,7 @@ carbon_fig <- ggplot(carbon_tax_paths %>% filter(setback_scenario == "no_setback
             aes(x = year, y = carbon_price_usd_per_kg, group = carbon_price_scenario, label = carbon_price_scenario), 
             inherit.aes = F, size = 2.5)
 
-carbon_fig2 <- ggplot(carbon_tax_paths %>% filter(setback_scenario != "no_setback"), aes(x = year, y = carbon_price_usd_per_kg, group = scen_id, color = scenario_name)) +
+carbon_fig2 <- ggplot(carbon_tax_paths %>% filter(setback_scenario != "no_setback" & setback_existing == 0), aes(x = year, y = carbon_price_usd_per_kg, group = scen_id, color = scenario_name)) +
   geom_line(alpha = 0.8, size = 1) +
   labs(y = "Carbon tax (USD per kg)",
        x = NULL,
@@ -377,7 +411,7 @@ carbon_tax_fig <- plot_grid(
 )
 
 ggsave(carbon_tax_fig,
-       filename = file.path(main_path, save_path, "figs/si/si-carbon-tax-fig.png"),
+       filename = file.path(main_path, fig_path, "si-carbon-tax-fig.png"),
        width = 10,
        height = 10,
        units = "in")
@@ -388,9 +422,10 @@ ggsave(carbon_tax_fig,
 
 prod_dt <- state_subset_all[oil_price_scenario == 'reference case' &
                             target %in% c('no_target', 'setback_5280ft') &
-                              setback_scenario %in% c('no_setback', 'setback_5280ft')]
+                              setback_scenario %in% c('no_setback', 'setback_5280ft') &
+                              setback_existing == 0]
 
-prod_dt <- prod_dt[, .(scen_id, year, existing_prod_bbl, new_prod_bbl)]
+prod_dt <- prod_dt[, .(scen_id, setback_existing, year, existing_prod_bbl, new_prod_bbl)]
 
 prod_dt <- prod_dt %>%
   pivot_longer(cols = existing_prod_bbl:new_prod_bbl, names_to = 'prod_type', values_to = 'prod_bbl')
@@ -404,19 +439,20 @@ hist_prod <- well_prod %>%
   select(year, prod_type, prod_bbl)
 
 all_prod <- expand.grid(scen_id = unique(prod_dt$scen_id),
-                             year = unique(hist_prod$year)) %>%
+                             year = unique(hist_prod$year),
+                        setback_existing = c(0)) %>%
   left_join(hist_prod) %>%
   rbind(prod_dt) %>%
   mutate(prod_type = ifelse(prod_type == 'existing_prod_bbl', 'Existing wells',
                             ifelse(prod_type == "new_prod_bbl", 'New wells', prod_type)),
-         scen_name = ifelse(scen_id == 'reference case-no_setback-no quota-carbon_target_setback_5280ft-no ccs-low innovation-no tax',
+         scen_name = ifelse(scen_id == 'reference case-no_setback-no quota-carbon_target_setback_5280ft-no ccs-low innovation-no tax-0',
                             'Carbon tax',
-                            ifelse(scen_id == 'reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax',
+                            ifelse(scen_id == 'reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0',
                                    'BAU',
-                                   ifelse(scen_id == 'reference case-no_setback-no quota-price floor-no ccs-low innovation-tax_setback_5280ft',
-                                          'Excise tax', 'Setback'))))
+                                   ifelse(scen_id == 'reference case-no_setback-no quota-price floor-no ccs-low innovation-tax_setback_5280ft-0',
+                                          'Excise tax', 'Setback (new wells)'))))
 ## factor
-all_prod$scen_name <- factor(all_prod$scen_name, levels = c('BAU', 'Setback', 'Excise tax', 'Carbon tax'))
+all_prod$scen_name <- factor(all_prod$scen_name, levels = c('BAU', 'Setback (new wells)', 'Excise tax', 'Carbon tax'))
 
 all_prod$prod_type <- factor(all_prod$prod_type, levels = c('Historic', 'Existing wells', 'New wells'))
 
