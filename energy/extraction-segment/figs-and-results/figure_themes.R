@@ -70,7 +70,7 @@ policy_colors_all <-  c('BAU' = "black",
                         'setback' = '#4a6c6f',
                         'carbon tax & setback' = "#9DBF9E")
 
-policy_colors_subset <-  c('setback' = '#4a6c6f',
+policy_colors_subset <-  c('setback (new wells)' = '#4a6c6f',
                            'excise tax' = '#ff5e5b',
                            'carbon tax' = "#fcb97d")
 
