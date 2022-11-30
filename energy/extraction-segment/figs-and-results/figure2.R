@@ -542,39 +542,39 @@ ggsave(fig2_v2_combine,
 embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'),
             outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'))
 
-##
-fig2_v2_combine_sb <- plot_grid(
-  prod_fig_v2_sb + theme(legend.position="none"),
-  ghg_pw_fig_v2_sb + theme(legend.position="none"),
-  ghg_cumul_fig_v2_sb + theme(legend.position = "none"),
-  legend_pathways_v2_sb,
-  align = 'vh',
-  # labels = c("A", "B", "C", ""),
-  # # labels = 'AUTO',
-  label_size = 10,
-  hjust = -1,
-  nrow = 2,
-  rel_widths = c(1, 1, 1, 1)
-)
-
-
-ggsave(fig2_v2_combine_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure2-ref-case-sb.png'),
-       width = 180,
-       height = 185,
-       units = "mm")
-
-ggsave(fig2_v2_combine_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure2-ref-case-sb.pdf'),
-       width = 180,
-       height = 185,
-       units = "mm",
-       device = 'pdf')
-
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case-sb.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case-sb.pdf'))
-
-
+# ##
+# fig2_v2_combine_sb <- plot_grid(
+#   prod_fig_v2_sb + theme(legend.position="none"),
+#   ghg_pw_fig_v2_sb + theme(legend.position="none"),
+#   ghg_cumul_fig_v2_sb + theme(legend.position = "none"),
+#   legend_pathways_v2_sb,
+#   align = 'vh',
+#   # labels = c("A", "B", "C", ""),
+#   # # labels = 'AUTO',
+#   label_size = 10,
+#   hjust = -1,
+#   nrow = 2,
+#   rel_widths = c(1, 1, 1, 1)
+# )
+# 
+# 
+# ggsave(fig2_v2_combine_sb,
+#        filename = file.path(main_path, fig_path, 'figs/figure2-ref-case-sb.png'),
+#        width = 180,
+#        height = 185,
+#        units = "mm")
+# 
+# ggsave(fig2_v2_combine_sb,
+#        filename = file.path(main_path, fig_path, 'figs/figure2-ref-case-sb.pdf'),
+#        width = 180,
+#        height = 185,
+#        units = "mm",
+#        device = 'pdf')
+# 
+# embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case-sb.pdf'),
+#             outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case-sb.pdf'))
+# 
+# 
 
 ## --------------------------------------------------------------------
 ## all oil prices
