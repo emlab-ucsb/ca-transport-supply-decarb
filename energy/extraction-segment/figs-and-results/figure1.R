@@ -17,10 +17,10 @@ library(extrafont)
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-07/census-tract-results/'
-county_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-07/county-results/'
-fig_path <- 'outputs/academic-out/extraction/figures/revision-replicate/figs/'
-data_path         <- paste0(main_path, 'outputs/entry-model-results/')
+ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-16/census-tract-results/'
+county_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-16/county-results/'
+fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/figs/fig1/'
+`data_path         <- paste0(main_path, 'outputs/entry-model-results/')
 
 ## for SRM figure
 outputFiles   <- "outputs/academic-out"
@@ -30,8 +30,8 @@ inmapExFiles  <- "health/source_receptor_matrix/inmap_processed_srm/extraction"
 
 ## files
 prod_file         <- "well_prod_m_processed.csv"
-ct_file           <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_ct_results.rds"
-county_file       <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax_county_results.rds"
+ct_file           <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ct_results.rds"
+county_file       <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_county_results.rds"
 extract_fields     <- "extraction_fields.shp"
 
 ## projection for ca: transform to NAD83(NSRS2007) / California Albers
@@ -162,9 +162,9 @@ dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
 
 ## dac
 dac_ces <- dac_ces %>%
-  select(`Census Tract`, `SB 535 Disadvantaged Community`) %>%
-  rename(census_tract = `Census Tract`,
-         dac = `SB 535 Disadvantaged Community`) %>%
+  select("Census Tract", "SB 535 Disadvantaged Community") %>%
+  rename(census_tract = "Census Tract",
+         dac = "SB 535 Disadvantaged Community") %>%
   mutate(census_tract = paste0("0", census_tract, sep="")) %>%
   mutate(ct_type = ifelse(dac == "Yes", "DAC", "Not DAC"))
 
@@ -256,8 +256,8 @@ fig1_map <- ggplot() +
   #          datum = ca_crs, expand = FALSE) +
   theme(legend.position = "none",
         plot.margin = margin(0, 2, 0, 8),
-        legend.title = element_text(size = 7),
-        plot.title = element_text(hjust = -0.1, face = 'bold', size = 7))
+        legend.title = element_text(size = 10),
+        plot.title = element_text(hjust = -0.1, face = 'bold', size = 10))
 
 ## DAC legend
 ## ------------------------
@@ -271,7 +271,7 @@ fig1_dac_legend <- ggplot() +
        x = NULL,
        y = NULL) +
   scale_fill_manual(values = c("DAC" = "#C0C0C0")) +
-  theme(legend.text = element_text(size = 7))
+  theme(legend.text = element_text(size = 9))
 
 dac_legend <- get_legend(
   fig1_dac_legend)
@@ -297,9 +297,9 @@ fig1_oil_legend <- ggplot() +
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
     legend.position = c(0.15, 0.15),
-    legend.text = element_text(size = 7),
-    legend.title = element_text(size = 7),
-    plot.title = element_text(hjust = -0.1, face = 'bold', size = 7)) +
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 9),
+    plot.title = element_text(hjust = -0.1, face = 'bold', size = 10)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal",
@@ -326,14 +326,14 @@ map_fig_a <- ggdraw(fig1_map, clip = "on") +
 
 ggsave(map_fig_a,
        filename = file.path(main_path, fig_path, 'figure1a.png'),
-       width = 88,
+       width = 90,
        height = 110,
        dpi = 300,
        units = "mm")
 
 ggsave(map_fig_a,
        filename = file.path(main_path, fig_path, 'figure1a.pdf'),
-       width = 88,
+       width = 90,
        height = 110,
        units = "mm",
        dpi = 300,
@@ -407,29 +407,29 @@ state_fig_fs <-
   theme(axis.line.y = element_line(color = 'black', size = 0.2),
         axis.line.x = element_line(color = 'black', size = 0.2),
         # legend.key.width = unit(1, 'cm'),
-        legend.position = c(0.4, 0.1),
+        legend.position = c(0.5, 0.1),
         legend.direction="horizontal", 
-        axis.text.x = element_text(size = 4),
-        axis.text.y = element_text(size = 4),
-        axis.title.y = element_text(size = 4, hjust = 0.5),
+        axis.text.x = element_text(size = 7),
+        axis.text.y = element_text(size = 7),
+        axis.title.y = element_text(size = 7, hjust = 0.5),
         plot.margin = margin(0, 2, 0, 8),
-        legend.text = element_text(size = 4),
-        plot.title = element_text(hjust = 0, face = 'bold', size = 5, vjust = -1),
+        legend.text = element_text(size = 7),
+        plot.title = element_text(hjust = 0, face = 'bold', size = 8, vjust = -1),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
 ## save
 ggsave(state_fig_fs,
        filename = file.path(main_path, fig_path, 'figure1b.png'),
-       width = 50,
-       height = 45,
+       width = 55,
+       height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(state_fig_fs,
        filename = file.path(main_path, fig_path, 'figure1b.pdf'),
-       width = 50,
-       height = 45,
+       width = 55,
+       height = 55,
        units = "mm",
        dpi = 300,
        device = 'pdf')
@@ -498,10 +498,10 @@ ct_health_map <- ggplot() +
                       limits = c(min(ct_2019$pop_x_pm25), max(ct_2019$pop_x_pm25))) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
-  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 1.25, fontface = "bold", color = "black") +
+  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 1.75, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
   labs(title = expression(bold(paste("D. PM"[2.5], " concentration of all oil field emissions"))),
-       fill = expression(paste("Population-weighted PM"[2.5], " (",mu,"/",m^3,")")),
+       fill = expression(paste("Population-weighted\nPM"[2.5], " (",mu,"/",m^3,")")),
        x = NULL,
        y = NULL) +
   # scale_fill_gradientn(colors = blues_pal) +
@@ -514,12 +514,12 @@ ct_health_map <- ggplot() +
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
     legend.position = c(-0.02, 0.2),
-    legend.key.width = unit(0.7, "line"),
+    legend.key.width = unit(0.9, "line"),
     legend.key.height = unit(0.5, "line"),
-    legend.title = element_text(size = 5),
-    legend.text = element_text(size = 5),
+    legend.title = element_text(size = 6.5),
+    legend.text = element_text(size = 6.5),
     plot.margin = margin(0, 2, 0, 8),
-    plot.title = element_text(face = 'bold', size = 5, hjust = -0.6)) +
+    plot.title = element_text(face = 'bold', size =9, hjust = -0.9)) +
     guides(fill = guide_colourbar(title.position="top", 
                                   title.hjust = 0,
                                   direction = "horizontal",
@@ -529,14 +529,14 @@ ct_health_map <- ggplot() +
 ## save
 ggsave(ct_health_map,
        filename = file.path(main_path, fig_path, 'fig1d.png'),
-       width = 44,
+       width = 55,
        height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(ct_health_map,
        filename = file.path(main_path, fig_path, 'fig1d.pdf'),
-       width = 44,
+       width = 55,
        height = 55,
        units = "mm",
        dpi = 300,
@@ -592,8 +592,8 @@ labor_map <- ggplot() +
     legend.position = c(0, 0.2),
     legend.key.width = unit(0.7, "line"),
     legend.key.height = unit(0.5, "line"),
-    legend.title = element_text(size = 5),
-    legend.text = element_text(size = 5),
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size = 8),
     plot.margin = margin(0, 2, 0, 8),
     plot.title = element_text(face = 'bold', size = 5, hjust = -0.15)) +
   guides(fill = guide_colourbar(title.position="top", 
@@ -826,8 +826,8 @@ total_pm25 <- ggplot() +
     legend.position = c(0.05, 0.32),
     legend.key.width = unit(0.7, "line"),
     legend.key.height = unit(0.5, "line"),
-    legend.title = element_text(size = 5),
-    legend.text = element_text(size = 5),
+    legend.title = element_text(size = 7),
+    legend.text = element_text(size = 7),
     plot.margin = margin(0, 2, 0, 8),
     plot.title = element_text(face = 'bold', size = 5, hjust = -0.05)) +
   guides(fill = guide_colourbar(title.position="top", 
@@ -839,6 +839,8 @@ total_pm25 <- ggplot() +
                              title.hjust = 0,
                              direction = "horizontal",
                              order = 2))
+
+legend_c <- get_legend(total_pm25)
 
   
 ggsave(total_pm25,
@@ -858,6 +860,24 @@ ggsave(total_pm25,
 
 embed_fonts(paste0(main_path, fig_path, 'fig1c.pdf'),
             outfile = paste0(main_path, fig_path, 'fig1c.pdf'))
+
+## legend
+ggsave(legend_c,
+       filename = file.path(main_path, fig_path, 'fig1c_legend.pdf'),
+       # width = 50,
+       # height = 55,
+       dpi = 300,
+       units = "mm",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'fig1c_legend.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1c_legend.pdf'))
+
+
+
+
+
+
 
 ## v2
 ## ------------------------------
