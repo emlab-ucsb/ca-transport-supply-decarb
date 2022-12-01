@@ -15,13 +15,23 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 
 
 data_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
+rystad_path       <-  "/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/Rystad/data/"
 scen_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
 save_directory    <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/figures/manuscript-update/figs/si/'
 
 oil_price_file    <- 'oil_price_projections_revised.xlsx'
 carbon_file       <- 'carbon_prices_revised.csv'
+brent_file        <- 'wti_brent.csv'
 # prod_quota_file   = 'prod_quota_scenarios_with_sb.csv'
 
+## historical brent
+prices <- fread(paste0(rystad_path, "raw/", brent_file))
+colnames(prices) <- c('year', 'wti_usd_bbl', 'oil_price_usd_per_bbl')
+prices <- prices[year != "Year", .(year, oil_price_usd_per_bbl)]
+prices[, oil_price_scenario := "Brent"]
+prices[, scenario_name := "Brent"]
+prices[, year := as.numeric(year)]
+prices <- prices[year <= 2019]
 
 ## oil prices
 # load oil price data
@@ -37,19 +47,23 @@ setorderv(oilpx_scens, c('oil_price_scenario', 'year'))
 oilpx_scens <- oilpx_scens %>%
   mutate(scenario_name = ifelse(oil_price_scenario == "reference case", "EIA reference case",
                                 ifelse(oil_price_scenario == "high oil price", "EIA high case",
-                                       ifelse(oil_price_scenario == "low oil price", "EIA low case", "NA"))))
+                                       ifelse(oil_price_scenario == "low oil price", "EIA low case", NA))))
 
 oilpx_scens$scenario_name <- factor(oilpx_scens$scenario_name, levels = c('EIA low case', 'EIA reference case', 'EIA high case'))
 
+
 ## figure
-oil_fig <- ggplot(oilpx_scens %>% filter(year > 2019), aes(x = year, y = oil_price_usd_per_bbl, color = scenario_name)) +
+oil_fig <- ggplot(oilpx_scens, aes(x = year, y = oil_price_usd_per_bbl, color = scenario_name)) +
   geom_line(size = 0.75, alpha = 0.8) +
+  geom_line(data = prices, aes(x = year, y = oil_price_usd_per_bbl, color = scenario_name)) +
+  geom_vline(xintercept = 2019, lty = "dashed", color = "grey") +
   labs(y = "Price (USD) per barrel",
-       x = NULL) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 300)) +
+       x = NULL,
+       color = "Price: ") +
+  # scale_y_continuous(expand = c(0, 0), limits = c(0, 300)) +
   theme_line +
   theme(legend.title = element_blank()) +
-  scale_color_manual(values = rev(macro_pal)) 
+  scale_color_manual(values = macro_pal) 
 
 ggsave(filename =  paste0(save_directory, "oil_px_si_fig.png"), oil_fig, width = 5, height = 4, units = "in", dpi = 300)
 
