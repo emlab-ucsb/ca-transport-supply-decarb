@@ -66,7 +66,7 @@ find_excise_tax <- function(scen_z) {
   ## Solve problem
   fit <- optim(par = 0.1,
                fn = obj_fun_excise,
-               method = "Brent", # suggested for one dimension optimiation
+               method = "Brent", # suggested for one dimension optimization
                # method = "L-BFGS-B",
                lower = 0, # set based on tax knowledge
                upper = 2, # set based on tax knowledge
