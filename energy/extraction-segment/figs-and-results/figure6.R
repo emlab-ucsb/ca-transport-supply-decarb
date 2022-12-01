@@ -62,7 +62,8 @@ levels_dt %>% filter(metric == "total_state_bbl",
 prod_fig_sb <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                            year > 2019,
                                            oil_price_scenario == "reference case",
-                                           policy_intervention != "BAU"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = setback_name)) +
+                                           !policy_intervention %in% c("BAU"),
+                                           setback_name != "1000ft"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = setback_name)) +
   geom_line(size = 0.65, alpha = 0.9) +
   labs(title = "A. Oil production",
        x = NULL,
@@ -71,8 +72,8 @@ prod_fig_sb <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
        lty = "Setback distance") +
   # facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c(
-    "1000ft" = "solid",
-    "2500ft" = "dashed",
+    # "1000ft" = "solid",
+    "2500ft" = "solid",
     "5280ft" = "dotted")) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
@@ -80,12 +81,14 @@ prod_fig_sb <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         oil_price_scenario == "reference case",
                                         setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   
-  annotate("text", x = 2044, y = 74, label = "BAU", size = 2) +
+  annotate("text", x = 2044, y = 80, label = "BAU", size = 3) +
   scale_color_manual(values = sb_policy_colors_subset) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line_n +
-  theme(legend.position = "right",
+  theme_line_n_l +
+  theme(legend.position = "none",
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size =  8),
         legend.key.width= unit(1, 'cm'),
         legend.box="vertical",
         axis.ticks.length.y = unit(0.1, 'cm'),
@@ -96,22 +99,25 @@ prod_fig_sb
 
 
 ## legend figure
-shared_legend <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
+top_legend <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                                year > 2019,
                                                oil_price_scenario == "reference case",
-                                               policy_intervention != "BAU"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = setback_name)) +
+                                               policy_intervention != "BAU",
+                                               setback_name != "1000ft"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = setback_name)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  geom_point(aes(x = year, y = value / 1e6, shape = setback_name, color = policy_intervention)) +
+  # geom_point(data = levels_dt %>% filter(metric == "total_state_bbl",
+  #                                        year > 2019,
+  #                                        oil_price_scenario == "reference case",
+  #                                        policy_intervention != "BAU"), aes(x = year, y = value / 1e6, shape = setback_name, color = policy_intervention)) +
   labs(title = "A. Oil production",
        x = NULL,
        y = "Barrels (million)",
-       color = "Policy",
-       lty = "Setback distance: ",
-       shape = "Setback distance: ") +
+       color = "Policy: ",
+       lty = "Setback distance: ") +
   # facet_wrap(~ccs_option) +
   scale_linetype_manual(values = c(
-    "1000ft" = "solid",
-    "2500ft" = "dashed",
+    # "1000ft" = "solid",
+    "2500ft" = "solid",
     "5280ft" = "dotted")) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
@@ -119,22 +125,24 @@ shared_legend <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         oil_price_scenario == "reference case",
                                         setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   
-  annotate("text", x = 2044, y = 74, label = "BAU", size = 2) +
+  annotate("text", x = 2044, y = 74, label = "BAU", size = 3) +
   scale_color_manual(values = sb_policy_colors_subset) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
-  theme_line_n +
+  theme_line_n_l +
   guides(color = guide_legend(override.aes = list(shape = NA))) +
   theme(legend.position = "bottom",
         legend.key.width= unit(1, 'cm'),
         legend.box="vertical",
-        legend.text = element_text(size = 8),
-        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        legend.margin = margin(-0.5,0,0,0, unit="cm")) 
 
 ## View
-shared_legend
+top_legend
+
 
 ## cumulative GHG x 2045 reductions
 ## ---------------------------------------------------------
@@ -148,29 +156,39 @@ cumul_ghg$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = 
 
 
 ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% 
-                             filter(oil_price_scenario == "reference case"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention, shape = setback_name)) +
+                             filter(oil_price_scenario == "reference case",
+                                    policy_intervention != "BAU"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention, shape = setback_name)) +
   geom_point(size = 2, alpha = 0.8) +
   labs(title = "B. Cumulative GHG emissions",
        x = "GHG emissions reduction target (%, 2045 vs 2019)",
        y = bquote(MtCO[2]~e),
-       color = "2045 GHG emission target",
-       shape = "Policy intervention") +
-  theme_line_n +
-  annotate("text", x = 59, y = 255, label = "BAU", size = 2) +
-  scale_color_manual(values = c("BAU" = "black", sb_policy_colors_subset)) +
+       color = "Policy intervention: ",
+       shape = "Setback distance: ") +
+  geom_point(data = cumul_ghg %>% 
+               filter(oil_price_scenario == "reference case",
+                      policy_intervention == "BAU"), aes(x = ghg_2045_perc * -100, y = cumul_ghg), color = "black", shape = 3, inherit.aes = FALSE) +
+  theme_line_n_l +
+  annotate("text", x = 61, y = 260, label = "BAU", size = 3) +
+  scale_color_manual(values = c(sb_policy_colors_subset)
+                     # ,guide = "none"
+                     ) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_y_continuous(limits = c(150, 270)) +
-  theme(legend.position = "none",
+  theme(legend.position = "bottom",
+        
         # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        legend.background = element_rect(fill = "white", color = "grey"),
+        # legend.background = element_rect(fill = "white", color = "grey"),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        legend.box="vertical",
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10)) 
 ## View
 ghg_cumul_fig_v2
 
 # Combine A and B
 fig6ab <- plot_grid(
-  prod_fig_sb + theme(legend.position = "none"),
+  prod_fig_sb,
   ghg_cumul_fig_v2 + theme(legend.position = "none"),
   align = 'vh',
   # labels = c("A", "B", "C", "D", "E", "F"),
@@ -179,6 +197,30 @@ fig6ab <- plot_grid(
   nrow = 1,
   rel_widths = c(1, 1)
 )
+
+## get legend
+top_legend_fig6 <- get_legend(
+  top_legend + 
+    theme(legend.title = element_text(size = 9),
+          legend.text = element_text(size = 9))
+  
+)
+
+## View
+plot(top_legend_fig6)
+
+
+## plot together
+fig6abl <- plot_grid(
+  top_legend_fig6,
+  fig6ab,
+  align = "v",
+  ncol = 1,
+  rel_heights = c(0.25, 1)
+  # rel_widths = c(1, 1),
+)
+
+
 
 
 ## panels c and d
@@ -241,7 +283,7 @@ fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = NULL) +
   ylim(0, 3) +
   scale_color_manual(values = sb_policy_colors_subset) +
-  theme_line_n +
+  theme_line_n_l +
   theme(legend.position = "none",
         plot.title = element_text(hjust = 0),
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
@@ -265,7 +307,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
        x = NULL) +
   ylim(-15, 0) +
   scale_color_manual(values = sb_policy_colors_subset) +
-  theme_line_n +
+  theme_line_n_l +
   theme(legend.position = "none",
         plot.title = element_text(hjust = 0),
         axis.text.x = element_text(vjust = 0.5, hjust = 1),
@@ -276,7 +318,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
 fig_bxm_d
 
 ## shared x axis
-xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 7)
+xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 9)
 
 ## Combine c and d
 fig6cd_plot_grid <- plot_grid(
@@ -346,7 +388,7 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(type == "DAC share",
     limits = c(0.3, 0.35)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_color_manual(values = sb_policy_colors_subset) +
-  theme_line_n +
+  theme_line_n_l +
   theme(legend.position = "none",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
@@ -373,7 +415,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(type == "DAC share",
     labels = scales::number_format(accuracy = 0.01),
     limits = c(0.3, 0.35)) +
   scale_color_manual(values = sb_policy_colors_subset) +
-  theme_line_n +
+  theme_line_n_l +
   theme(legend.position = "none",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1),
@@ -409,26 +451,28 @@ fig6ef_plot_grid2 <- plot_grid(
 fig6ef_plot_grid2
 
 ## get legend
-legend_fig6 <- get_legend(
-  shared_legend + 
-    theme(legend.title = element_text(size = 7),
-          legend.text = element_text(size = 7))
+bottom_legend_fig6 <- get_legend(
+  ghg_cumul_fig_v2 + 
+    guides(color = "none") +
+    theme(legend.title = element_text(size = 9),
+          legend.text = element_text(size = 9))
   
 )
 
 ## View
-plot(legend_fig6)
+plot(bottom_legend_fig6)
 
 
 ## plot together
 fig6 <- plot_grid(
+  top_legend_fig6,
   fig6ab,
   fig6cd_plot_grid2,
   fig6ef_plot_grid2,
-  legend_fig6,
+  bottom_legend_fig6,
   align = "v",
   ncol = 1,
-  rel_heights = c(1, 1, 1, 0.5)
+  rel_heights = c(0.3, 1, 1, 1, 0.25)
   # rel_widths = c(1, 1),
 )
 
@@ -447,8 +491,8 @@ ggsave(fig6,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure6-ref-case.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure6-ref-case.pdf'))
 
 
 

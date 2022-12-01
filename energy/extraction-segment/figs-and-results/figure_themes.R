@@ -57,6 +57,62 @@ theme_line_n = theme_ipsum(base_family = 'Arial',
         strip.text = element_text(hjust = 0.5),
         plot.margin = unit(c(1,1,1,1), 'lines'))
 
+## larger text
+theme_line_l = theme_ipsum(base_family = 'Arial',
+                         grid = 'Y', 
+                         plot_title_size = 12, 
+                         subtitle_size = 11,
+                         axis_title_just = 'center',
+                         axis_title_size = 11, 
+                         axis_text_size = 11,
+                         strip_text_size = 11)  +
+  theme(plot.title = element_text(hjust = 0, face = 'bold'),
+        plot.title.position = 'plot',
+        plot.subtitle = element_text(hjust = 0),
+        plot.caption = element_text(size = 10, color = '#5c5c5c', face = 'plain'),
+        axis.line.y = element_line(color = 'black'),
+        axis.ticks.y = element_line(color = 'black'),
+        axis.ticks.length.y = unit(0.2, 'cm'),
+        axis.line.x = element_line(color = 'black'),
+        axis.ticks.x = element_line(color = 'black'),
+        axis.ticks.length.x = unit(0.2, 'cm'),
+        axis.text.x = element_text(margin = margin(t = .1, unit = 'cm')),
+        axis.text.y = element_text(margin = margin(r = .1, unit = 'cm')),
+        legend.title = element_text(size = 10, vjust = 0.5),
+        legend.text = element_text(size = 10, vjust = 0.5),
+        legend.position = 'top',
+        strip.text = element_text(hjust = 0.5),
+        plot.margin = unit(c(1,1,1,1), 'lines'))
+
+## figure themes
+theme_line_n_l = theme_ipsum(base_family = 'Arial',
+                           grid = 'Y', 
+                           plot_title_size = 9, 
+                           subtitle_size = 9,
+                           axis_title_just = 'center',
+                           axis_title_size = 9, 
+                           axis_text_size = 9,
+                           strip_text_size = 9)  +
+  theme(plot.title = element_text(hjust = 0, face = 'bold'),
+        plot.title.position = 'plot',
+        plot.subtitle = element_text(hjust = 0),
+        plot.caption = element_text(size = 9, color = '#5c5c5c', face = 'plain'),
+        axis.line.y = element_line(color = 'black'),
+        axis.ticks.y = element_line(color = 'black'),
+        axis.ticks.length.y = unit(0.7, 'cm'),
+        axis.line.x = element_line(color = 'black'),
+        axis.ticks.x = element_line(color = 'black'),
+        axis.ticks.length.x = unit(0.7, 'cm'),
+        axis.text.x = element_text(margin = margin(t = .1, unit = 'cm')),
+        axis.text.y = element_text(margin = margin(r = .1, unit = 'cm')),
+        legend.title = element_text(size = 9, vjust = 0.5),
+        legend.text = element_text(size = 9, vjust = 0.5),
+        legend.position = 'top',
+        strip.text = element_text(hjust = 0.5),
+        plot.margin = unit(c(1,1,1,1), 'lines'))
+
+
+
 
 ## target colors
 target_colors <- c("55%" = "#133a54",
