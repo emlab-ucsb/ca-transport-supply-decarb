@@ -20,7 +20,7 @@ main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects
 ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-16/census-tract-results/'
 county_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-16/county-results/'
 fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/figs/fig1/'
-`data_path         <- paste0(main_path, 'outputs/entry-model-results/')
+data_path         <- paste0(main_path, 'outputs/entry-model-results/')
 
 ## for SRM figure
 outputFiles   <- "outputs/academic-out"
@@ -271,7 +271,7 @@ fig1_dac_legend <- ggplot() +
        x = NULL,
        y = NULL) +
   scale_fill_manual(values = c("DAC" = "#C0C0C0")) +
-  theme(legend.text = element_text(size = 9))
+  theme(legend.text = element_text(size = 6))
 
 dac_legend <- get_legend(
   fig1_dac_legend)
@@ -297,8 +297,8 @@ fig1_oil_legend <- ggplot() +
     legend.justification = c(0, 1),
     # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
     legend.position = c(0.15, 0.15),
-    legend.text = element_text(size = 9),
-    legend.title = element_text(size = 9),
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 6),
     plot.title = element_text(hjust = -0.1, face = 'bold', size = 10)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
@@ -341,6 +341,32 @@ ggsave(map_fig_a,
 
 embed_fonts(paste0(main_path, fig_path, 'figure1a.pdf'),
             outfile = paste0(main_path, fig_path, 'figure1a.pdf'))
+
+
+## save legends
+ggsave(dac_legend,
+       filename = file.path(main_path, fig_path, 'figure1a_dacl.pdf'),
+       # width = 90,
+       # height = 110,
+       units = "mm",
+       dpi = 300,
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figure1a_dacl.pdf'),
+            outfile = paste0(main_path, fig_path, 'figure1a_dacl.pdf'))
+
+## save legends
+ggsave(oil_prod_legend,
+       filename = file.path(main_path, fig_path, 'figure1a_oill.pdf'),
+       # width = 90,
+       # height = 110,
+       units = "mm",
+       dpi = 300,
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figure1a_oill.pdf'),
+            outfile = paste0(main_path, fig_path, 'figure1a_oill.pdf'))
+
 
 
 ## --------------------------------------------------
@@ -516,8 +542,8 @@ ct_health_map <- ggplot() +
     legend.position = c(-0.02, 0.2),
     legend.key.width = unit(0.9, "line"),
     legend.key.height = unit(0.5, "line"),
-    legend.title = element_text(size = 6.5),
-    legend.text = element_text(size = 6.5),
+    legend.title = element_text(size = 6),
+    legend.text = element_text(size = 6),
     plot.margin = margin(0, 2, 0, 8),
     plot.title = element_text(face = 'bold', size =9, hjust = -0.9)) +
     guides(fill = guide_colourbar(title.position="top", 
@@ -545,8 +571,19 @@ ggsave(ct_health_map,
 embed_fonts(paste0(main_path, fig_path, 'fig1d.pdf'),
             outfile = paste0(main_path, fig_path, 'fig1d.pdf'))
 
+## save legend
+legend_d <- get_legend(ct_health_map)
 
+ggsave(legend_d,
+       filename = file.path(main_path, fig_path, 'fig1d_legend.pdf'),
+       width = 55,
+       height = 55,
+       units = "mm",
+       dpi = 300,
+       device = 'pdf')
 
+embed_fonts(paste0(main_path, fig_path, 'fig1d_legend.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1d_legend.pdf'))
 
 
 ## labor
@@ -592,8 +629,8 @@ labor_map <- ggplot() +
     legend.position = c(0, 0.2),
     legend.key.width = unit(0.7, "line"),
     legend.key.height = unit(0.5, "line"),
-    legend.title = element_text(size = 8),
-    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 6),
+    legend.text = element_text(size = 6),
     plot.margin = margin(0, 2, 0, 8),
     plot.title = element_text(face = 'bold', size = 5, hjust = -0.15)) +
   guides(fill = guide_colourbar(title.position="top", 
@@ -619,6 +656,25 @@ ggsave(labor_map,
 
 embed_fonts(paste0(main_path, fig_path, 'fig1e.pdf'),
             outfile = paste0(main_path, fig_path, 'fig1e.pdf'))
+
+
+## get legend
+
+legend_e <- get_legend(labor_map)
+
+## legend
+ggsave(legend_e,
+       filename = file.path(main_path, fig_path, 'fig1e_l.pdf'),
+       width = 44,
+       height = 55,
+       units = "mm",
+       dpi = 300,
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'fig1e_l.pdf'),
+            outfile = paste0(main_path, fig_path, 'fig1e_l.pdf'))
+
+
 
 
 
@@ -826,8 +882,8 @@ total_pm25 <- ggplot() +
     legend.position = c(0.05, 0.32),
     legend.key.width = unit(0.7, "line"),
     legend.key.height = unit(0.5, "line"),
-    legend.title = element_text(size = 7),
-    legend.text = element_text(size = 7),
+    legend.title = element_text(size = 6),
+    legend.text = element_text(size = 6),
     plot.margin = margin(0, 2, 0, 8),
     plot.title = element_text(face = 'bold', size = 5, hjust = -0.05)) +
   guides(fill = guide_colourbar(title.position="top", 
