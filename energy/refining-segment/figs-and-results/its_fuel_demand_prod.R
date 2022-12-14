@@ -3,7 +3,7 @@
 # author: tracey mangin and meas meng
 
 # ------------------ paths -------------------
-ref_results_date <- '2021-11-22'
+ref_results_date <- '2021-08-12'
 
 main_path            <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 refining_folder_path <- paste0(main_path, 'outputs/predict-production/refining_', ref_results_date, '/CUF0.6/outputs/')
@@ -35,10 +35,10 @@ library(extrafont)
 items = list.files(here::here('src'))
 sapply(here::here('src', items), source)
 
-# source fig themes
-items <- "figure_themes.R"
-
-walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+# # source fig themes
+# items <- "figure_themes.R"
+# 
+# walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 
 # load results --------
