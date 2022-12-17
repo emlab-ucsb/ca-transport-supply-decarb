@@ -14,12 +14,10 @@
 	
 	//set local directory
 	if regexm("`c(pwd)'","/Users/kylemeng")==1  { //Kyle's machine
-		global startDir "/Users/kylemeng/Dropbox/work/research/CA_oil_equity"
-		sysdir set PLUS $startDir/../toolbox/STATA_toolbox/plus
-
+		global startDir "/Users/kylemeng/Dropbox/work/research/CA_oil_equity/repo/mechanism"
+		sysdir set PLUS "$startDir/scripts/STATA_toolbox"
 	}
 	cd $startDir
-
 	if "$startDir"=="" exit 
 	disp "local path is $startDir"
 
@@ -33,19 +31,16 @@
 	//Parameters
 	local setback_distance "setback_2500" 
 	local weight  "" 
-
-
-
 	if "`weight'"==""{
 		local wLabel "unweighted"
 	}
 	else {
 		local wLabel "prod_weighted"
 	}
-/******************************* LOAD DATA *************************************************/
 
-//Health (field level)
+/******************************* ANALYSIS *************************************************/
 
+//Load field-level data 
 	insheet using $rawData/extraction_field_cluster_xwalk.csv, comma names clear
 	save $tempDir/temp, replace
 
@@ -68,11 +63,7 @@
 	rename mean_prod oil_prod
 	gen cost=capex_2020+opex_2020
 
-	//flipping variables to make it more inuitive
-//	replace ghg_intensity=-ghg_intensity
-//	replace setback_coverage=-setback_coverage
-
-//Cluster level analysis
+//Aggregate up to cluster level analysis
 	keep if setback_scenario=="`setback_distance'"
 	collapse (sum) oil_prod (mean) affected_pop share_dac_weighted ghg_intensity cost setback_coverage, by(id)
 
@@ -86,21 +77,32 @@
 	replace oil_prod=ceil(oil_prod)
 	replace oil_prod=1 if oil_prod==0
 
-	* //oil prod relationships
-	* reg ghg_intensity oil_prod, robust
-	* mat beta=e(b)
-	* local bGHG=beta[1,1]
 
-	* reg setback_coverage oil_prod, robust
-	* mat beta=e(b)
-	* local bSet=beta[1,1]
+//Cost vs GHG intensity
+	reg ghg_intensity cost 
+	local r2: display %4.3f e(r2)
+	lincom cost
+
+	local beta: display %4.3f r(estimate)
+	local pvalue: display %4.3f r(p)
+
+	tw(lfitci ghg_intensity cost, ///
+	text(21 30 "b=`beta', p-value=`pvalue', R2=`r2'") ///
+	lwidth(.5) lcolor(gs7) fcolor(gs7) alwidth(0) ///
+	), ///
+	ytitle("GHG intensity (kg CO2e/bbl)", size(large)) ///
+	xtitle("Cost of extraction ($/bbl)", size(large)) ///
+	xlabel(20(20)80, nogrid labsize(medium)) ///
+	ylabel(,labsize(medium)) ///
+	legend(off)
+
+	graph export $figuresDir/cluster_ghg_intensity_cost.pdf, replace
+	graph export $figuresDir/cluster_ghg_intensity_cost.jpg, replace
 
 
-//total affected population
+//Top panel: total affected population
 	
-//Setback
-	reg affected_pop setback_coverage `weight', robust beta
-	
+//Setback	
 	tw(lfitci affected_pop setback_coverage `weight', ///
 	lwidth(.5) lcolor("74 108 111") fcolor("74 108 111") alwidth(0) ///
 	), ///
@@ -111,12 +113,9 @@
 	xscale(reverse) ///
 	saving($tempDir/health_affected_setback.gph, replace) ///
 	legend(off)
-	//xtitle("Share of oil field affected by setback", size(large)) ///
 
 
-//Excise tax
-	reg affected_pop cost `weight', robust beta
-	
+//Excise tax	
 	tw(lfitci affected_pop cost `weight', ///
 	lwidth(.5) lcolor("255 94 91") fcolor("255 94 91") alwidth(0) ///
 	), ///
@@ -127,13 +126,9 @@
 	xscale(reverse) ///
 	saving($tempDir/health_affected_cost.gph, replace) ///
 	legend(off)
-	//xtitle("Cost of extraction ($/bbl)", size(large)) ///
-	//ytitle("Population affected by pollution", size(large)) ///
 
 
-//Carbon tax
-	reg affected_pop ghg_intensity `weight', robust beta
-	
+//Carbon tax	
 	tw(lfitci affected_pop ghg_intensity `weight', ///
 	lwidth(.5) lcolor("252 185 125") fcolor("252 185 125") alwidth(0) ///
 	), ///
@@ -144,74 +139,9 @@
 	xscale(reverse) ///
 	saving($tempDir/health_affected_ghg.gph, replace) ///
 	legend(off)
-	//ytitle("Population affected by pollution", size(large)) ///
-	//xtitle("GHG intensity (kg CO2e/bbl)", size(large)) ///
-
-//DAC share of affected population (doesn't show pattern consistent with DAC results)
-/*
-//Setback
-	reg share_dac_weighted setback_coverage `weight', robust beta
-	
-	tw(lfitci share_dac_weighted  setback_coverage `weight', ///
-	lwidth(.5) lcolor("74 108 111") fcolor("74 108 111") alwidth(0)), ///
-	xtitle("") ///
-	ytitle("DAC share of affected population", size(large)) ///
-	xlabel(0(.2).6, nogrid labsize(medium)) ///
-	ylabel(,labsize(medium)) ///
-	xscale(reverse) ///
-	saving($tempDir/health_affected_dac_setback.gph, replace) ///
-	legend(off)
-	//xtitle("Share of oil field affected by setback", size(large)) ///
 
 
-//Excise tax
-	reg share_dac_weighted cost `weight', robust beta
-	
-	tw(lfitci share_dac_weighted  cost `weight', ///
-	lwidth(.5) lcolor("255 94 91") fcolor("255 94 91") alwidth(0)), ///
-	xtitle("") ///
-	ytitle("") ///
-	xlabel(15(15)60, nogrid labsize(medium)) ///
-	ylabel(,labsize(medium)) ///
-	xscale(reverse) ///
-	saving($tempDir/health_affected_dac_cost.gph, replace) ///
-	legend(off)
-	//xtitle("Cost of extraction ($/bbl)", size(large)) ///
-	//ytitle("Population affected by pollution", size(large)) ///
-
-
-//Carbon tax
-	reg share_dac_weighted ghg_intensity `weight', robust beta
-	
-	tw(lfitci share_dac_weighted  ghg_intensity `weight', ///
-	lwidth(.5) lcolor("252 185 125") fcolor("252 185 125") alwidth(0)), ///
-	xtitle("") ///
-	ytitle("") ///
-	xlabel(20(20)80, nogrid labsize(medium)) ///
-	ylabel(,labsize(medium)) ///
-	xscale(reverse) ///
-	saving($tempDir/health_affected_dac_ghg.gph, replace) ///
-	legend(off)
-	//ytitle("Population affected by pollution", size(large)) ///
-	//xtitle("GHG intensity (kg CO2e/bbl)", size(large)) ///
-
-
-	graph combine ///
-	$tempDir/health_affected_dac_setback.gph ///
-	$tempDir/health_affected_dac_cost.gph ///
-	$tempDir/health_affected_dac_ghg.gph ///
-	, ///
-	col(3) altshrink
-
-
-
-	* graph export $figuresDir/health_mechanism_`wLabel'.pdf, replace
-	* graph export $figuresDir/health_mechanism_`wLabel'.jpg, replace
-*/
-
-
-//Employment (county level analysis): doesn't make sense, 
-//employment goes up with GHG intensity, should go down
+//Employment (county level analysis)
 	insheet using $rawData/county_characteristics.csv, comma names clear
 
 	rename wm_area_coverage setback_coverage
@@ -222,33 +152,18 @@
 	gen cost=wm_capex_2020+wm_opex_2020
 	gen l_emp=log(emp)
 
-
 	keep if setback_scenario=="`setback_distance'"
-
 
 	//discretize oil production in integer unit of barrels to get frequency weights
 	gen oil_prod_w=oil_prod/1e6 //put into million barrels
 	replace oil_prod_w=ceil(oil_prod_w)
 	replace oil_prod_w=1 if oil_prod_w==0
 
-	* //oil prod relationships
-	* reg ghg_intensity oil_prod, robust
-	* mat beta=e(b)
-	* local bGHG=beta[1,1]
-
-	* reg setback_coverage oil_prod, robust
-	* mat beta=e(b)
-	* local bSet=beta[1,1]
-	* mat beta=e(b)
-	* local beta=beta[1,1]
-
 	gen emp_per_bbl=emp/oil_prod
 
 //total employment
 
 	//Setback
-	reg emp_per_bbl setback_coverage `weight', robust beta
-
 	tw(lfitci emp_per_bbl setback_coverage `weight', ///
 	lwidth(.5) lcolor("74 108 111") fcolor("74 108 111") alwidth(0) ///
 	), ///
@@ -261,9 +176,7 @@
 	legend(off)
 
 
-	//Excise tax
-	reg emp_per_bbl cost `weight', robust beta
-	
+	//Excise tax	
 	tw(lfitci emp_per_bbl cost `weight', ///
 	lwidth(.5) lcolor("255 94 91") fcolor("255 94 91") alwidth(0) ///	
 	), ///
@@ -274,12 +187,9 @@
 	xscale(reverse) ///
 	saving($tempDir/emp_cost.gph, replace) ///
 	legend(off)
-	//	ytitle("Employment intensity (jobs/bbl)", size(large)) ///
 
 
 	//Carbon tax
-	reg emp_per_bbl ghg_intensity `weight', robust beta
-
 	tw(lfitci emp_per_bbl ghg_intensity `weight', ///
 	lwidth(.5) lcolor("252 185 125") fcolor("252 185 125") alwidth(0) ///
 	), ///
@@ -290,42 +200,6 @@
 	xscale(reverse) ///
 	saving($tempDir/emp_ghg.gph, replace) ///
 	legend(off)
-	//	ytitle("Employment intensity (jobs/bbl)", size(large)) ///
-
-
-/*
-//DAC share of population
-	reg dac_share ghg_intensity `weight', robust beta
-	//lincom ghg_intensity*`bGHG'
-	//stdBeta, se 
-
-	tw(lfitci dac_share ghg_intensity `weight', ///
-	lwidth(.5) lcolor(ebblue) fcolor(ebblue) alwidth(0)), ///
-	xtitle("GHG intensity (kg CO2e/bbl)") ///
-	ytitle("DAC share of employment") ///
-	saving($tempDir/emp_dac_ghg.gph, replace) ///
-	legend(off)
-
-	reg dac_share setback_coverage `weight', robust beta
-	//lincom setback_coverage*`bSet'
-	//stdBeta, se 
-
-	tw(lfitci dac_share setback_coverage `weight', ///
-	lwidth(.5) lcolor(orange) fcolor(orange) alwidth(0)), ///
-	xtitle("Share of oil field affected by setback") ///
-	ytitle("DAC share of employment") ///
-	saving($tempDir/emp_dac_setback.gph, replace) ///
-	legend(off)
-
-	graph combine ///
-	$tempDir/emp_ghg.gph ///
-	$tempDir/emp_setback.gph ///
-	$tempDir/emp_dac_ghg.gph ///
-	$tempDir/emp_dac_setback.gph 
-
-	graph export $figuresDir/emp_perbbl_mechanism_`wLabel'.pdf, replace
-	graph export $figuresDir/emp_perbbl_mechanism_`wLabel'.jpg, replace
-*/
 
 	graph combine ///
  	$tempDir/health_affected_setback.gph ///
@@ -337,13 +211,12 @@
  	, ///
  	row(2) col(3) altshrink
 
-local titles "A B C D E F"
-forval i=1/6{
+	local titles "A B C D E F"
+	forval i=1/6{
    gr_edit .plotregion1.graph`i'.title.text.Arrpush "{bf:`:word `i' of `titles''}"
    gr_edit .plotregion1.graph`i'.title.style.editstyle size(large)
    gr_edit .plotregion1.graph`i'.title.DragBy 1.5 -54
-}
-
+	}
 
 	graph export $figuresDir/health_emp_mechanism_`setback_distance'_`wLabel'.pdf, replace
 	graph export $figuresDir/health_emp_mechanism_`setback_distance'_`wLabel'.jpg, replace
