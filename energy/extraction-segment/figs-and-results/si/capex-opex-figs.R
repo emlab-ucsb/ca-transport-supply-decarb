@@ -106,3 +106,8 @@ cost_figh <-
 
 ggsave(filename =  paste0(save_directory, "historical-capex-opex-si-fig.png"), cost_figh, width = 10, height = 5, units = "in", dpi = 300)
 
+## save underlying input for Kyle
+fwrite(cost_data_h2, '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/nature-energy-rev-outputs/hist_capex_opex_vals.csv')
+
+
+
