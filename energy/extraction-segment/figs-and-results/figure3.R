@@ -216,7 +216,7 @@ fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "B. Labor: forgone wages",
+       title = "B. Labor: Lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-15, 0) +
@@ -479,7 +479,7 @@ fig_bxm_b_l <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "B. Labor: forgone wages",
+       title = "B. Labor: Lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-2, 0) +
@@ -669,7 +669,7 @@ fig_bxm_b_h <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "B. Labor: forgone wages",
+       title = "B. Labor: Lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-70, 0) +
@@ -944,7 +944,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
                         filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "B. Labor: forgone wages",
+  labs(title = "B. Labor: Lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1188,7 +1188,7 @@ fig_dac_bau_l_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                           filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "B. Labor: forgone wages",
+  labs(title = "B. Labor: Lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1309,7 +1309,7 @@ fig_dac_bau_l_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                             filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "B. Labor: forgone wages",
+  labs(title = "B. Labor: Lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1384,8 +1384,8 @@ ggsave(fig4_plot_grid2_l,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'))
 
 
 

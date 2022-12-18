@@ -613,7 +613,7 @@ labor_map <- ggplot() +
   geom_sf_text(data = county_19 %>% filter(adj_county_name == "Kern"), mapping = aes(geometry = geometry, label = adj_county_name), size = 1.25, fontface = "bold", color = "#B0B2B8") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
   labs(
-       title = 'E. Wages from oil extraction',
+       title = 'E. Worker compensation from all oil production',
        fill = 'USD million',
        x = NULL,
        y = NULL) +

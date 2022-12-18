@@ -15,7 +15,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 ## data path
 main_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 data_path         <- paste0(main_path, 'outputs/entry-model-results/')
-save_directory    <- paste0(main_path, 'outputs/academic-out/extraction/figures/manuscript-update/figs/si/')
+save_directory    <- paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/figs/si/')
 
 ## files
 prod_file           <- 'well_prod_m_processed.csv'
@@ -28,10 +28,17 @@ prod_file           <- 'well_prod_m_processed.csv'
 #   mutate(doc_field_code = paste0("00", doc_field_code),
 #          doc_field_code = str_sub(doc_field_code, start= -3)) 
 
-## final model
+## final model, nominal
 pred_wells_fm <- read_csv(paste0(data_path, "new_wells_pred_revised.csv")) %>%
   mutate(doc_field_code = paste0("00", doc_field_code),
          doc_field_code = as.character(str_sub(doc_field_code, start= -3))) 
+
+## model, real
+pred_wells_fm_real <- read_csv(paste0(data_path, "new_wells_pred_revised_real.csv")) %>%
+  mutate(doc_field_code = paste0("00", doc_field_code),
+         doc_field_code = as.character(str_sub(doc_field_code, start= -3))) %>%
+  rename(new_wells_real = new_wells,
+         new_wells_pred_real = new_wells_pred)
 
 # pred_wells_all <- pred_wells_fm %>%
 #   rename(new_wells_pred_fm = new_wells_pred) %>%
@@ -176,6 +183,56 @@ state_fig_fs <-
   theme(legend.position = "top")
 
 ggsave(filename =  paste0(save_directory, "pred_fullsample_state.png"), state_fig_fs, width = 5, height = 4, units = "in", dpi = 300)
+
+## state entry and exit figure
+## historical period
+## observed, pred nom, pred real
+
+pred_nom_real_df <- pred_wells_fm %>%
+  left_join(pred_wells_fm_real) %>%
+  select(-new_wells_real) %>%
+  pivot_longer(new_wells:new_wells_pred_real, names_to = "category", values_to = "n_wells") %>%
+  left_join(field_name) %>%
+  mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_fieldname, "Non-top fields"),
+         field_name_adj = ifelse(field_name_adj == "Belridge  South", "Belridge South", field_name_adj)) %>%
+  mutate(label_name = ifelse(category == "new_wells", "Observed entry", 
+                             ifelse(category == "new_wells_pred", "Predicted entry (nominal)", "Predicted entry (real)"))) %>%
+  select(doc_field_code, doc_fieldname, field_name_adj, year, category, label_name, n_wells) %>%
+  group_by(field_name_adj, year, category, label_name) %>%
+  summarise(n_wells = sum(n_wells)) %>%
+  ungroup() 
+
+state_df_nom_real <- pred_nom_real_df %>%
+  mutate(field_name_adj = "California") %>%
+  group_by(field_name_adj, year, category, label_name) %>%
+  summarise(n_wells = sum(n_wells)) %>%
+  ungroup()
+
+## si figure, all three new well entry types
+
+state_fig_nom_real <- 
+  ggplot(state_df_nom_real, aes(x = year, y = n_wells, color = label_name)) +
+  geom_line(size = 0.6, alpha = 0.8) +
+  labs(y = "Number of wells",
+       x = NULL,
+       color = NULL) +
+  # labs(title = 'Observed and predicted well entry: California',
+  #      subtitle = 'Training data: 1978-2020') +
+  # geom_vline(xintercept = 2009, lty = "dashed", size = 0.5, color = "black") +
+  scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
+  scale_y_continuous(label = comma, limits = c(0, 4000)) +
+  # scale_color_manual(values = c("black", ucsb_pal_prim2[1])) +
+  # facet_wrap(~field_name_adj, scales = "free_y") +
+  ylab("Number of wells") +
+  theme_line +
+  theme(legend.position = "top")
+
+ggsave(filename =  paste0(save_directory, "pred_fullsample_state_nom_real.png"), state_fig_nom_real, width = 5, height = 4, units = "in", dpi = 300)
+
+
+
+
+
 
 ## exit model
 ## -------------------------------------------
