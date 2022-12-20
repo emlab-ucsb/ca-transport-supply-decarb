@@ -302,7 +302,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "D. Labor: forgone wages",
+       title = "D. Labor: Lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-15, 0) +
@@ -406,7 +406,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(type == "DAC share",
                           filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention, shape = setback_name)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "F. Labor: forgone wages",
+  labs(title = "F. Labor: Lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
