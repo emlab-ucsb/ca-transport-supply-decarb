@@ -17,7 +17,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 data_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
 rystad_path       <-  "/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/Rystad/data/"
 scen_path         <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
-save_directory    <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/figures/manuscript-update/figs/si/'
+save_directory    <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/figs/si/'
 
 oil_price_file    <- 'oil_price_projections_revised.xlsx'
 carbon_file       <- 'carbon_prices_revised.csv'
@@ -55,7 +55,7 @@ oilpx_scens$scenario_name <- factor(oilpx_scens$scenario_name, levels = c('EIA l
 ## figure
 oil_fig <- ggplot(oilpx_scens, aes(x = year, y = oil_price_usd_per_bbl, color = scenario_name)) +
   geom_line(size = 0.75, alpha = 0.8) +
-  geom_line(data = prices, aes(x = year, y = oil_price_usd_per_bbl, color = scenario_name)) +
+  geom_line(data = prices %>% filter(year >= 1977), aes(x = year, y = oil_price_usd_per_bbl, color = scenario_name)) +
   geom_vline(xintercept = 2019, lty = "dashed", color = "grey") +
   labs(y = "Price (USD) per barrel",
        x = NULL,
