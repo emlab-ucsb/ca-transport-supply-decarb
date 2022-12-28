@@ -17,9 +17,9 @@ library(extrafont)
 
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-16/census-tract-results/'
-county_out_path <- 'outputs/academic-out/extraction/extraction_2022-11-16/county-results/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/figs/fig1/'
+ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-12-27/census-tract-results/'
+county_out_path <- 'outputs/academic-out/extraction/extraction_2022-12-27/county-results/'
+fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/figs/fig1/'
 data_path         <- paste0(main_path, 'outputs/entry-model-results/')
 
 ## for SRM figure
@@ -205,7 +205,7 @@ ca_union <- st_union(CA_counties_noisl)
 ## map inset, CA with box around zoom area
 fig1_inset <- ggplot() +
   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
-  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
+  geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#C0C0C0", show.legend = TRUE) +
   # geom_sf(data = disp_win2_wgs84, shape = 0, size = 35, color = "red", stroke = 2) +# Draw box around zoomed region
   annotate(geom = "rect", 
            xmin = xlim[1],
@@ -241,7 +241,7 @@ fig1_map <- ggplot() +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   # geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = "A. Oil fields and disadvantaged communities (DAC)",
+  labs(title = "a. Oil fields and disadvantaged communities (DAC)",
        # title = "A. Oil fields and disadvantaged communities (DAC)",
        fill = 'Oil production (mil. bbls)',
        x = NULL,
@@ -401,7 +401,7 @@ well_n_df_revised <- pred_wells_fm %>%
   mutate(field_name_adj = ifelse(doc_field_code %in% prod2019$doc_field_code, doc_fieldname, "Non-top fields"),
          field_name_adj = ifelse(field_name_adj == "Belridge  South", "Belridge South", field_name_adj)) %>%
   pivot_longer(new_wells:new_wells_pred, names_to = "category", values_to = "n_wells") %>%
-  mutate(label_name = ifelse(category == "new_wells", "Observed", "Predicted")) %>%
+  mutate(label_name = ifelse(category == "new_wells", "Observed", "Estimated")) %>%
   select(doc_field_code, doc_fieldname, field_name_adj, year, category, label_name, n_wells) %>%
   group_by(field_name_adj, year, category, label_name) %>%
   summarise(n_wells = sum(n_wells)) %>%
@@ -418,12 +418,13 @@ state_fig_fs <-
   ggplot(state_df %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells/1000, color = label_name, lty = label_name)) +
   geom_line(size = 0.4, alpha = 0.8) +
   scale_color_manual(values = c("Observed" = "black", "Estimated" = "#737373")) +
-  labs(title = "B. Observed and modeled oil wells",
+  scale_linetype_manual(values = c("Observed" = "solid", "Estimated" = "dashed")) +
+  labs(title = "b. Observed and modeled oil wells",
        y = "Number of new oil wells (thousand)",
        x = NULL,
        color = NULL,
        lty = NULL) +
-  guides(color = guide_legend(override.aes = list(lty = c('solid', 'dashed')))) +
+  guides(color = guide_legend(override.aes = list(lty = c('dashed', 'solid')))) +
   guides(lty = "none") +
   scale_x_continuous(limits = c(1978, 2020), breaks=c(1978, seq(1990,2020,10))) +
   scale_y_continuous(label = scales::comma, limits = c(0, 4)) +
@@ -519,14 +520,16 @@ red_pal <- c("#FAFAFA", "#A84268")
 # isl_dac <- c("06083980100", "06111003612", "06037599100")
 
 ct_health_map <- ggplot() +
-  geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0.0, color = "white", alpha = 1, show.legend = TRUE) +
+  geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25, color = pop_x_pm25), lwd = 0, alpha = 1, show.legend = TRUE) +
   scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
+                      limits = c(min(ct_2019$pop_x_pm25), max(ct_2019$pop_x_pm25))) +
+  scale_color_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
                       limits = c(min(ct_2019$pop_x_pm25), max(ct_2019$pop_x_pm25))) +
   # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
   geom_sf(data = CA_counties_noisl, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
   geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 1.75, fontface = "bold", color = "black") +
   # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = expression(bold(paste("D. PM"[2.5], " concentration of all oil field emissions"))),
+  labs(title = expression(bold(paste("d. PM"[2.5], " concentration of all oil field emissions"))),
        fill = expression(paste("Population-weighted\nPM"[2.5], " (",mu,"/",m^3,")")),
        x = NULL,
        y = NULL) +
@@ -549,7 +552,8 @@ ct_health_map <- ggplot() +
     guides(fill = guide_colourbar(title.position="top", 
                                   title.hjust = 0,
                                   direction = "horizontal",
-                                  ticks.colour = "black", frame.colour = "black"))
+                                  ticks.colour = "black", frame.colour = "black"),
+           color = FALSE)
 
 
 ## save
