@@ -14,7 +14,7 @@ library(future)
 
 
 ## model output location
-save_external <- 1
+save_external <- 0
 
 ## current date
 cur_date              = Sys.Date()
@@ -23,8 +23,8 @@ cur_date              = Sys.Date()
 main_path     <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 
 ## UPDATE THESE WITH NEW RUNS!!!!!
-extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-07/'
-extraction_folder_name <- 'revision-full-test/'
+extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-15/'
+extraction_folder_name <- 'revision-setbacks/'
 data_path  <-'data/stocks-flows/processed/'
 
 ## health code paths
@@ -57,8 +57,14 @@ labor_processed <- 'data/labor/processed/implan-results/academic-paper-multiplie
 ## save path
 field_save_path     = paste0(compiled_save_path, 'field-results/')
 state_save_path     = paste0(compiled_save_path, 'state-results/')
+## save path 
+state_hs_save_path  = paste0(compiled_save_path, 'state-results/health_sens/')
+
 county_save_path    = paste0(compiled_save_path, 'county-results/')
 ct_save_path        = paste0(compiled_save_path, 'census-tract-results/')
+ct_county_save_path = paste0(compiled_save_path, 'census-tract-county-results/')
+
+
 
 ## files
 prod_file       <- "well_prod_m_processed.csv"
@@ -70,8 +76,10 @@ ghg_hist_file   <- 'indust_emissions_2000-2019.csv'
 dir.create(compiled_save_path, showWarnings = FALSE)
 dir.create(field_save_path, showWarnings = FALSE) 
 dir.create(state_save_path, showWarnings = FALSE)  
+dir.create(state_hs_save_path, showWarnings = FALSE)  
 dir.create(county_save_path, showWarnings = FALSE)
 dir.create(ct_save_path, showWarnings = FALSE)
+dir.create(ct_county_save_path, showWarnings = FALSE)
 
 ## outputs should include:
 ## - county-level health
@@ -256,6 +264,21 @@ srm_all_pollutants_extraction <- future_map_dfr(fields_vector, read_extraction) 
 
 future:::ClusterRegistry("stop")
 
+## create an srm that is averaged at county level
+srm_all_pollutants_extraction_c <- srm_all_pollutants_extraction %>%
+  ## Adjust mismatch of census tract ids between inmap and benmap (census ID changed in 2012 
+  ## http://www.diversitydatakids.org/sites/default/files/2020-02/ddk_coi2.0_technical_documentation_20200212.pdf)
+  mutate(GEOID = ifelse(GEOID == "06037137000", "06037930401", GEOID)) %>%
+  mutate(census_tract = GEOID) %>%
+  left_join(ces_county %>% select(census_tract, county)) %>%
+  pivot_longer(weighted_totalpm25nh3:weighted_totalpm25voc, names_to = "type", values_to = "values") %>%
+  group_by(county, type) %>%
+  mutate(county_val = mean(values, na.rm = T)) %>%
+  ungroup() %>%
+  select(-values) %>%
+  pivot_wider(names_from = type, values_from = county_val)
+
+
 # (1.2) Calculate census tract ambient emissions for extraction  #######
 
 #load and process cross-walk between fields and clusters 
@@ -265,6 +288,13 @@ extraction_field_clusters_10km <- read_csv(paste0(source_path,"/extraction_field
 
 extraction_fields_xwalk <- foreign::read.dbf(paste0(source_path, "/extraction_fields_xwalk_id.dbf", sep = "")) %>%
   rename(input_fid = id, doc_field_code = dc_fld_)
+
+## Add Old Wilmington to xwalk
+oldw_df <- data.table(NAME = "Old Wilmington (ABD)",
+                      doc_field_code = "848",
+                      input_fid = 191)
+
+extraction_fields_xwalk <- rbind(extraction_fields_xwalk, oldw_df)
 
 extraction_xwalk <- extraction_field_clusters_10km %>%
   left_join(extraction_fields_xwalk, by = c("input_fid")) 
@@ -634,6 +664,57 @@ for (i in 1:length(field_files_to_process)) {
   ## save census tract outputs (pm2.5 levels, mortality level, cost)
   saveRDS(ct_exposure, paste0(ct_save_path, scenario_id_tmp, "_ct_results.rds"))
   
+  # remove(ct_exposure, total_clusters)
+  
+  ## ------------------------------------------------------------------
+  ## Sensitivity analysis: create health outputs at county level
+  ## ------------------------------------------------------------------
+  
+  ## summarize extraction production per cluster
+  total_clusters_sens <- health_site_out[, .(total_prod_bbl = sum(total_prod_bbl)), by = .(id, year, scen_id, oil_price_scenario,
+                                                                                      carbon_price_scenario, ccs_scenario, setback_scenario,
+                                                                                      setback_existing, excise_tax_scenario)]
+
+  ## calculate air pollution using emission factors
+  total_clusters_sens <- total_clusters_sens %>%
+    mutate(nh3 = total_prod_bbl * 0.00061 / 1000,
+           nox = total_prod_bbl * 0.04611 / 1000,
+           pm25 = total_prod_bbl * 0.00165 / 1000,
+           sox = total_prod_bbl * 0.01344 / 1000,
+           voc = total_prod_bbl * 0.02614 / 1000)
+
+  total_clusters_sens <- total_clusters_sens %>%
+    right_join(srm_all_pollutants_extraction_c, by = c("id")) %>%
+    mutate(tot_nh3 = weighted_totalpm25nh3 * nh3,
+           tot_nox = weighted_totalpm25nox * nox,
+           tot_sox = weighted_totalpm25sox * sox,
+           tot_pm25 = weighted_totalpm25pm25 * pm25,
+           tot_voc = weighted_totalpm25voc * voc,
+           total_pm25 = tot_nh3 + tot_nox + tot_pm25 + tot_sox + tot_voc,
+           prim_pm25 = tot_pm25)
+
+  ct_exposure_sens <- total_clusters_sens %>%
+    group_by(census_tract, year, scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario) %>%
+    summarize(total_pm25 = sum(total_pm25, na.rm = T),
+              prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
+    ungroup() %>%
+    select(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario,
+           census_tract, year, total_pm25)
+
+  ## add ces score, income, and dac
+  ct_exposure_sens <- merge(ct_exposure_sens, ces3[, .(census_tract, CES3_score, disadvantaged)],
+                       by = c("census_tract"),
+                       all.x = T)
+
+
+  setorder(ct_exposure_sens, "census_tract", "year")
+
+  setcolorder(ct_exposure_sens, c("scen_id", "oil_price_scenario", "carbon_price_scenario", "ccs_scenario", "setback_scenario", "setback_existing",
+                             "excise_tax_scenario", "census_tract", "disadvantaged", "CES3_score", "year", "total_pm25"))
+
+  ## save census tract sensitivity outputs (pm2.5 levels, mortality level, cost)
+  saveRDS(ct_exposure_sens, paste0(ct_county_save_path, scenario_id_tmp, "_ctc_results.rds"))
+
   
 
   ## state outputs
@@ -702,7 +783,7 @@ bau_out <- bind_rows(bau_out)
 scenarios_to_process <- str_remove_all(field_files_to_process, "_field.rds")
 
 
-for (i in 1:length(field_files_to_process)) {
+for (i in 1:length(scenarios_to_process)) {
   
   scen_file_name <- scenarios_to_process[i]
   
@@ -783,7 +864,129 @@ for (i in 1:length(field_files_to_process)) {
   ## resave state outputs
   saveRDS(state_out, paste0(state_save_path, scen_file_name, "_state_results.rds"))
   
-
+}
+#########################################################
+## Repeat for sensitivity
+## ------------------------------------------------------
+  
+  ## get BAU vals for all three oil price scenarios
+  
+  bau_scens_sens <- c('reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ctc_results.rds',
+                      'low oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ctc_results.rds',
+                      'high oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ctc_results.rds',
+                      'reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-1_ctc_results.rds',
+                      'low oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax-1_ctc_results.rds',
+                      'high oil price-no_setback-no quota-price floor-no ccs-low innovation-no tax-1_ctc_results.rds')
+  
+  bau_out_sens <- list()
+  
+  for(i in 1:length(bau_scens_sens)) {
+    
+    scen_tmp <- bau_scens_sens[i]
+    
+    bau_tmp <- readRDS(paste0(ct_county_save_path, scen_tmp)) %>%
+      rename(bau_total_pm25 = total_pm25) %>%
+      select(oil_price_scenario, setback_existing, census_tract, year, bau_total_pm25) %>% 
+      as.data.table()
+    
+    bau_out_sens[[i]] <- bau_tmp
+    
+  }
+  
+  bau_out_sens <- bind_rows(bau_out_sens)
+  
+  ## scenarios
+  # scenarios_to_process_sens <- str_remove_all(field_files_to_process, "_ctc_field.rds")
+  
+  for (i in 1:length(scenarios_to_process)) {
+    
+    print(i)
+    
+    scen_file_name_sens <- scenarios_to_process[i]
+    
+    ctc_scen_out <- readRDS(paste0(ct_county_save_path, scen_file_name_sens, "_ctc_results.rds"))
+    setDT(ctc_scen_out)
+    
+    ## calculate delta pm 2.5
+    delta_extraction_sens <- merge(ctc_scen_out, bau_out_sens,
+                              by = c("oil_price_scenario", "setback_existing", "census_tract", "year"),
+                              all.x = T)
+    
+    delta_extraction_sens[, delta_total_pm25 := total_pm25 - bau_total_pm25]
+    
+    
+    ## Merge demographic data to pollution scenarios
+    ctc_incidence <- delta_extraction_sens %>%
+      # left_join(ces3, by = c("census_tract")) %>%
+      right_join(ct_inc_pop_45_weighted, by = c("census_tract" = "ct_id", "year" = "year")) %>%
+      # remove census tracts that are water area only tracts (no population)
+      drop_na(scen_id) %>% 
+      as.data.table()
+    
+    ## Calculate mortality impact ######################################
+    
+    #Mortality impact fold adults (>=29 years old)
+    ctc_incidence <- ctc_incidence[, mortality_delta := ((exp(beta * delta_total_pm25) - 1)) * weighted_incidence * pop]
+    ctc_incidence <- ctc_incidence[, mortality_level := ((exp(beta * total_pm25) - 1)) * weighted_incidence * pop]
+    
+    ## Monetizing mortality ############################################
+    
+    ## Calculate the cost per premature mortality
+    ctc_incidence <- ctc_incidence %>%
+      mutate(VSL_2019 = VSL_2019)%>%
+      left_join(growth_rates, by = c("year" = "year"))%>%
+      mutate(VSL = future_WTP(income_elasticity_mort, 
+                              (cum_growth-1),
+                              VSL_2019),
+             cost_2019 = mortality_delta * VSL_2019,
+             cost = mortality_delta * VSL)%>%
+      group_by(year) %>%
+      mutate(cost_2019_PV = cost_2019/((1+discount_rate)^(year-2019)),
+             cost_PV = cost/((1+discount_rate)^(year-2019))) %>%
+      ungroup()
+    
+    ## final census tract level health outputs
+    ctc_incidence <- ctc_incidence %>%
+      select(scen_id, census_tract, CES3_score, disadvantaged, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+             mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
+      as.data.table()
+    
+    ## resave the census tract data
+    saveRDS(ctc_incidence, paste0(ct_county_save_path, scen_file_name_sens, "_ctc_results.rds"))
+    
+    ## ----------------------------------------------------------------------------
+    ## calculate state values, read in state value, resave with mortality values
+    ## ----------------------------------------------------------------------------
+    
+    ctc_incidence_state <- ctc_incidence[, lapply(.SD, sum, na.rm = T), .SDcols = c("mortality_delta", "mortality_level", 
+                                                                                  "cost_2019", "cost", 
+                                                                                  "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
+    
+    
+    ctc_pm_state <- ctc_incidence[, lapply(.SD, mean, na.rm = T), .SDcols = c("total_pm25", "delta_total_pm25"), by = .(scen_id,  year)]
+    setnames(ctc_pm_state, c("total_pm25", "delta_total_pm25"), c("mean_total_pm25", "mean_delta_total_pm25"))
+    
+    ctc_incidence_state <- merge(ctc_incidence_state, ctc_pm_state,
+                                by = c("scen_id", "year"))
+    
+    
+    
+    state_out <- readRDS(paste0(state_save_path, scen_file_name_sens, "_state_results.rds"))
+    setDT(state_out)
+    
+    state_out <- state_out %>%
+      select(scen_id:total_comp) %>%
+      as.data.table()
+    
+    state_out <- merge(state_out, ctc_incidence_state,
+                       by = c("scen_id", "year"),
+                       all.x = T)
+    
+    ## resave state outputs
+    saveRDS(state_out, paste0(state_hs_save_path, scen_file_name_sens, "_state_results_health.rds"))
+    
+  
+  
 }
 
 
