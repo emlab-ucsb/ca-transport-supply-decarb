@@ -19,7 +19,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/'
+fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
 
 ## csv names
 levels_name <- 'state_levels_all_oil.csv'
@@ -77,7 +77,7 @@ prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         target != "setback_1000ft",
                                         setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "A. Oil production",
+  labs(title = "a. Oil production",
        x = NULL,
        y = "Barrels (million)",
        color = "Policy",
@@ -158,7 +158,7 @@ prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl
                                         oil_price_scenario == "reference case",
                                         setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   annotate("text", x = 2044, y = 85, label = "BAU", size = 3) +
-  labs(title = "(A) Oil production",
+  labs(title = "(a) Oil production",
        x = NULL,
        y = "million bbls",
        color = "Policy",
@@ -263,7 +263,7 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         oil_price_scenario == "reference case",
                                         setback_existing == 0), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   annotate("text", x = 2044, y = 7.5, label = "BAU", size = 3) +
-  labs(title = "B. GHG emissions",
+  labs(title = "b. GHG emissions",
        x = NULL,
        # y = "MtCO2e",
        y = bquote(MtCO[2]~e),
@@ -353,7 +353,7 @@ cumul_ghg$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = 
 ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% 
                              filter(oil_price_scenario == "reference case" & setback_existing == 0), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "C. Cumulative GHG emissions",
+  labs(title = "c. Cumulative GHG emissions",
        x = "GHG emissions reduction target (%, 2045 vs 2019)",
        y = bquote(MtCO[2]~e),
        color = "2045 GHG emission target",
@@ -587,7 +587,7 @@ prod_fig_low <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                            target != "setback_1000ft",
                                            setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "A. Oil production",
+  labs(title = "a. Oil production",
        x = NULL,
        y = "Barrels (million)",
        color = "Policy",
@@ -626,7 +626,7 @@ ghg_pw_low <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "low oil price"), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   annotate("text", x = 2042.5, y = 4.7, label = "BAU - low price", size = 2) +
-  labs(title = "B. GHG emissions",
+  labs(title = "b. GHG emissions",
        x = NULL,
        y = bquote(MtCO[2]~e),
        color = "Policy intervention",
@@ -647,7 +647,7 @@ ghg_pw_low <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
 ghg_cumul_low <- ggplot(cumul_ghg %>% 
                           filter(oil_price_scenario == "low oil price" & setback_existing == 0), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "C. Cumulative GHG emissions",
+  labs(title = "c. Cumulative GHG emissions",
        x = "GHG emissions reduction target (%, 2045 vs 2019)",
        y = bquote(MtCO[2]~e),
        color = "2045 GHG emission target",
@@ -673,7 +673,7 @@ legend_low <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
   geom_point() +
   labs(title = "Oil production",
        x = NULL,
-       y = "A. Barrels (million)",
+       y = "a. Barrels (million)",
        color = "Policy",
        lty = "2045 GHG emission reduction target") +
   scale_linetype_manual(values = c("85% (= 2,500 ft setback)" = "solid", "89% (= 1 mile setback)" = "dashed", "90%" = "dotted")) +
@@ -768,7 +768,7 @@ prod_fig_high <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                             target != "setback_1000ft",
                                             setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "A. Oil production",
+  labs(title = "a. Oil production",
        x = NULL,
        y = "Barrels (million)",
        color = "Policy",
@@ -854,7 +854,7 @@ legend_high <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
                                            setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
   geom_line(size = 0.65, alpha = 0.9) +
   geom_point() +
-  labs(title = "A. Oil production",
+  labs(title = "a. Oil production",
        x = NULL,
        y = "Barrels (million)",
        color = "Policy",
