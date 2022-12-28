@@ -164,9 +164,9 @@ prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl
        color = "Policy",
        lty = "2045 GHG emission reduction target") +
   # facet_wrap(~ccs_option) +
-  scale_linetype_manual(values = c("65%" = "solid",
+  scale_linetype_manual(values = c("65% (= 2,500 ft setback)" = "solid",
                                    # "66%" = "solid",
-                                   "72%" = "dashed",
+                                   "72% (= 1 mile setback)" = "dashed",
                                    # "81%" = "dashed", 
                                    "90%" = "dotted")) +
   scale_color_manual(values = c(policy_colors_subset)) +
@@ -668,7 +668,7 @@ ghg_cumul_low <- ggplot(cumul_ghg %>%
 legend_low <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
                                           year > 2019,
                                           oil_price_scenario == "low oil price",
-                                          setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+                                          setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = legend_lab)) +
   geom_line(size = 0.65, alpha = 0.9) +
   geom_point() +
   labs(title = "Oil production",
@@ -851,7 +851,7 @@ legend_high <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
                                            year > 2019,
                                            oil_price_scenario == "high oil price",
                                            target != "setback_1000ft",
-                                           setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = target_label)) +
+                                           setback_existing == 0), aes(x = year, y = value / 1e6, color = policy_intervention, lty = legend_lab)) +
   geom_line(size = 0.65, alpha = 0.9) +
   geom_point() +
   labs(title = "a. Oil production",
@@ -859,8 +859,8 @@ legend_high <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl",
        y = "Barrels (million)",
        color = "Policy",
        lty = "2045 GHG emission reduction target") +
-  scale_linetype_manual(values = c("15%" = "solid", 
-                                   "33%" = "dashed", 
+  scale_linetype_manual(values = c("15% (= 2,500 ft setback)" = "solid", 
+                                   "33% (= 1 mile setback)" = "dashed", 
                                    "90%" = "dotted")) +
   geom_line(data = levels_dt %>% filter(metric == "total_state_bbl",
                                         year > 2019,
