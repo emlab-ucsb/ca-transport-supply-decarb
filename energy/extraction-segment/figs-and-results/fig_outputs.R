@@ -12,21 +12,21 @@ library(openxlsx)
 
 ## paths 
 main_path              = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-11-16/'
+extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-12-27/'
 state_save_path        = paste0(main_path, extraction_folder_path, 'state-results/')
 field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-11-15/revision-setbacks/field-out/")
 health_out             = paste0(main_path, "outputs/academic-out/health/")
 
-## external paths
-extraction_folder_path = '/Volumes/calepa/academic-out/extraction_2022-11-16/'
-state_save_path        = '/Volumes/calepa/academic-out/extraction_2022-11-16/state-results/'
-field_out              = '/Volumes/calepa/extraction-out/extraction_2022-11-15/revision-setbacks/field-out/'
-health_out             = '/Volumes/calepa/academic-out/extraction_2022-11-16/health/'
+# ## external paths
+# extraction_folder_path = '/Volumes/calepa/academic-out/extraction_2022-11-16/'
+# state_save_path        = '/Volumes/calepa/academic-out/extraction_2022-11-16/state-results/'
+# field_out              = '/Volumes/calepa/extraction-out/extraction_2022-11-15/revision-setbacks/field-out/'
+# health_out             = '/Volumes/calepa/academic-out/extraction_2022-11-16/health/'
 
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
-save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/')
+save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/final/')
 dir.create(save_info_path, showWarnings = FALSE)  
 
 ## files
@@ -446,8 +446,8 @@ fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric_all_oil.csv'))
 ## -------------------------------------------------------------
 
 ## labor, county
-# labor_out <- fread(paste0(main_path, extraction_folder_path, 'county-results/subset_county_results.csv'))
-labor_out <- fread(paste0(extraction_folder_path, 'county-results/subset_county_results.csv'))
+labor_out <- fread(paste0(main_path, extraction_folder_path, 'county-results/subset_county_results.csv'))
+# labor_out <- fread(paste0(extraction_folder_path, 'county-results/subset_county_results.csv'))
 
 
 labor_out[, target := NULL]
@@ -507,8 +507,8 @@ labor_dac_bind[, category := "Employment"]
 ## Health DAC
 ##----------------------------------------------------
 
-#health_out <- fread(paste0(main_path, extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
-health_out <- fread(paste0(extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
+health_out <- fread(paste0(main_path, extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
+# health_out <- fread(paste0(extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
 
 
 health_out[, target := NULL]
@@ -728,82 +728,266 @@ dac_bau_df <- merge(dac_bau_df, ghg_2045,
 
 fwrite(dac_bau_df, paste0(save_info_path, 'dac_bau_health_labor_all_oil.csv'))
 
-
-
-
-
-
-## what is the state dac proportion through time?
-## -----------------------------------------------------
-
-dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
-
-dac_df <- dac_ces %>%
-  select(`Census Tract`, `SB 535 Disadvantaged Community`) %>%
-  rename(census_tract = `Census Tract`,
-         dac_status = `SB 535 Disadvantaged Community`) %>%
-  mutate(census_tract = paste0("0", census_tract, sep="")) 
-
-
-# Population and incidence
-ct_inc_pop_45 <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
-  mutate(ct_id = paste0(stringr::str_sub(gisjoin, 2, 3),
-                        stringr::str_sub(gisjoin, 5, 7),
-                        stringr::str_sub(gisjoin, 9, 14))) %>%
-  select(ct_id, lower_age, upper_age, year, pop, incidence_2015) %>%
-  as.data.table()
-
-## census tract, population > 29
-ct_pop_time_30 <- ct_inc_pop_45 %>%
-  filter(lower_age > 29) %>%
-  group_by(ct_id, year) %>%
-  summarize(ct_pop_30plus = sum(pop, na.rm = T)) %>%
-  ungroup() %>%
-  rename(census_tract = ct_id) %>%
-  as.data.table()
-
-
-## census tract, total population through time
-ct_pop_time_all <- ct_inc_pop_45 %>%
-  group_by(ct_id, year) %>%
-  summarize(ct_pop_all = sum(pop, na.rm = T)) %>%
-  ungroup() %>%
-  rename(census_tract = ct_id) %>%
-  as.data.table()
-
-## dac share over time
-ct_pop_time <- merge(ct_pop_time_30, ct_pop_time_all, 
-                     by = c("census_tract", "year"),
-                     all.x = T)
-
-## pivot longer
-ct_pop_time <- pivot_longer(ct_pop_time, ct_pop_30plus:ct_pop_all, names_to = "pop_type", values_to = "pop")
-
-## merge with dac
-ct_pop_time <- merge(ct_pop_time, dac_df, 
-                     by = c("census_tract"),
-                     all.x = T)
-
-setDT(ct_pop_time)
-
-## calc annual dac share
-ct_pop_time[, dac_mult := fifelse(dac_status == "Yes", 1, 0)]
-
-ct_pop_time[, dac_pop := pop * dac_mult]
-
-dac_pop_time <- ct_pop_time[, lapply(.SD, sum, na.rm = T), .SDcols = c("pop", "dac_pop"), by = .(year, pop_type)]
-dac_pop_time[, dac_ratio := dac_pop / pop]
-
-## diff between all vs 30+?
-diff_dac_df <- pivot_wider(dac_pop_time %>% select(year, pop_type, dac_ratio), names_from = pop_type, values_from = dac_ratio) %>%
-  mutate(diff = ct_pop_all - ct_pop_30plus)
-
-## differences are 2-3% (dac pop all > dac share 30+)
-
-## save
-fwrite(dac_pop_time, paste0(save_info_path, 'state_dac_ratios.csv'))
-
-
+# ##-----------------------------------------------------------------------------
+# ## create version with health sensitivity (srm at county level)
+# ##-----------------------------------------------------------------------------
+# 
+# ## county-level DAC values
+# county_dac <- labor_scens[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario,
+#                       setback_scenario, setback_existing, excise_tax_scenario, policy_intervention,
+#                       target, target_policy, county, dac_share, year, county_pop)]
+# 
+# health_hs_out <- fread(paste0(main_path, extraction_folder_path, 'census-tract-county-results/subset_census_tract_hs_results.csv'))
+# 
+# 
+# health_hs_out[, target := NULL]
+# 
+# 
+# ## add target, policy intervention, ccs_option
+# health_hs_scens <- merge(health_hs_out, unique(state_levels[, .(scen_id, policy_intervention, setback_existing, target)]),
+#                       by = "scen_id",
+#                       all.x = T)
+# 
+# ## calculate dac share, mortality
+# health_hs_scens[, dac_multiplier := fifelse(disadvantaged == "Yes", 1, 0)]
+# 
+# ## calculate the cost associated with premature mortality
+# health_dac_state <- health_scens %>%
+#   left_join(growth_rates, by = c("year" = "year")) %>%
+#   rowwise() %>%
+#   mutate(VSL = future_WTP(income_elasticity_mort, 
+#                           (cum_growth - 1),
+#                           VSL_2019),
+#          cost = mortality_level * VSL) %>%
+#   ungroup () %>%
+#   group_by(year) %>%
+#   mutate(cost_PV = cost/ ((1 + discount_rate) ^ (year - 2019))) %>%
+#   ungroup() %>%
+#   select(scen_id, setback_existing, census_tract, policy_intervention, target, target_policy, disadvantaged, dac_multiplier,
+#          mortality_level, cost, cost_PV)
+# 
+# setDT(health_dac_state)
+# 
+# ## dac 
+# health_dac_state[, dac_mort := dac_multiplier * mortality_level]
+# health_dac_state[, dac_mort_cost := dac_multiplier * cost]
+# health_dac_state[, dac_mort_pv := dac_multiplier * cost_PV]
+# 
+# ## aggregate at state level
+# health_dac_state <- health_dac_state[, .(cumul_dac_mort = sum(dac_mort), 
+#                                          cumul_total_mort = sum(mortality_level),
+#                                          cumul_dac_cost = sum(dac_mort_cost),
+#                                          cumul_total_cost = sum(cost),
+#                                          cumul_dac_pv = sum(dac_mort_pv),
+#                                          cumul_total_pv = sum(cost_PV)), by = .(scen_id, setback_existing, target, target_policy, policy_intervention)]
+# 
+# health_dac_state[, dac_share_mort := cumul_dac_mort / cumul_total_mort]
+# health_dac_state[, dac_share_cost := cumul_dac_cost / cumul_total_cost]
+# health_dac_state[, dac_share_pv := cumul_dac_pv / cumul_total_pv]
+# 
+# # prepare for binding with labor
+# health_dac_bind <- melt(health_dac_state, measure.vars = c("cumul_dac_mort", "cumul_total_mort", "dac_share_mort",
+#                                                            "cumul_dac_cost", "cumul_total_cost", "dac_share_cost",
+#                                                            "cumul_dac_pv", "cumul_total_pv", "dac_share_pv"),
+#                         variable.name = "metric", value.name = "value")
+# 
+# health_dac_bind[, type := fifelse(metric %in% c("cumul_dac_mort", "cumul_dac_pv", "cumul_dac_cost"), "DAC",
+#                                   fifelse(metric %in% c("cumul_total_mort", "cumul_total_cost", "cumul_total_pv"), "Total", "DAC share"))]
+# 
+# 
+# health_dac_bind[, category := "Mortality"]
+# 
+# health_dac_bind[, oil_price_scenario := sub("-.*", "", scen_id)  ]
+# 
+# ## bind
+# dac_df <- rbind(health_dac_bind, labor_dac_bind)
+# 
+# dac_df <- merge(dac_df, setback_2045,
+#                 by = c("oil_price_scenario", "setback_existing", "target"),
+#                 all.x = T)
+# 
+# dac_df[, target_label := fifelse(policy_intervention == "BAU", target,
+#                                  fifelse(target == "90perc_reduction", "90%", target_label))]
+# 
+# dac_df <- merge(dac_df, ghg_2045,
+#                 by = c("scen_id", "setback_existing", "oil_price_scenario"),
+#                 all.x = T)
+# 
+# 
+# fwrite(dac_df, paste0(save_info_path, 'dac_health_labor_all_oil.csv'))
+# 
+# 
+# 
+# 
+# ## -------------------------------------------------------
+# ## Relative to BAU
+# ## -------------------------------------------------------
+# 
+# ## bau
+# bau_emp <- labor_scens[policy_intervention == "BAU", .(oil_price_scenario, setback_existing, county, year, total_emp, total_comp_usd19, total_comp_PV)]
+# 
+# 
+# 
+# setnames(bau_emp, c("total_emp", "total_comp_usd19", "total_comp_PV"), c("bau_emp", "bau_comp", "bau_pv"))
+# 
+# ## join
+# labor_bau_dac <-  merge(labor_scens[, .(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario,
+#                                         setback_scenario, setback_existing, excise_tax_scenario, policy_intervention,
+#                                         target, target_policy, county,
+#                                         dac_share, year, total_emp, total_comp_usd19, total_comp_PV)], bau_emp,
+#                         by = c("oil_price_scenario","setback_existing", "county", "year"),
+#                         all.x = T)
+# 
+# 
+# 
+# 
+# ## health, relative to BAU
+# ## -----------------------------------------------------
+# 
+# health_dac_bau <- health_scens[, .(scen_id, setback_existing, target, target_policy, policy_intervention, census_tract, year, mortality_delta, cost, cost_PV, dac_multiplier)]
+# health_dac_bau[, oil_price_scenario := sub("-.*", "", scen_id)]
+# 
+# health_dac_bau[, dac_av_mort := dac_multiplier * mortality_delta]
+# health_dac_bau[, dac_av_mort_cost := dac_multiplier * cost]
+# health_dac_bau[, dac_av_mort_cost_pv := dac_multiplier * cost_PV]
+# 
+# ## aggregate at state level
+# health_dac_bau <- health_dac_bau[, .(cumul_dac_av_mort = sum(dac_av_mort),
+#                                      cumul_total_av_mort = sum(mortality_delta),
+#                                      cumul_dac_av_mort_cost = sum(dac_av_mort_cost),
+#                                      cumul_total_av_mort_cost = sum(cost),
+#                                      cumul_dac_av_mort_pv = sum(dac_av_mort_cost_pv),
+#                                      cumul_total_av_mort_pv = sum(cost_PV)), by = .(scen_id, setback_existing, oil_price_scenario, target, policy_intervention, target_policy)]
+# 
+# health_dac_bau[, dac_share_av_mort := cumul_dac_av_mort / cumul_total_av_mort]
+# health_dac_bau[, dac_share_av_cost := cumul_dac_av_mort_cost / cumul_total_av_mort_cost]
+# health_dac_bau[, dac_share_av_pv := cumul_dac_av_mort_pv / cumul_total_av_mort_pv]
+# 
+# # health_dac_state[, dac_share_health := fifelse(is.na(dac_share_health), 0, dac_share_health)]
+# 
+# # ## add cumulative ghg savings relative to bau
+# # 
+# # health_dac_ghg <- merge(health_dac_state, cumul_ghg_df,
+# #                         by = "scen_id",
+# #                         all.x = T)
+# # 
+# # health_dac_ghg[, dac_av_mort_ghg := cumul_dac_av_mort / cumul_ghg_savings]
+# # health_dac_ghg[, total_av_mort_ghg := cumul_total_av_mort / cumul_ghg_savings]
+# # health_dac_ghg[, DAC_share_av_mort_ghg := dac_av_mort_ghg / total_av_mort_ghg]
+# # 
+# health_dac_bau <- melt(health_dac_bau, id.vars = c("scen_id", "oil_price_scenario", "setback_existing", "target", "policy_intervention",
+#                                                    "target_policy"),
+#                        measure.vars = c("cumul_dac_av_mort", "cumul_total_av_mort", "dac_share_av_mort",
+#                                         "cumul_dac_av_mort_cost", "cumul_total_av_mort_cost", "dac_share_av_cost",
+#                                         "cumul_dac_av_mort_pv", "cumul_total_av_mort_pv", "dac_share_av_pv"),
+#                        variable.name = "metric", value.name = "value")
+# 
+# health_dac_bau[, type := fifelse(metric %in% c("cumul_dac_av_mort", "cumul_dac_av_mort_cost", "cumul_dac_av_mort_pv"), "DAC population",
+#                                  fifelse(metric %in% c("cumul_total_av_mort", "cumul_total_av_mort_cost", "cumul_total_av_mort_pv"), "Total population", "DAC share"))]
+# 
+# health_dac_bau$type <- factor(health_dac_bau$type, levels = c("Total population", "DAC population", "DAC share"))
+# 
+# health_dac_bau[, category := "Avoided mortalities"]
+# 
+# 
+# ## bind and save
+# dac_bau_df <- rbind(labor_bau_dac, health_dac_bau)
+# 
+# dac_bau_df <- merge(dac_bau_df, setback_2045,
+#                     by = c("oil_price_scenario", "target", "setback_existing"),
+#                     all.x = T)
+# 
+# dac_bau_df[, target_label := fifelse(policy_intervention == "BAU", target,
+#                                      fifelse(target == "90perc_reduction", "90%", target_label))]
+# 
+# dac_bau_df <- merge(dac_bau_df, ghg_2045,
+#                     by = c("scen_id", "oil_price_scenario", "setback_existing"),
+#                     all.x = T)
+# 
+# 
+# fwrite(dac_bau_df, paste0(save_info_path, 'dac_bau_health_labor_all_oil.csv'))
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# ## what is the state dac proportion through time?
+# ## -----------------------------------------------------
+# 
+# dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
+# 
+# dac_df <- dac_ces %>%
+#   select(`Census Tract`, `SB 535 Disadvantaged Community`) %>%
+#   rename(census_tract = `Census Tract`,
+#          dac_status = `SB 535 Disadvantaged Community`) %>%
+#   mutate(census_tract = paste0("0", census_tract, sep="")) 
+# 
+# 
+# # Population and incidence
+# ct_inc_pop_45 <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
+#   mutate(ct_id = paste0(stringr::str_sub(gisjoin, 2, 3),
+#                         stringr::str_sub(gisjoin, 5, 7),
+#                         stringr::str_sub(gisjoin, 9, 14))) %>%
+#   select(ct_id, lower_age, upper_age, year, pop, incidence_2015) %>%
+#   as.data.table()
+# 
+# ## census tract, population > 29
+# ct_pop_time_30 <- ct_inc_pop_45 %>%
+#   filter(lower_age > 29) %>%
+#   group_by(ct_id, year) %>%
+#   summarize(ct_pop_30plus = sum(pop, na.rm = T)) %>%
+#   ungroup() %>%
+#   rename(census_tract = ct_id) %>%
+#   as.data.table()
+# 
+# 
+# ## census tract, total population through time
+# ct_pop_time_all <- ct_inc_pop_45 %>%
+#   group_by(ct_id, year) %>%
+#   summarize(ct_pop_all = sum(pop, na.rm = T)) %>%
+#   ungroup() %>%
+#   rename(census_tract = ct_id) %>%
+#   as.data.table()
+# 
+# ## dac share over time
+# ct_pop_time <- merge(ct_pop_time_30, ct_pop_time_all, 
+#                      by = c("census_tract", "year"),
+#                      all.x = T)
+# 
+# ## pivot longer
+# ct_pop_time <- pivot_longer(ct_pop_time, ct_pop_30plus:ct_pop_all, names_to = "pop_type", values_to = "pop")
+# 
+# ## merge with dac
+# ct_pop_time <- merge(ct_pop_time, dac_df, 
+#                      by = c("census_tract"),
+#                      all.x = T)
+# 
+# setDT(ct_pop_time)
+# 
+# ## calc annual dac share
+# ct_pop_time[, dac_mult := fifelse(dac_status == "Yes", 1, 0)]
+# 
+# ct_pop_time[, dac_pop := pop * dac_mult]
+# 
+# dac_pop_time <- ct_pop_time[, lapply(.SD, sum, na.rm = T), .SDcols = c("pop", "dac_pop"), by = .(year, pop_type)]
+# dac_pop_time[, dac_ratio := dac_pop / pop]
+# 
+# ## diff between all vs 30+?
+# diff_dac_df <- pivot_wider(dac_pop_time %>% select(year, pop_type, dac_ratio), names_from = pop_type, values_from = dac_ratio) %>%
+#   mutate(diff = ct_pop_all - ct_pop_30plus)
+# 
+# ## differences are 2-3% (dac pop all > dac share 30+)
+# 
+# ## save
+# fwrite(dac_pop_time, paste0(save_info_path, 'state_dac_ratios.csv'))
+# 
+# 
 
 # ### --------------------------------------------------------------------
 # ## avg # of people/workers affected per bbl (remaining field, exiting field)
