@@ -22,8 +22,8 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-15/'
 extraction_folder_name <- 'revision-setbacks/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/figs/si/'
-save_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/'
+fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/figs/si/'
+save_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
 out_path <- 'outputs/academic-out/extraction/nature-energy-rev-outputs/'
 data_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
 scen_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
@@ -474,8 +474,5 @@ prod_plot <-
                                'New wells' = '#009FB7'))
 
 ggsave(filename =  paste0(main_path, save_path, "figs/si/hist-future-prod.png"), prod_plot, width = 6, height = 10, units = "in", dpi = 300)
-
-
-
 
 
