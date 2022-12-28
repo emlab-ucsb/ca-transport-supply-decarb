@@ -19,7 +19,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/'
+fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
 
 ## csv names
 levels_name <- 'state_levels_all_oil.csv'
@@ -65,7 +65,7 @@ prod_fig_sb <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                            !policy_intervention %in% c("BAU"),
                                            setback_name != "1000ft"), aes(x = year, y = value / 1e6, color = policy_intervention, lty = setback_name)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "A. Oil production",
+  labs(title = "a. Oil production",
        x = NULL,
        y = "Barrels (million)",
        color = "Policy",
@@ -109,7 +109,7 @@ top_legend <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
   #                                        year > 2019,
   #                                        oil_price_scenario == "reference case",
   #                                        policy_intervention != "BAU"), aes(x = year, y = value / 1e6, shape = setback_name, color = policy_intervention)) +
-  labs(title = "A. Oil production",
+  labs(title = "a. Oil production",
        x = NULL,
        y = "Barrels (million)",
        color = "Policy: ",
@@ -159,7 +159,7 @@ ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>%
                              filter(oil_price_scenario == "reference case",
                                     policy_intervention != "BAU"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention, shape = setback_name)) +
   geom_point(size = 2, alpha = 0.8) +
-  labs(title = "B. Cumulative GHG emissions",
+  labs(title = "b. Cumulative GHG emissions",
        x = "GHG emissions reduction target (%, 2045 vs 2019)",
        y = bquote(MtCO[2]~e),
        color = "Policy intervention: ",
@@ -278,7 +278,7 @@ fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "C. Health: avoided mortality",
+       title = "c. Health: avoided mortality",
        y = "NPV (2019 USD billion)",
        x = NULL) +
   ylim(0, 3) +
@@ -302,7 +302,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "D. Labor: Lost worker compensation",
+       title = "d. Labor: Lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-15, 0) +
@@ -377,7 +377,7 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(type == "DAC share",
                           filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention, shape = setback_name)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "E. Health: avoided mortalities",
+  labs(title = "e. Health: avoided mortalities",
        color = NULL,
        y = "DAC share",
        x = NULL) +
@@ -406,7 +406,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(type == "DAC share",
                           filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention, shape = setback_name)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "F. Labor: Lost worker compensation",
+  labs(title = "f. Labor: Lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +

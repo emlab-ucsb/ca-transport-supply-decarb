@@ -19,7 +19,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/setback-revision/'
+fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
 
 ## csv names
 # levels_file <- 'state_levels_subset.csv'
@@ -195,7 +195,7 @@ fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "A. Health: avoided mortality",
+       title = "a. Health: avoided mortality",
        y = "NPV (2019 USD billion)",
        x = NULL) +
   ylim(0, 2) +
@@ -216,7 +216,7 @@ fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "B. Labor: Lost worker compensation",
+       title = "b. Labor: Lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-15, 0) +
@@ -237,7 +237,7 @@ fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "C. Climate: avoided damage",
+       title = "c. Climate: avoided damage",
        y = NULL,
        x = NULL) +
   ylim(0, 5) +
@@ -259,7 +259,7 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "D.",
+       title = "d.",
        # y = expression(NPV~(2020~USD~million)~per~avoied~GHG ~MtCO[2]~e),
        y = bquote('NPV (2019 USD million)\nper avoided GHG MtCO'[2]~e),
        # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
@@ -281,7 +281,7 @@ fig_bxm_e <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "E.",
+       title = "e.",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
@@ -301,7 +301,7 @@ fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "F.",
+       title = "f.",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
@@ -457,7 +457,7 @@ fig_bxm_a_l <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "A. Health: avoided mortality",
+       title = "a. Health: avoided mortality",
        y = "NPV (2019 USD billion)",
        x = NULL) +
   ylim(0, 1) +
@@ -479,7 +479,7 @@ fig_bxm_b_l <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "B. Labor: Lost worker compensation",
+       title = "b. Labor: Lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-2, 0) +
@@ -501,7 +501,7 @@ fig_bxm_c_l <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "C. Climate: avoided damage",
+       title = "c. Climate: avoided damage",
        y = NULL,
        x = NULL) +
   ylim(0, 2) +
@@ -523,7 +523,7 @@ fig_bxm_d_l <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "D.",
+       title = "d.",
        # y = expression(NPV~(2020~USD~million)~per~avoied~GHG ~MtCO[2]~e),
        y = bquote('NPV (2019 USD million)\nper avoided GHG MtCO'[2]~e),
        # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
@@ -546,7 +546,7 @@ fig_bxm_e_l <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "E.",
+       title = "e.",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
@@ -567,7 +567,7 @@ fig_bxm_f_l <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "F.",
+       title = "f.",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
@@ -647,7 +647,7 @@ fig_bxm_a_h <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "A. Health: avoided mortality",
+       title = "a. Health: avoided mortality",
        y = "NPV (2019 USD billion)",
        x = NULL) +
   ylim(0, 5) +
@@ -669,7 +669,7 @@ fig_bxm_b_h <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "B. Labor: Lost worker compensation",
+       title = "b. Labor: Lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-70, 0) +
@@ -691,7 +691,7 @@ fig_bxm_c_h <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "C. Climate: avoided damage",
+       title = "c. Climate: avoided damage",
        y = NULL,
        x = NULL) +
   ylim(0, 15) +
@@ -713,7 +713,7 @@ fig_bxm_d_h <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "D.",
+       title = "d.",
        # y = expression(NPV~(2020~USD~million)~per~avoied~GHG ~MtCO[2]~e),
        y = bquote('NPV (2019 USD million)\nper avoided GHG MtCO'[2]~e),
        # y = bquote('NPV per avoided GHG MtCO'[2]~e'\n(2020 USD million / MtCO'[2]~e')'),
@@ -736,7 +736,7 @@ fig_bxm_e_h <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "E.",
+       title = "e.",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
@@ -757,7 +757,7 @@ fig_bxm_f_h <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "F.",
+       title = "f.",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
        x = "GHG emissions reduction target (%, 2045 vs 2019)") +
@@ -915,7 +915,7 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
                           filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "A. Health: avoided mortalities",
+  labs(title = "a. Health: avoided mortalities",
        color = "Policy",
        y = "DAC share",
        x = NULL) +
@@ -944,7 +944,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
                         filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "B. Labor: Lost worker compensation",
+  labs(title = "b. Labor: Lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1034,7 +1034,7 @@ fig_dac_bau_h_sb <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BA
                           filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "C. Health: avoided mortalities (setback = new wells)",
+  labs(title = "c. Health: avoided mortalities (setback = new wells)",
        color = "Policy",
        y = "DAC share",
        x = NULL) +
@@ -1063,7 +1063,7 @@ fig_dac_bau_l_sb <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BA
                           filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "D. Labor: forgone wages (setback = new wells)",
+  labs(title = "d. Labor: forgone wages (setback = new wells)",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1158,7 +1158,7 @@ fig_dac_bau_h_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                           filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "A. Health: avoided mortalities",
+  labs(title = "a. Health: avoided mortalities",
        color = "Policy",
        y = "DAC share",
        x = NULL) +
@@ -1188,7 +1188,7 @@ fig_dac_bau_l_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                           filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "B. Labor: Lost worker compensation",
+  labs(title = "b. Labor: Lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1279,7 +1279,7 @@ fig_dac_bau_h_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                             filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "A. Health: avoided mortalities",
+  labs(title = "a. Health: avoided mortalities",
        color = "Policy",
        y = "DAC share",
        x = NULL) +
@@ -1309,7 +1309,7 @@ fig_dac_bau_l_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                             filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "B. Labor: Lost worker compensation",
+  labs(title = "b. Labor: Lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
