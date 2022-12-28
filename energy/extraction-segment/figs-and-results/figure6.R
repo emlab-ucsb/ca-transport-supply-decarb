@@ -480,14 +480,14 @@ fig6 <- plot_grid(
 ## save figure 3
 ggsave(fig6,
        filename = file.path(main_path, fig_path, 'figs/figure6-ref-case.png'),
-       width = 180,
-       height = 150,
+       width = 150,
+       height = 230,
        units = "mm",)
 
 ggsave(fig6,
        filename = file.path(main_path, fig_path, 'figs/figure6-ref-case.pdf'),
        width = 150,
-       height = 180,
+       height = 230,
        units = "mm",
        device = 'pdf')
 
