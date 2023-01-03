@@ -249,7 +249,9 @@ read_extraction <- function(buff_field){
   
 }
 
-#build extraction srm
+## build extraction srm
+## SRM is concentration in microgram per meter cube (m3) for every tonne of pollutant emission
+
 srm_all_pollutants_extraction <- future_map_dfr(fields_vector, read_extraction) %>% 
   bind_rows() %>%
   rename(weighted_totalpm25 = totalpm25_aw)%>%
@@ -370,7 +372,7 @@ county_dac <- county_dac[, .(dac_share = weighted.mean(dac_share, total_pop, na.
 beta <- 0.00582
 se <- 0.0009628
 
-## for monetary mortality impact
+## for monetary mortality impact - growth in income for use in WTP function
 growth_rates <- read.csv(paste0(main_path, "data/benmap/processed/growth_rates.csv"), stringsAsFactors = FALSE) %>%
   filter(year > 2018) %>%
   mutate(growth = ifelse(year == 2019, 0, growth_2030),
@@ -613,6 +615,9 @@ for (i in 1:length(field_files_to_process)) {
                                                                                       setback_existing, excise_tax_scenario)] 
   
   ## calculate air pollution using emission factors
+  ## emission factors are in kg per bbl
+  ## divided by 1000 gives you emissions in tonne
+  
   total_clusters <- total_clusters %>%
     mutate(nh3 = total_prod_bbl * 0.00061 / 1000,
            nox = total_prod_bbl * 0.04611 / 1000,
