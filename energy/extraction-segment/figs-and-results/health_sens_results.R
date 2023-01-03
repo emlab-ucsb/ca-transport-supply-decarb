@@ -161,9 +161,9 @@ health_scens <- merge(health_out, unique(state_levels[, .(scen_id, policy_interv
 health_scens[, m_cost_2019_PV := mean(cost_2019_PV), .(scen_id, year, county)]
 
 
-SDcols = c("mortality_delta", "mortality_level", 
-           "cost_2019", "cost", 
-           "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
+# SDcols = c("mortality_delta", "mortality_level", 
+#            "cost_2019", "cost", 
+#            "cost_2019_PV", "cost_PV"), by = .(scen_id, year)]
 
 ## sumarize by scneario and year for fig 3
 
