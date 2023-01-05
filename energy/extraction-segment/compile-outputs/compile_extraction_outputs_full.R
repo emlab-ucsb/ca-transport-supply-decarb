@@ -21,6 +21,7 @@ cur_date              = Sys.Date()
 
 ## paths 
 main_path     <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+sp_data_path     <- paste0(main_path, "data/GIS/raw/")
 
 ## UPDATE THESE WITH NEW RUNS!!!!!
 extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-15/'
@@ -62,7 +63,7 @@ state_hs_save_path  = paste0(compiled_save_path, 'state-results/health_sens/')
 
 county_save_path    = paste0(compiled_save_path, 'county-results/')
 ct_save_path        = paste0(compiled_save_path, 'census-tract-results/')
-ct_county_save_path = paste0(compiled_save_path, 'census-tract-county-results/')
+health_county_save_path = paste0(compiled_save_path, 'health-county-results/')
 
 
 
@@ -79,7 +80,7 @@ dir.create(state_save_path, showWarnings = FALSE)
 dir.create(state_hs_save_path, showWarnings = FALSE)  
 dir.create(county_save_path, showWarnings = FALSE)
 dir.create(ct_save_path, showWarnings = FALSE)
-dir.create(ct_county_save_path, showWarnings = FALSE)
+dir.create(health_county_save_path, showWarnings = FALSE)
 
 ## outputs should include:
 ## - county-level health
@@ -266,19 +267,42 @@ srm_all_pollutants_extraction <- future_map_dfr(fields_vector, read_extraction) 
 
 future:::ClusterRegistry("stop")
 
-## create an srm that is averaged at county level
-srm_all_pollutants_extraction_c <- srm_all_pollutants_extraction %>%
-  ## Adjust mismatch of census tract ids between inmap and benmap (census ID changed in 2012 
-  ## http://www.diversitydatakids.org/sites/default/files/2020-02/ddk_coi2.0_technical_documentation_20200212.pdf)
-  mutate(GEOID = ifelse(GEOID == "06037137000", "06037930401", GEOID)) %>%
-  mutate(census_tract = GEOID) %>%
-  left_join(ces_county %>% select(census_tract, county)) %>%
-  pivot_longer(weighted_totalpm25nh3:weighted_totalpm25voc, names_to = "type", values_to = "values") %>%
-  group_by(county, type) %>%
-  mutate(county_val = mean(values, na.rm = T)) %>%
-  ungroup() %>%
-  select(-values) %>%
-  pivot_wider(names_from = type, values_from = county_val)
+## load county srm
+## ---------------------------------------------------------------------
+
+read_extraction_county <- function(buff_field){
+  
+  bfield <- buff_field
+  
+  nh3  <- read_csv(paste0(inmap_ex_path, "/county/nh3/srm_nh3_field", bfield, ".csv", sep="")) %>% mutate(poll = "nh3")
+  nox  <- read_csv(paste0(inmap_ex_path, "/county/nox/srm_nox_field", bfield, ".csv", sep="")) %>% mutate(poll = "nox")
+  pm25 <- read_csv(paste0(inmap_ex_path, "/county/pm25/srm_pm25_field", bfield, ".csv", sep="")) %>% mutate(poll = "pm25")
+  sox  <- read_csv(paste0(inmap_ex_path, "/county/sox/srm_sox_field", bfield, ".csv", sep="")) %>% mutate(poll = "sox")
+  voc  <- read_csv(paste0(inmap_ex_path, "/county/voc/srm_voc_field", bfield, ".csv", sep="")) %>% mutate(poll = "voc")
+  
+  all_polls <- rbind(nh3, nox, pm25, sox, voc)
+  
+  all_polls$field = bfield
+  
+  tmp <- as.data.frame(all_polls) 
+  
+  return(tmp)
+  
+}
+
+
+srm_all_pollutants_extraction_c <- future_map_dfr(fields_vector, read_extraction_county) %>% 
+  bind_rows() %>%
+  rename(weighted_totalpm25 = totalpm25_aw)%>%
+  select(-totalpm25) %>%
+  spread(poll, weighted_totalpm25) %>%
+  rename(weighted_totalpm25nh3 = nh3,
+         weighted_totalpm25nox = nox,
+         weighted_totalpm25pm25 = pm25,
+         weighted_totalpm25sox = sox,
+         weighted_totalpm25voc = voc,
+         id = field)
+
 
 
 # (1.2) Calculate census tract ambient emissions for extraction  #######
@@ -350,6 +374,23 @@ ct_inc_pop_45_weighted <- ct_inc_pop_45 %>%
   ungroup() %>%
   as.data.table()
 
+## county level population-weighted incidence rate (for age>29)
+county_inc_pop_45_weighted <- ct_inc_pop_45 %>%
+  left_join(ces_county, by = c("ct_id" = "census_tract")) %>%
+  filter(lower_age > 29) %>%
+  group_by(county, lower_age, upper_age, year, incidence_2015) %>%
+  summarise(pop = sum(pop, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(county, year) %>%
+  mutate(county_pop = sum(pop, na.rm = T),
+         share = pop/county_pop,
+         weighted_incidence = sum(share * incidence_2015, na.rm = T)) %>%
+  summarize(weighted_incidence = unique(weighted_incidence),
+            pop = unique(county_pop)) %>%
+  ungroup() %>%
+  as.data.table()
+
+
 ## county pop
 county_pop <- ct_inc_pop_45_weighted %>%
   left_join(ces_county, by = c('ct_id' = 'census_tract')) %>%
@@ -366,6 +407,13 @@ county_dac[, No := fifelse(is.na(No), 0, No)]
 county_dac[, total_pop := No + Yes]
 county_dac[, dac_share := Yes / total_pop]
 county_dac <- county_dac[, .(dac_share = weighted.mean(dac_share, total_pop, na.rm = T)), by = .(county, year)]
+
+## county geoids
+county_ids <- st_read(paste0(sp_data_path, "CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
+  st_transform(crs=3310) %>%
+  select(GEOID, county = NAME) %>%
+  st_drop_geometry() %>%
+  unique()
 
 
 ## Coefficients from Krewski et al (2009) for mortality impact
@@ -699,26 +747,31 @@ for (i in 1:length(field_files_to_process)) {
            prim_pm25 = tot_pm25)
 
   ct_exposure_sens <- total_clusters_sens %>%
-    group_by(census_tract, year, scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario) %>%
+    group_by(GEOID, year, scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario) %>%
     summarize(total_pm25 = sum(total_pm25, na.rm = T),
               prim_pm25 = sum(prim_pm25, na.rm = T)) %>%
     ungroup() %>%
     select(scen_id, oil_price_scenario, carbon_price_scenario, ccs_scenario, setback_scenario, setback_existing, excise_tax_scenario,
-           census_tract, year, total_pm25)
+           GEOID, year, total_pm25)
 
-  ## add ces score, income, and dac
-  ct_exposure_sens <- merge(ct_exposure_sens, ces3[, .(census_tract, CES3_score, disadvantaged)],
-                       by = c("census_tract"),
+  ## add county ids
+  ct_exposure_sens <- merge(ct_exposure_sens, county_ids,
+                       by = c("GEOID"),
                        all.x = T)
+  
+  ## add dac
+  ct_exposure_sens <- merge(ct_exposure_sens, county_dac,
+                            by = c("county", "year"),
+                            all.x = T)
 
 
-  setorder(ct_exposure_sens, "census_tract", "year")
+  setorder(ct_exposure_sens, "GEOID", "year")
 
   setcolorder(ct_exposure_sens, c("scen_id", "oil_price_scenario", "carbon_price_scenario", "ccs_scenario", "setback_scenario", "setback_existing",
-                             "excise_tax_scenario", "census_tract", "disadvantaged", "CES3_score", "year", "total_pm25"))
+                             "excise_tax_scenario", "GEOID", "county", "year", "dac_share", "total_pm25"))
 
   ## save census tract sensitivity outputs (pm2.5 levels, mortality level, cost)
-  saveRDS(ct_exposure_sens, paste0(ct_county_save_path, scenario_id_tmp, "_ctc_results.rds"))
+  saveRDS(ct_exposure_sens, paste0(health_county_save_path, scenario_id_tmp, "_ctc_results.rds"))
 
   
 
@@ -889,9 +942,9 @@ for (i in 1:length(scenarios_to_process)) {
     
     scen_tmp <- bau_scens_sens[i]
     
-    bau_tmp <- readRDS(paste0(ct_county_save_path, scen_tmp)) %>%
+    bau_tmp <- readRDS(paste0(health_county_save_path, scen_tmp)) %>%
       rename(bau_total_pm25 = total_pm25) %>%
-      select(oil_price_scenario, setback_existing, census_tract, year, bau_total_pm25) %>% 
+      select(oil_price_scenario, setback_existing, GEOID, year, bau_total_pm25) %>% 
       as.data.table()
     
     bau_out_sens[[i]] <- bau_tmp
@@ -909,12 +962,12 @@ for (i in 1:length(scenarios_to_process)) {
     
     scen_file_name_sens <- scenarios_to_process[i]
     
-    ctc_scen_out <- readRDS(paste0(ct_county_save_path, scen_file_name_sens, "_ctc_results.rds"))
+    ctc_scen_out <- readRDS(paste0(health_county_save_path, scen_file_name_sens, "_ctc_results.rds"))
     setDT(ctc_scen_out)
     
     ## calculate delta pm 2.5
     delta_extraction_sens <- merge(ctc_scen_out, bau_out_sens,
-                              by = c("oil_price_scenario", "setback_existing", "census_tract", "year"),
+                              by = c("oil_price_scenario", "setback_existing", "GEOID", "year"),
                               all.x = T)
     
     delta_extraction_sens[, delta_total_pm25 := total_pm25 - bau_total_pm25]
@@ -923,7 +976,7 @@ for (i in 1:length(scenarios_to_process)) {
     ## Merge demographic data to pollution scenarios
     ctc_incidence <- delta_extraction_sens %>%
       # left_join(ces3, by = c("census_tract")) %>%
-      right_join(ct_inc_pop_45_weighted, by = c("census_tract" = "ct_id", "year" = "year")) %>%
+      right_join(county_inc_pop_45_weighted, by = c("county", "year")) %>%
       # remove census tracts that are water area only tracts (no population)
       drop_na(scen_id) %>% 
       as.data.table()
@@ -952,12 +1005,12 @@ for (i in 1:length(scenarios_to_process)) {
     
     ## final census tract level health outputs
     ctc_incidence <- ctc_incidence %>%
-      select(scen_id, census_tract, CES3_score, disadvantaged, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+      select(scen_id, GEOID, county, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
              mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
       as.data.table()
     
     ## resave the census tract data
-    saveRDS(ctc_incidence, paste0(ct_county_save_path, scen_file_name_sens, "_ctc_results.rds"))
+    saveRDS(ctc_incidence, paste0(health_county_save_path, scen_file_name_sens, "_ctc_results.rds"))
     
     ## ----------------------------------------------------------------------------
     ## calculate state values, read in state value, resave with mortality values

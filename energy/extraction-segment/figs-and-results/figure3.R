@@ -930,9 +930,15 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(vjust = 0.5, hjust=1),
+        axis.text = element_text(vjust = 0.5, hjust=1, size = 7),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        axis.line.y = element_line(color = 'black'),
+        axis.ticks.y = element_line(color = 'black'),
+        axis.title = element_text(size = 7),
+        title = element_text(size = 7),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7))
 
 fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                             oil_price_scenario == "reference case",
@@ -955,11 +961,15 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(vjust = 0.5, hjust=1),
+        axis.text = element_text(vjust = 0.5, hjust=1, size = 7),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'),
-        axis.title = element_text(size = 7))
+        axis.line.y = element_line(color = 'black'),
+        axis.ticks.y = element_line(color = 'black'),
+        axis.title = element_text(size = 7),
+        title = element_text(size = 7),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7))
 
 ## plot them together
 ## -------------------------------
@@ -1008,13 +1018,13 @@ fig4_plot_grid2 <- plot_grid(
 ggsave(fig4_plot_grid2,
        filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.png'),
        width = 100,
-       height = 70,
+       height = 60,
        units = "mm")
 
 ggsave(fig4_plot_grid2,
        filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'),
        width = 100,
-       height = 70,
+       height = 60,
        units = "mm",
        device = 'pdf')
 
