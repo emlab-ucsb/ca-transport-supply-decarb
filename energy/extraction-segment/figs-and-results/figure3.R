@@ -186,6 +186,8 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure3-sb-new.pdf'),
 
 ## revised version, make them separately
 ## -------------------------------------------------------------------
+fig3_text_size <- 9.4
+
 fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
                                       setback_existing == 0,
@@ -202,10 +204,13 @@ fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        plot.title = element_text(hjust = 0),
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'))
+        
 
 fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
@@ -223,10 +228,12 @@ fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        plot.title = element_text(hjust = 0),
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'))
 
 fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
@@ -244,8 +251,10 @@ fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        plot.title = element_text(hjust = 0),
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm')) 
 
@@ -268,7 +277,10 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
   ylim(0, 50) +
   theme_line_n +
   theme(legend.position = "none",
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -288,7 +300,10 @@ fig_bxm_e <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -309,7 +324,10 @@ fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
   theme_line_n +
   ylim(0, 50) +
   theme(legend.position = "none",
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -330,14 +348,19 @@ legend_fig <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        legend.title = element_text(size = fig3_text_size),
+        legend.text = element_text(size = fig3_text_size),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
 legend_fig_3 <- get_legend(
   legend_fig + 
-    theme(legend.title = element_text(size = 7),
-          legend.text = element_text(size = 7))
+    theme(legend.title = element_text(size = fig3_text_size),
+          legend.text = element_text(size = fig3_text_size))
   
 )
 
@@ -346,7 +369,7 @@ legend_fig_3 <- get_legend(
 ## ---------------------------------
 
 ## shared x axis
-xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 7)
+xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 9)
 
 fig3_plot_grid <- plot_grid(
   fig_bxm_a,
