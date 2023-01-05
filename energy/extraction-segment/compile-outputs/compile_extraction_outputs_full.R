@@ -1005,7 +1005,7 @@ for (i in 1:length(scenarios_to_process)) {
     
     ## final census tract level health outputs
     ctc_incidence <- ctc_incidence %>%
-      select(scen_id, GEOID, county, year, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
+      select(scen_id, GEOID, county, year, dac_share, weighted_incidence, pop, total_pm25, bau_total_pm25, delta_total_pm25, 
              mortality_delta, mortality_level, cost_2019, cost, cost_2019_PV, cost_PV) %>%
       as.data.table()
     
