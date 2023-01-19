@@ -211,7 +211,7 @@
  	, ///
  	row(2) col(3) altshrink
 
-	local titles "A B C D E F"
+	local titles "a. b. c. d. e. f."
 	forval i=1/6{
    gr_edit .plotregion1.graph`i'.title.text.Arrpush "{bf:`:word `i' of `titles''}"
    gr_edit .plotregion1.graph`i'.title.style.editstyle size(large)
