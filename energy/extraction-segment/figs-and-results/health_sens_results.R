@@ -815,7 +815,7 @@ fig_mtb <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "b. Health: avoided mortality (county analysis)",
+       title = "b. Health: avoided mortality\n   (county-level analysis)",
        y = "NPV (2019 USD billion)",
        x = NULL) +
   ylim(0, 2) +
@@ -913,7 +913,7 @@ fig_mta <- ggplot(npv_dt_mt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "a. Health: avoided mortality (main analysis)",
+       title = "a. Health: avoided mortality\n   (census tract-level analysis)",
        y = "NPV (2019 USD billion)",
        x = NULL) +
   ylim(0, 2) +
