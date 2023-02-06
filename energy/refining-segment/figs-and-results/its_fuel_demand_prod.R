@@ -3,7 +3,7 @@
 # author: tracey mangin and meas meng
 
 # ------------------ paths -------------------
-ref_results_date <- '2021-08-12'
+ref_results_date <- '2021-11-22'
 
 main_path            <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 refining_folder_path <- paste0(main_path, 'outputs/predict-production/refining_', ref_results_date, '/CUF0.6/outputs/')
