@@ -7,20 +7,20 @@ library(tidyverse)
 library(data.table)
 
 ## paths
-# main_path   <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-main_path             = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
-input_path  <- 'outputs/predict-production/refining_2021-11-22/CUF0.6/'
-fig_path    <- file.path(main_path, 'outputs/academic-out/refining/figures/2022-12-update')
+# main_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path     = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
+input_path    = 'outputs/predict-production/refining_2021-11-22/CUF0.6/'
+fig_path      = file.path(main_path, 'outputs/academic-out/refining/figures/2022-12-update')
 
 ## source figure themes
-# items <- "figure_themes.R"
-# walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+items <- "figure_themes.R"
+walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## inputs
-prod_file   <- 'state_GJD_and_reGJD_production_all_refineries.csv'
+prod_file = 'state_GJD_and_reGJD_production_all_refineries.csv'
 
 ## read in prod file
-prod_df <- fread(file.path(main_path, input_path, prod_file))
+prod_df = fread(file.path(main_path, input_path, prod_file))
 
 ## change demand scenario name
 prod_df[, demand_scenario_adj := ifelse(demand_scenario == 'BAU', 'Reference Demand', 'Low Carbon Demand')]
@@ -29,9 +29,9 @@ prod_df[, demand_scenario_adj := ifelse(demand_scenario == 'BAU', 'Reference Dem
 prod_df[, fuel_adj := ifelse(fuel == 'jet', 'jet fuel', fuel)]
 
 ## factor
-prod_df$refining_scenario <- factor(prod_df$refining_scenario, levels = c('historic production', 
-                                                                          'historic exports', 
-                                                                          'low exports'))
+prod_df[, refining_scenario := factor(refining_scenario, levels = c('historic production', 
+                                                                    'historic exports', 
+                                                                    'low exports'))]
 
 ## rename fuel
 prod_df[fuel_adj == 'drop-in gasoline', fuel_adj := 'renewable gasoline']
@@ -40,13 +40,13 @@ prod_df[fuel_adj == 'drop-in gasoline', fuel_adj := 'renewable gasoline']
 prod_df[, fuel_adj := str_to_title(fuel_adj)]
 
 ## factor
-prod_df$fuel_adj <- factor(prod_df$fuel_adj, levels = rev(c('Gasoline',
-                                                            'Renewable Gasoline',
-                                                            'Diesel',
-                                                            'Renewable Diesel',
-                                                            'Jet Fuel',
-                                                            'Sustainable Aviation Fuel',
-                                                            'Exports')))
+prod_df[, fuel_adj := factor(fuel_adj, levels = rev(c('Gasoline',
+                                                      'Renewable Gasoline',
+                                                      'Diesel',
+                                                      'Renewable Diesel',
+                                                      'Jet Fuel',
+                                                      'Sustainable Aviation Fuel',
+                                                      'Exports')))]
 
 prod_df[, refining_scenario := factor(refining_scenario, levels = c('historic production', 'historic exports', 'low exports'))]
 prod_df[, demand_scenario_adj := factor(demand_scenario_adj, levels = c('Reference Demand', 'Low Carbon Demand'))]
