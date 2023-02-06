@@ -19,16 +19,17 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 
 ## paths
 # main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-main_path <- '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn/'
-fig_path <- 'outputs/academic-out/refining/figures/manuscript'
+main_path <- '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
+data_path <- 'outputs/academic-out/refining/figures'
+fig_path <- 'outputs/academic-out/refining/figures/2022-12-update'
 
 ## csv names
 npv_file <- 'npv_x_metric_refining.csv'
 dac_file <- 'dac_health_labor_refining.csv'
 
 ## read in data
-npv_dt <- fread(paste0(main_path, fig_path, npv_file))
-dac_dt <- fread(paste0(main_path, fig_path, dac_file))
+npv_dt <- fread(file.path(main_path, data_path, npv_file))
+dac_dt <- fread(file.path(main_path, data_path, dac_file))
 
 ## cumulative
 npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: avoided damage',
@@ -66,6 +67,24 @@ npv_dt$short_scen <- factor(npv_dt$short_scen, levels = c('BAU demand - hist. pr
                                                                 'Low C. demand - hist. exports',
                                                                 'Low C. demand - low exports'))
 
+## rename
+npv_dt[, scenario := gsub('BAU', 'Reference', scenario)]
+npv_dt[, scenario := gsub('Low C.', 'Low carbon', scenario)]
+npv_dt[, short_scen := gsub('BAU', 'Reference', short_scen)]
+npv_dt[, short_scen := gsub('Low C.', 'Low carbon', short_scen)]
+
+dac_dt[, scenario := gsub('BAU', 'Reference', scenario)]
+dac_dt[, scenario := gsub('LC1', 'Low carbon', scenario)]
+dac_dt[, demand_scenario := gsub('BAU', 'Reference', demand_scenario)]
+dac_dt[, demand_scenario := gsub('LC1', 'Low carbon', demand_scenario)]
+
+## refactor
+dac_dt$scenario <- factor(dac_dt$scenario, levels = c('historic production - Reference demand', 
+                                                      'historic exports - Reference demand', 
+                                                      'low exports - Reference demand',
+                                                      'historic production - Low carbon demand',
+                                                      'historic exports - Low carbon demand',
+                                                      'low exports - Low carbon demand'))
 
 ## pivot longer
 npv_dt <- melt(npv_dt, id.vars = c('scen_id', 'scenario', 'short_scen', 'demand_scenario', 'refining_scenario', 'title', 'ghg_2045_perc_reduction'),
@@ -82,9 +101,9 @@ npv_dt[, measure_unit := fifelse(unit == "value_billion", "2019 USD billion", "2
 refin_colors <- c('historic exports' = '#2F4858', 'historic production' = '#F6AE2D', 'low exports' = '#F26419')
 
 ## filter out these BAU scenarios
-bau_scens <- c('BAU historic production low innovation price floor no ccs reference case',
-               'LC1 historic production low innovation price floor no ccs reference case')
-
+# bau_scens <- c('BAU historic production low innovation price floor no ccs reference case',
+#                'LC1 historic production low innovation price floor no ccs reference case')
+bau_scens <- c('LC1 historic production low innovation price floor no ccs reference case')
 
 
 # figure
@@ -110,11 +129,18 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(!scen_id %in% bau_scens),
 
 ## revised version, make them separately
 ## -------------------------------------------------------------------
+
+hist_prod = as.data.table(npv_dt %>% filter(!scen_id %in% bau_scens,
+                                            measure == "NPV (2019 USD billion)",
+                                            refining_scenario == "historic production"))
+
 fig_bxm_a <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  geom_vline(xintercept = hist_prod[title == "Health: avoided mortality", ghg_2045_perc_reduction], color = "darkgray", lty = 2) +
   geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Health: avoided mortality",
-                                      measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value,  color = refining_scenario, shape = demand_scenario),
+                                      measure == "NPV (2019 USD billion)",
+                                      !refining_scenario == "historic production"), aes(x = ghg_2045_perc_reduction, y = value,  color = refining_scenario, shape = demand_scenario),
              size = 3, alpha = 0.8) +
   labs(color = "Refing scenario",
        shape = "Demand scenario",
@@ -133,9 +159,11 @@ fig_bxm_a <- ggplot() +
 
 fig_bxm_b <- ggplot() + 
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  geom_vline(xintercept = hist_prod[title == "Labor: forgone wages", ghg_2045_perc_reduction], color = "darkgray", lty = 2) +
   geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Labor: forgone wages",
-                                      measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
+                                      measure == "NPV (2019 USD billion)",
+                                      !refining_scenario == "historic production"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   labs(color = "Policy",
        title = "B. Labor: forgone wages",
        y = NULL,
@@ -152,9 +180,11 @@ fig_bxm_b <- ggplot() +
 
 fig_bxm_c <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  geom_vline(xintercept = hist_prod[title == "Climate: avoided damage", ghg_2045_perc_reduction], color = "darkgray", lty = 2) +
   geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Climate: avoided damage",
-                                      measure == "NPV (2019 USD billion)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
+                                      measure == "NPV (2019 USD billion)",
+                                      !refining_scenario == "historic production"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
        title = "C. Climate: avoided damage",
@@ -172,9 +202,11 @@ fig_bxm_c <- ggplot() +
 
 fig_bxm_d <- ggplot() + 
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  geom_vline(xintercept = hist_prod[title == "Health: avoided mortality", ghg_2045_perc_reduction], color = "darkgray", lty = 2) +
   geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Health: avoided mortality",
-                                      measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
+                                      measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)",
+                                      !refining_scenario == "historic production"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   labs(color = "Policy",
        title = "D.",
        y = bquote('NPV (2019 USD million)\nper avoided GHG MtCO'[2]~e),
@@ -190,9 +222,11 @@ fig_bxm_d <- ggplot() +
 
 fig_bxm_e <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  geom_vline(xintercept = hist_prod[title == "Labor: forgone wages", ghg_2045_perc_reduction], color = "darkgray", lty = 2) +
   geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Labor: forgone wages",
-                                      measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
+                                      measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)",
+                                      !refining_scenario == "historic production"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   labs(color = "Policy",
        title = "E.",
        y = NULL,
@@ -208,9 +242,11 @@ fig_bxm_e <- ggplot() +
 
 fig_bxm_f <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  geom_vline(xintercept = hist_prod[title == "Health: avoided mortality", ghg_2045_perc_reduction], color = "darkgray", lty = 2) +
   geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
                                       title == "Climate: avoided damage",
-                                      measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
+                                      measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)",
+                                      !refining_scenario == "historic production"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario), size = 3, alpha = 0.8) +
   labs(color = "Policy",
        title = "F.",
        y = NULL,
@@ -226,42 +262,84 @@ fig_bxm_f <- ggplot() +
         axis.ticks.length.x = unit(0.1, 'cm'))
 
 ## extract legend
+# legend_fig <- ggplot() +
+#   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+#   geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
+#                                        title == "Labor: forgone wages",
+#                                        measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = scenario, shape = scenario), size = 3, alpha = 0.8) +
+#   labs(title = "",
+#        y = NULL,
+#        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
+#        x = "GHG emissions reduction target (%, 2045 vs 2019)",
+#        color = NULL,
+#        shape = NULL) +
+#   # scale_shape_manual(values = c(16, 16, 16, 17, 17)) +
+#   scale_color_manual(name = "",
+#                      labels = c("BAU demand - historic exports",
+#                                 "BAU demand - historic production",
+#                                 "BAU demand - low exports",
+#                                 "Low C. demand - historic exports",
+#                                 "Low C. demand - low exports"),
+#                      values = c("BAU demand - historic exports" = "#2F4858",
+#                                 "BAU demand - historic production" = "#F6AE2D",
+#                                 "BAU demand - low exports" = "#F26419",
+#                                 "Low C. demand - historic exports" = "#2F4858",
+#                                 "Low C. demand - low exports" = "#F26419")) +
+#   scale_shape_manual(name = "",
+#                         labels = c("BAU demand - historic exports",
+#                                    "BAU demand - historic production",
+#                                    "BAU demand - low exports",
+#                                    "Low C. demand - historic exports",
+#                                    "Low C. demand - low exports"),
+#                         values = c(16, 16, 16, 17, 17)) +
+#   theme_line_n +
+#   theme(legend.position = "bottom",
+#         axis.text.x = element_text(vjust = 0.5, hjust = 0.5),
+#         axis.ticks.length.y = unit(0.1, 'cm'),
+#         axis.ticks.length.x = unit(0.1, 'cm')) +
+#   guides(color = guide_legend(nrow = 2, byrow = TRUE))
+
 legend_fig <- ggplot() +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   geom_point(data = npv_dt %>% filter(!scen_id %in% bau_scens,
-                                       title == "Labor: forgone wages",
-                                       measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)"), aes(x = ghg_2045_perc_reduction, y = value, color = scenario, shape = scenario), size = 3, alpha = 0.8) +
+                                      title == "Labor: forgone wages",
+                                      measure == "NPV per avoided GHG MtCO2e\n(2019 USD million / MtCO2e)",
+                                      !refining_scenario == "historic production"), 
+             aes(x = ghg_2045_perc_reduction, y = value, color = scenario, shape = scenario), size = 3, alpha = 0.8) +
   labs(title = "",
        y = NULL,
        # y = paste("NPV per avoied GHG ", bquotelab, "(2020 USD million / ", bquotelab),
-       x = "GHG emissions reduction target (%, 2045 vs 2019)") +
+       x = "GHG emissions reduction target (%, 2045 vs 2019)",
+       color = NULL,
+       shape = NULL) +
   scale_color_manual(name = "",
-                     labels = c("BAU demand - historic exports", 
-                                "BAU demand - low exports", 
-                                "Low C. demand - historic exports", 
-                                "Low C. demand - low exports"),
-                     values = c("BAU demand - historic exports" = "#2F4858", 
-                                "BAU demand - low exports" = "#F26419", 
-                                "Low C. demand - historic exports" = "#2F4858",
-                                "Low C. demand - low exports" = "#F26419")) +   
+                     labels = c("Reference demand - historic exports",
+                                "Reference demand - low exports",
+                                "Low carbon demand - historic exports",
+                                "Low carbon demand - low exports"),
+                     values = c("Reference demand - historic exports" = "#2F4858",
+                                "Reference demand - low exports" = "#F26419",
+                                "Low carbon demand - historic exports" = "#2F4858",
+                                "Low carbon demand - low exports" = "#F26419")) +
   scale_shape_manual(name = "",
-                        labels = c("BAU demand - historic exports", 
-                                   "BAU demand - low exports", 
-                                   "Low C. demand - historic exports", 
-                                   "Low C. demand - low exports"),
+                        labels = c("Reference demand - historic exports",
+                                   "Reference demand - low exports",
+                                   "Low carbon demand - historic exports",
+                                   "Low carbon demand - low exports"),
                         values = c(16, 16, 17, 17)) +
   theme_line_n +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(vjust = 0.5, hjust = 0.5),
-        axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) +
-  guides(color = guide_legend(nrow = 1, byrow = FALSE))
+    theme(legend.position = "bottom",
+          axis.text.x = element_text(vjust = 0.5, hjust = 0.5),
+          axis.ticks.length.y = unit(0.1, 'cm'),
+          axis.ticks.length.x = unit(0.1, 'cm')) +
+    guides(color = guide_legend(nrow = 2, byrow = TRUE))
+
 
 
 legend_fig_3 <- get_legend(
   legend_fig + 
-    theme(legend.title = element_text(size = 5),
-          legend.text = element_text(size = 5))
+    theme(legend.title = element_text(size = 8),
+          legend.text = element_text(size = 8))
   
 )
 
@@ -298,7 +376,7 @@ fig3_plot_grid2 <- plot_grid(
   # label_size = 10,
   # hjust = -1,
   ncol = 1,
-  rel_heights = c(1, 0.05, 0.05)
+  rel_heights = c(0.85, 0.05, 0.1)
   # rel_widths = c(1, 1),
 )
 
@@ -308,7 +386,7 @@ ggsave(fig3_plot_grid2,
        filename = file.path(main_path, fig_path, 'health_labor_climate_impacts_fig.png'),
        width = 180,
        height = 160,
-       units = "mm",)
+       units = "mm")
 
 ggsave(fig3_plot_grid2,
        filename = file.path(main_path, fig_path, 'health_labor_climate_impacts_fig.pdf'),
@@ -324,7 +402,7 @@ embed_fonts(paste0(main_path, fig_path, 'health_labor_climate_impacts_fig.pdf'),
 ## DAC figure
 ## ----------------------------------------
 
-scens <- c("historic exports - BAU demand", "low exports - BAU demand", "historic exports - LC1 demand", "low exports - LC1 demand")
+scens <- c("historic exports - Reference demand", "low exports - Reference demand", "historic exports - Low carbon demand", "low exports - Low carbon demand")
 
 fig_dac_bau_h <- ggplot(dac_dt %>% filter(scenario %in% scens,
                                               oil_price_scenario == "reference case",
@@ -333,22 +411,29 @@ fig_dac_bau_h <- ggplot(dac_dt %>% filter(scenario %in% scens,
                                           ccs_scenario == "no ccs") %>%
                           mutate(facet_lab = ifelse(category == "Health", "Health: avoided mortalities",
                                                     ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
-                          filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario)) +
-  geom_point(size = 2, alpha = 0.8) +
+                          filter(facet_lab == "Health: avoided mortalities"), 
+                        aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario)) +
+  geom_point(size = 3, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "A. Health: avoided mortalities",
-       color = "Refining scenario",
+  labs(title = "A. Health: avoided mortality",
+       color = "Refing scenario",
        shape = "Demand scenario",
-       y = "DAC share",
+       y = "NPV (2019 USD billion)",
        x = NULL) +
-  scale_color_manual(values = refin_colors) +
+  # scale_color_manual(values = refin_colors) +
   # x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   # facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
   scale_y_continuous(
     labels = scales::number_format(accuracy = 0.01),
     limits = c(0.42, 0.44)) +
+  scale_color_manual(name = NULL,
+                     values = c("historic exports" = "#2F4858",
+                                "low exports" = "#F26419")) +
+  scale_shape_manual(name = NULL,
+                     values = c("Reference" = 16, 
+                                "Low carbon" = 17)) +
   theme_line_n +
-  theme(legend.position = "bottom",
+  theme(legend.position = "none",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1),
@@ -383,22 +468,29 @@ fig_dac_bau_l <- ggplot(dac_dt %>% filter(scenario %in% scens,
                                           ccs_scenario == "no ccs") %>%
                           mutate(facet_lab = ifelse(category == "Health", "Health: avoided mortalities",
                                                     ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
-                          filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario)) +
-  geom_point(size = 2, alpha = 0.8) +
+                          filter(facet_lab == "Labor: forgone wages"), 
+                        aes(x = ghg_2045_perc_reduction, y = value, color = refining_scenario, shape = demand_scenario)) +
+  geom_point(size = 3, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(title = "B. Labor: forgone wages",
        color = "Refining scenario",
        shape = "Demand scenario",
        y = "DAC share",
        x = NULL) +
-  scale_color_manual(values = refin_colors) +
+  # scale_color_manual(values = refin_colors) +
   # x = "GHG emissions reduction target (%, 2045 vs 2019)") +
   # facet_wrap(~facet_lab, ncol = 2, scales = "free_y") +
   scale_y_continuous(
     labels = scales::number_format(accuracy = 0.01),
     limits = c(0.39, 0.49)) +
+  scale_color_manual(name = NULL,
+                     values = c("historic exports" = "#2F4858",
+                                "low exports" = "#F26419")) +
+  scale_shape_manual(name = NULL,
+                     values = c("Reference" = 16, 
+                                "Low carbon" = 17)) +
   theme_line_n +
-  theme(legend.position = "bottom",
+  theme(legend.position = "none",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1),
@@ -424,6 +516,108 @@ ggsave(fig_dac_bau_l,
 
 embed_fonts(file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'),
             outfile = file.path(main_path, fig_path, 'fig_dac_bau_l.pdf'))
+
+
+## extract legend for dac figure
+
+legend_dac <- ggplot() +
+  geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
+  geom_point(data = dac_dt %>% filter(scenario %in% scens,
+                                      oil_price_scenario == "reference case",
+                                      type == "DAC share",
+                                      metric %in% c("dac_share_emp", "dac_share_health"),
+                                      ccs_scenario == "no ccs") %>%
+               mutate(facet_lab = ifelse(category == "Health", "Health: avoided mortalities",
+                                         ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
+               filter(facet_lab == "Labor: forgone wages"), 
+             aes(x = ghg_2045_perc_reduction, y = value, color = scenario, shape = scenario), size = 3, alpha = 0.8) +
+  labs(title = NULL,
+       x = "GHG emissions reduction target (%, 2045 vs 2019)",
+       y = NULL,
+       color = NULL,
+       shape = NULL) +
+  scale_color_manual(name = NULL,
+                     labels = c("historic exports - Reference demand" = "Reference demand - historic exports",
+                                "low exports - Reference demand" = "Reference demand - low exports",
+                                "historic exports - Low carbon demand" = "Low carbon demand - historic exports",
+                                "low exports - Low carbon demand" = "Low carbon demand - low exports"),
+                     values = c("historic exports - Reference demand" = "#2F4858",
+                                "low exports - Reference demand" = "#F26419",
+                                "historic exports - Low carbon demand" = "#2F4858",
+                                "low exports - Low carbon demand" = "#F26419")) +
+  scale_shape_manual(name = NULL,
+                     labels = c("historic exports - Reference demand" = "Reference demand - historic exports",
+                                "low exports - Reference demand" = "Reference demand - low exports",
+                                "historic exports - Low carbon demand" = "Low carbon demand - historic exports",
+                                "low exports - Low carbon demand" = "Low carbon demand - low exports"),
+                     values = c("historic exports - Reference demand" = 16, 
+                                "low exports - Reference demand" = 16, 
+                                "historic exports - Low carbon demand" = 17, 
+                                "low exports - Low carbon demand" = 17)) +
+  theme_line_n +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(vjust = 0.5, hjust = 0.5),
+        axis.ticks.length.y = unit(0.1, 'cm'),
+        axis.ticks.length.x = unit(0.1, 'cm')) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE))
+
+legend_dac_2 <- get_legend(
+  legend_dac + 
+    theme(legend.title = element_text(size = 8),
+          legend.text = element_text(size = 8))
+  
+)
+
+## combine dac figure
+## ---------------------------------
+
+## shared x axis
+xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 8)
+
+fig3_dac_plot_grid <- plot_grid(
+  fig_dac_bau_h + labs(x = NULL),
+  fig_dac_bau_l + labs(x = NULL),
+  align = 'vh',
+  # labels = c("A", "B", "C", "D", "E", "F"),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  hjust = -1,
+  nrow = 1,
+  rel_widths = c(1, 1)
+)
+
+fig3_plot_grid2 <- plot_grid(
+  fig3_dac_plot_grid,
+  xaxis_lab,
+  legend_dac_2,
+  align = "v",
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  # hjust = -1,
+  ncol = 1,
+  rel_heights = c(0.75, 0.1, 0.15)
+  # rel_widths = c(1, 1),
+)
+
+
+## save combined dac figure
+ggsave(fig3_plot_grid2,
+       filename = file.path(main_path, fig_path, 'dac_health_labor_climate_impacts_fig.png'),
+       width = 180,
+       height = 100,
+       units = "mm")
+
+ggsave(fig3_plot_grid2,
+       filename = file.path(main_path, fig_path, 'health_labor_climate_impacts_fig.pdf'),
+       width = 180,
+       height = 160,
+       units = "mm",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'health_labor_climate_impacts_fig.pdf'),
+            outfile = paste0(main_path, fig_path, 'health_labor_climate_impacts_fig.pdf'))
+
 
   
 ## below is not updated
