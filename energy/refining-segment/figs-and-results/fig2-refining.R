@@ -14,41 +14,44 @@ library(cowplot)
 ## source figs
 items <- "figure_themes.R"
 
-walk(items, ~ here::here("energy", "figures-and-results", "academic-paper", .x) %>% source()) # load local items
+walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## paths
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/refining/figures/'
+# main_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path   = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
+fig_path    = 'outputs/academic-out/refining/figures/'
+save_path   = file.path(main_path, 'outputs/academic-out/refining/figures/2022-12-update')
 
 ## csv names
-levels_file <- 'state_levels_subset_refining.csv'
-cumulative_file <- 'state_cumulative_subset_refining.csv'
+levels_file = 'state_levels_subset_refining.csv'
+cumulative_file = 'state_cumulative_subset_refining.csv'
 
 ## read in data
-levels_dt <- fread(paste0(main_path, fig_path, levels_file))
-# cumulative_dt <- fread(paste0(main_path, fig_path, cumulative_file))
+levels_dt = fread(file.path(main_path, fig_path, levels_file))
+# cumulative_dt = fread(paste0(main_path, fig_path, cumulative_file))
 
 ## add scenario
 levels_dt[, scenario := paste0(refining_scenario, ' - ', demand_scenario, ' demand')]
-levels_dt <- levels_dt[!scenario %in% c("historic production - LC1 demand")]
+levels_dt = levels_dt[!scenario %in% c("historic production - LC1 demand")]
 levels_dt[, scenario := paste0(demand_scenario, " demand", ' - ', refining_scenario)]
 levels_dt[, scenario := str_replace(scenario, "LC1", "Low C.")]
 levels_dt[, short_scen := str_replace(scenario, "LC1", "Low C.")]
 levels_dt[, short_scen := str_replace(short_scen, "historic", "hist.")]
 
 ## factor
-levels_dt$scenario <- factor(levels_dt$scenario, levels = c('BAU demand - historic production', 
-                                                            'BAU demand - historic exports', 
-                                                            'BAU demand - low exports',
-                                                            'Low C. demand - historic exports',
-                                                            'Low C. demand - low exports'))
+levels_dt[, scenario := factor(scenario, levels = c('BAU demand - historic production', 
+                                                    'BAU demand - historic exports', 
+                                                    'BAU demand - low exports',
+                                                    'Low C. demand - historic exports',
+                                                    'Low C. demand - low exports'))]
 
 ## factor
-levels_dt$short_scen <- factor(levels_dt$short_scen, levels = c('BAU demand - hist. production', 
-                                                            'BAU demand - hist. exports', 
-                                                            'BAU demand - low exports',
-                                                            'Low C. demand - hist. exports',
-                                                            'Low C. demand - low exports'))
+levels_dt[, short_scen := factor(short_scen, levels = c('BAU demand - hist. production', 
+                                                        'BAU demand - hist. exports', 
+                                                        'BAU demand - low exports',
+                                                        'Low C. demand - hist. exports',
+                                                        'Low C. demand - low exports'))]
+
 ## target
 levels_dt[, target_label := paste0(round(ghg_2045_perc_reduction), "%")]
 
@@ -57,14 +60,14 @@ levels_dt[, target_label := paste0(round(ghg_2045_perc_reduction), "%")]
 ## -----------------------------------------------
 
 ## ref case, crude consumption
-crude_ref <- ggplot(levels_dt %>% filter(metric == "bbls_consumed",
+crude_ref = ggplot(levels_dt %>% filter(metric == "bbls_consumed",
                                          year > 2019,
                                          oil_price_scenario == "reference case",
                                          carbon_price_scenario == "price floor",
                                          ccs_scenario == "no ccs",
                                          refining_scenario != 'historic production'), aes(x = year, y = value / 1e6, color = scenario, lty = scenario)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "A. Crude consumption",
+  labs(title = "Crude consumption",
        x = NULL,
        y = "Barrels (million)") +
   scale_color_manual(name = "Scenario",
@@ -98,14 +101,14 @@ crude_ref <- ggplot(levels_dt %>% filter(metric == "bbls_consumed",
 
 
 ## legend figure
-prod_fig_legend <- ggplot(levels_dt %>% filter(metric == "bbls_consumed",
+prod_fig_legend = ggplot(levels_dt %>% filter(metric == "bbls_consumed",
                                                year > 2019,
                                                oil_price_scenario == "reference case",
                                                carbon_price_scenario == "price floor",
                                                ccs_scenario == "no ccs",
                                                refining_scenario != 'historic production'), aes(x = year, y = value / 1e6, color = scenario, lty = scenario)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "A. Crude consumption",
+  labs(title = "Crude consumption",
        x = NULL,
        y = "Barrels (million)") +
   scale_color_manual(name = "Scenario",
@@ -154,7 +157,7 @@ ghg_ref <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                              ccs_scenario == "no ccs",
                                              refining_scenario != 'historic production'), aes(x = year, y = value, color = scenario, lty = scenario)) +
   geom_line(size = 0.65, alpha = 0.9) +
-  labs(title = "B. GHG emissions",
+  labs(title = "GHG emissions",
        x = NULL,
        y = "Barrels (million)") +
   scale_color_manual(name = "Scenario",
@@ -188,7 +191,7 @@ ghg_ref <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
 ## part C: cumulative GHG x 2045 reductions
 ## ---------------------------------------------------------
 
-cumul_ghg <- levels_dt[metric == "total_state_ghg_MtCO2" & year > 2019, .(cumul_ghg = sum(value)), by = .(scen_id, oil_price_scenario, policy_intervention,
+cumul_ghg <- levels_dt[metric == "total_state_ghg_MtCO2" & year > 2019, .(cumul_ghg = sum(value)), by = .(scen_id, demand_scenario, refining_scenario,
                                                                                                           ghg_2045_perc, target_label)]
 
 
