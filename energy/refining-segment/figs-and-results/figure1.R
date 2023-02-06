@@ -17,7 +17,8 @@ library(extrafont)
 library(xlsx)
 
 ## paths 
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path             = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
+# main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 ct_out_path <- 'outputs/academic-out/refining/refining_2021-11-22/census-tract-results/'
 refin_out_path <- 'outputs/academic-out/refining/refining_2021-11-22/'
 fig_path <- 'outputs/academic-out/refining/figures/'
@@ -73,7 +74,7 @@ california <- states %>% filter(ID == "california") %>%
 ## ------------------
 
 ## Manual refineries capacity
-refin_locs_manuel <- fread(paste0(main_path, "/data/stocks-flows/processed/", refin_manual_file))
+refin_locs_manuel <- fread(file.path(main_path, "/data/stocks-flows/processed/", refin_manual_file))
 
 man_capacity <- refin_locs_manuel %>%
   filter(site_id %in% c(3422, 342)) %>%
@@ -81,20 +82,20 @@ man_capacity <- refin_locs_manuel %>%
 
 
 ## Refineries
-refin_locations <- st_read(paste0(main_path, "data/GIS/raw/Petroleum_Refineries_US_EIA/", refinery_locs)) 
+refin_locations <- st_read(file.path(main_path, "data/GIS/raw/Petroleum_Refineries_US_EIA/", refinery_locs)) 
 
 refin_crs <- st_crs(refin_locations)
 
 ## capacities
-renewable_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/processed/renewable_refinery_capacity.xlsx"), sheetIndex = 1))
+renewable_capacity <- setDT(read.xlsx(file.path(main_path, "/data/stocks-flows/processed/renewable_refinery_capacity.xlsx"), sheetIndex = 1))
 
 
-alt_air_capacity <- setDT(read.xlsx(paste0(main_path, "/data/stocks-flows/raw/altair_refinery_capacity.xlsx"), sheetIndex = 1))
+alt_air_capacity <- setDT(read.xlsx(file.path(main_path, "/data/stocks-flows/raw/altair_refinery_capacity.xlsx"), sheetIndex = 1))
 
 
 
 ## Refineries plus
-refin_new_locations <- fread(paste0(main_path, refinery_plus_locs)) %>%
+refin_new_locations <- fread(file.path(main_path, refinery_plus_locs)) %>%
   mutate(coords = gsub("^c\\(|\\)$", "", geometry)) %>%
   separate(coords, c('lon', 'lat'), sep = ',') %>%
   select(-geometry) %>%
@@ -103,7 +104,7 @@ refin_new_locations <- fread(paste0(main_path, refinery_plus_locs)) %>%
   st_transform(ca_crs)
 
 ## site out
-site_out <- fread(paste0(main_path, refin_out_path, site_out_file))
+site_out <- fread(file.path(main_path, refin_out_path, site_out_file))
 
 ## 2019 info
 site_out_2019 <- site_out %>% 
@@ -116,7 +117,7 @@ site_out_2019 <- site_out %>%
          innovation_scenario == "low innovation") 
 
 ## county out
-county_out <- fread(paste0(main_path, refin_out_path, '/county_refining_outputs.csv'))
+county_out <- fread(file.path(main_path, refin_out_path, '/county_refining_outputs.csv'))
 
 county_out_2019 <- county_out %>% 
   filter(year == 2019,
@@ -142,7 +143,7 @@ renewable_cap <- renewable_capacity %>%
 fut_cap <- rbind(aa_cap, renewable_cap)
 
 ## capacity
-refin_capacity <- fread(paste0(main_path, 'data/stocks-flows/processed/', refin_cap_file)) %>%
+refin_capacity <- fread(file.path(main_path, 'data/stocks-flows/processed/', refin_cap_file)) %>%
   mutate(site_id = as.character(site_id)) %>%
   filter(State == 'California') %>%
   select(site_id, barrels_per_day) %>%
@@ -163,7 +164,7 @@ county_boundaries <- st_read(file.path(main_path, "data/GIS/raw/CA_Counties/CA_C
   dplyr::select(adj_county_name = NAME)
 
 ## counties, no islands
-CA_counties <- st_read(paste0(main_path, "data/GIS/raw/CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
+CA_counties <- st_read(file.path(main_path, "data/GIS/raw/CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
   st_transform(ca_crs)
 
 ## remove islands
@@ -177,7 +178,7 @@ census_tracts <- st_read(file.path(main_path, "data/GIS/raw/census-tract/tl_2019
   select(census_tract, ALAND)
 
 ## DAC and CES
-dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
+dac_ces <- read_xlsx(file.path(main_path, 'data/health/raw/ces3results.xlsx'))
 
 ## dac
 dac_ces <- dac_ces %>%
@@ -217,7 +218,7 @@ ca_union <- st_union(CA_counties_noisl)
 
 ## map inset, CA with box around zoom area
 fig1_inset <- ggplot() +
-  geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
+  geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", linewidth = 0.4, show.legend = FALSE) +
   geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#C0C0C0", lwd = 0, color = "#9DBF9E", show.legend = TRUE) +
   # geom_sf(data = disp_win2_wgs84, shape = 0, size = 35, color = "red", stroke = 2) +# Draw box around zoomed region
   annotate(geom = "rect",
