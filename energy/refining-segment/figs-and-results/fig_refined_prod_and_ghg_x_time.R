@@ -107,11 +107,12 @@ coef = 19
 fig_fuel_demand_tot = ggplot() +
   geom_area(data = prod_df, aes(x = year, y = consumption_bge / 1e6, fill = fuel_adj)) +
   geom_line(data = ghg_df, aes(x = year, y = value * coef, color = label), linewidth = 1.3) + 
-  # geom_segment(x = 2019, xend = 2019, y = 0, yend = 750, color = 'black', linetype = 2)  +
   facet_wrap(demand_scenario_adj ~ refining_scenario, ncol = 3,
              labeller = labeller(refining_scenario = c('historic exports' = 'Historic Exports',
                                                        'historic production' = 'Historic Production',
                                                        'low exports' = 'Low Exports'))) +
+  geom_vline(xintercept=2019, linetype = 'dashed', color = 'black', linewidth = 1) +
+  # geom_segment(x = 2019, xend = 2019, y = 0, yend = 750, color = 'black', linetype = 2)  +
   labs(title = NULL,
        x = NULL,
        y = 'Million barrels of gasoline equivalent',
