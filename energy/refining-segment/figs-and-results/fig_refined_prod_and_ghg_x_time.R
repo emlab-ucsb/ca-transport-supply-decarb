@@ -14,10 +14,9 @@ ghg_file      = 'state_levels_subset_refining.csv'
 
 ## libraries -----
 library(data.table)
-
-## source figure themes -----
-items <- "figure_themes.R"
-walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
+library(ggplot2)
+library(hrbrthemes)
+library(stringr) 
 
 ## read in production file ------
 prod_df = fread(file.path(main_path, prod_path, prod_file))
