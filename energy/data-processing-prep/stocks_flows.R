@@ -4,7 +4,8 @@
 
 
 ## set directory
-data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/"
+# data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/"
+data_directory <- "/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn/data/stocks-flows" # meas directory
 save_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/project-materials/focus-areas-1-2/"
 
 
@@ -26,11 +27,11 @@ library(openxlsx)
 ## ---------------------------------------------------------------------------------------
 
 ## read in data
-port_imports <- read_csv(paste0(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"), skip = 4) ## first four rows mess up data
+port_imports <- read_csv(file.path(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"), skip = 4) ## first four rows mess up data
 port_imports <- clean_names(port_imports)
 
 ## get info from raw data
-port_imports_info <- read_csv(paste0(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"))
+port_imports_info <- read_csv(file.path(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"))
 port_imports_info <- port_imports_info[1:3, 1]
 colnames(port_imports_info) <- c("info")
 
@@ -529,100 +530,94 @@ wells2019 <- read_csv(paste0(data_directory, "raw/prod/2019CaliforniaOilAndGasWe
 ## -----------------------------------
 
 ## 2008
-ghg2008 <- read_xlsx(paste0(data_directory, "raw/2008-ghg-emissions-facility-2012-03-12.xlsx"), sheet = 3, skip = 11) %>%
-  select(-'...13') %>%
-  mutate(report_yr = 2008) %>%
-  select('Facility ID #', 'Facility Name', report_yr, 'CO2e Total \r\n(non-biomass + biomass)':'NAICS Code')
+ghg2008 = as.data.table(read.xlsx(file.path(data_directory, "raw/2008-ghg-emissions-facility-2012-03-12.xlsx"), sheet = 3, startRow = 12))
+ghg2008[, 13 := NULL]
+ghg2008[, report_yr := 2008]
+ghg2008 = ghg2008[, c(colnames(ghg2008)[1:2], 'report_yr', colnames(ghg2008)[3:12]), with = FALSE]
 
-mrr_colnames_2008 <- c("ARB_ID", "facility_name", "report_yr", "total_co2e", "co2e_nbio", "co2e_bio",
+mrr_colnames_2008 = c("ARB_ID", "facility_name", "report_yr", "total_co2e", "co2e_nbio", "co2e_bio",
                        "report_sub_status", "facil_city", "facil_state", "facil_zip",
                        "prim_report_sect", "sec_report_sect", "NAICS")
 
-colnames(ghg2008) <- mrr_colnames_2008
+colnames(ghg2008) = mrr_colnames_2008
 
 ## 2009
-ghg2009 <- read_xlsx(paste0(data_directory, "raw/2009-ghg-emissions-facility-2012-03-12.xlsx"), sheet = 3, skip = 11) %>%
-  select(-'...15') %>%
-  mutate(report_yr = 2009) %>%
-  select('Facility ID #', 'Facility Name', report_yr, 'CO2e Total \r\n(non-biomass + biomass)':'NAICS Code')
+ghg2009 = as.data.table(read.xlsx(file.path(data_directory, "raw/2009-ghg-emissions-facility-2012-03-12.xlsx"), sheet = 3, startRow = 12))
+ghg2009[, 15 := NULL]
+ghg2009[, report_yr := 2009]
+ghg2009 = ghg2009[, c(colnames(ghg2009)[1:2], 'report_yr', colnames(ghg2009)[3:14]), with = FALSE]
 
-mrr_colnames_2009 <- c("ARB_ID", "facility_name", "report_yr", "total_co2e", "co2e_nbio", "co2e_bio",
+mrr_colnames_2009 = c("ARB_ID", "facility_name", "report_yr", "total_co2e", "co2e_nbio", "co2e_bio",
                        "verif_overall_report", "free_mm", "free_nonconf", "facil_city", "facil_state", "facil_zip",
                        "prim_report_sect", "sec_report_sect", "NAICS")
 
-colnames(ghg2009) <- mrr_colnames_2009
+colnames(ghg2009) = mrr_colnames_2009
 
 ## 2010
-ghg2010 <- read_xlsx(paste0(data_directory, "raw/2010-ghg-emissions-2015-06-15.xlsx"), sheet = 3, skip = 14) %>%
-  select(-'...15') %>%
-  mutate(report_yr = 2010) %>%
-  select('Facility ID #', 'Facility Name', report_yr, 'CO2e Total \r\n(non-biomass + biomass)':'NAICS Code')
+ghg2010 = as.data.table(read.xlsx(file.path(data_directory, "raw/2010-ghg-emissions-2015-06-15.xlsx"), sheet = 3, startRow = 15))
+ghg2010[, 15 := NULL]
+ghg2010[, report_yr := 2010]
+ghg2010 = ghg2010[, c(colnames(ghg2010)[1:2], 'report_yr', colnames(ghg2010)[3:14]), with = FALSE]
 
-mrr_colnames_2010 <- c("ARB_ID", "facility_name", "report_yr", "total_co2e", "co2e_nbio", "co2e_bio",
+mrr_colnames_2010 = c("ARB_ID", "facility_name", "report_yr", "total_co2e", "co2e_nbio", "co2e_bio",
                        "verif_overall_report", "free_mm", "free_nonconf", "facil_city", "facil_state", "facil_zip",
                        "prim_report_sect", "sec_report_sect", "NAICS")
 
-colnames(ghg2010) <- mrr_colnames_2010
+colnames(ghg2010) = mrr_colnames_2010
 
 ## 2011
-ghg2011 <- read_xlsx(paste0(data_directory, "raw/2011-ghg-emissions-2018-11-05.xlsx"), sheet = 3, skip = 8) %>%
-  select(-'...4', -'...7', -'...13', -'...19', -'...23', -'...30')
+ghg2011 = as.data.table(read.xlsx(file.path(data_directory, "raw/2011-ghg-emissions-2018-11-05.xlsx"), sheet = 3, startRow = 9))
 
-mrr_colnames <- c("ARB_ID", "facility_name", "report_yr", "total_co2e", "AEL",
+mrr_colnames = c("ARB_ID", "facility_name", "report_yr", "total_co2e", "AEL",
                   "co2e_nb_ch4_n2o", "co2_bf", "fs_co2e", "fs_co2_bf", "elec_imp_co2e",
                   "emitter_covered_emis", "fs_covered_emis", "elec_imp_covered_emis", "total_covered_emis",
                   "total_nocovered_emis", "emissions_data", "product_data", "verif_body", "facil_city", "facil_state", "facil_zip",
                   "NAICS", "usepa_arb_subparts", "industry_sector")
   
-colnames(ghg2011) <- mrr_colnames
+colnames(ghg2011) = mrr_colnames
 
 ## 2012
-ghg2012 <- read_xlsx(paste0(data_directory, "raw/2012-ghg-emissions-2019-11-04.xlsx"), sheet = 3, skip = 8) %>%
-  select(-'...4', -'...7', -'...13', -'...19', -'...23', -'...30')
-
-colnames(ghg2012) <- mrr_colnames
+ghg2012 = as.data.table(read.xlsx(file.path(data_directory, "raw/2012-ghg-emissions-2019-11-04.xlsx"), sheet = 3, startRow = 9))
+colnames(ghg2012) = mrr_colnames
 
 ## 2013
-ghg2013 <- read_xlsx(paste0(data_directory, "raw/2013-ghg-emissions-2019-11-04.xlsx"), sheet = 3, skip = 8) %>%
-  select(-'...4', -'...7', -'...13', -'...19', -'...23', -'...30')
-
-colnames(ghg2013) <- mrr_colnames
+ghg2013 = as.data.table(read.xlsx(file.path(data_directory, "raw/2013-ghg-emissions-2019-11-04.xlsx"), sheet = 3, startRow = 9))
+colnames(ghg2013) = mrr_colnames
 
 ## 2014
-ghg2014 <- read_xlsx(paste0(data_directory, "raw/2014-ghg-emissions-2019-11-04.xlsx"), sheet = 3, skip = 8) %>%
-  select(-'...4', -'...7', -'...13', -'...19', -'...23', -'...30')
-
-colnames(ghg2014) <- mrr_colnames
+ghg2014 = as.data.table(read.xlsx(file.path(data_directory, "raw/2014-ghg-emissions-2019-11-04.xlsx"), sheet = 3, startRow = 9))
+colnames(ghg2014) = mrr_colnames
 
 ## 2015
-ghg2015 <- read_xlsx(paste0(data_directory, "raw/2015-ghg-emissions-2019-11-04.xlsx"), sheet = 3, skip = 8) %>%
-  select(-'...4', -'...7', -'...13', -'...19', -'...23', -'...30')
-
-colnames(ghg2015) <- mrr_colnames
+ghg2015 = as.data.table(read.xlsx(file.path(data_directory, "raw/2015-ghg-emissions-2019-11-04.xlsx"), sheet = 3, startRow = 9))
+colnames(ghg2015) = mrr_colnames
 
 ## 2016
-ghg2016 <- read_xlsx(paste0(data_directory, "raw/2016-ghg-emissions-2019-11-04.xlsx"), sheet = 3, skip = 8) %>%
-  select(-'...4', -'...7', -'...13', -'...19', -'...23')
-
-colnames(ghg2016) <- mrr_colnames
+ghg2016 = as.data.table(read.xlsx(file.path(data_directory, "raw/2016-ghg-emissions-2019-11-04.xlsx"), sheet = 3, startRow = 9))
+colnames(ghg2016) = mrr_colnames
 
 ## 2017
-ghg2017 <- read_xlsx(paste0(data_directory, "raw/2017-ghg-emissions-2019-11-04.xlsx"), sheet = 3, skip = 8) %>%
-  select(-'...4', -'...7', -'...13', -'...19', -'...23', -'...30')
-
-colnames(ghg2017) <- mrr_colnames
+ghg2017 = as.data.table(read.xlsx(file.path(data_directory, "raw/2017-ghg-emissions-2019-11-04.xlsx"), sheet = 3, startRow = 9))
+colnames(ghg2017) = mrr_colnames
 
 ## 2018
-ghg2018 <- read_xlsx(paste0(data_directory, "raw/2018-ghg-emissions-2019-11-04.xlsx"), sheet = 3, skip = 8) %>%
-  select(-'...4', -'...7', -'...13', -'...19', -'...23', -'...30')
-
+ghg2018 = as.data.table(read.xlsx(file.path(data_directory, "raw/2018-ghg-emissions-2019-11-04.xlsx"), sheet = 3, startRow = 9))
 colnames(ghg2018) <- mrr_colnames
+
+## 2019
+ghg2019 = as.data.table(read.xlsx(file.path(data_directory, "raw/2019-ghg-emissions-2022-11-04.xlsx"), sheet = 3, startRow = 9))
+colnames(ghg2019) = mrr_colnames
+
+## 2019
+ghg2020 = as.data.table(read.xlsx(file.path(data_directory, "raw/2020-ghg-emissions-2022-11-04.xlsx"), sheet = 3, startRow = 10))
+colnames(ghg2020) = mrr_colnames
+
 
 ## combine those that match up...
 ## 2008; 2009 & 2010; 2011:2018
 
 ## 2011:2018
-ghg_2011_2018 <- rbind(ghg2011, ghg2012, ghg2013, ghg2014, ghg2015, ghg2016, ghg2017, ghg2018) %>%
+ghg_2011_2018 <- rbind(ghg2011, ghg2012, ghg2013, ghg2014, ghg2015, ghg2016, ghg2017, ghg2018, ghg2019, ghg2020) %>%
   mutate(NAICS_code = str_extract(NAICS, pattern = START %R% one_or_more(DIGIT)))
 
 ghg_2009_2010 <- rbind(ghg2009, ghg2010) %>%
@@ -632,9 +627,9 @@ ghg_2009_2010 <- rbind(ghg2009, ghg2010) %>%
 ghg_2008 <- ghg2008 %>%
   mutate(NAICS_code = str_extract(NAICS, pattern = START %R% one_or_more(DIGIT)))
 
-write_csv(ghg_2011_2018, path = paste0(data_directory, "processed/ghg_mrr/ghg_mrr_2011-2018.csv"))   
-write_csv(ghg_2009_2010, path = paste0(data_directory, "processed/ghg_mrr/ghg_mrr_2009-2010.csv"))
-write_csv(ghg_2008, path = paste0(data_directory, "processed/ghg_mrr/ghg_mrr_2008.csv"))
+fwrite(ghg_2011_2018, file.path(data_directory, "processed/ghg_mrr/ghg_mrr_2011-2020_2023.csv"), row.names = F)   
+fwrite(ghg_2009_2010, file.path(data_directory, "processed/ghg_mrr/ghg_mrr_2009-2010_2023.csv"), row.names = F)
+fwrite(ghg_2008, file.path(data_directory, "processed/ghg_mrr/ghg_mrr_2008_2023.csv"), row.names = F)
 
 ## ghg inventory
 ## ----------------------------------------------
