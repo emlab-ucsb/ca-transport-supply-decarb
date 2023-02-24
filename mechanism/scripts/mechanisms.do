@@ -1,6 +1,5 @@
 *******************************************************
 *Code explores mechanisms
-*Author: Kyle Meng
 ********************************************************
 
 /***************************   HEADER **********************************/
@@ -12,16 +11,13 @@
 	set maxvar 32000
 	set scheme plotplain 
 	
-	//set local directory
-	if regexm("`c(pwd)'","/Users/kylemeng")==1  { //Kyle's machine
-		global startDir "/Users/kylemeng/Dropbox/work/research/CA_oil_equity/repo/mechanism"
-		sysdir set PLUS "$startDir/scripts/STATA_toolbox"
-	}
+	//set local directory (need to change manually)
+	global startDir "/Users/kylemeng/Dropbox/work/research/CA_oil_equity/repo/mechanism"
+
 	cd $startDir
-	if "$startDir"=="" exit 
-	disp "local path is $startDir"
 
 	//set subfolders
+	sysdir set PLUS "$startDir/scripts/STATA_toolbox"
 	global rawData "$startDir/rawData"
 	global processedData "$startDir/processedData"
 	global tempDir "$startDir/temp"
@@ -30,13 +26,7 @@
 
 	//Parameters
 	local setback_distance "setback_2500" 
-	local weight  "" 
-	if "`weight'"==""{
-		local wLabel "unweighted"
-	}
-	else {
-		local wLabel "prod_weighted"
-	}
+
 
 /******************************* ANALYSIS *************************************************/
 
@@ -78,7 +68,7 @@
 	replace oil_prod=1 if oil_prod==0
 
 
-//Cost vs GHG intensity
+//Appendix figure: Cost vs GHG intensity
 	reg ghg_intensity cost 
 	local r2: display %4.3f e(r2)
 	lincom cost
@@ -96,14 +86,14 @@
 	ylabel(,labsize(medium)) ///
 	legend(off)
 
-	graph export $figuresDir/cluster_ghg_intensity_cost.pdf, replace
 	graph export $figuresDir/cluster_ghg_intensity_cost.jpg, replace
 
 
+//Main text figure:
 //Top panel: total affected population
 	
 //Setback	
-	tw(lfitci affected_pop setback_coverage `weight', ///
+	tw(lfitci affected_pop setback_coverage, ///
 	lwidth(.5) lcolor("74 108 111") fcolor("74 108 111") alwidth(0) ///
 	), ///
 	xtitle("") ///
@@ -116,7 +106,7 @@
 
 
 //Excise tax	
-	tw(lfitci affected_pop cost `weight', ///
+	tw(lfitci affected_pop cost, ///
 	lwidth(.5) lcolor("255 94 91") fcolor("255 94 91") alwidth(0) ///
 	), ///
 	xtitle("") ///
@@ -129,7 +119,7 @@
 
 
 //Carbon tax	
-	tw(lfitci affected_pop ghg_intensity `weight', ///
+	tw(lfitci affected_pop ghg_intensity, ///
 	lwidth(.5) lcolor("252 185 125") fcolor("252 185 125") alwidth(0) ///
 	), ///
 	xtitle("") ///
@@ -140,8 +130,8 @@
 	saving($tempDir/health_affected_ghg.gph, replace) ///
 	legend(off)
 
+//Bottom panel: employment
 
-//Employment (county level analysis)
 	insheet using $rawData/county_characteristics.csv, comma names clear
 
 	rename wm_area_coverage setback_coverage
@@ -161,10 +151,9 @@
 
 	gen emp_per_bbl=emp/oil_prod
 
-//total employment
 
-	//Setback
-	tw(lfitci emp_per_bbl setback_coverage `weight', ///
+//Setback
+	tw(lfitci emp_per_bbl setback_coverage, ///
 	lwidth(.5) lcolor("74 108 111") fcolor("74 108 111") alwidth(0) ///
 	), ///
 	xtitle("Share of area affected by setback", size(large)) ///
@@ -176,8 +165,8 @@
 	legend(off)
 
 
-	//Excise tax	
-	tw(lfitci emp_per_bbl cost `weight', ///
+//Excise tax	
+	tw(lfitci emp_per_bbl cost, ///
 	lwidth(.5) lcolor("255 94 91") fcolor("255 94 91") alwidth(0) ///	
 	), ///
 	ytitle("") ///
@@ -189,8 +178,8 @@
 	legend(off)
 
 
-	//Carbon tax
-	tw(lfitci emp_per_bbl ghg_intensity `weight', ///
+//Carbon tax
+	tw(lfitci emp_per_bbl ghg_intensity, ///
 	lwidth(.5) lcolor("252 185 125") fcolor("252 185 125") alwidth(0) ///
 	), ///
 	ytitle("") ///
@@ -218,9 +207,14 @@
    gr_edit .plotregion1.graph`i'.title.DragBy 1.5 -54
 	}
 
-	graph export $figuresDir/health_emp_mechanism_`setback_distance'_`wLabel'.pdf, replace
-	graph export $figuresDir/health_emp_mechanism_`setback_distance'_`wLabel'.jpg, replace
+	graph export $figuresDir/health_emp_mechanism_`setback_distance'.jpg, replace
 
-
+	rm $tempDir/health_affected_setback.gph 
+	rm $tempDir/health_affected_cost.gph 
+	rm $tempDir/health_affected_ghg.gph 
+ 	rm $tempDir/emp_setback.gph 
+ 	rm $tempDir/emp_cost.gph 
+	rm $tempDir/emp_ghg.gph 
+	rm $tempDir/temp.dta
 
 
