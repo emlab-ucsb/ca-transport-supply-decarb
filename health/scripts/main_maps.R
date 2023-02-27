@@ -208,31 +208,3 @@ plot(total_pm25)
 
 
 
-
-
-ct_map <- ggplot() +
-  geom_sf(data = california, mapping = aes(), fill = "#FFFAF5", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = california, mapping = aes(), fill = "white", lwd = 0.4, show.legend = FALSE) +
-  # geom_sf(data = dac_areas , mapping = aes(geometry = geometry), fill = "#9DBF9E", lwd = 0, color = "white", show.legend = TRUE) +
-  geom_sf(data = ct_2019, mapping = aes(geometry = geometry, fill = pop_x_pm25), lwd = 0, alpha = 1, show.legend = TRUE) +
-  # geom_sf(data = county_19, mapping = aes(geometry = geometry), fill = NA, color = "#4A6C6F", lwd = 0.5) +
-  geom_sf_text(data = county_19, mapping = aes(geometry = geometry, label = adj_county_name), size = 2, fontface = "bold", color = "black") +
-  # scale_fill_gradient2(midpoint = 0, low = "red", mid = "white", high = "blue") +
-  labs(title = 'Population * PM2.5 by census tract',
-       fill = 'Population * PM2.5',
-       x = NULL,
-       y = NULL) +
-  scale_fill_gradientn(colors = blues_pal) +
-  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
-  # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-  theme_void() +
-  theme(
-    # legend.justification defines the edge of the legend that the legend.position coordinates refer to
-    legend.justification = c(0, 1),
-    # Set the legend flush with the left side of the plot, and just slightly below the top of the plot
-    legend.position = c(0.10, 0.15),
-    legend.title = element_text(size = 9)) +
-  guides(fill = guide_colourbar(title.position="top", 
-                                title.hjust = 0,
-                                direction = "horizontal"))
