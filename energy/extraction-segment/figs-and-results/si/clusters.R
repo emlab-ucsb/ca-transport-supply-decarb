@@ -95,8 +95,8 @@ ggsave(cluster_fig,
        dpi = 300,
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figure1a.pdf'),
-            outfile = paste0(main_path, fig_path, 'figure1a.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'cluster_si_fig.pdf'),
+            outfile = paste0(main_path, fig_path, 'cluster_si_fig.pdf'))
 
 
 
