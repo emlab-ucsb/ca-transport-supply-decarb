@@ -4,7 +4,8 @@
 
 # inputs ------------
 
-  emdata_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
+  # emdata_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
+  emdata_path   = file.path('/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn', 'outputs/stocks-flows')
   fprod_file    = 'crude_prod_x_field_revised.csv'
   emfac_file    = 'ghg_emissions_x_field_2018-2045.csv'
   ref_file      = 'refinery_ghg_emissions.csv'

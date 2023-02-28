@@ -186,6 +186,8 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure3-sb-new.pdf'),
 
 ## revised version, make them separately
 ## -------------------------------------------------------------------
+fig3_text_size <- 9.4
+
 fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
                                       setback_existing == 0,
@@ -202,10 +204,13 @@ fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        plot.title = element_text(hjust = 0),
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'))
+        
 
 fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
@@ -216,17 +221,19 @@ fig_bxm_b <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "b. Labor: Lost worker compensation",
+       title = "b. Labor: lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-15, 0) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        plot.title = element_text(hjust = 0),
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'))
 
 fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
@@ -244,8 +251,10 @@ fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        plot.title = element_text(hjust = 0),
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm')) 
 
@@ -268,7 +277,10 @@ fig_bxm_d <- ggplot(npv_dt %>% filter(target != 'BAU',
   ylim(0, 50) +
   theme_line_n +
   theme(legend.position = "none",
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -288,7 +300,10 @@ fig_bxm_e <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -309,7 +324,10 @@ fig_bxm_f <- ggplot(npv_dt %>% filter(target != 'BAU',
   theme_line_n +
   ylim(0, 50) +
   theme(legend.position = "none",
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -330,14 +348,19 @@ legend_fig <- ggplot(npv_dt %>% filter(target != 'BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(vjust = 0.5, hjust = 1),
+        legend.title = element_text(size = fig3_text_size),
+        legend.text = element_text(size = fig3_text_size),
+        plot.title = element_text(hjust = 0, size = fig3_text_size),
+        axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
+        axis.text.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
 legend_fig_3 <- get_legend(
   legend_fig + 
-    theme(legend.title = element_text(size = 7),
-          legend.text = element_text(size = 7))
+    theme(legend.title = element_text(size = fig3_text_size),
+          legend.text = element_text(size = fig3_text_size))
   
 )
 
@@ -346,7 +369,7 @@ legend_fig_3 <- get_legend(
 ## ---------------------------------
 
 ## shared x axis
-xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 7)
+xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 9)
 
 fig3_plot_grid <- plot_grid(
   fig_bxm_a,
@@ -479,7 +502,7 @@ fig_bxm_b_l <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "b. Labor: Lost worker compensation",
+       title = "b. Labor: lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-2, 0) +
@@ -669,7 +692,7 @@ fig_bxm_b_h <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "b. Labor: Lost worker compensation",
+       title = "b. Labor: lost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-70, 0) +
@@ -910,12 +933,12 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
                                             setback_existing == 0,
                                             type == "DAC share",
                                             metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
-                        mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
+                        mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortality",
                                                   ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
-                          filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
+                          filter(facet_lab == "Health: avoided mortality"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "a. Health: avoided mortalities",
+  labs(title = "a. Health: avoided mortality",
        color = "Policy",
        y = "DAC share",
        x = NULL) +
@@ -930,9 +953,15 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(vjust = 0.5, hjust=1),
+        axis.text = element_text(vjust = 0.5, hjust=1, size = 7),
         axis.ticks.length.y = unit(0.1, 'cm'),
-        axis.ticks.length.x = unit(0.1, 'cm')) 
+        axis.ticks.length.x = unit(0.1, 'cm'),
+        axis.line.y = element_line(color = 'black'),
+        axis.ticks.y = element_line(color = 'black'),
+        axis.title = element_text(size = 7),
+        title = element_text(size = 7),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7))
 
 fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                             oil_price_scenario == "reference case",
@@ -944,7 +973,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
                         filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "b. Labor: Lost worker compensation",
+  labs(title = "b. Labor: lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -955,11 +984,15 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        legend.key.width= unit(1, 'cm'),
-        axis.text.x = element_text(vjust = 0.5, hjust=1),
+        axis.text = element_text(vjust = 0.5, hjust=1, size = 7),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'),
-        axis.title = element_text(size = 7))
+        axis.line.y = element_line(color = 'black'),
+        axis.ticks.y = element_line(color = 'black'),
+        axis.title = element_text(size = 7),
+        title = element_text(size = 7),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 7))
 
 ## plot them together
 ## -------------------------------
@@ -1008,13 +1041,13 @@ fig4_plot_grid2 <- plot_grid(
 ggsave(fig4_plot_grid2,
        filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.png'),
        width = 100,
-       height = 70,
+       height = 60,
        units = "mm")
 
 ggsave(fig4_plot_grid2,
        filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'),
        width = 100,
-       height = 70,
+       height = 60,
        units = "mm",
        device = 'pdf')
 
@@ -1034,7 +1067,7 @@ fig_dac_bau_h_sb <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BA
                           filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "c. Health: avoided mortalities (setback = new wells)",
+  labs(title = "c. Health: avoided mortality(setback = new wells)",
        color = "Policy",
        y = "DAC share",
        x = NULL) +
@@ -1063,7 +1096,7 @@ fig_dac_bau_l_sb <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BA
                           filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "d. Labor: forgone wages (setback = new wells)",
+  labs(title = "d. Labor: lost worker compensation (setback = new wells)",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1158,7 +1191,7 @@ fig_dac_bau_h_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                           filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "a. Health: avoided mortalities",
+  labs(title = "a. Health: avoided mortality",
        color = "Policy",
        y = "DAC share",
        x = NULL) +
@@ -1188,7 +1221,7 @@ fig_dac_bau_l_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                           filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "b. Labor: Lost worker compensation",
+  labs(title = "b. Labor: lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1279,7 +1312,7 @@ fig_dac_bau_h_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                             filter(facet_lab == "Health: avoided mortalities"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "a. Health: avoided mortalities",
+  labs(title = "a. Health: avoided mortality",
        color = "Policy",
        y = "DAC share",
        x = NULL) +
@@ -1309,7 +1342,7 @@ fig_dac_bau_l_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU
                             filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "b. Labor: Lost worker compensation",
+  labs(title = "b. Labor: lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
@@ -1608,7 +1641,7 @@ fig_carbon_sb <- ggplot(csb_npv_dt %>%
                           filter(oil_price_scenario == "reference case" & setback_existing == 0), aes(x = labor, y = health, color = scenario_name)) +
   geom_point(size = 3, alpha = 0.8) +
   labs(y = "Health: avoided mortality",
-       x = "Labor: forgone wages",
+       x = "Labor: lost worker compensation",
        color = NULL) +
   facet_wrap(~ measure, ncol = 2, scales = "free") +
   scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
@@ -1641,7 +1674,7 @@ fig_carbon_sb_low <- ggplot(csb_npv_dt %>%
   geom_point(size = 2) +
   labs(title = "Low oil price",
        y = "Health: value of avoided mortalities",
-       x = "Labor: value of compensation loss",
+       x = "Labor: value of lost worker compensation",
        color = NULL) +
   facet_wrap(~ measure, scales = "free") +
   scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
@@ -1671,7 +1704,7 @@ fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high o
   geom_point(size = 2) +
   labs(title = "High oil price",
        y = "Health: value of avoided mortalities",
-       x = "Labor: value of compensation loss",
+       x = "Labor: value of lost worker compensation",
        color = NULL) +
   facet_wrap(~ measure, scales = "free") +
   scale_color_manual(values = c("Carbon tax + 0ft setback" = "#95F9C3",
@@ -2058,6 +2091,15 @@ npv_90$scen_name <- factor(npv_90$scen_name, levels = c("excise tax", "Carbon ta
                                                         "Carbon tax + 2500ft setback (all wells)", 
                                                         "Carbon tax + 5280ft setback (all wells)"))
 
+npv_90 <- npv_90 %>%
+  mutate(adj_title = ifelse(title == "Labor: forgone wages", "Labor: lost worker compensation",
+                            ifelse(title == "Health: avoided mortality", "Health: avoided mortality",
+                                   "Climate: avoided damage")))
+
+npv_90$adj_title <- factor(npv_90$adj_title, levels = c("Health: avoided mortality",
+                                                        "Labor: lost worker compensation",
+                                                        "Climate: avoided damage"))
+
 
 ## fig
 fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
@@ -2068,7 +2110,7 @@ fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
   labs(color = NULL,
        y = NULL,
        x = NULL) +
-  facet_grid(measure~title, scales = "free_y") +
+  facet_grid(measure~adj_title, scales = "free_y") +
   # scale_y_continuous(expand = c(0, 0), limits = c(-15, 10)) +
   # scale_color_manual(values = c('1000ft setback GHG' = "#A3A500",
   #                               '2500ft setback GHG' = '#00BF7D',
@@ -2103,7 +2145,7 @@ fig_benefit_x_metric2_low <- ggplot(npv_90 %>% filter(target != 'BAU',
        color = NULL,
        y = NULL,
        x = NULL) +
-  facet_grid(measure~title, scales = "free_y") +
+  facet_grid(measure~adj_title, scales = "free_y") +
   theme_line +
   theme(legend.position = "none",
         legend.box = "vertical",
@@ -2128,7 +2170,7 @@ fig_benefit_x_metric2_high <- ggplot(npv_90 %>% filter(target != 'BAU',
        color = NULL,
        y = NULL,
        x = NULL) +
-  facet_grid(measure~title, scales = "free_y") +
+  facet_grid(measure~adj_title, scales = "free_y") +
   theme_line +
   theme(legend.position = "none",
         legend.box = "vertical",

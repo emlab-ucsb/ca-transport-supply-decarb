@@ -16,11 +16,6 @@ library(haven)
 library(readr)
 library(dplyr)
 rm(list=ls())
-#DANAE'S MACHINE
-outputFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/academic_output"
-sourceFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix"
-inmapExFiles  <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix/inmap_processed_srm/extraction"
-inmapReFiles  <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix/inmap_processed_srm/refining"
 #EMLAB'S DRIVE
 #outputFiles <- "emlab/projects/current-projects/calepa-cn/outputs/academic-out"
 #sourceFiles <- "emlab/projects/current-projects/calepa-cn/data/health/source_receptor_matrix"

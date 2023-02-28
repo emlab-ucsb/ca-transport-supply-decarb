@@ -4,7 +4,8 @@
 
 # inputs ---------
 
-  proj_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
+  # proj_path       = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn'
+  proj_path       = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
   refin_scens     = 'refinery_scenario_inputs.csv'
   its_file        = 'its_demand_bau_and_lc1_2020_2045.csv'
   jet_file        = 'cec_jet_fuel_demand_incl_military_forecasted_2020_2045.csv'
@@ -39,7 +40,8 @@
   
 # outputs ---------
 
-  save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+  # save_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+  save_path   = file.path(proj_path, 'outputs/predict-production')
   cur_date    = Sys.Date()
   run_name    = 'CUF0.6' ## main run
   # run_name    = 'CUF0.3'
@@ -313,7 +315,7 @@
     region_fuel_ratio[fuel == 'crude_bbl', fuel := 'crude']
     region_fuel_ratio[, years_used := '2015-2019']
     
-    fwrite(region_fuel_ratio, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products_region_proportion.csv'), row.names = F)
+    # fwrite(region_fuel_ratio, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products_region_proportion.csv'), row.names = F)
     
     region_fuel_ratio[, years_used := NULL]
 
@@ -441,9 +443,9 @@
     refinery_capacity_ratio[, capacity_ratio_within_region := capacity_ratio]
     refinery_capacity_ratio[, capacity_ratio_within_state := barrels_per_year/sum(barrels_per_year)]
     
-    fwrite(refinery_capacity_ratio[, .(site_id, refinery_name, location, region, barrels_per_day, barrels_per_year,
-                                       capacity_ratio_within_region, capacity_ratio_within_state)],
-           file.path(proj_path, 'outputs/stocks-flows/refinery_capacity_ratios.csv'), row.names = F)
+    # fwrite(refinery_capacity_ratio[, .(site_id, refinery_name, location, region, barrels_per_day, barrels_per_year,
+    #                                    capacity_ratio_within_region, capacity_ratio_within_state)],
+    #        file.path(proj_path, 'outputs/stocks-flows/refinery_capacity_ratios.csv'), row.names = F)
     
     
   # use heat content balance to get historical relationship between crude and refined products -------
@@ -467,7 +469,7 @@
     setcolorder(crude_refined_region_csv, c('region', 'crude_bbl', 'gasoline_bbl', 'diesel_bbl', 'jet_bbl', 
                                             'ei_crude_mmbtu_bbl', 'ei_gasoline_mmbtu_bbl', 'ei_diesel_mmbtu_bbl', 'ei_jet_mmbtu_bbl', 'coef'))
     
-    fwrite(crude_refined_region_csv, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products__energy_intensities_and_coefficients.csv'), row.names = F)
+    # fwrite(crude_refined_region_csv, file.path(proj_path, 'outputs/stocks-flows/crude_and_refined_products__energy_intensities_and_coefficients.csv'), row.names = F)
     
     crude_refined_tot = crude_refined_week[, lapply(.SD, sum, na.rm = T), 
                                               .SDcols = c('crude_bbl', 'gasoline', 'diesel', 'jet', 'residual')]
@@ -492,7 +494,7 @@
     pal_compare = c('reported' = '#46726f',
                     'estimated' = '#e5938c')
     
-    fig_crude_compare = ggplot(compare_hist_crude_long_tot[year < 2020], aes(x = year, y = bbl/1e6, color = type)) + geom_line(size = 1) +
+    fig_crude_compare = ggplot(compare_hist_crude_long_tot[year < 2020], aes(x = year, y = bbl/1e6, color = type)) + geom_line(linewidth = 1) +
       labs(title = 'Total crude consumed (2014-2019)',
            subtitle = 'Million barrels',
            x = NULL,
@@ -2408,7 +2410,7 @@
                                   by = .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year,
                                          site_id, refinery_name, location, region, fuel)]
     
-    # combine results
+    # combine results and calculate gasoline equivalent
       
       indiv_prod = rbindlist(list(indiv_prod_1, indiv_prod_2), use.names = T, fill = T)
       indiv_prod[fuel %like% 'gasoline', production_bge := production_bbl]
@@ -2447,6 +2449,18 @@
       setnames(indiv_prod_output, 'production_bbl', 'value')
       setcolorder(indiv_prod_output, c('demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario', 'year', 
                                        'site_id', 'refinery_name', 'location', 'region', 'cluster', 'fuel', 'source', 'boundary', 'type', 'units', 'value'))
+      
+      # get outputs version (bge)
+      
+      indiv_prod_output_bge = indiv_prod[, .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, 
+                                         site_id, refinery_name, location, region, cluster, fuel, production_bge)]
+      indiv_prod_output_bge[, type := 'production']
+      indiv_prod_output_bge[, units := 'bge']
+      indiv_prod_output_bge[, source := 'total']
+      indiv_prod_output_bge[, boundary := 'complete']
+      setnames(indiv_prod_output_bge, 'production_bge', 'value')
+      setcolorder(indiv_prod_output_bge, c('demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario', 'year', 
+                                           'site_id', 'refinery_name', 'location', 'region', 'cluster', 'fuel', 'source', 'boundary', 'type', 'units', 'value'))
       
       
   # refinery-level: crude consumption -----------
@@ -2491,6 +2505,10 @@
       
       setorder(indiv_cons, demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, site_id, fuel, source)
 
+    # calculate gasoline equivalent 
+      indiv_cons[fuel %like% 'crude', consumption_bge := consumption_bbl * (ei_crude/ei_gasoline)]
+
+      
     # get outputs version
       
       indiv_cons_output = indiv_cons[, .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, 
@@ -2501,6 +2519,18 @@
       setnames(indiv_cons_output, 'consumption_bbl', 'value')
       setcolorder(indiv_cons_output, c('demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario', 'year', 
                                        'site_id', 'refinery_name', 'location', 'region', 'cluster', 'fuel', 'source', 'boundary', 'type', 'units', 'value'))
+      
+      # get outputs version (bge)
+      
+      indiv_cons_output_bge = indiv_cons[, .(demand_scenario, refining_scenario, innovation_scenario, carbon_price_scenario, ccs_scenario, year, 
+                                             site_id, refinery_name, location, region, cluster, fuel, source, consumption_bge)]
+      indiv_cons_output_bge[, type := 'consumption']
+      indiv_cons_output_bge[, units := 'bge']
+      indiv_cons_output_bge[, boundary := 'complete']
+      setnames(indiv_cons_output_bge, 'consumption_bge', 'value')
+      setcolorder(indiv_cons_output_bge, c('demand_scenario', 'refining_scenario', 'innovation_scenario', 'carbon_price_scenario', 'ccs_scenario', 'year', 
+                                           'site_id', 'refinery_name', 'location', 'region', 'cluster', 'fuel', 'source', 'boundary', 'type', 'units', 'value'))
+      
       
       
   # refinery-level: emissions -----------
@@ -2778,7 +2808,7 @@
       
   # join outputs at each spatial resolution -------
     
-    outputs_indiv = rbindlist(list(indiv_prod_output, indiv_cons_output, indiv_ghg_output), use.names = T, fill = T)
+    outputs_indiv = rbindlist(list(indiv_prod_output, indiv_prod_output_bge, indiv_cons_output, indiv_cons_output_bge, indiv_ghg_output), use.names = T, fill = T)
     outputs_clus = rbindlist(list(clus_prod_output, clus_cons_output, clus_ghg_output), use.names = T, fill = T)
     outputs_state = rbindlist(list(state_prod_output, state_cons_output, state_ghg_output, in_state_ghg, out_state_ghg), use.names = T, fill = T)
     

@@ -1,9 +1,9 @@
-# comparing ITS fuel demand and refined fuel produced
-# created: may 16, 2022
+# comparing ITS fuel demand and refined fuel produced (2023 update)
+# created: jan 6, 2023
 # author: tracey mangin and meas meng
 
 # ------------------ paths -------------------
-ref_results_date <- '2021-11-22'
+ref_results_date <- '2022-12-01'
 
 # main_path            <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 main_path             = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
@@ -30,51 +30,12 @@ library(ggplot2)
 library(hrbrthemes)
 library(extrafont)
 
-# source items ------
-
-# source ccs emissions mean b calculation script
-items = list.files(here::here('src'))
-sapply(here::here('src', items), source)
-
-# # source fig themes
-# items <- "figure_themes.R"
-# 
-# walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
-
 # load results --------
-dt_res_raw <- fread(paste0(refining_folder_path, res_file))
-# dt_res = fread(file.path(res_path, res_file), header = T)
 dt_its = fread(file.path(data_path, its_file), header = T)
 dt_jet = fread(file.path(data_path, jet_file), header = T)
 dt_inter = fread(file.path(data_path, inter_file), header = T)
 
-# get selected scenarios --------
-
-dt_res_raw[demand_scenario == 'BAU' & 
-         refining_scenario == 'historic production' &
-         innovation_scenario == 'low innovation' &
-         ccs_scenario == 'no ccs' &
-         carbon_price_scenario == 'price floor', scenario := 'BAU Demand']
-dt_res_raw[demand_scenario == 'LC1' & 
-         refining_scenario == 'historic production' &
-         innovation_scenario == 'low innovation' &
-         ccs_scenario == 'no ccs' &
-         carbon_price_scenario == 'price floor', scenario := 'LC Demand']
-
-dt_res = dt_res_raw[!is.na(scenario)]
-# dt_res = dt_res[!fuel == 'exports']
-
-# dt_res = dt_res_raw[type == 'consumption' & units == 'bge']
-## filter for production?
-dt_res = dt_res[type == 'production' & units == 'bge']
-
-dt_res = unique(dt_res[, .(demand_scenario, year, fuel, source, type, units, value)])
-dt_res[, consumption_bge := value]
-
-dt_inter = dt_inter[scenario == 'Mid Case']
-
 # calculate bge ------
-
 dt_inter[, consumption_bge := total_jet_fuel_demand_gge/42]
 dt_its[, consumption_bge := consumption_gge/42]
 dt_jet[, consumption_bge := consumption_gge/42]
@@ -82,8 +43,9 @@ dt_jet[, j := 1]
 
 # unique set of scenarios -------
 
+dt_inter = dt_inter[scenario == 'Mid Case']
 un_scens = CJ(year = 2017:2050,
-              scenario = c('BAU Demand', 'LC Demand'),
+              scenario = c('Reference Demand', 'Low Carbon Demand'),
               j = 1)
 
 # create full set of intrastate jet fuel demand 
@@ -118,8 +80,8 @@ dt_jet_all = melt(dt_jet_2,
                   measure.vars = c('intra_consumption_bge', 'inter_consumption_bge'),
                   variable.name = 'fuel',
                   value.name = 'consumption_bge')
-dt_jet_all[fuel == 'intra_consumption_bge', fuel := 'jet (intrastate)']
-dt_jet_all[fuel == 'inter_consumption_bge', fuel := 'jet (interstate + military)']
+dt_jet_all[fuel == 'intra_consumption_bge', fuel := 'jet fuel (intrastate)']
+dt_jet_all[fuel == 'inter_consumption_bge', fuel := 'jet fuel (interstate + military)']
 
 # combine demand ------
 
@@ -135,33 +97,37 @@ dt_demand[, fuel := gsub('Ldv', 'LDV', fuel)]
 dt_demand[, fuel := gsub('Hdv', 'HDV', fuel)]
 
 # rename scenario -------
-dt_demand[scenario == 'BAU', scenario := 'BAU Demand']
-dt_demand[scenario == 'LC1', scenario := 'LC Demand']
+dt_demand[scenario == 'BAU', scenario := 'Reference Demand']
+dt_demand[scenario == 'LC1', scenario := 'Low Carbon Demand']
 
 # reorder factor levels ------
 
-# dt_res[, scenario := factor(scenario, levels = c('R-BAU', 'LCR1', 'LCR2'))]
-dt_res[, fuel := factor(fuel, levels = rev(c('gasoline', 'drop-in gasoline', 'diesel', 'renewable diesel', 'jet', 'sustainable aviation fuel', 'exports')))]
-setnames(dt_res, 'demand_scenario', 'scenario')
 dt_demand[, fuel := factor(fuel, levels = rev(c('Gasoline', 'Renewable Gasoline', 'Diesel', 'Renewable Diesel', 
-                                                'Jet (Intrastate)', 'Sustainable Aviation Fuel', 'Jet (Interstate + Military)',
+                                                'Jet Fuel (Intrastate)', 'Sustainable Aviation Fuel', 'Jet Fuel (Interstate + Military)',
                                                 'Ethanol', 'Biodiesel', 'Renewable Natural Gas', 'LDV Hydrogen', 'HDV Hydrogen', 'LDV Electricity', 'HDV Electricity')))]
 
-# get line of ITS fuels included -------
 
-inc_its = rbindlist(list(dt_res[fuel %in% c('gasoline', 'drop-in gasoline', 'diesel', 'renewable diesel', 'sustainable aviation fuel')],
-                         dt_demand[fuel == 'Jet (Intrastate)']),
-                    use.names = T, fill = T)
+# get line of Total intrastate transportation liquid fuels demand included -------
+
+inc_its = dt_demand[fuel %in% c('Gasoline', 'Renewable Gasoline', 'Diesel', 'Renewable Diesel', 
+                                'Jet Fuel (Intrastate)', 'Sustainable Aviation Fuel')]
 inc_its = inc_its[, .(consumption_bge = sum(consumption_bge, na.rm = T)), by = .(scenario, year)]
-inc_its[scenario == 'BAU', scenario := 'BAU Demand']
-inc_its[scenario == 'LC1', scenario := 'LC Demand']
+inc_its[scenario == 'BAU', scenario := 'Reference Demand']
+inc_its[scenario == 'LC1', scenario := 'Low Carbon Demand']
 
 # get line of total fuels included (not exports) ---------
 
-inc_full = dt_res[fuel %in% c('gasoline', 'drop-in gasoline', 'diesel', 'renewable diesel', 'jet', 'sustainable aviation fuel')]
+inc_full = dt_demand[fuel %in% c('Gasoline', 'Renewable Gasoline', 'Diesel', 'Renewable Diesel', 
+                                'Jet Fuel (Intrastate)', 'Sustainable Aviation Fuel', 'Jet Fuel (Interstate + Military)')]
 inc_full = inc_full[, .(consumption_bge = sum(consumption_bge, na.rm = T)), by = .(scenario, year)]
-inc_full[scenario == 'BAU', scenario := 'BAU Demand']
-inc_full[scenario == 'LC1', scenario := 'LC Demand']
+inc_full[scenario == 'BAU', scenario := 'Reference Demand']
+inc_full[scenario == 'LC1', scenario := 'Low Carbon Demand']
+
+# refactor scenario -------
+
+dt_demand[, scenario := factor(scenario, levels = c('Reference Demand', 'Low Carbon Demand'))]
+inc_its[, scenario := factor(scenario, levels = c('Reference Demand', 'Low Carbon Demand'))]
+inc_full[, scenario := factor(scenario, levels = c('Reference Demand', 'Low Carbon Demand'))]
 
 # ------------------------- plots ------------------------- 
 
@@ -174,42 +140,43 @@ inc_full[scenario == 'LC1', scenario := 'LC Demand']
 #              'Renewable Natural Gas'	=	'#ad647c',
 #              'Biodiesel'	=	'#7a1134',
 #              'Ethanol'	=	'#dadbdf',
-#              'Jet (Interstate)' = '#61c8c1',
+#              'Jet Fuel (Interstate + Military)' = '#61c8c1',
 #              'Sustainable Aviation Fuel'	=	'#169486',
-#              'Jet (Intrastate)'	=	'#106c66',
+#              'Jet Fuel (Intrastate)'	=	'#106c66',
 #              'Renewable Diesel'	=	'#599aa8',
 #              'Diesel'	=	'#0f5e74',
-#              'Drop-In Gasoline'	=	'#4bbbe6',
+#              'Renewable Gasoline'	=	'#4bbbe6',
 #              'Gasoline'	=	'#0f7ac3')
-pal_fuel = c('Gasoline' = '#FF6E1B',
-             'Renewable Gasoline' = '#ffb286',
-             'Diesel' = '#E44C9A',
-             'Renewable Diesel' = '#e59cc2',
-             'Jet (Intrastate)' = '#00778B',
-             'Sustainable Aviation Fuel' = '#00A3AD',
-             'Jet (Interstate + Military)' = '#8cbac4',
-             'HDV Hydrogen'	=	'#BEB6AF',
-             'LDV Hydrogen'	=	'#DBD5CD',
-             'HDV Electricity'	=	'#7C7E7F',
-             'LDV Electricity'	=	'#8F8884',
-             'Renewable Natural Gas'	=	'#B4975A',
-             'Biodiesel'	=	'#005581',
-             'Ethanol'	=	'#FFD200')
 
-labs_fuel = c('Gasoline' = 'Gasoline', 
-              'Renewable Gasoline' = 'Renewable gasoline', 
-              'Diesel' = 'Diesel', 
-              'Renewable Diesel' = 'Renewable diesel', 
-              'Jet (Intrastate)' = 'Jet (intrastate)', 
-              'Sustainable Aviation Fuel' = 'Sustainable aviation fuel',
-              'Jet (Interstate + Military)' = 'Jet (interstate + military)',
-              'HDV Hydrogen'	=	'HDV hydrogen',
-              'LDV Hydrogen'	=	'LDV hydrogen',
-              'HDV Electricity'	=	'HDV electricity',
-              'LDV Electricity'	=	'LDV electricity',
-              'Renewable Natural Gas'	=	'Renewable natural gas',
-              'Biodiesel'	=	'Biodiesel',
-              'Ethanol'	=	'Ethanol')
+# pal_fuel = c('HDV Hydrogen'	=	'#fbb4ae',
+#              'LDV Hydrogen'	=	'#b3cde3',
+#              'HDV Electricity'	=	'#ccebc5',
+#              'LDV Electricity'	=	'#decbe4',
+#              'Renewable Natural Gas'	=	'#fed9a6',
+#              'Biodiesel'	=	'#ffffcc',
+#              'Ethanol'	=	'#e5d8bd',
+#              'Jet Fuel (Interstate + Military)' = '#eea320',
+#              'Sustainable Aviation Fuel'	=	'#6dbbbf',
+#              'Jet Fuel (Intrastate)'	=	'#8da0ab',
+#              'Renewable Diesel'	=	'#eb8f73',
+#              'Diesel'	=	'#008a84',
+#              'Renewable Gasoline'	=	'#f15a40',
+#              'Gasoline'	=	'#00526d')
+
+pal_fuel = c('HDV Hydrogen'	=	'#fbb4ae',
+             'LDV Hydrogen'	=	'#b3cde3',
+             'HDV Electricity'	=	'#ccebc5',
+             'LDV Electricity'	=	'#decbe4',
+             'Renewable Natural Gas'	=	'#fed9a6',
+             'Biodiesel'	=	'#ffffcc',
+             'Ethanol'	=	'#e5d8bd',
+             'Jet Fuel (Interstate + Military)' = '#A75D5D',
+             'Sustainable Aviation Fuel'	=	'#D3756B',
+             'Jet Fuel (Intrastate)'	=	'#FFC3A1',
+             'Renewable Diesel'	=	'#366BA1',
+             'Diesel'	=	'#ABC7E3',
+             'Renewable Gasoline'	=	'#3C6255',
+             'Gasoline'	=	'#A6BB8D')
 
 theme_line = theme_ipsum(base_family = 'Arial',
                          grid = 'Y', 
@@ -235,13 +202,17 @@ theme_line = theme_ipsum(base_family = 'Arial',
         plot.margin = unit(c(1,3,1,1), 'lines'),
         plot.background = element_rect(color = 'white'))
 
+
+
 # plot: area chart of fuel demand ---------
 
 fig_demand = ggplot() +
   geom_area(data = dt_demand, aes(x = year, y = consumption_bge/1e6, fill = fuel, group = fuel)) +
-  # geom_line(data = inc_its, aes(x = year, y = consumption_bge/1e6, lty = 'its'), linewidth = 1, color = 'black') +
+  geom_line(data = inc_its, aes(x = year, y = consumption_bge/1e6, lty = 'its'), linewidth = 1, color = 'black') +
   geom_line(data = inc_full, aes(x = year, y = consumption_bge/1e6, lty = 'all'), linewidth = 1, color = 'black') +
-  facet_wrap(. ~ scenario, ncol = 1) +
+  facet_wrap(~ scenario, nrow = 2) +
+  # facet_wrap(vars(scenario)) +
+  # facet_grid(~factor(scenario, levels = c('Reference Demand', 'Low Carbon Demand'))) +
   labs(title = NULL,
        subtitle = NULL,
        x = 'Year',
@@ -249,18 +220,18 @@ fig_demand = ggplot() +
        fill = NULL) +
   scale_x_continuous(breaks = c(2020, seq(2025, 2045, 5)), limits = c(2020, 2045), expand = c(0,0)) +
   scale_y_continuous(expand = c(0,0), breaks = seq(0, 700, 100)) +
-  scale_fill_manual(values = pal_fuel, labels = labs_fuel, guide = guide_legend(nrow = 7)) + 
+  scale_fill_manual(values = pal_fuel, guide = guide_legend(nrow = 7)) + 
   scale_linetype_manual(name = NULL, 
-                        labels = c('its' = 'Study 1 demand included in model', 
-                                   'all' = 'Total demand (excluding exports) included in model'),
+                        labels = c('its' = 'Total intrastate transportation\nliquid fuels demand supplied by oil refineries', 
+                                   'all' = 'Total transportation liquid fuels\ndemand including interstate and military aviation'),
                         values = c('its' = 3,
                                    'all' = 2),
                         guide = guide_legend(nrow = 2)) +
   theme_line 
-# fig_demand
+fig_demand
 
 ggsave(fig_demand,
-       filename = file.path(fig_path, 'its_demand_and_production.png'),
+       filename = file.path(fig_path, 'its_demand_and_production_2023.png'),
        width = 6.5,
        height = 8,
        dpi = 400, 
@@ -268,14 +239,12 @@ ggsave(fig_demand,
        device = 'png')
 
 ggsave(fig_demand,
-       filename = file.path(fig_path, 'its_demand_and_production.pdf'),
+       filename = file.path(fig_path, 'its_demand_and_production_2023.pdf'),
        width = 6.5,
        height = 8,
        dpi = 400, 
        units = 'in', 
        device = 'pdf')
 
-embed_fonts(file.path(fig_path, 'its_demand_and_production.pdf'),
-            outfile = file.path(fig_path, 'its_demand_and_production.pdf'))
-
-
+embed_fonts(file.path(fig_path, 'its_demand_and_production_2023.pdf'),
+            outfile = file.path(fig_path, 'its_demand_and_production_2023.pdf'))

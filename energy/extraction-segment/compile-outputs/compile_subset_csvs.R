@@ -13,9 +13,9 @@ academic_out_path <- file.path(main_path, 'outputs/academic-out/extraction/')
 input_path        <- file.path(main_path, 'outputs/academic-out/extraction/nature-energy-rev-outputs/')
 
 ## read in saved rds files - updates as needed
-extraction_folder = 'extraction_2022-12-27'
+extraction_folder = 'extraction_2023-01-04'
 
-external_path <- '/Volumes/calepa/academic-out/extraction_2022-12-27/'
+external_path <- '/Volumes/calepa/academic-out/extraction_2023-01-04/'
 
 ## get correct path
 
@@ -34,7 +34,7 @@ state_path     = paste0(compiled_path, 'state-results/')
 state_hs_path  = paste0(compiled_path, 'state-results/health_sens/')
 county_path    = paste0(compiled_path, 'county-results/')
 ct_path        = paste0(compiled_path, 'census-tract-results/')
-ct_hs_path     = paste0(compiled_path, 'census-tract-county-results/')
+ct_hs_path     = paste0(compiled_path, 'health-county-results/')
 
 
 ## files
@@ -108,7 +108,7 @@ state_subset_all     <- rbindlist(state_out_list)
 state_hs_subset_all  <- rbindlist(state_hs_out_list)
 
 fwrite(ct_subset_all, paste0(ct_path, "subset_census_tract_results.csv"))
-fwrite(ct_hs_subset_all, paste0(ct_hs_path, "subset_census_tract_hs_results.csv"))
+fwrite(ct_hs_subset_all, paste0(ct_hs_path, "subset_county_hs_results.csv"))
 fwrite(county_subset_all, paste0(county_path, "subset_county_results.csv"))
 fwrite(state_subset_all, paste0(state_path, "subset_state_results.csv"))
 fwrite(state_hs_subset_all, paste0(state_hs_path, "subset_state_hs_results.csv"))
