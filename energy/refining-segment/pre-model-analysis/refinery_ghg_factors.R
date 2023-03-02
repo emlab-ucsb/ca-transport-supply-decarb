@@ -13,8 +13,8 @@
 # outputs --------
   
   save_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
-  save_cluster  = 'refinery_ghg_factor_x_cluster_revised.csv'
-  save_indiv    = 'refinery_ghg_factor_x_indiv_refinery_revised.csv'
+  save_cluster  = 'refinery_ghg_factor_x_cluster_revised_2023.csv'
+  save_indiv    = 'refinery_ghg_factor_x_indiv_refinery_revised_2023.csv'
   
 # load packages ------
   

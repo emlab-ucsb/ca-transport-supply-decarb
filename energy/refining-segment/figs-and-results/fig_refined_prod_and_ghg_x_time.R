@@ -4,13 +4,17 @@
 # taken a lot from fig_refined_prod_x_time.R
 
 ## paths ------
-# main_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-main_path     = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
-fig_path      = file.path(main_path, 'outputs/academic-out/refining/figures/2022-12-update')
-prod_path     = 'outputs/predict-production/refining_2021-11-22/CUF0.6/'
-prod_file     = 'state_GJD_and_reGJD_production_all_refineries.csv'
-ghg_path      = 'outputs/academic-out/refining/figures'
-ghg_file      = 'state_levels_subset_refining.csv'
+# main_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path           = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
+fig_path            = file.path(main_path, 'outputs/academic-out/refining/figures/2022-12-update')
+prod_path           = 'outputs/predict-production/refining_2021-11-22/CUF0.6/'
+prod_file           = 'state_GJD_and_reGJD_production_all_refineries.csv'
+proj_ghg_path       = 'outputs/academic-out/refining/figures'
+proj_ghg_file       = 'state_levels_subset_refining.csv'
+hist_ghg_path       = 'outputs/stocks-flows'
+hist_ghg_file       = 'refining_emissions_state_2019_revised.csv'
+ghg_2019_path       = 'model-development/scenario-plot/refinery-outputs'
+ghg_2019_file       = 'refining_emissions_state_2019_revised.csv'
 
 ## libraries -----
 library(data.table)
@@ -22,7 +26,7 @@ library(stringr)
 prod_df = fread(file.path(main_path, prod_path, prod_file))
 
 ## read in ghg emissions file ------
-ghg_df = fread(file.path(main_path, ghg_path, ghg_file))
+ghg_df = fread(file.path(main_path, proj_ghg_path, proj_ghg_file))
 ghg_df = ghg_df[metric == "total_state_ghg_MtCO2"]
 ghg_df = ghg_df[oil_price_scenario == 'reference case' & carbon_price_scenario == 'price floor' & ccs_scenario == 'no ccs']
 ghg_df = ghg_df[, .(demand_scenario, refining_scenario, year, metric, value)]

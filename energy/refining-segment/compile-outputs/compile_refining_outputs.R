@@ -12,7 +12,7 @@ library(doParallel)
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
-compiled_save_path_refining  = file.path('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining', paste0('refining_', cur_date))
+compiled_save_path_refining  = file.path('/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn/outputs/academic-out/refining', paste0('refining_', cur_date))
 dir.create(compiled_save_path_refining, showWarnings = FALSE)  
 
 ## create a folder for health outputs
@@ -23,7 +23,7 @@ dir.create(paste0(compiled_save_path_refining, '/subset-census-tract-results'), 
 result_date <- "2021-11-22"
 
 ## paths
-main_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn"
+main_path <- "/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn"
 data_path  <-'data/stocks-flows/processed'
 outputs_path <- 'model-development/scenario-plot/refinery-outputs'
 model_outputs_path <- paste0('outputs/predict-production/refining_', result_date, '/CUF0.6/outputs')
