@@ -11,6 +11,7 @@ library(scales)
 library(broom)
 library(cowplot)
 library(extrafont)
+library(rebus)
 
 ## source figs
 items <- "figure_themes.R"
@@ -477,7 +478,7 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(type == "DAC share",
                           filter(facet_lab == "Labor: forgone wages"), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention, shape = setback_name)) +
   geom_point(size = 2, alpha = 0.8) +
   # geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
-  labs(title = "DAC share labor: lost worker compensation",
+  labs(title = "f. DAC share labor: lost worker compensation",
        color = "Policy",
        y = NULL,
        x = NULL) +
