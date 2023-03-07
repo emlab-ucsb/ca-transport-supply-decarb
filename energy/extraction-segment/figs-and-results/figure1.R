@@ -201,7 +201,6 @@ ylim <- c(disp_win_df$Y[1], disp_win_df$Y[2])
 ## st_union of no island counties
 ca_union <- st_union(CA_counties_noisl)
 
-
 ## map inset, CA with box around zoom area
 fig1_inset <- ggplot() +
   geom_sf(data = ca_union, mapping = aes(), fill = "#FAFAFA", lwd = 0.4, show.legend = FALSE) +
@@ -225,7 +224,13 @@ fig1_inset <- ggplot() +
     legend.position = c(0.15, 0.15),
     legend.title = element_text(size = 7),
     plot.title = element_text(hjust = 0, face = 'bold'),
-    plot.title.position = 'plot') +
+    plot.title.position = 'plot',
+    # panel.grid.major = element_blank(), 
+    # panel.grid.minor = element_blank(),
+    # panel.background = element_blank(),
+    # axis.text = element_blank(),
+    # axis.ticks = element_blank()
+    ) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal"))
@@ -248,16 +253,22 @@ fig1_map <- ggplot() +
        y = NULL) +
   scale_fill_viridis(option="viridis",
                      direction = -1) +
-  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
+  # coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
+  #          datum = ca_crs, expand = FALSE) +
+  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'], expand = FALSE) +
+  theme_bw() +
   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-  theme_void() +
+  # theme_void() +
   # coord_sf(xlim = disp_win_coord[,'X'], ylim = disp_win_coord[,'Y'],
   #          datum = ca_crs, expand = FALSE) +
   theme(legend.position = "none",
         plot.margin = margin(0, 2, 0, 8),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(hjust = -0.1, face = 'bold', size = 10))
+        legend.title = element_text(size = 7),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = -0.1, face = 'bold', size = 7),
+        axis.text = element_text(size = 5))
 
 ## DAC legend
 ## ------------------------
@@ -299,7 +310,7 @@ fig1_oil_legend <- ggplot() +
     legend.position = c(0.15, 0.15),
     legend.text = element_text(size = 6),
     legend.title = element_text(size = 6),
-    plot.title = element_text(hjust = -0.1, face = 'bold', size = 10)) +
+    plot.title = element_text(hjust = -0.1, face = 'bold', size = 7)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal",
@@ -313,9 +324,9 @@ oil_prod_legend <- get_legend(
 
 ## plot together
 map_fig_a <- ggdraw(fig1_map, clip = "on") +
-  draw_plot(fig1_inset, x = 0.05, y = 0.20, width = 0.25, height = 0.35) +
-  draw_plot(dac_legend, x = 0.15, y = 0.12, width = 0.02, height = 0.025) +
-  draw_plot(oil_prod_legend, x = 0.3, y = 0.18, width = 0.025, height = 0.025) 
+  draw_plot(fig1_inset, x = 0.16, y = 0.18, width = 0.25, height = 0.35) +
+  draw_plot(dac_legend, x = 0.25, y = 0.12, width = 0.02, height = 0.025) +
+  draw_plot(oil_prod_legend, x = 0.42, y = 0.18, width = 0.025, height = 0.025) 
 # +
 #   draw_plot_label(
 #     c("A. Oil fields and disadvantaged communities (DAC)", "", "", ""),
@@ -534,10 +545,9 @@ ct_health_map <- ggplot() +
        x = NULL,
        y = NULL) +
   # scale_fill_gradientn(colors = blues_pal) +
-  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
+  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'], expand = FALSE) +
   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-  theme_void() +
+  theme_bw() +
   theme(
     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
     legend.justification = c(0, 1),
@@ -548,7 +558,11 @@ ct_health_map <- ggplot() +
     legend.title = element_text(size = 6),
     legend.text = element_text(size = 6),
     plot.margin = margin(0, 2, 0, 8),
-    plot.title = element_text(face = 'bold', size =9, hjust = -0.9)) +
+    plot.title = element_text(face = 'bold', size = 7, hjust = -0.9),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.text = element_text(size = 5)) +
     guides(fill = guide_colourbar(title.position="top", 
                                   title.hjust = 0,
                                   direction = "horizontal",
@@ -622,10 +636,9 @@ labor_map <- ggplot() +
        x = NULL,
        y = NULL) +
   scale_fill_gradientn(colors = blues_pal) +
-  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'],
-           datum = ca_crs, expand = FALSE) +
+  coord_sf(xlim = disp_win2_coord[,'X'], ylim = disp_win2_coord[,'Y'], expand = FALSE) +
   # geom_sf_text(data = all_county_prod_df %>% filter(metric == 'difference (bbls)', scenario == name), aes(geometry = geometry, label = paste0(adj_county_name, '\n ', round(adj_val, digits = 2), ' mbbls')), colour = "black", size = 2) +
-  theme_void() +
+  theme_bw() +
   theme(
     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
     legend.justification = c(0, 1),
@@ -636,7 +649,11 @@ labor_map <- ggplot() +
     legend.title = element_text(size = 6),
     legend.text = element_text(size = 6),
     plot.margin = margin(0, 2, 0, 8),
-    plot.title = element_text(face = 'bold', size = 5, hjust = -0.15)) +
+    plot.title = element_text(face = 'bold', size = 7, hjust = -0.15),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.text = element_text(size = 5)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal",
@@ -876,9 +893,11 @@ total_pm25 <- ggplot() +
   scale_size_continuous(range = c(0.1, 2)) +
   # geom_sf_text(data = CA_counties %>% filter(NAME %in% c( "Ventura")), mapping = aes(geometry = geometry, label = NAME), size = 2, fontface = "bold", color = "black", vjust = 1) +
   geom_sf(data = cluster_bound, fill="transparent", color="black", lwd = 0.3) +
+  scale_y_continuous(breaks = c(34, 35)) + 
+  scale_x_continuous(breaks = c(-119.5, -119.0, -118.5)) +
   # geom_sf_text(data = field1, mapping = aes(geometry = geometry, label = name), 
   #              size = 2, fontface = "bold", color = "black", nudge_y = 20000, nudge_x = 10000) +
-  theme_void() +
+  theme_bw() +
   theme(
     # legend.justification defines the edge of the legend that the legend.position coordinates refer to
     legend.justification = c(0, 1),
@@ -889,7 +908,12 @@ total_pm25 <- ggplot() +
     legend.title = element_text(size = 6),
     legend.text = element_text(size = 6),
     plot.margin = margin(0, 2, 0, 8),
-    plot.title = element_text(face = 'bold', size = 5, hjust = -0.05)) +
+    plot.title = element_text(face = 'bold', size = 5, hjust = -0.05),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_text(size = 5)) +
   guides(fill = guide_colourbar(title.position="top", 
                                 title.hjust = 0,
                                 direction = "horizontal",
