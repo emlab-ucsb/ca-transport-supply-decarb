@@ -95,7 +95,7 @@ prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                         oil_price_scenario == "reference case",
                                         setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
   
-  annotate("text", x = 2044, y = 74, label = "BAU", size = 3) +
+  annotate("text", x = 2044, y = 74, label = "BAU", size = 2) +
   scale_color_manual(values = policy_colors_subset) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 160)) +
   # scale_x_continuous(breaks = c(1977, seq(1980, 2045, by = 5))) +
@@ -157,7 +157,7 @@ prod_fig_legend <- ggplot(levels_dt_legend %>% filter(metric == "total_state_bbl
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "reference case",
                                         setback_existing == 0), aes(x = year, y = value / 1e6), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  annotate("text", x = 2044, y = 85, label = "BAU", size = 3) +
+  annotate("text", x = 2044, y = 85, label = "BAU", size = 2) +
   labs(title = "(a) Oil production",
        x = NULL,
        y = "million bbls",
@@ -262,7 +262,7 @@ ghg_pw_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_ghg_MtCO2",
                                         policy_intervention == "BAU",
                                         oil_price_scenario == "reference case",
                                         setback_existing == 0), aes(x = year, y = value), size = 1.2, alpha = 0.9, color = "black", inherit.aes = F) +
-  annotate("text", x = 2044, y = 7.5, label = "BAU", size = 3) +
+  annotate("text", x = 2044, y = 7.5, label = "BAU", size = 2) +
   labs(title = "b. GHG emissions",
        x = NULL,
        # y = "MtCO2e",
@@ -359,7 +359,7 @@ ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>%
        color = "2045 GHG emission target",
        shape = "Policy intervention") +
   theme_line_n_l +
-  annotate("text", x = 59, y = 255, label = "BAU", size = 3) +
+  annotate("text", x = 59, y = 255, label = "BAU", size = 2) +
   scale_color_manual(values = c("BAU" = "black", policy_colors_subset)) +
   # scale_x_continuous(limits = c(0, NA)) +
   scale_y_continuous(limits = c(150, 270)) +
@@ -441,8 +441,8 @@ ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>%
 
 legend_pathways_v2 <- get_legend(
   prod_fig_legend + 
-    theme(legend.title = element_text(size = 9),
-          legend.text = element_text(size = 9))
+    theme(legend.title = element_text(size = 7),
+          legend.text = element_text(size = 7))
   
 )
 
@@ -519,7 +519,7 @@ fig2_v2_combine <- plot_grid(
   align = 'vh',
   # labels = c("A", "B", "C", ""),
   # # labels = 'AUTO',
-  label_size = 10,
+  label_size = 7,
   hjust = -1,
   nrow = 2,
   rel_widths = c(1, 1, 1, 1)
@@ -541,6 +541,18 @@ ggsave(fig2_v2_combine,
 
 embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'),
             outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'))
+
+
+
+ggsave(fig2_v2_combine,
+       filename = paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'),
+       width = 88,
+       height = 95,
+       units = "mm",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'))
 
 # ##
 # fig2_v2_combine_sb <- plot_grid(

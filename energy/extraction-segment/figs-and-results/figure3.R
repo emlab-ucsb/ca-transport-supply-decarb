@@ -186,7 +186,7 @@ embed_fonts(paste0(main_path, fig_path, 'figs/figure3-sb-new.pdf'),
 
 ## revised version, make them separately
 ## -------------------------------------------------------------------
-fig3_text_size <- 9.4
+fig3_text_size <- 7
 
 fig_bxm_a <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
@@ -365,11 +365,12 @@ legend_fig_3 <- get_legend(
 )
 
 
+
 ## combine figure
 ## ---------------------------------
 
 ## shared x axis
-xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 9)
+xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 7)
 
 fig3_plot_grid <- plot_grid(
   fig_bxm_a,
@@ -953,15 +954,15 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
-        axis.text = element_text(vjust = 0.5, hjust=1, size = 7),
+        axis.text = element_text(vjust = 0.5, hjust=1, size = 6),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'),
         axis.line.y = element_line(color = 'black'),
         axis.ticks.y = element_line(color = 'black'),
-        axis.title = element_text(size = 7),
-        title = element_text(size = 7),
-        legend.title = element_text(size = 7),
-        legend.text = element_text(size = 7))
+        axis.title = element_text(size = 6),
+        title = element_text(size = 6),
+        legend.title = element_text(size = 6),
+        legend.text = element_text(size = 6))
 
 fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                             oil_price_scenario == "reference case",
@@ -984,15 +985,15 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        axis.text = element_text(vjust = 0.5, hjust=1, size = 7),
+        axis.text = element_text(vjust = 0.5, hjust=1, size = 6),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'),
         axis.line.y = element_line(color = 'black'),
         axis.ticks.y = element_line(color = 'black'),
-        axis.title = element_text(size = 7),
-        title = element_text(size = 7),
-        legend.title = element_text(size = 7),
-        legend.text = element_text(size = 7))
+        axis.title = element_text(size = 6),
+        title = element_text(size = 6),
+        legend.title = element_text(size = 6),
+        legend.text = element_text(size = 6))
 
 ## plot them together
 ## -------------------------------
@@ -1009,9 +1010,12 @@ fig4_plot_grid <- plot_grid(
   rel_widths = c(1, 1)
 )
 
+## smaller x axis
+xaxis_lab_5 <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 5)
+
 fig4_plot_grid2 <- plot_grid(
   fig4_plot_grid,
-  xaxis_lab,
+  xaxis_lab_5,
   align = "v",
   # labels = c("(A)", "(B)", "(C)", ""),
   # # labels = 'AUTO',
@@ -1022,10 +1026,18 @@ fig4_plot_grid2 <- plot_grid(
   # rel_widths = c(1, 1),
 )
 
+## smaller text
+legend_fig_3_5 <- get_legend(
+  legend_fig + 
+    theme(legend.title = element_text(size = 5),
+          legend.text = element_text(size = 5))
+  
+)
+
 fig4_plot_grid2 <- plot_grid(
   fig4_plot_grid2,
   NULL,
-  legend_fig_3,
+  legend_fig_3_5,
   align = "v",
   # labels = c("(A)", "(B)", "(C)", ""),
   # # labels = 'AUTO',
@@ -1039,20 +1051,20 @@ fig4_plot_grid2 <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.png'),
-       width = 100,
+       filename = file.path(main_path, fig_path, 'figs/figure5-refcase-relBAU.png'),
+       width = 95,
        height = 60,
        units = "mm")
 
 ggsave(fig4_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'),
-       width = 100,
+       filename = file.path(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'),
+       width = 95,
        height = 60,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure4-refcase-relBAU.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'),
+            outfile = paste0(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'))
 
 ## sb only applies to new wells
 ## ------------------------------------------------
