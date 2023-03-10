@@ -28,6 +28,6 @@ ghg_target_df <- tibble(emission_reduction = "90perc_reduction",
                         ghg_emission_MtCO2e = ghg_target_90)
 
 ## save
-fwrite(ghg_target_df, paste0(scen_path, 'emission_reduction_90.csv'))
+fwrite(ghg_target_df, paste0(scen_path, '/emission_reduction_90.csv'))
 
 
