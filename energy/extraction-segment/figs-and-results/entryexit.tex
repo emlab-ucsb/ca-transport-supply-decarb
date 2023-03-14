@@ -1,0 +1,60 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{2}{c}}
+\hline\hline
+                                        &\multicolumn{1}{c}{(1)}         &\multicolumn{1}{c}{(2)}         \\
+\hline
+field\_well\_exits                        &                     &                     \\
+OpEx                                    &       0.013         &       0.010         \\
+                                        &     (0.017)         &     (0.018)         \\
+Depletion                               &       0.865         &       0.898\sym{*}  \\
+                                        &     (0.547)         &     (0.518)         \\
+Brent                                   &      -0.007\sym{***}&      -0.002         \\
+                                        &     (0.003)         &     (0.003)         \\
+field\_categ=2 $\times$ Brent            &                     &       0.000         \\
+                                        &                     &     (0.000)         \\
+field\_categ=3 $\times$ Brent            &                     &       0.003\sym{***}\\
+                                        &                     &     (0.001)         \\
+field\_categ=4 $\times$ Brent            &                     &       0.005\sym{***}\\
+                                        &                     &     (0.000)         \\
+field\_categ=5 $\times$ Brent            &                     &      -0.025\sym{***}\\
+                                        &                     &     (0.002)         \\
+field\_categ=6 $\times$ Brent            &                     &      -0.005\sym{***}\\
+                                        &                     &     (0.000)         \\
+field\_categ=7 $\times$ Brent            &                     &      -0.013\sym{***}\\
+                                        &                     &     (0.001)         \\
+field\_categ=8 $\times$ Brent            &                     &       0.018\sym{***}\\
+                                        &                     &     (0.001)         \\
+field\_categ=9 $\times$ Brent            &                     &      -0.003\sym{*}  \\
+                                        &                     &     (0.001)         \\
+field\_categ=10 $\times$ Brent           &                     &      -0.001\sym{***}\\
+                                        &                     &     (0.001)         \\
+field\_categ=11 $\times$ Brent           &                     &      -0.009\sym{***}\\
+                                        &                     &     (0.003)         \\
+field\_categ=12 $\times$ Brent           &                     &      -0.017\sym{***}\\
+                                        &                     &     (0.004)         \\
+field\_categ=13 $\times$ Brent           &                     &      -0.015\sym{***}\\
+                                        &                     &     (0.005)         \\
+field\_categ=14 $\times$ Brent           &                     &      -0.008\sym{***}\\
+                                        &                     &     (0.003)         \\
+field\_categ=15 $\times$ Brent           &                     &      -0.001         \\
+                                        &                     &     (0.006)         \\
+field\_categ=16 $\times$ Brent           &                     &      -0.013         \\
+                                        &                     &     (0.008)         \\
+field\_categ=17 $\times$ Brent           &                     &      -0.010\sym{***}\\
+                                        &                     &     (0.003)         \\
+field\_categ=18 $\times$ Brent           &                     &      -0.060\sym{***}\\
+                                        &                     &     (0.010)         \\
+field\_categ=19 $\times$ Brent           &                     &      -0.030\sym{***}\\
+                                        &                     &     (0.005)         \\
+field\_categ=20 $\times$ Brent           &                     &      -0.040\sym{***}\\
+                                        &                     &     (0.010)         \\
+\hline
+Field FEs                               &                     &                     \\
+No. field-years                         &       8,481         &       8,481         \\
+No. fields                              &         257         &         257         \\
+\hline\hline
+\multicolumn{3}{l}{\footnotesize Standard errors clustered at field level are in parentheses.}\\
+\multicolumn{3}{l}{\footnotesize \sym{*} \(p<0.1\), \sym{**} \(p<0.05\), \sym{***} \(p<0.01\)}\\
+\end{tabular}
+}
