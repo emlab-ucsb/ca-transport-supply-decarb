@@ -1,0 +1,74 @@
+* 00000002
+*! version 1.0.0
+* Do not erase or edit this file
+* It is used by Stata to track the ado and help
+* files you have installed.
+
+S http://www.stata-journal.com/software/sj17-3
+N gr0070.pkg
+D  8 Nov 2022
+U 1
+d SJ17-3 gr0070. Provide graph schemes sensitive to color vision deficiency
+d Provide graph schemes sensitive to color vision
+d   deficiency
+d by Daniel Bischof, Department of Political
+d      Science, University of Zurich, Zurich,
+d      Switzerland
+d Support:  bischof@@ipz.uzh.ch
+d After installation, type help ^plotplain^,
+d   ^plotplainblind^, ^plottig^, and
+d   ^plottigblind^
+f style/color-ananas.style
+f style/color-orangebrown.style
+f style/color-plb1.style
+f style/color-plb2.style
+f style/color-plb3.style
+f style/color-plg1.style
+f style/color-plg2.style
+f style/color-plg3.style
+f style/color-pll1.style
+f style/color-pll2.style
+f style/color-pll3.style
+f style/color-plr1.style
+f style/color-plr2.style
+f style/color-ply1.style
+f style/color-ply2.style
+f style/color-ply3.style
+f style/color-reddish.style
+f style/color-sea.style
+f style/color-sky.style
+f style/color-turquoise.style
+f style/color-vermillion.style
+f s/scheme-plotplainblind.scheme
+f s/scheme_plotplainblind.sthlp
+f s/scheme-plotplain.scheme
+f s/scheme_plotplain.sthlp
+f s/scheme-plottigblind.scheme
+f s/scheme_plottigblind.sthlp
+f s/scheme-plottig.scheme
+f s/scheme_plottig.sthlp
+e
+S http://www.stata-journal.com/software/sj14-2
+N st0085_2.pkg
+D 13 Mar 2023
+U 2
+d SJ14-2 st0085_2. Update: Making regression...
+d Update: Making regression tables from stored
+d   estimates
+d by Ben Jann, University of Bern
+d Support:  jann@@soz.unibe.ch
+d After installation, type help ^estout^,
+d   ^esttab^, ^eststo^, ^estadd^, and ^estpost^
+f _/_eststo.ado
+f _/_eststo.hlp
+f e/esttab.ado
+f e/esttab.hlp
+f e/estadd.ado
+f e/estadd.hlp
+f e/eststo.ado
+f e/eststo.hlp
+f e/estout.ado
+f e/estout.hlp
+f e/estpost.ado
+f e/estpost.hlp
+e

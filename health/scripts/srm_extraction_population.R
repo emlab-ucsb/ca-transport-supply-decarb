@@ -16,12 +16,11 @@ library(haven)
 library(readr)
 library(dplyr)
 rm(list=ls())
-#DANAE'S MACHINE
-outputFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/academic_output"
-sourceFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix"
-inmapExFiles  <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix/inmap_processed_srm/extraction"
-inmapReFiles  <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix/inmap_processed_srm/refining"
-mainFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data"
+
+
+inmapExFiles  <- "calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm/extraction"
+sourceFiles  <- "calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm"
+mainFiles <- "calepa-cn/data/health/raw"
 
 
 
@@ -90,10 +89,10 @@ measure2_by_cluster<-measure2%>%dplyr::group_by(id)%>%dplyr::summarize(numA=sum(
 measure2_by_cluster$share_dac_weighted=measure2_by_cluster$numD/measure2_by_cluster$numA
 
 
-measures_kyle<-left_join(measure1_by_cluster,measure2_by_cluster,by="id")
-measures_kyle<-measures_kyle%>%select(id,share_dac,share_dac_weighted)
+measures<-left_join(measure1_by_cluster,measure2_by_cluster,by="id")
+measures<-measures%>%select(id,share_dac,share_dac_weighted,numA)
 
-write_csv(measures_kyle,"D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/academic_output/11_29_2021/extraction_measures.csv")
+write_csv(measures,"calepa-cn/outputs/academic-out/health/extraction_cluster_affectedpop.csv")
 
 
 ######EXTRACTION FIELDS
@@ -108,4 +107,4 @@ extraction_fields_xwalk<-dplyr::rename(extraction_fields_xwalk,input_fid=id,doc_
 extraction_xwalk<-left_join(extraction_field_clusters_10km,extraction_fields_xwalk,by=c("input_fid"))
 extraction_xwalk$doc_field_code=as.numeric(as.character(extraction_xwalk$doc_field_code))
 
-write_csv(extraction_xwalk,"D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/academic_output/11_29_2021/extraction_xwalk.csv")
+write_csv(extraction_xwalk,"calepa-cn/outputs/academic-out/health/extraction_xwalk.csv")
