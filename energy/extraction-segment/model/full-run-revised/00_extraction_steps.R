@@ -1,12 +1,17 @@
-# inputs -----
+
+## the user must define run_name (which will be used when saving your results) and 
+## the save path, which should direct to a folder where the outputs will be saved
+
+# ## zenodo users define run name save path here ----
+# run_name = ''
+# save_path  = ''
+
+## emlab users define run name and save path here ----
 
 # args = commandArgs(trailingOnly = TRUE)
-run_name = "revision-setbacks"
-
-# outputs -------
-
-# save_path             = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
-save_path             = '/Volumes/calepa/extraction-out'
+run_name        = "revision-setbacks"
+# save_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+save_path       = '/Volumes/calepa/extraction-out'
 
 # create save path that is based on the specified path and the run date ------
 

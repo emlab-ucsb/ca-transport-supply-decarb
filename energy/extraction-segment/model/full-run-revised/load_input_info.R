@@ -2,16 +2,37 @@
 ## February 1, 2022
 ## model: load input info
 
-# paths -----
-model_path        = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
-scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
-outputs_path      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs'
-data_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed'
-academic_out      = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/'
-revision_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/extraction/nature-energy-rev-outputs'
+## users using files from the Zenodo repo should use paths and file name on top (commented out)
+## emlab users should use paths and file name below
+
+# ## paths and file name for zenodo users ----
+# main_path          = 'ca-transport-supply-decarb-files/'
+# extract_path       = 'intermediate/extraction-model/'
+# 
+# model_path        = paste0(main_path, extract_path)
+# scen_path         = paste0(main_path, extract_path)
+# outputs_path      = paste0(main_path, extract_path)
+# data_path         = paste0(main_path, extract_path)
+# academic_out      = paste0(main_path, extract_path)
+# revision_path     = paste0(main_path, extract_path)
+# 
+# entry_file        = paste0(main_path, extract_path, 'entry_df_final_revised.csv')
+
+## paths and file name for emlab users -----------
+main_path          = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+
+model_path        = paste0(main_path, 'outputs')
+scen_path         = paste0(main_path, 'project-materials/scenario-inputs')
+outputs_path      = paste0(main_path, 'outputs')
+data_path         = paste0(main_path, 'data/stocks-flows/processed')
+academic_out      = paste0(main_path, 'outputs/academic-out/extraction/')
+revision_path     = paste0(main_path, 'outputs/academic-out/extraction/nature-energy-rev-outputs')
+
+entry_file        = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
+
+## the following are the same for emlab and zenodo users
 
 # file names  
-entry_file        = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
 coef_file         = 'poisson_regression_coefficients_revised.csv'
 param_file        = 'forecasted_decline_parameters_2020_2045.csv' 
 peak_file         = 'field-year_peak-production_yearly.csv' 
