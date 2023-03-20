@@ -30,14 +30,15 @@ if(input_loc == "zenodo") {
   
   ## input path
   main_path <- 'ca-transport-supply-decarb-files/outputs/fig-and-results-out/'
-  ## save path
-  fig_path <- zenodo_save_path
+  fig_path <- main_path
+  save_path <- zenodo_save_path
   
 } else {
 
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+save_path <- paste(fig_path, "figs/")
 
 }
 
@@ -547,32 +548,32 @@ fig2_v2_combine <- plot_grid(
 
 
 ggsave(fig2_v2_combine,
-       filename = paste0(main_path, fig_path, 'figs/figure2-ref-case.png'),
+       filename = paste0(main_path, save_path, 'figure2-ref-case.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(fig2_v2_combine,
-       filename = paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'),
+       filename = paste0(main_path, save_path, 'figure2-ref-case.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure2-ref-case.pdf'),
+            outfile = paste0(main_path, save_path, 'figure2-ref-case.pdf'))
 
 
 
 ggsave(fig2_v2_combine,
-       filename = paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'),
+       filename = paste0(main_path, save_path, 'figure2-ref-case-test.pdf'),
        width = 88,
        height = 95,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure2-ref-case-test.pdf'),
+            outfile = paste0(main_path, save_path, 'figure2-ref-case-test.pdf'))
 
 # ##
 # fig2_v2_combine_sb <- plot_grid(
@@ -773,20 +774,20 @@ low_px_fig <- plot_grid(
 
 
 ggsave(low_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/figure2-low.png'),
+       filename = file.path(main_path, save_path, 'figure2-low.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(low_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/figure2-low.pdf'),
+       filename = file.path(main_path, save_path, 'figure2-low.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-low.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-low.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure2-low.pdf'),
+            outfile = paste0(main_path, save_path, 'figure2-low.pdf'))
 
 
 
@@ -960,18 +961,18 @@ high_px_fig <- plot_grid(
 
 
 ggsave(high_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/figure2-high.png'),
+       filename = file.path(main_path, save_path, 'figure2-high.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(high_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/figure2-high.pdf'),
+       filename = file.path(main_path, save_path, 'figure2-high.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-high.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-high.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure2-high.pdf'),
+            outfile = paste0(main_path, save_path, 'figure2-high.pdf'))
 
