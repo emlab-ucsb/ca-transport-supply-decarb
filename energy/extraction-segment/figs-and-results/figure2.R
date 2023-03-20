@@ -17,7 +17,7 @@ library(extrafont)
 input_loc <- "emlab"
 
 ## if using zenodo, define location to save outputs
-zenodo_save_path
+zenodo_save_path <- ""
 
 
 ## source figs
