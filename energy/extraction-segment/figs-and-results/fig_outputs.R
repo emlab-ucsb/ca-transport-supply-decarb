@@ -11,7 +11,8 @@ library(readxl)
 library(openxlsx)
 
 ## define if you are using zenodo repo for inputs 
-input_loc <- "zenodo"
+# input_loc <- "zenodo"
+input_loc <- "emlab"
 
 ## if using zenodo repo, define location to save outputs (code later will create folder)
 if(input_loc == "zenodo") {
