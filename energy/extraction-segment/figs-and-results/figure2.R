@@ -12,14 +12,34 @@ library(broom)
 library(cowplot)
 library(extrafont)
 
+## define if you are using zenodo repo for inputs 
+# input_loc <- "zenodo"
+input_loc <- "emlab"
+
+## if using zenodo, define location to save outputs
+zenodo_save_path
+
+
 ## source figs
 items <- "figure_themes.R"
 
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
+## set paths
+if(input_loc == "zenodo") {
+  
+  ## input path
+  main_path <- 'ca-transport-supply-decarb-files/outputs/fig-and-results-out/'
+  ## save path
+  fig_path <- zenodo_save_path
+  
+} else {
+
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+
+}
 
 ## csv names
 levels_name <- 'state_levels_all_oil.csv'
