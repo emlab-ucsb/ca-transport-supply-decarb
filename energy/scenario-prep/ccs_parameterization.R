@@ -108,4 +108,4 @@ input_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projec
   
 # remove items from environment -----
   
-  rm(emdata_path, fprod_file, emfac_file, ref_file, field_prod, field_emfac, ref_ghg, field_ghg, select_year)
+  rm(input_path, fprod_file, emfac_file, ref_file, field_prod, field_emfac, ref_ghg, field_ghg, select_year)
