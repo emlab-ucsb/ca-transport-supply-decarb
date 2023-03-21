@@ -13,14 +13,35 @@ library(cowplot)
 library(extrafont)
 library(rebus)
 
+## define if you are using zenodo repo for inputs 
+# input_loc <- "zenodo"
+input_loc <- "emlab"
+
+## if using zenodo, define location to save outputs
+zenodo_save_path <- ""
+
 ## source figs
 items <- "figure_themes.R"
 
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
-## paths
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+
+## set paths
+if(input_loc == "zenodo") {
+  
+  ## input path
+  main_path <- 'ca-transport-supply-decarb-files/outputs/fig-and-results-out/'
+  fig_path <- main_path
+  save_path <- zenodo_save_path
+  
+} else {
+  
+  ## paths
+  main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+  fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+  save_path <- paste0(fig_path, "figs/")
+  
+}
 
 ## csv names
 levels_name <- 'state_levels_all_oil.csv'
@@ -566,32 +587,32 @@ fig6 <- plot_grid(
 
 ## save figure 6
 ggsave(fig6,
-       filename = file.path(main_path, fig_path, 'figs/figure6-ref-case.png'),
+       filename = file.path(main_path, save_path, 'figure6-ref-case.png'),
        width = 180,
        height = 210,
        units = "mm",)
 
 ggsave(fig6,
-       filename = file.path(main_path, fig_path, 'figs/figure6-ref-case.pdf'),
+       filename = file.path(main_path, save_path, 'figure6-ref-case.pdf'),
        width = 180,
        height = 210,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure6-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure6-ref-case.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure6-ref-case.pdf'),
+            outfile = paste0(main_path, save_path, 'figure6-ref-case.pdf'))
 
 
 ## save fig 6 legend
 ggsave(legends,
-       filename = file.path(main_path, fig_path, 'figs/figure6-ref-case-l.pdf'),
+       filename = file.path(main_path, fig_path, 'figure6-ref-case-l.pdf'),
        width = 150,
        height = 25,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure6-ref-case-l.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure6-ref-case-l.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figure6-ref-case-l.pdf'),
+            outfile = paste0(main_path, fig_path, 'figure6-ref-case-l.pdf'))
 
 
 
