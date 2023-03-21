@@ -12,14 +12,34 @@ library(cowplot)
 library(rebus)
 library(tidyverse)
 
+## define if you are using zenodo repo for inputs 
+# input_loc <- "zenodo"
+input_loc <- "emlab"
+
+## if using zenodo, define location to save outputs
+zenodo_save_path <- ""
+
 ## source figs
 items <- "figure_themes.R"
 
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
-## paths
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+## set paths
+if(input_loc == "zenodo") {
+  
+  ## input path
+  main_path <- 'ca-transport-supply-decarb-files/outputs/fig-and-results-out/'
+  fig_path <- main_path
+  save_path <- zenodo_save_path
+  
+} else {
+  
+  ## paths
+  main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+  fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+  save_path <- paste0(fig_path, "figs/")
+  
+}
 
 ## csv names
 # levels_file <- 'state_levels_subset.csv'
@@ -128,20 +148,20 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 ## save figure 3
 ggsave(fig_benefit_x_metric,
-       filename = file.path(main_path, fig_path, 'figs/figure3-sb-all.png'),
+       filename = file.path(main_path, save_path, 'figure3-sb-all.png'),
        width = 180,
        height = 150,
        units = "mm",)
 
 ggsave(fig_benefit_x_metric,
-       filename = file.path(main_path, fig_path, 'figs/figure3-sb-all.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-sb-all.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-sb-all.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-sb-all.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-sb-all.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-sb-all.pdf'))
 
 
 ## sb only applies to new wells:
@@ -168,20 +188,20 @@ fig_benefit_x_metric_sb <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 ## save figure 3
 ggsave(fig_benefit_x_metric_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure3-sb-new.png'),
+       filename = file.path(main_path, save_path, 'figure3-sb-new.png'),
        width = 180,
        height = 150,
        units = "mm",)
 
 ggsave(fig_benefit_x_metric_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure3-sb-new.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-sb-new.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-sb-new.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-sb-new.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-sb-new.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-sb-new.pdf'))
 
 
 ## revised version, make them separately
@@ -405,20 +425,20 @@ fig3_plot_grid2 <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure3-ref-case.png'),
+       filename = file.path(main_path, save_path, 'figure3-ref-case.png'),
        width = 180,
        height = 150,
        units = "mm",)
 
 ggsave(fig3_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure3-ref-case.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-ref-case.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-ref-case.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-ref-case.pdf'))
 
 
 
@@ -643,20 +663,20 @@ fig3_plot_grid2_l <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/figure3-low.png'),
+       filename = file.path(main_path, save_path, 'figure3-low.png'),
        width = 180,
        height = 150,
        units = "mm")
 
 ggsave(fig3_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/figure3-low.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-low.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-low.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-low.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-low.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-low.pdf'))
 
 
 ## high 
@@ -833,20 +853,20 @@ fig3_plot_grid2_h <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/figure3-high.png'),
+       filename = file.path(main_path, save_path, 'figure3-high.png'),
        width = 180,
        height = 150,
        units = "mm")
 
 ggsave(fig3_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/figure3-high.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-high.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-high.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-high.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-high.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-high.pdf'))
 
 
 
@@ -1051,20 +1071,20 @@ fig4_plot_grid2 <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure5-refcase-relBAU.png'),
+       filename = file.path(main_path, save_path, 'figure5-refcase-relBAU.png'),
        width = 95,
        height = 60,
        units = "mm")
 
 ggsave(fig4_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'),
+       filename = file.path(main_path, save_path, 'figure5-refcase-relBAU.pdf'),
        width = 95,
        height = 60,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure5-refcase-relBAU.pdf'),
+            outfile = paste0(main_path, save_path, 'figure5-refcase-relBAU.pdf'))
 
 ## sb only applies to new wells
 ## ------------------------------------------------
@@ -1170,20 +1190,20 @@ fig4_plot_grid2_sb <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure5-comparison.png'),
+       filename = file.path(main_path, save_path, 'figure5-comparison.png'),
        width = 130,
        height = 130,
        units = "mm")
 
 ggsave(fig4_plot_grid2_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure5-comparison.pdf'),
+       filename = file.path(main_path, save_path, 'figure5-comparison.pdf'),
        width = 130,
        height = 130,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure5-comparison.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure5-comparison.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure5-comparison.pdf'),
+            outfile = paste0(main_path, save_path, 'figure5-comparison.pdf'))
 
 
 
@@ -1296,20 +1316,20 @@ fig4_plot_grid2_h <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/figure4-high-relBAU.png'),
+       filename = file.path(main_path, save_path, 'figure4-high-relBAU.png'),
        width = 100,
        height = 70,
        units = "mm")
 
 ggsave(fig4_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
+       filename = file.path(main_path, save_path, 'figure4-high-relBAU.pdf'),
        width = 100,
        height = 70,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure4-high-relBAU.pdf'),
+            outfile = paste0(main_path, save_path, 'figure4-high-relBAU.pdf'))
 
 ## low
 
@@ -1417,20 +1437,20 @@ fig4_plot_grid2_l <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/figure4-low-relBAU.png'),
+       filename = file.path(main_path, save_path, 'figure4-low-relBAU.png'),
        width = 100,
        height = 70,
        units = "mm")
 
 ggsave(fig4_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'),
+       filename = file.path(main_path, save_path, 'figure4-low-relBAU.pdf'),
        width = 100,
        height = 70,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure4-low-relBAU.pdf'),
+            outfile = paste0(main_path, save_path, 'figure4-low-relBAU.pdf'))
 
 
 
@@ -1670,14 +1690,26 @@ fig_carbon_sb <- ggplot(csb_npv_dt %>%
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
+
+ifelse(input_loc == "zenodo") {
+  
+  ggsave(fig_carbon_sb,
+         filename = file.path(main_path, save_path, 'figure6-refcase.png'),
+         width = 6.5,
+         height = 5,
+         units = "in")
+  
+  
+} else {
+
 ## save figure 3
 ggsave(fig_carbon_sb,
-       filename = file.path(main_path, fig_path, 'figs/si/figure6-refcase.png'),
+       filename = file.path(main_path, save_path, 'si/figure6-refcase.png'),
        width = 6.5,
        height = 5,
        units = "in")
 
-
+}
 
 
 ## high and low
@@ -1703,12 +1735,24 @@ fig_carbon_sb_low <- ggplot(csb_npv_dt %>%
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
-## save figure 3
-ggsave(fig_carbon_sb_low,
-       filename = file.path(main_path, fig_path, 'figs/si/figure6-low.png'),
-       width = 6.5,
-       height = 5,
-       units = "in")
+ifelse(input_loc == "zenodo") {
+
+  ## save figure 3
+  ggsave(fig_carbon_sb_low,
+         filename = file.path(main_path, save_path, 'figure6-low.png'),
+         width = 6.5,
+         height = 5,
+         units = "in")
+} else {
+  
+  ## save figure 3
+  ggsave(fig_carbon_sb_low,
+         filename = file.path(main_path, save_path, 'si/figure6-low.png'),
+         width = 6.5,
+         height = 5,
+         units = "in")
+  
+}
 
 
 ## high and low
@@ -1733,13 +1777,25 @@ fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high o
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
+ifelse(input_loc == "zenodo") {
+
 ## save figure 3
 ggsave(fig_carbon_sb_high,
-       filename = file.path(main_path, fig_path, 'figs/si/figure6-high.png'),
+       filename = file.path(main_path, save_path, 'figure6-high.png'),
        width = 6.5,
        height = 5,
        units = "in")
 
+  } else {
+  
+    ## save figure 3
+    ggsave(fig_carbon_sb_high,
+           filename = file.path(main_path, save_path, 'si/figure6-high.png'),
+           width = 6.5,
+           height = 5,
+           units = "in")
+  
+}
 
 
 
@@ -2137,13 +2193,22 @@ fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
+ifelse(input_loc == "zenodo") {
 
-
-ggsave(fig_benefit_x_metric2,
-       filename = file.path(main_path, fig_path, 'figs/si/figure5a-refcase.png'),
-       width = 8,
-       height = 8,
-       units = "in")
+  ggsave(fig_benefit_x_metric2,
+         filename = file.path(main_path, save_path, 'figure5a-refcase.png'),
+         width = 8,
+         height = 8,
+         units = "in")
+} else {
+  
+  ggsave(fig_benefit_x_metric2,
+         filename = file.path(main_path, save_path, 'si/figure5a-refcase.png'),
+         width = 8,
+         height = 8,
+         units = "in")
+  
+}
 
 ## high and low
 ## ---------------------------
@@ -2190,13 +2255,23 @@ fig_benefit_x_metric2_high <- ggplot(npv_90 %>% filter(target != 'BAU',
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
+ifelse(input_loc == "zenodo") {
 
 ggsave(fig_benefit_x_metric2_high,
-       filename = file.path(main_path, fig_path, 'figs/si/figure5a-high.png'),
+       filename = file.path(main_path, save_path, 'figure5a-high.png'),
        width = 8,
        height = 8,
        units = "in")
 
+} else {
+  
+  ggsave(fig_benefit_x_metric2_high,
+         filename = file.path(main_path, save_path, 'si/figure5a-high.png'),
+         width = 8,
+         height = 8,
+         units = "in")
+  
+}
 
 
 # 
