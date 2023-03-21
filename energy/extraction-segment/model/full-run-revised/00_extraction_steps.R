@@ -2,6 +2,10 @@
 ## the user must define run_name (which will be used when saving your results) and 
 ## the save path, which should direct to a folder where the outputs will be saved
 
+## define if you are using zenodo repo for inputs 
+# input_loc <- "zenodo"
+input_loc <- "emlab"
+
 # ## zenodo users define run name save path here ----
 # run_name = ''
 # save_path  = ''

@@ -2,16 +2,15 @@
 # created: october 12, 2020
 # author: meas meng
 
-## users using files from the Zenodo repo should use paths and file name on top (commented out)
-## emlab users should use paths and file name below
 
-# zenodo path ---------
-# input_path   = 'ca-transport-supply-decarb-files/intermediate/extraction-model/'
-
+if(input_loc == "zenodo") {
+# zenodo path --
+input_path   = 'ca-transport-supply-decarb-files/intermediate/extraction-model/'
+} else {
 # emlab path
-# input_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
-input_path <- file.path('/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn', 'outputs/stocks-flows')
-
+input_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
+# input_path <- file.path('/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn', 'outputs/stocks-flows')
+}
 
 
 # inputs ------------
