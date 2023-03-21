@@ -37,6 +37,7 @@ if(input_loc == "zenodo") {
   # field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-11-15/revision-setbacks/field-out/")
   health_out             = paste0(main_path, "outputs/academic-out/health/")
   
+  county_out_file        = 'subset_county_results_adj.csv'
   
 } else {
 
@@ -46,10 +47,12 @@ extraction_folder_path = paste0('outputs/academic-out/extraction/extraction_', c
 county_save_path       = paste0(main_path, extraction_folder_path, 'county-results/')
 ct_save_path           = paste0(main_path, extraction_folder_path, 'census-tract-results/')
 state_save_path        = paste0(main_path, extraction_folder_path, 'state-results/')
-benmap_path            = paste0(main_path, "data/benmap/processed/")
+benmap_path            = "data/benmap/processed/"
 stocks_flows_path      = paste0(main_path, 'data/stocks-flows/processed/')
 # field_out              = paste0(main_path, "outputs/predict-production/extraction_", energy_result_date, "/revision-setbacks/field-out/")
 health_out             = paste0(main_path, "outputs/academic-out/health/")
+
+county_out_file        = 'subset_county_results.csv'
 
 # ## external paths
 # extraction_folder_path = '/Volumes/calepa/academic-out/extraction_2022-11-16/'
@@ -145,7 +148,7 @@ future_WTP <- function(elasticity, growth_rate, WTP){
 
 ## 2019 GHG emissions
 ## --------------------------
-hist_ghg <- fread(paste0(main_path, ghg_file), header = T)
+hist_ghg <- fread(paste0(stocks_flows_path, ghg_file), header = T)
 
 hist_ghg <- hist_ghg[segment %chin% c('Oil & Gas: Production & Processing') &
                        year == 2019, .(segment, unit, year, value)]
@@ -488,7 +491,7 @@ fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric_all_oil.csv'))
 ## -------------------------------------------------------------
 
 ## labor, county
-labor_out <- fread(paste0(main_path, county_save_path, 'subset_county_results.csv'))
+labor_out <- fread(paste0(county_save_path, county_out_file))
 # labor_out <- fread(paste0(extraction_folder_path, 'county-results/subset_county_results.csv'))
 
 
@@ -549,7 +552,7 @@ labor_dac_bind[, category := "Employment"]
 ## Health DAC
 ##----------------------------------------------------
 
-health_out <- fread(paste0(main_path, ct_save_path, 'subset_census_tract_results.csv'))
+health_out <- fread(paste0(ct_save_path, 'subset_census_tract_results.csv'))
 # health_out <- fread(paste0(extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
 
 
