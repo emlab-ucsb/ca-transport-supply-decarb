@@ -1691,7 +1691,7 @@ fig_carbon_sb <- ggplot(csb_npv_dt %>%
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
 
-ifelse(input_loc == "zenodo") {
+if(input_loc == "zenodo") {
   
   ggsave(fig_carbon_sb,
          filename = file.path(main_path, save_path, 'figure6-refcase.png'),
@@ -1735,7 +1735,7 @@ fig_carbon_sb_low <- ggplot(csb_npv_dt %>%
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
-ifelse(input_loc == "zenodo") {
+if(input_loc == "zenodo") {
 
   ## save figure 3
   ggsave(fig_carbon_sb_low,
@@ -1777,7 +1777,7 @@ fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high o
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
-ifelse(input_loc == "zenodo") {
+if(input_loc == "zenodo") {
 
 ## save figure 3
 ggsave(fig_carbon_sb_high,
@@ -2193,7 +2193,7 @@ fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
-ifelse(input_loc == "zenodo") {
+if(input_loc == "zenodo") {
 
   ggsave(fig_benefit_x_metric2,
          filename = file.path(main_path, save_path, 'figure5a-refcase.png'),
@@ -2255,7 +2255,7 @@ fig_benefit_x_metric2_high <- ggplot(npv_90 %>% filter(target != 'BAU',
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
-ifelse(input_loc == "zenodo") {
+if(input_loc == "zenodo") {
 
 ggsave(fig_benefit_x_metric2_high,
        filename = file.path(main_path, save_path, 'figure5a-high.png'),
