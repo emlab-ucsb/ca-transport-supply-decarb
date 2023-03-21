@@ -6,16 +6,18 @@
 # input_loc <- "zenodo"
 input_loc <- "emlab"
 
-# ## zenodo users define run name save path here ----
-# run_name = ''
-# save_path  = ''
-
-## emlab users define run name and save path here ----
-
-# args = commandArgs(trailingOnly = TRUE)
-run_name        = "revision-setbacks"
-# save_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
-save_path       = '/Volumes/calepa/extraction-out'
+if(input_loc == "zenodo") {
+  ## zenodo users define run name save path here ----
+  run_name = ''
+  save_path  = ''
+  
+} else {
+  # args = commandArgs(trailingOnly = TRUE)
+  run_name        = "revision-setbacks"
+  # save_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+  save_path       = '/Volumes/calepa/extraction-out' 
+  
+}
 
 # create save path that is based on the specified path and the run date ------
 
