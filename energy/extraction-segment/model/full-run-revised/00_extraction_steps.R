@@ -8,8 +8,8 @@ input_loc <- "emlab"
 
 if(input_loc == "zenodo") {
   ## zenodo users define run name save path here ----
-  run_name = ''
   save_path  = ''
+  run_name = ''
   
 } else {
   # args = commandArgs(trailingOnly = TRUE)

@@ -15,6 +15,20 @@ library(cowplot)
 library(hrbrthemes)
 library(extrafont)
 
+## define if you are using zenodo repo for inputs 
+# input_loc <- "zenodo"
+input_loc <- "emlab"
+
+if(input_loc == "zenodo") {
+  
+  county_file       <- "county_level_out_adjusted.csv"
+  
+} else {
+  county_file       <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_county_results.rds"
+}  
+
+
+
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-12-27/census-tract-results/'
@@ -31,7 +45,6 @@ inmapExFiles  <- "health/source_receptor_matrix/inmap_processed_srm/extraction"
 ## files
 prod_file         <- "well_prod_m_processed.csv"
 ct_file           <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ct_results.rds"
-county_file       <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_county_results.rds"
 extract_fields     <- "extraction_fields.shp"
 
 ## projection for ca: transform to NAD83(NSRS2007) / California Albers

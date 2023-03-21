@@ -2,9 +2,6 @@
 ## February 1, 2022
 ## model: load input info
 
-# ## define if you are using zenodo repo for inputs 
-# # input_loc <- "zenodo"
-# input_loc <- "emlab"
 
 if(input_loc == "zenodo") {
 ## paths and file name for zenodo users ----
