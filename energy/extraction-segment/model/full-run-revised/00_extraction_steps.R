@@ -3,7 +3,7 @@
 ## the save path, which should direct to a folder where the outputs will be saved
 
 ## define if you are using zenodo repo for inputs (if yes, set to TRUE)
-zenodo_repo <- FALSE
+zenodo_repo <- TRUE
 
 if(zenodo_repo) {
   ## zenodo users define run name save path here ----

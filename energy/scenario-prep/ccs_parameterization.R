@@ -5,7 +5,7 @@
 
 if(zenodo_repo) {
 # zenodo path --
-input_path   = 'ca-transport-supply-decarb-files/intermediate/extraction-model/'
+input_path   = paste0(zenodo_user_path, '/ca-transport-supply-decarb-files/intermediate/extraction-model')
 } else {
 # emlab path
 input_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
