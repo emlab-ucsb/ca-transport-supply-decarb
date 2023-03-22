@@ -13,7 +13,7 @@ library(cowplot)
 library(extrafont)
 
 ## define if you are using zenodo repo for inputs (if yes, set to TRUE)
-zenodo_repo <- FALSE
+zenodo_repo <- TRUE
 
 ## if using zenodo, define location to save outputs
 zenodo_save_path <- ""

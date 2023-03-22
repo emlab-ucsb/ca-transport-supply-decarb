@@ -15,9 +15,12 @@ library(tidyverse)
 ## define if you are using zenodo repo for inputs (if yes, set to TRUE)
 zenodo_repo <- FALSE
 
-## if using zenodo, define location to save outputs
-zenodo_save_path <- ""
-
+## if using zenodo, define user path and location to save outputs
+if(zenodo_repo) {
+  zenodo_user_path <- '~/Desktop/'
+  zenodo_save_path <- ""
+}
+  
 ## source figs
 items <- "figure_themes.R"
 
@@ -27,7 +30,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 if(zenodo_repo) {
   
   ## input path
-  main_path <- 'ca-transportation-supply-decarb-files/outputs/fig-and-results-out/'
+  main_path <- paste0(zenodo_user_path, 'ca-transportation-supply-decarb-files/outputs/fig-and-results-out/')
   fig_path <- main_path
   save_path <- zenodo_save_path
   
@@ -50,11 +53,18 @@ dac_bau_file <- 'dac_bau_health_labor_all_oil.csv' ## DAC shares relative to BAU
 
 
 ## read in data
-npv_dt <- fread(paste0(main_path, fig_path, npv_file))
-# dac_dt <- fread(paste0(main_path, fig_path, dac_file))
-dac_bau_dt <- fread(paste0(main_path, fig_path, dac_bau_file))
-# dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
-# carbon_px <- fread(paste0("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs/", carbon_px_file))
+if(zenodo_repo) {
+  npv_dt <- fread(paste0(main_path, npv_file))
+  dac_bau_dt <- fread(paste0(main_path, dac_bau_file))
+} else {
+  npv_dt <- fread(paste0(main_path, fig_path, npv_file))
+  # dac_dt <- fread(paste0(main_path, fig_path, dac_file))
+  dac_bau_dt <- fread(paste0(main_path, fig_path, dac_bau_file))
+  # dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
+  # carbon_px <- fread(paste0("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs/", carbon_px_file))
+  
+}
+
 
 ## cumulative
 npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: avoided damage',
