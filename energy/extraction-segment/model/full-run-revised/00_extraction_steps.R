@@ -3,11 +3,11 @@
 ## the save path, which should direct to a folder where the outputs will be saved
 
 ## define if you are using zenodo repo for inputs (if yes, set to TRUE)
-zenodo_repo <- TRUE
+zenodo_repo <- FALSE
 
 if(zenodo_repo) {
   ## zenodo users define run name save path here ----
-  zenodo_user_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn'
+  zenodo_user_path <- '~/Desktop'
   save_path  = ''
   run_name = 'xxx'
   

@@ -8,10 +8,11 @@ if(zenodo_repo) {
 main_path          = paste0(zenodo_user_path, '/ca-transportation-supply-decarb-files/')
 extract_path       = 'intermediate/extraction-model/'
 
-model_path        = paste0(main_path, extract_path)
-scen_path         = paste0(main_path, extract_path)
+model_path        = paste0(main_path, 'inputs/extraction/')
+reduct_path       = paste0(main_path, extract_path)
+scen_path         = paste0(main_path, 'inputs/scenarios')
 outputs_path      = paste0(main_path, extract_path)
-data_path         = paste0(main_path, extract_path)
+data_path         = paste0(main_path, 'inputs/extraction')
 academic_out      = paste0(main_path, extract_path)
 revision_path     = paste0(main_path, extract_path)
 forecast_path     = paste0(main_path, extract_path)
@@ -30,6 +31,7 @@ entry_file        = paste0(main_path, extract_path, 'entry_df_final_revised.csv'
 main_path          = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 
 model_path        = paste0(main_path, 'outputs/')
+reduct_path       = paste0(main_path, 'project-materials/scenario-inputs/')
 scen_path         = paste0(main_path, 'project-materials/scenario-inputs/')
 outputs_path      = paste0(main_path, 'outputs/')
 data_path         = paste0(main_path, 'data/stocks-flows/processed/')
@@ -43,7 +45,7 @@ setback_path      = paste0(outputs_path, 'setback/model-inputs/')
 decline_path      = paste0(outputs_path, 'decline-historic/parameters/')
 peak_path         = paste0(outputs_path, 'decline-historic/data')
 
-entry_file        = 'stocks-flows/entry-input-df/final/entry_df_final_revised.csv'
+entry_file        = paste0(main_path, 'outputs/stocks-flows/entry-input-df/final/entry_df_final_revised.csv')
 
 
 }
@@ -116,7 +118,7 @@ calc_num_well_exits <- function(fe_val, bhat, p_oil, op_hat, opex_val, dhat, dep
 # scen_id_list = fread(file.path(academic_out, scen_id_file), header = T)
 
 ## emission reduction df
-emis_reduc_90 = fread(paste0(scen_path, emis_reduc_file), header = T)
+emis_reduc_90 = fread(paste0(reduct_path, emis_reduc_file), header = T)
 emis_reduc_90_val = emis_reduc_90[, ghg_emission_MtCO2e][1]
 
 # load oil price data
@@ -215,11 +217,19 @@ prod_quota_scens = fread(file.path(scen_path, prod_quota_file), header = T)
 prod_quota_scens <- prod_quota_scens[, .(year, prod_quota_scenario, quota)]
 
 # load excise tax file
-excise_tax_scens = fread(file.path(scen_path, excise_tax_file), header = T)
+if(zenodo_repo) {
+  excise_tax_scens = fread(file.path(outputs_path, excise_tax_file), header = T)
+} else {
+  excise_tax_scens = fread(file.path(scen_path, excise_tax_file), header = T)
+}
 excise_tax_scens = subset(excise_tax_scens, select = -units)
 
 # load ccs incentives file 
+if(zenodo_repo) {
+  incentives_scens = setDT(read.xlsx(file.path(scen_path, incentive_file), sheet = 'scenarios', cols = c(1:3)))
+} else {
 incentives_scens = setDT(read.xlsx(file.path(data_path, incentive_file), sheet = 'scenarios', cols = c(1:3)))
+}
 
 # pad field codes with leading zeroes ------
 price_data[, doc_field_code := sprintf("%03d", doc_field_code)]
@@ -266,7 +276,7 @@ setnames(ccs_scens_all, c('ccs_scenario_adj', 'ccs_price_usd_per_kg_adj'), c('cc
 
 
 # load entry data
-entry_dt = fread(file.path(model_path, entry_file), header = T, colClasses = c('doc_field_code' = 'character'))
+entry_dt = fread(file.path(entry_file), header = T, colClasses = c('doc_field_code' = 'character'))
 
 # # load matrix of scenarios and forecasted variables
 # scenarios_dt = load_scenarios_dt(scenario_selection)
@@ -283,7 +293,12 @@ peak_dt = fread(file.path(peak_path, peak_file), header = T, colClasses = c('doc
 
 
 # exit file
-exit_coefs = fread(file.path(model_path, 'exit', exit_file), header = T, colClasses = c('doc_field_code' = 'character'))
+if(zenodo_repo) {
+  exit_coefs = fread(file.path(forecast_path, exit_file), header = T, colClasses = c('doc_field_code' = 'character'))
+} else {
+  exit_coefs = fread(file.path(model_path, 'exit', exit_file), header = T, colClasses = c('doc_field_code' = 'character'))
+}
+
 exit_coefs[, doc_field_code := sprintf("%03s", doc_field_code)]
 exit_coefs[, doc_fieldname := NULL]
 
