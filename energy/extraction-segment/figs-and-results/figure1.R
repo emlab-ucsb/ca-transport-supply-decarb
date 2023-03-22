@@ -15,11 +15,10 @@ library(cowplot)
 library(hrbrthemes)
 library(extrafont)
 
-## define if you are using zenodo repo for inputs 
-# input_loc <- "zenodo"
-input_loc <- "emlab"
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
   
   county_file       <- "county_level_out_adjusted.csv"
   

@@ -29,7 +29,7 @@ walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x)
 if(zenodo_repo) {
   
   ## input path
-  main_path <- 'ca-transport-supply-decarb-files/outputs/fig-and-results-out/'
+  main_path <- 'ca-transportation-supply-decarb-files/outputs/fig-and-results-out/'
   fig_path <- main_path
   save_path <- zenodo_save_path
   
