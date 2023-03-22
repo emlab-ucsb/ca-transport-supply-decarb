@@ -3,7 +3,7 @@
 # author: meas meng
 
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
 # zenodo path --
 input_path   = 'ca-transport-supply-decarb-files/intermediate/extraction-model/'
 } else {

@@ -12,9 +12,8 @@ library(broom)
 library(cowplot)
 library(extrafont)
 
-## define if you are using zenodo repo for inputs 
-# input_loc <- "zenodo"
-input_loc <- "emlab"
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
 
 ## if using zenodo, define location to save outputs
 zenodo_save_path <- ""
@@ -26,7 +25,7 @@ items <- "figure_themes.R"
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## set paths
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
   
   ## input path
   main_path <- 'ca-transport-supply-decarb-files/outputs/fig-and-results-out/'

@@ -3,7 +3,7 @@
 ## model: load input info
 
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
 ## paths and file name for zenodo users ----
 main_path          = 'ca-transport-supply-decarb-files/'
 extract_path       = 'intermediate/extraction-model/'

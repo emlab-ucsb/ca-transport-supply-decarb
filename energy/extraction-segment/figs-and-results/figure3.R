@@ -12,9 +12,8 @@ library(cowplot)
 library(rebus)
 library(tidyverse)
 
-## define if you are using zenodo repo for inputs 
-# input_loc <- "zenodo"
-input_loc <- "emlab"
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
 
 ## if using zenodo, define location to save outputs
 zenodo_save_path <- ""
@@ -25,7 +24,7 @@ items <- "figure_themes.R"
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
 ## set paths
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
   
   ## input path
   main_path <- 'ca-transport-supply-decarb-files/outputs/fig-and-results-out/'
@@ -1691,7 +1690,7 @@ fig_carbon_sb <- ggplot(csb_npv_dt %>%
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
   
   ggsave(fig_carbon_sb,
          filename = file.path(main_path, save_path, 'figure6-refcase.png'),
@@ -1735,7 +1734,7 @@ fig_carbon_sb_low <- ggplot(csb_npv_dt %>%
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
 
   ## save figure 3
   ggsave(fig_carbon_sb_low,
@@ -1777,7 +1776,7 @@ fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high o
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
 
 ## save figure 3
 ggsave(fig_carbon_sb_high,
@@ -2193,7 +2192,7 @@ fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
 
   ggsave(fig_benefit_x_metric2,
          filename = file.path(main_path, save_path, 'figure5a-refcase.png'),
@@ -2255,7 +2254,7 @@ fig_benefit_x_metric2_high <- ggplot(npv_90 %>% filter(target != 'BAU',
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
 
 ggsave(fig_benefit_x_metric2_high,
        filename = file.path(main_path, save_path, 'figure5a-high.png'),

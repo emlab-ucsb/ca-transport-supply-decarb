@@ -10,12 +10,13 @@ library(rebus)
 library(readxl)
 library(openxlsx)
 
-## define if you are using zenodo repo for inputs 
-# input_loc <- "zenodo"
-input_loc <- "emlab"
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
 
 ## if using zenodo repo, define location to save outputs (code later will create folder)
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
+  ## zenodo users define run name save path here ----
+  zenodo_user_path <- ''
   save_info_path  = ""
 }
 
@@ -24,7 +25,7 @@ energy_result_date <- "2022-11-15"
 comp_result_date <- "2022-12-27"
 
 ## set paths
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
   
   main_path              = 'ca-transport-supply-decarb-files/'
   extraction_folder_path = 'outputs/model-out/'
@@ -63,7 +64,7 @@ county_out_file        = 'subset_county_results.csv'
 }
 
 ## define location to save outputs
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
   save_info_path <- save_info_path
 } else { 
   save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/final/')
@@ -78,7 +79,7 @@ scc_file            = 'social_cost_carbon.csv'
 # field_cluster_file  = 'extraction_field_cluster_xwalk.csv'
 
 ## read in social cost of carbon
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
   scc_df <- fread(paste0(main_path, outputs_path, scc_file))
 } else {
   scc_df <- fread(paste0(main_path, 'data/stocks-flows/processed/', scc_file))

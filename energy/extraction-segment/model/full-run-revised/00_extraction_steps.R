@@ -2,14 +2,15 @@
 ## the user must define run_name (which will be used when saving your results) and 
 ## the save path, which should direct to a folder where the outputs will be saved
 
-## define if you are using zenodo repo for inputs 
-# input_loc <- "zenodo"
-input_loc <- "emlab"
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
 
-if(input_loc == "zenodo") {
+if(zenodo_repo) {
   ## zenodo users define run name save path here ----
-  save_path  = ''
-  run_name = ''
+  zenodo_user_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/nature-energy'
+  save_path  = zenodo_user_path
+  run_name = 'xxx'
+  
   
 } else {
   # args = commandArgs(trailingOnly = TRUE)
@@ -19,11 +20,21 @@ if(input_loc == "zenodo") {
   
 }
 
+## set path if zenodo user
+if(zenodo_repo) {
+  
+  main_path          = paste0(zenodo_user_path, '/ca-transport-supply-decarb-files/')
+  extract_path       = 'intermediate/extraction-model/'
+  
+}
+
+
+
 # create save path that is based on the specified path and the run date ------
 
 cur_date              = Sys.Date()
 save_path             = file.path(save_path, paste0('extraction_', cur_date))
-dir.create(save_path, showWarnings = FALSE)
+dir.create(save_path, showWarnings = TRUE)
 
 # create directories for individual outputs
 
