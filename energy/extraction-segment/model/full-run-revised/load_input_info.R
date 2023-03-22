@@ -5,7 +5,7 @@
 
 if(zenodo_repo) {
 ## paths and file name for zenodo users ----
-main_path          = paste0(zenodo_user_path, '/ca-transport-supply-decarb-files/')
+main_path          = paste0(zenodo_user_path, '/ca-transportation-supply-decarb-files/')
 extract_path       = 'intermediate/extraction-model/'
 
 model_path        = paste0(main_path, extract_path)

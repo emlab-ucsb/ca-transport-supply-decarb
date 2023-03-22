@@ -7,8 +7,8 @@ zenodo_repo <- TRUE
 
 if(zenodo_repo) {
   ## zenodo users define run name save path here ----
-  zenodo_user_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/nature-energy'
-  save_path  = zenodo_user_path
+  zenodo_user_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn'
+  save_path  = ''
   run_name = 'xxx'
   
   
@@ -20,13 +20,13 @@ if(zenodo_repo) {
   
 }
 
-## set path if zenodo user
-if(zenodo_repo) {
-  
-  main_path          = paste0(zenodo_user_path, '/ca-transport-supply-decarb-files/')
-  extract_path       = 'intermediate/extraction-model/'
-  
-}
+# ## set path if zenodo user
+# if(zenodo_repo) {
+#   
+#   main_path          = paste0(zenodo_user_path, '/ca-transport-supply-decarb-files/')
+#   extract_path       = 'intermediate/extraction-model/'
+#   
+# }
 
 
 
