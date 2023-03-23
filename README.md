@@ -541,7 +541,8 @@ This script prepares the data for the entry model (which predicts the number of 
 - Inputs:
   * entry_df_final_revised.csv (from `create_entry_input.R`)
 - Outputs:
-  * `entry_revised.dta`
+  * entry_revised.dta
+  * entry_revised_real.dta
 
 `depl.do`
 This script estimates the total oil resource of each field.
@@ -559,8 +560,11 @@ This script predicts the number of new wells in each field in each year in the f
   * poisson_regression_coefficients_revised.csv 
 
 `tab_entryexit.do`
+This script produces the regression outputs for Supplementary Table 1.
 - Inputs:
-- Outputs: 
+  * entry_revised_real.dta (from `entry.do`)
+  * exit_fields.dta
+- Outputs: None
 
 `crude_prod_x_field.R`
 This script summarizes annual production by field.
