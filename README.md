@@ -563,7 +563,7 @@ This script predicts the number of new wells in each field in each year in the f
 This script produces the regression outputs for Supplementary Table 1.
 - Inputs:
   * entry_revised_real.dta (from `entry.do`)
-  * exit_fields.dta
+  * exit_fields.dta (from `exit.do`)
 - Outputs: None
 
 `crude_prod_x_field.R`
