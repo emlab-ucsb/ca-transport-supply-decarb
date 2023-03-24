@@ -13,7 +13,7 @@ library(cowplot)
 library(extrafont)
 
 ## define if you are using zenodo repo for inputs (if yes, set to TRUE)
-zenodo_repo <- TRUE
+zenodo_repo <- FALSE
 
 ## if using zenodo, define location to save outputs
 zenodo_save_path <- ""
@@ -38,6 +38,7 @@ if(zenodo_repo) {
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
 save_path <- paste(fig_path, "figs/")
+source_data_path <- paste0(main_path, 'nature-energy/source-data/')
 
 }
 
@@ -89,6 +90,19 @@ levels_dt[, policy_intervention := fifelse((policy_intervention == "setback" &
 #   theme(legend.position = "bottom",
 #         legend.key.width= unit(1, 'cm'),
 #         legend.box="vertical") 
+
+## create source data
+sd_fig2ab <- levels_dt %>%
+  filter(metric %in% c("total_state_bbl", "total_state_ghg_MtCO2"),
+         oil_price_scenario == "reference case",
+         target != "setback_1000ft",
+         setback_existing == 0,
+         year > 2019) %>%
+  select(oil_price_scenario, policy_intervention, target, target_policy, 
+         target_label, ghg_2045_perc, ghg_2045_perc_reduction, year, metric, value)
+
+fwrite(sd_fig2ab, paste0(source_data_path, "fig2/fig2ab.csv"))
+
 
 ## version 2, categorical colors for policy
 prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
@@ -370,6 +384,19 @@ cumul_ghg$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = 
 #         legend.background = element_rect(fill = "white", color = "grey")) 
 
 
+## create source data
+sd_cumul_ghg <- levels_dt[(metric == "total_state_ghg_MtCO2" & 
+                          year > 2019), .(cumul_ghg = sum(value)), by = .(scen_id, setback_existing, oil_price_scenario,  policy_intervention, 
+                                                                          target, target_policy, ghg_2045_perc, target_label)]
+
+sd_fig2c <- sd_cumul_ghg %>%
+  filter(oil_price_scenario == "reference case",
+         setback_existing == 0) %>%
+  select(oil_price_scenario:cumul_ghg) %>%
+  
+fwrite(sd_fig2c, paste0(source_data_path, "fig2/fig2c.csv"))
+
+## figure
 ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% 
                              filter(oil_price_scenario == "reference case" & setback_existing == 0), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
