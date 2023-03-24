@@ -989,7 +989,6 @@ This script makes county-level figures.
   * CA_Counties_TIGER2016.shp (from *External data*) 
 - Outputs:
 
-#### Figures
 `si/entry-exit-figs.R`
 This script makes well entry and exit figures.
 - Inputs:
