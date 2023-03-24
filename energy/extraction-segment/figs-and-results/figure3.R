@@ -40,6 +40,7 @@ if(zenodo_repo) {
   main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
   fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
   save_path <- paste0(fig_path, "figs/")
+  source_data_path <- paste0(main_path, 'nature-energy/source-data/')
   
 }
 
@@ -130,13 +131,23 @@ npv_dt$policy_intervention <- factor(npv_dt$policy_intervention, levels = c("car
 #                                                             "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)",
 #                                                             "DAC share"))
 
+## create source data
+sd_fig3 <- npv_dt %>%
+  filter(target != 'BAU',
+         oil_price_scenario == "reference case",
+         setback_existing == 0,
+         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback')) %>%
+  select(oil_price_scenario, policy_intervention, target, cumul_ghg,
+         ghg_2045_perc_reduction, target_label, title, unit, value) %>%
+  mutate(unit = ifelse(unit == "value_billion", "billion_usd_2019", "million_usd_2019_per_ghg"))
 
+fwrite(sd_fig3, paste0(source_data_path, "fig3/fig3a-f.csv"))
 
 
 # fig
 fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
                                                  oil_price_scenario == "reference case",
-                                                 setback_existing == 1,
+                                                 setback_existing == 0,
                                                  !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback')), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
@@ -955,6 +966,22 @@ dac_bau_dt$policy_intervention <- factor(dac_bau_dt$policy_intervention, levels 
                                                                             "setback (new wells)", "setback (all wells)", "carbon tax & setback", "excise tax & setback"))
 
 
+## create source data
+sd_fig5 <- dac_bau_dt %>%
+  filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
+         oil_price_scenario == "reference case",
+         setback_existing == 0,
+         type == "DAC share",
+         metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
+  mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortality",
+                     ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
+  select(oil_price_scenario, policy_intervention, target, target_policy, target_label,
+        ghg_2045_perc, ghg_2045_perc_reduction, category, value) %>%
+  rename(metric = category,
+         DAC_value = value) %>%
+  arrange(metric)
+
+fwrite(sd_fig5, paste0(source_data_path, "fig5/fig5ab.csv"))
 
 
 ## version 1: relative to BAU
