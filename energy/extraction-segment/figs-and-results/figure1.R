@@ -34,6 +34,7 @@ ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-12-27/census-tra
 county_out_path <- 'outputs/academic-out/extraction/extraction_2022-12-27/county-results/'
 fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/figs/fig1/'
 data_path         <- paste0(main_path, 'outputs/entry-model-results/')
+source_data_path <- paste0(main_path, 'nature-energy/source-data/')
 
 ## for SRM figure
 outputFiles   <- "outputs/academic-out"
@@ -143,7 +144,14 @@ field_df_long <- field_boundaries %>%
 
 st_transform(field_df_long, ca_crs)
 
+## save version for source data
+## ---------------------------------------
 
+sd_1a <- field_df_long %>%
+  st_drop_geometry() %>%
+  mutate(doc_field_code = paste0("x", doc_field_code))
+
+fwrite(sd_1a, paste0(source_data_path, "fig1a.csv"))
 
 ## counties boundaries
 county_boundaries <- st_read(file.path(main_path, "data/GIS/raw/CA_Counties/CA_Counties_TIGER2016.shp")) %>% 
@@ -436,6 +444,19 @@ state_df <- well_n_df_revised %>%
   summarise(n_wells = sum(n_wells)) %>%
   ungroup()
 
+## save version for source data
+## ---------------------------------------
+
+sd_1b <- state_df %>% 
+  filter(category != "new_wells_pred_ho") %>%
+  mutate(n_wells_thous = n_wells / 1000) %>%
+  select(-field_name_adj, -category) %>%
+  arrange(label_name) %>%
+  rename(category = label_name)
+
+fwrite(sd_1b, paste0(source_data_path, "fig1b.csv"))
+
+
 ## state no hold out
 state_fig_fs <- 
   ggplot(state_df %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells/1000, color = label_name, lty = label_name)) +
@@ -523,6 +544,16 @@ ct_2019 <- ct_2019[, .(scen_id, census_tract, disadvantaged, year, pop, total_pm
 ct_2019 <- census_tracts %>%
   left_join(ct_2019) %>%
   filter(census_tract %in% ct_out$census_tract)
+
+## save version for source data
+## ---------------------------------------
+
+sd_1cd <- ct_2019 %>% 
+  st_drop_geometry() %>%
+  select(-ALAND, -scen_id, -pop, - total_pm25, -year, -disadvantaged) 
+
+fwrite(sd_1cd, paste0(source_data_path, "fig1c.csv"))
+
 
 ## health map
 
@@ -636,6 +667,17 @@ labor_out <- CA_counties_noisl %>%
   mutate(total_emp = ifelse(is.na(total_emp), 0, total_emp),
          total_comp = ifelse(is.na(total_comp), 0, total_comp),
          total_comp_usd19 = total_comp * cpi2019 / cpi2020)
+
+## save version for source data
+## ---------------------------------------
+
+sd_1e <- labor_out %>% 
+  st_drop_geometry() %>%
+  select(-scen_id, -dac_share, -year, -total_emp, -total_comp) %>%
+  rename(total_compensation_usd19 = total_comp_usd19) %>%
+  mutate(total_compensation_usd19_million = total_compensation_usd19 / 1e6)
+
+fwrite(sd_1e, paste0(source_data_path, "fig1e.csv"))
 
 labor_map <- ggplot() +
   geom_sf(data = labor_out, mapping = aes(geometry = geometry, fill = total_comp_usd19 / 1e6), lwd = 0.05, alpha = 1, show.legend = TRUE) +
@@ -880,6 +922,18 @@ cluster_bound <- extraction_clusters %>% dplyr::filter(OBJECTID == cluster_numb)
 field_cluster_prod <- field_df_long %>%
   filter(doc_field_code %in% cluster_fields$doc_field_code) %>%
   st_centroid()
+
+## save version for source data
+## ---------------------------------------
+
+sd_1d <- ct_intersect %>% 
+  st_drop_geometry() %>%
+  group_by(GEOID) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  select(GEOID, total_pm25) 
+
+fwrite(sd_1cd, paste0(source_data_path, "fig1c.csv"))
 
 
 ## figure
