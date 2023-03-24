@@ -899,8 +899,26 @@ zoom_coord_df <- as.data.frame(disp_win_la_coord)
 county_crop <- st_crop(CA_counties_noisl, xmin = zoom_coord_df$X[1], xmax = zoom_coord_df$X[2], ymin = zoom_coord_df$Y[1], ymax = zoom_coord_df$Y[2])
 ct_cropped <- st_crop(ct_map_county, xmin = zoom_coord_df$X[1], xmax = zoom_coord_df$X[2], ymin = zoom_coord_df$Y[1], ymax = zoom_coord_df$Y[2])
 
-## only include census tracts that are in the crop
-ct_intersect <- st_intersection(ct_map_county, county_crop)
+## try st_intersects to avoid creation of small geometries
+county_union <- st_union(county_crop)
+ct_intersect <- st_intersection(ct_map_county, county_union)
+
+## dropped census tract
+dropped_ct <- anti_join(ct_cropped %>% st_drop_geometry() %>% select(GEOID), 
+                        ct_intersect2 %>% st_drop_geometry() %>% select(GEOID))
+
+test <- ct_cropped %>% filter(GEOID == dropped_ct$GEOID[1])
+
+ggplot() + geom_sf(data = county_crop) + geom_sf(data = test, color = "red")
+
+## save version for source data
+## ---------------------------------------
+ sd_1d <- ct_intersect %>% 
+  st_drop_geometry() %>%
+  select(GEOID, total_pm25) %>%
+  rename(census_tract = GEOID) 
+
+fwrite(sd_1d, paste0(source_data_path, "fig1d.csv"))
 
 
 ## counties
@@ -923,17 +941,7 @@ field_cluster_prod <- field_df_long %>%
   filter(doc_field_code %in% cluster_fields$doc_field_code) %>%
   st_centroid()
 
-## save version for source data
-## ---------------------------------------
 
-sd_1d <- ct_intersect %>% 
-  st_drop_geometry() %>%
-  group_by(GEOID) %>%
-  mutate(n = n()) %>%
-  ungroup() %>%
-  select(GEOID, total_pm25) 
-
-fwrite(sd_1cd, paste0(source_data_path, "fig1c.csv"))
 
 
 ## figure
@@ -946,7 +954,7 @@ total_pm25 <- ggplot() +
   # labs(fill=expression(paste("PM"[2.5], " concentration from LA oil fields emissions (n = 51)"))) +
   # labs(fill = "PM2.5 concentration from XX oil field emissions") +
   scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
-                      limits = c(min(ct_cropped$total_pm25), max(ct_cropped$total_pm25)),
+                      limits = c(min(ct_intersect$total_pm25), max(ct_intersect$total_pm25)),
                       breaks = c(0.00025, 0.00125)) +
   geom_sf(data = county_crop, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
   annotate(
@@ -992,36 +1000,53 @@ total_pm25 <- ggplot() +
 
 legend_c <- get_legend(total_pm25)
 
+## no legend
+figc_no_legend <- total_pm25 +
+  theme(legend.position = "none")
+
   
 ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'fig1c.png'),
+       filename = file.path(main_path, fig_path, 'figc/fig1c.png'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'fig1c.pdf'),
+       filename = file.path(main_path, fig_path, 'figc/fig1c.pdf'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'fig1c.pdf'),
-            outfile = paste0(main_path, fig_path, 'fig1c.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figc/fig1c.pdf'),
+            outfile = paste0(main_path, fig_path, 'figc/fig1c.pdf'))
+
+## no legend
+ggsave(figc_no_legend,
+       filename = file.path(main_path, fig_path, 'figc/fig1c_nl.pdf'),
+       width = 50,
+       height = 55,
+       dpi = 300,
+       units = "mm",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figc/fig1c_nl.pdf'),
+            outfile = paste0(main_path, fig_path, 'figc/fig1c_nl.pdf'))
+
 
 ## legend
 ggsave(legend_c,
-       filename = file.path(main_path, fig_path, 'fig1c_legend.pdf'),
+       filename = file.path(main_path, fig_path, 'figc/fig1c_legend.pdf'),
        # width = 50,
        # height = 55,
        dpi = 300,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'fig1c_legend.pdf'),
-            outfile = paste0(main_path, fig_path, 'fig1c_legend.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figc/fig1c_legend.pdf'),
+            outfile = paste0(main_path, fig_path, 'figc/fig1c_legend.pdf'))
 
 
 
@@ -1043,7 +1068,7 @@ total_pm25_v2 <- ggplot() +
   # labs(fill=expression(paste("PM"[2.5], " concentration from LA oil fields emissions (n = 51)"))) +
   # labs(fill = "PM2.5 concentration from XX oil field emissions") +
   scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
-                      limits = c(min(ct_cropped$total_pm25), max(ct_cropped$total_pm25)),
+                      limits = c(min(ct_intersect$total_pm25), max(ct_intersect$total_pm25)),
                       breaks = c(0.00025, 0.00125)) +
   geom_sf(data = county_crop, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
   annotate(
