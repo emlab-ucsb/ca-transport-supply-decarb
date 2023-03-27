@@ -91,6 +91,12 @@
 
 //Main text figure:
 //Top panel: total affected population
+
+	keep id affected_pop setback_coverage cost ghg_intensity
+
+	//Nature Energy Source data
+	outsheet using $processedData/fig5abc_source_data.csv, comma names replace
+
 	
 //Setback	
 	tw(lfitci affected_pop setback_coverage, ///
@@ -150,6 +156,11 @@
 	replace oil_prod_w=1 if oil_prod_w==0
 
 	gen emp_per_bbl=emp/oil_prod
+
+	keep county emp_per_bbl setback_coverage cost ghg_intensity
+
+	//Nature Energy Source data
+	outsheet using $processedData/fig5def_source_data.csv, comma names replace
 
 
 //Setback
