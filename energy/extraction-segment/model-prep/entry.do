@@ -17,8 +17,10 @@ set more off
 set linesize 90
 set matsize 800
 
-//global workDir "/Dropbox/Research/CarbonNeutrality/STATA/" // RL's macbook
-global workDir "/Users/emlab/Dropbox/Research/CarbonNeutrality/STATA/" // emLab macbook
+global workDir "/Users/rui/Dropbox/ca-transport-supply-decarb/STATA/" // RL's macbook
+//global workDir "/Users/emlab/Dropbox/Research/CarbonNeutrality/STATA/" // emLab macbook
+global googleDriveDir "/Volumes/GoogleDrive-107971834908030063679/Shared drives/emlab/projects/current-projects/calepa-cn" // on RL's macbook
+
 
 global codeDir  "codeSTATA"
 global dataDir  "dataSTATA"
@@ -37,7 +39,8 @@ cd $workDir
 
 // Field-asset matching uses wells then nearest asset: entry_df.csv
 // Field-asset matching uses wells then asset of nearest neighbor fields: entry_df_v2
-insheet using $dataRawDir/entry_df_final_revised.csv, comma names clear
+//insheet using $dataRawDir/entry_df_final_revised.csv, comma names clear
+insheet using "$googleDriveDir/outputs/stocks-flows/entry-input-df/final/entry_df_final_revised.csv", comma names clear
 
 *drop if strpos(doc_fieldname,"Gas")>0
 drop if year==1977
@@ -61,9 +64,9 @@ rename m_cumsum_div_my_prod depl
 * Top 10 producing fields in 2019
 rename top_field topfield
 
-/*
-label define topfieldlabel 0 "Non-top fields" 1 "Belridge  South" 2 "Midway-Sunset" 3 "Kern River" 4 "Cymric" 5 "Wilmington" 6 "Lost Hills" 7 "San Ardo" 8 "Elk Hills" 9 "Coalinga" 10 "Poso Creek"
-*/
+
+capture label define topfieldlabel 0 "Non-top fields" 1 "Belridge  South" 2 "Midway-Sunset" 3 "Kern River" 4 "Cymric" 5 "Wilmington" 6 "Lost Hills" 7 "San Ardo" 8 "Elk Hills" 9 "Coalinga" 10 "Poso Creek"
+
 label values topfield topfieldlabel
 
 * Rank all fields by 2019 production
@@ -81,6 +84,23 @@ sum field_categ
 
 do $codeDir/label.do
 save $dataDir/entry_revised, replace
+
+***** Convert vars to real price (for revisions to paper 11/29/2022) ***** 
+* real prices weren't eventually used but these changes to entry.do were updated anyway
+
+// Import CPI series
+import excel "$googleDriveDir/data/stocks-flows/raw/BLS-CPI-U.xlsx", sheet("Annual") firstrow case(lower) clear
+*save $tempDir/cpi, replace
+
+*use $tempDir/cpi, replace
+merge 1:n year using $dataDir/entry_revised
+drop if _merge!=3
+drop _merge
+gen brent_2019 = brent/cpi*cpi2019
+gen capex_imputed_2019 = capex_imputed/cpi*cpi2019
+gen opex_imputed_2019 = opex_imputed/cpi*cpi2019
+
+save $dataDir/entry_revised_real
 
 /***** Plots to look at data *****
 use $dataDir/entry, replace
@@ -478,5 +498,4 @@ foreach var of varlist lg_doc_prod  { // new_prod d_doc_prod ihs_doc_prod
 	note(Standard errors clustered at field level are in parentheses.) ///
 	noconstant nogaps tex replace
 }
-
 

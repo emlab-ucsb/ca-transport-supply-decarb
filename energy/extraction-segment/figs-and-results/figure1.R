@@ -15,12 +15,26 @@ library(cowplot)
 library(hrbrthemes)
 library(extrafont)
 
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
+
+if(zenodo_repo) {
+  
+  county_file       <- "county_level_out_adjusted.csv"
+  
+} else {
+  county_file       <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_county_results.rds"
+}  
+
+
+
 ## paths 
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 ct_out_path <- 'outputs/academic-out/extraction/extraction_2022-12-27/census-tract-results/'
 county_out_path <- 'outputs/academic-out/extraction/extraction_2022-12-27/county-results/'
 fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/figs/fig1/'
 data_path         <- paste0(main_path, 'outputs/entry-model-results/')
+source_data_path <- paste0(main_path, 'nature-energy/source-data/')
 
 ## for SRM figure
 outputFiles   <- "outputs/academic-out"
@@ -31,7 +45,6 @@ inmapExFiles  <- "health/source_receptor_matrix/inmap_processed_srm/extraction"
 ## files
 prod_file         <- "well_prod_m_processed.csv"
 ct_file           <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_ct_results.rds"
-county_file       <- "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0_county_results.rds"
 extract_fields     <- "extraction_fields.shp"
 
 ## projection for ca: transform to NAD83(NSRS2007) / California Albers
@@ -131,7 +144,14 @@ field_df_long <- field_boundaries %>%
 
 st_transform(field_df_long, ca_crs)
 
+## save version for source data
+## ---------------------------------------
 
+sd_1a <- field_df_long %>%
+  st_drop_geometry() %>%
+  mutate(doc_field_code = paste0("x", doc_field_code))
+
+fwrite(sd_1a, paste0(source_data_path, "fig1a.csv"))
 
 ## counties boundaries
 county_boundaries <- st_read(file.path(main_path, "data/GIS/raw/CA_Counties/CA_Counties_TIGER2016.shp")) %>% 
@@ -424,6 +444,19 @@ state_df <- well_n_df_revised %>%
   summarise(n_wells = sum(n_wells)) %>%
   ungroup()
 
+## save version for source data
+## ---------------------------------------
+
+sd_1b <- state_df %>% 
+  filter(category != "new_wells_pred_ho") %>%
+  mutate(n_wells_thous = n_wells / 1000) %>%
+  select(-field_name_adj, -category) %>%
+  arrange(label_name) %>%
+  rename(category = label_name)
+
+fwrite(sd_1b, paste0(source_data_path, "fig1b.csv"))
+
+
 ## state no hold out
 state_fig_fs <- 
   ggplot(state_df %>% filter(category != "new_wells_pred_ho"), aes(x = year, y = n_wells/1000, color = label_name, lty = label_name)) +
@@ -511,6 +544,16 @@ ct_2019 <- ct_2019[, .(scen_id, census_tract, disadvantaged, year, pop, total_pm
 ct_2019 <- census_tracts %>%
   left_join(ct_2019) %>%
   filter(census_tract %in% ct_out$census_tract)
+
+## save version for source data
+## ---------------------------------------
+
+sd_1cd <- ct_2019 %>% 
+  st_drop_geometry() %>%
+  select(-ALAND, -scen_id, -pop, - total_pm25, -year, -disadvantaged) 
+
+fwrite(sd_1cd, paste0(source_data_path, "fig1c.csv"))
+
 
 ## health map
 
@@ -624,6 +667,17 @@ labor_out <- CA_counties_noisl %>%
   mutate(total_emp = ifelse(is.na(total_emp), 0, total_emp),
          total_comp = ifelse(is.na(total_comp), 0, total_comp),
          total_comp_usd19 = total_comp * cpi2019 / cpi2020)
+
+## save version for source data
+## ---------------------------------------
+
+sd_1e <- labor_out %>% 
+  st_drop_geometry() %>%
+  select(-scen_id, -dac_share, -year, -total_emp, -total_comp) %>%
+  rename(total_compensation_usd19 = total_comp_usd19) %>%
+  mutate(total_compensation_usd19_million = total_compensation_usd19 / 1e6)
+
+fwrite(sd_1e, paste0(source_data_path, "fig1e.csv"))
 
 labor_map <- ggplot() +
   geom_sf(data = labor_out, mapping = aes(geometry = geometry, fill = total_comp_usd19 / 1e6), lwd = 0.05, alpha = 1, show.legend = TRUE) +
@@ -845,8 +899,26 @@ zoom_coord_df <- as.data.frame(disp_win_la_coord)
 county_crop <- st_crop(CA_counties_noisl, xmin = zoom_coord_df$X[1], xmax = zoom_coord_df$X[2], ymin = zoom_coord_df$Y[1], ymax = zoom_coord_df$Y[2])
 ct_cropped <- st_crop(ct_map_county, xmin = zoom_coord_df$X[1], xmax = zoom_coord_df$X[2], ymin = zoom_coord_df$Y[1], ymax = zoom_coord_df$Y[2])
 
-## only include census tracts that are in the crop
-ct_intersect <- st_intersection(ct_map_county, county_crop)
+## try st_intersects to avoid creation of small geometries
+county_union <- st_union(county_crop)
+ct_intersect <- st_intersection(ct_map_county, county_union)
+
+## dropped census tract
+dropped_ct <- anti_join(ct_cropped %>% st_drop_geometry() %>% select(GEOID), 
+                        ct_intersect2 %>% st_drop_geometry() %>% select(GEOID))
+
+test <- ct_cropped %>% filter(GEOID == dropped_ct$GEOID[1])
+
+ggplot() + geom_sf(data = county_crop) + geom_sf(data = test, color = "red")
+
+## save version for source data
+## ---------------------------------------
+ sd_1d <- ct_intersect %>% 
+  st_drop_geometry() %>%
+  select(GEOID, total_pm25) %>%
+  rename(census_tract = GEOID) 
+
+fwrite(sd_1d, paste0(source_data_path, "fig1d.csv"))
 
 
 ## counties
@@ -870,6 +942,8 @@ field_cluster_prod <- field_df_long %>%
   st_centroid()
 
 
+
+
 ## figure
 total_pm25 <- ggplot() +
   geom_sf(data = ct_intersect, aes(fill=total_pm25), color=NA) + 
@@ -880,7 +954,7 @@ total_pm25 <- ggplot() +
   # labs(fill=expression(paste("PM"[2.5], " concentration from LA oil fields emissions (n = 51)"))) +
   # labs(fill = "PM2.5 concentration from XX oil field emissions") +
   scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
-                      limits = c(min(ct_cropped$total_pm25), max(ct_cropped$total_pm25)),
+                      limits = c(min(ct_intersect$total_pm25), max(ct_intersect$total_pm25)),
                       breaks = c(0.00025, 0.00125)) +
   geom_sf(data = county_crop, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
   annotate(
@@ -926,36 +1000,53 @@ total_pm25 <- ggplot() +
 
 legend_c <- get_legend(total_pm25)
 
+## no legend
+figc_no_legend <- total_pm25 +
+  theme(legend.position = "none")
+
   
 ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'fig1c.png'),
+       filename = file.path(main_path, fig_path, 'figc/fig1c.png'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm")
 
 ggsave(total_pm25,
-       filename = file.path(main_path, fig_path, 'fig1c.pdf'),
+       filename = file.path(main_path, fig_path, 'figc/fig1c.pdf'),
        width = 50,
        height = 55,
        dpi = 300,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'fig1c.pdf'),
-            outfile = paste0(main_path, fig_path, 'fig1c.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figc/fig1c.pdf'),
+            outfile = paste0(main_path, fig_path, 'figc/fig1c.pdf'))
+
+## no legend
+ggsave(figc_no_legend,
+       filename = file.path(main_path, fig_path, 'figc/fig1c_nl.pdf'),
+       width = 50,
+       height = 55,
+       dpi = 300,
+       units = "mm",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, fig_path, 'figc/fig1c_nl.pdf'),
+            outfile = paste0(main_path, fig_path, 'figc/fig1c_nl.pdf'))
+
 
 ## legend
 ggsave(legend_c,
-       filename = file.path(main_path, fig_path, 'fig1c_legend.pdf'),
+       filename = file.path(main_path, fig_path, 'figc/fig1c_legend.pdf'),
        # width = 50,
        # height = 55,
        dpi = 300,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'fig1c_legend.pdf'),
-            outfile = paste0(main_path, fig_path, 'fig1c_legend.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figc/fig1c_legend.pdf'),
+            outfile = paste0(main_path, fig_path, 'figc/fig1c_legend.pdf'))
 
 
 
@@ -977,7 +1068,7 @@ total_pm25_v2 <- ggplot() +
   # labs(fill=expression(paste("PM"[2.5], " concentration from LA oil fields emissions (n = 51)"))) +
   # labs(fill = "PM2.5 concentration from XX oil field emissions") +
   scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
-                      limits = c(min(ct_cropped$total_pm25), max(ct_cropped$total_pm25)),
+                      limits = c(min(ct_intersect$total_pm25), max(ct_intersect$total_pm25)),
                       breaks = c(0.00025, 0.00125)) +
   geom_sf(data = county_crop, mapping = aes(geometry = geometry), lwd = 0.15, alpha = 0) +
   annotate(

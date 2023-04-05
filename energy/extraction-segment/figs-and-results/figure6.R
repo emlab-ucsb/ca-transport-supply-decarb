@@ -13,14 +13,38 @@ library(cowplot)
 library(extrafont)
 library(rebus)
 
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
+
+## if using zenodo, define user path and location to save outputs
+if(zenodo_repo) {
+  zenodo_user_path <- '~/Desktop/'
+  zenodo_save_path <- ""
+}
+
 ## source figs
 items <- "figure_themes.R"
 
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
-## paths
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+
+## set paths
+if(zenodo_repo) {
+  
+  ## input path
+  main_path <- paste0(zenodo_user_path, 'ca-transportation-supply-decarb-files/outputs/fig-and-results-out/')
+  fig_path <- main_path
+  save_path <- zenodo_save_path
+  
+} else {
+  
+  ## paths
+  main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+  fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+  save_path <- paste0(fig_path, "figs/")
+  source_data_path <- paste0(main_path, 'nature-energy/source-data/fig6/')
+  
+}
 
 ## csv names
 levels_name <- 'state_levels_all_oil.csv'
@@ -28,11 +52,16 @@ npv_file <- 'npv_x_metric_all_oil.csv'
 dac_bau_file <- 'dac_bau_health_labor_all_oil.csv' ## DAC shares relative to BAU
 
 ## read in data
-levels_dt <- fread(paste0(main_path, fig_path, levels_name))
-
-npv_dt <- fread(paste0(main_path, fig_path, npv_file))
-
-dac_bau_dt <- fread(paste0(main_path, fig_path, dac_bau_file))
+if(zenodo_repo) {
+  levels_dt <- fread(paste0(main_path,  levels_name))
+  npv_dt <- fread(paste0(main_path, npv_file))
+  dac_bau_dt <- fread(paste0(main_path, dac_bau_file))
+} else {
+## read in data
+  levels_dt <- fread(paste0(main_path, fig_path, levels_name))
+  npv_dt <- fread(paste0(main_path, fig_path, npv_file))
+  dac_bau_dt <- fread(paste0(main_path, fig_path, dac_bau_file))
+}
 
 ## filter out carbon + setback
 levels_dt <- levels_dt[!policy_intervention %in% c('carbon tax & setback', 'excise tax & setback')]
@@ -58,8 +87,31 @@ levels_dt %>% filter(metric == "total_state_bbl",
   select(policy_intervention, setback_scenario, setback_existing, target_label) %>%
   unique()
 
+## create source data
+sd_fig6a_bau <- levels_dt %>%
+  filter(metric == "total_state_bbl",
+         year > 2019,
+         oil_price_scenario == "reference case",
+         policy_intervention == "BAU",
+         setback_name != "1000ft") %>%
+  select(oil_price_scenario, policy_intervention, target, target_policy, 
+         target_label, ghg_2045_perc, ghg_2045_perc_reduction, year, metric, value) %>%
+  unique()
+
+sd_fig6a <- levels_dt %>%
+  filter(metric == "total_state_bbl",
+         year > 2019,
+         oil_price_scenario == "reference case",
+         policy_intervention != "BAU",
+         setback_name != "1000ft") %>%
+  select(oil_price_scenario, policy_intervention, target, target_policy, 
+         target_label, ghg_2045_perc, ghg_2045_perc_reduction, year, metric, value) %>%
+  rbind(sd_fig6a_bau)
+
+fwrite(sd_fig6a, paste0(source_data_path, "fig6a.csv"))
 
 
+## figures
 prod_fig_sb <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
                                            year > 2019,
                                            oil_price_scenario == "reference case",
@@ -207,6 +259,23 @@ cumul_ghg <- levels_dt[(metric == "total_state_ghg_MtCO2" &
 cumul_ghg$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = c("BAU", "setback (all wells)", "setback (new wells)"))
 
 
+## make source data 
+sd_cumul_ghg <- levels_dt[(metric == "total_state_ghg_MtCO2" & 
+                          year > 2019), .(cumul_ghg = sum(value)), by = .(scen_id, setback_existing, oil_price_scenario,  policy_intervention,
+                                                                          setback_name, ghg_2045_perc, ghg_2045_perc_reduction, target_label)]
+
+sd_cumul_ghg$policy_intervention <- factor(sd_cumul_ghg$policy_intervention, levels = c("BAU", "setback (all wells)", "setback (new wells)"))
+
+
+sd_fig6b <- sd_cumul_ghg %>%
+  filter(oil_price_scenario == "reference case") %>%
+  select(oil_price_scenario, policy_intervention, target_label, ghg_2045_perc, ghg_2045_perc_reduction, cumul_ghg) %>%
+  unique()
+
+fwrite(sd_fig6b, paste0(source_data_path, "fig6b.csv"))
+
+
+## figures
 ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% 
                              filter(oil_price_scenario == "reference case",
                                     policy_intervention != "BAU"), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention, shape = setback_name)) +
@@ -339,6 +408,22 @@ npv_dt$policy_intervention <- factor(npv_dt$policy_intervention, levels = c("car
                                                                             "setback (new wells)", "setback (all wells)", "carbon tax & setback", "excise tax & setback"))
 
 
+## make source data 
+sd_fig6cd <- npv_dt %>%
+  filter(target != 'BAU',
+         oil_price_scenario == "reference case",
+         measure == "NPV (2019 USD billion)",
+         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback', 'excise tax', 'carbon tax'),
+         title != "Climate: avoided damage") %>%
+  select(oil_price_scenario, policy_intervention, target, target_label, ghg_2045_perc_reduction,
+         title, measure, value) %>%
+  rename(category = title) %>%
+  arrange(category, policy_intervention)
+
+fwrite(sd_fig6cd, paste0(source_data_path, "fig6cd.csv"))
+
+
+## figure
 fig_bxm_c <- ggplot(npv_dt %>% filter(target != 'BAU',
                                       oil_price_scenario == "reference case",
                                       !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback', 'excise tax', 'carbon tax'),
@@ -439,6 +524,21 @@ dac_bau_dt <- left_join(dac_bau_dt, merge_df)  %>%
   as.data.table()
 
 dac_bau_dt$policy_intervention <- factor(dac_bau_dt$policy_intervention, levels = c("setback (new wells)", "setback (all wells)"))
+
+
+## make source data 
+sd_fig6ef <- dac_bau_dt %>%
+  filter(type == "DAC share",
+         metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
+         mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortalities",
+                                     ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
+  select(oil_price_scenario, policy_intervention, target, target_label, ghg_2045_perc_reduction,
+         facet_lab, value) %>%
+  rename(DAC_value = value,
+         category = facet_lab)
+
+fwrite(sd_fig6ef, paste0(source_data_path, "fig6ef.csv"))
+
 
 ## version 1: relative to BAU
 fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(type == "DAC share",
@@ -566,32 +666,32 @@ fig6 <- plot_grid(
 
 ## save figure 6
 ggsave(fig6,
-       filename = file.path(main_path, fig_path, 'figs/figure6-ref-case.png'),
+       filename = file.path(main_path, save_path, 'figure6-ref-case.png'),
        width = 180,
        height = 210,
        units = "mm",)
 
 ggsave(fig6,
-       filename = file.path(main_path, fig_path, 'figs/figure6-ref-case.pdf'),
+       filename = file.path(main_path, save_path, 'figure6-ref-case.pdf'),
        width = 180,
        height = 210,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure6-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure6-ref-case.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure6-ref-case.pdf'),
+            outfile = paste0(main_path, save_path, 'figure6-ref-case.pdf'))
 
 
 ## save fig 6 legend
 ggsave(legends,
-       filename = file.path(main_path, fig_path, 'figs/figure6-ref-case-l.pdf'),
+       filename = file.path(main_path, fig_path, 'figure6-ref-case-l.pdf'),
        width = 150,
        height = 25,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure6-ref-case-l.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure6-ref-case-l.pdf'))
+embed_fonts(paste0(main_path, fig_path, 'figure6-ref-case-l.pdf'),
+            outfile = paste0(main_path, fig_path, 'figure6-ref-case-l.pdf'))
 
 
 

@@ -2,10 +2,19 @@
 # created: october 12, 2020
 # author: meas meng
 
+
+if(zenodo_repo) {
+# zenodo path --
+input_path   = paste0(zenodo_user_path, '/ca-transportation-supply-decarb-files/intermediate/extraction-model')
+} else {
+# emlab path
+input_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
+# input_path <- file.path('/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn', 'outputs/stocks-flows')
+}
+
+
 # inputs ------------
 
-  # emdata_path   = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows'
-  emdata_path   = file.path('/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn', 'outputs/stocks-flows')
   fprod_file    = 'crude_prod_x_field_revised.csv'
   emfac_file    = 'ghg_emissions_x_field_2018-2045.csv'
   ref_file      = 'refinery_ghg_emissions.csv'
@@ -21,14 +30,14 @@
 # import data -------
   
   # load field-level production data
-    field_prod = fread(file.path(emdata_path, fprod_file), header = T)
+    field_prod = fread(file.path(input_path, fprod_file), header = T)
   
   # load field-level emissions factors
-    field_emfac = fread(file.path(emdata_path, emfac_file), header = T)
+    field_emfac = fread(file.path(input_path, emfac_file), header = T)
     # field_emfac = field_emfac[, .(doc_field_code, doc_fieldname, upstream_kgCO2e_bbl)]
     
   # load refinery-level emissions
-    ref_ghg = fread(file.path(emdata_path, ref_file), header = T)
+    ref_ghg = fread(file.path(input_path, ref_file), header = T)
     
 # rename FieldCode -> doc_field_code -----
   
@@ -99,4 +108,4 @@
   
 # remove items from environment -----
   
-  rm(emdata_path, fprod_file, emfac_file, ref_file, field_prod, field_emfac, ref_ghg, field_ghg, select_year)
+  rm(input_path, fprod_file, emfac_file, ref_file, field_prod, field_emfac, ref_ghg, field_ghg, select_year)

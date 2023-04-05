@@ -12,14 +12,37 @@ library(cowplot)
 library(rebus)
 library(tidyverse)
 
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
+
+## if using zenodo, define user path and location to save outputs
+if(zenodo_repo) {
+  zenodo_user_path <- '~/Desktop/'
+  zenodo_save_path <- ""
+}
+  
 ## source figs
 items <- "figure_themes.R"
 
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
-## paths
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+## set paths
+if(zenodo_repo) {
+  
+  ## input path
+  main_path <- paste0(zenodo_user_path, 'ca-transportation-supply-decarb-files/outputs/fig-and-results-out/')
+  fig_path <- main_path
+  save_path <- zenodo_save_path
+  
+} else {
+  
+  ## paths
+  main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+  fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+  save_path <- paste0(fig_path, "figs/")
+  source_data_path <- paste0(main_path, 'nature-energy/source-data/')
+  
+}
 
 ## csv names
 # levels_file <- 'state_levels_subset.csv'
@@ -31,11 +54,18 @@ dac_bau_file <- 'dac_bau_health_labor_all_oil.csv' ## DAC shares relative to BAU
 
 
 ## read in data
-npv_dt <- fread(paste0(main_path, fig_path, npv_file))
-# dac_dt <- fread(paste0(main_path, fig_path, dac_file))
-dac_bau_dt <- fread(paste0(main_path, fig_path, dac_bau_file))
-# dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
-# carbon_px <- fread(paste0("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs/", carbon_px_file))
+if(zenodo_repo) {
+  npv_dt <- fread(paste0(main_path, npv_file))
+  dac_bau_dt <- fread(paste0(main_path, dac_bau_file))
+} else {
+  npv_dt <- fread(paste0(main_path, fig_path, npv_file))
+  # dac_dt <- fread(paste0(main_path, fig_path, dac_file))
+  dac_bau_dt <- fread(paste0(main_path, fig_path, dac_bau_file))
+  # dac_pop_dt <- fread(paste0(main_path, fig_path, dac_pop_file))
+  # carbon_px <- fread(paste0("/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs/", carbon_px_file))
+  
+}
+
 
 ## cumulative
 npv_dt <- npv_dt[, title := fifelse(title == 'Abated GHG', 'Climate: avoided damage',
@@ -101,13 +131,23 @@ npv_dt$policy_intervention <- factor(npv_dt$policy_intervention, levels = c("car
 #                                                             "NPV per avoided GHG MtCO2e\n(2020 USD million / MtCO2e)",
 #                                                             "DAC share"))
 
+## create source data
+sd_fig3 <- npv_dt %>%
+  filter(target != 'BAU',
+         oil_price_scenario == "reference case",
+         setback_existing == 0,
+         !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback')) %>%
+  select(oil_price_scenario, policy_intervention, target, cumul_ghg,
+         ghg_2045_perc_reduction, target_label, title, unit, value) %>%
+  mutate(unit = ifelse(unit == "value_billion", "billion_usd_2019", "million_usd_2019_per_ghg"))
 
+fwrite(sd_fig3, paste0(source_data_path, "fig3/fig3a-f.csv"))
 
 
 # fig
 fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
                                                  oil_price_scenario == "reference case",
-                                                 setback_existing == 1,
+                                                 setback_existing == 0,
                                                  !policy_intervention %in% c('carbon tax & setback', 'excise tax & setback')), aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
@@ -128,20 +168,20 @@ fig_benefit_x_metric <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 ## save figure 3
 ggsave(fig_benefit_x_metric,
-       filename = file.path(main_path, fig_path, 'figs/figure3-sb-all.png'),
+       filename = file.path(main_path, save_path, 'figure3-sb-all.png'),
        width = 180,
        height = 150,
        units = "mm",)
 
 ggsave(fig_benefit_x_metric,
-       filename = file.path(main_path, fig_path, 'figs/figure3-sb-all.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-sb-all.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-sb-all.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-sb-all.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-sb-all.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-sb-all.pdf'))
 
 
 ## sb only applies to new wells:
@@ -168,20 +208,20 @@ fig_benefit_x_metric_sb <- ggplot(npv_dt %>% filter(target != 'BAU',
 
 ## save figure 3
 ggsave(fig_benefit_x_metric_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure3-sb-new.png'),
+       filename = file.path(main_path, save_path, 'figure3-sb-new.png'),
        width = 180,
        height = 150,
        units = "mm",)
 
 ggsave(fig_benefit_x_metric_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure3-sb-new.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-sb-new.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-sb-new.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-sb-new.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-sb-new.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-sb-new.pdf'))
 
 
 ## revised version, make them separately
@@ -405,20 +445,20 @@ fig3_plot_grid2 <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure3-ref-case.png'),
+       filename = file.path(main_path, save_path, 'figure3-ref-case.png'),
        width = 180,
        height = 150,
        units = "mm",)
 
 ggsave(fig3_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure3-ref-case.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-ref-case.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-ref-case.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-ref-case.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-ref-case.pdf'))
 
 
 
@@ -643,20 +683,20 @@ fig3_plot_grid2_l <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/figure3-low.png'),
+       filename = file.path(main_path, save_path, 'figure3-low.png'),
        width = 180,
        height = 150,
        units = "mm")
 
 ggsave(fig3_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/figure3-low.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-low.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-low.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-low.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-low.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-low.pdf'))
 
 
 ## high 
@@ -833,20 +873,20 @@ fig3_plot_grid2_h <- plot_grid(
 
 ## save figure 3
 ggsave(fig3_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/figure3-high.png'),
+       filename = file.path(main_path, save_path, 'figure3-high.png'),
        width = 180,
        height = 150,
        units = "mm")
 
 ggsave(fig3_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/figure3-high.pdf'),
+       filename = file.path(main_path, save_path, 'figure3-high.pdf'),
        width = 180,
        height = 150,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure3-high.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure3-high.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure3-high.pdf'),
+            outfile = paste0(main_path, save_path, 'figure3-high.pdf'))
 
 
 
@@ -926,6 +966,22 @@ dac_bau_dt$policy_intervention <- factor(dac_bau_dt$policy_intervention, levels 
                                                                             "setback (new wells)", "setback (all wells)", "carbon tax & setback", "excise tax & setback"))
 
 
+## create source data
+sd_fig5 <- dac_bau_dt %>%
+  filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
+         oil_price_scenario == "reference case",
+         setback_existing == 0,
+         type == "DAC share",
+         metric %in% c("dac_share_pv", "dac_share_av_pv")) %>%
+  mutate(facet_lab = ifelse(category == "Avoided mortalities", "Health: avoided mortality",
+                     ifelse(category == "Employment", "Labor: forgone wages", category))) %>%
+  select(oil_price_scenario, policy_intervention, target, target_policy, target_label,
+        ghg_2045_perc, ghg_2045_perc_reduction, category, value) %>%
+  rename(metric = category,
+         DAC_value = value) %>%
+  arrange(metric)
+
+fwrite(sd_fig5, paste0(source_data_path, "fig5/fig5ab.csv"))
 
 
 ## version 1: relative to BAU
@@ -1051,20 +1107,20 @@ fig4_plot_grid2 <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure5-refcase-relBAU.png'),
+       filename = file.path(main_path, save_path, 'figure5-refcase-relBAU.png'),
        width = 95,
        height = 60,
        units = "mm")
 
 ggsave(fig4_plot_grid2,
-       filename = file.path(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'),
+       filename = file.path(main_path, save_path, 'figure5-refcase-relBAU.pdf'),
        width = 95,
        height = 60,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure5-refcase-relBAU.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure5-refcase-relBAU.pdf'),
+            outfile = paste0(main_path, save_path, 'figure5-refcase-relBAU.pdf'))
 
 ## sb only applies to new wells
 ## ------------------------------------------------
@@ -1170,20 +1226,20 @@ fig4_plot_grid2_sb <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure5-comparison.png'),
+       filename = file.path(main_path, save_path, 'figure5-comparison.png'),
        width = 130,
        height = 130,
        units = "mm")
 
 ggsave(fig4_plot_grid2_sb,
-       filename = file.path(main_path, fig_path, 'figs/figure5-comparison.pdf'),
+       filename = file.path(main_path, save_path, 'figure5-comparison.pdf'),
        width = 130,
        height = 130,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure5-comparison.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure5-comparison.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure5-comparison.pdf'),
+            outfile = paste0(main_path, save_path, 'figure5-comparison.pdf'))
 
 
 
@@ -1296,20 +1352,20 @@ fig4_plot_grid2_h <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/figure4-high-relBAU.png'),
+       filename = file.path(main_path, save_path, 'figure4-high-relBAU.png'),
        width = 100,
        height = 70,
        units = "mm")
 
 ggsave(fig4_plot_grid2_h,
-       filename = file.path(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
+       filename = file.path(main_path, save_path, 'figure4-high-relBAU.pdf'),
        width = 100,
        height = 70,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure4-high-relBAU.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure4-high-relBAU.pdf'),
+            outfile = paste0(main_path, save_path, 'figure4-high-relBAU.pdf'))
 
 ## low
 
@@ -1417,20 +1473,20 @@ fig4_plot_grid2_l <- plot_grid(
 
 ## save figure 4, v1
 ggsave(fig4_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/figure4-low-relBAU.png'),
+       filename = file.path(main_path, save_path, 'figure4-low-relBAU.png'),
        width = 100,
        height = 70,
        units = "mm")
 
 ggsave(fig4_plot_grid2_l,
-       filename = file.path(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'),
+       filename = file.path(main_path, save_path, 'figure4-low-relBAU.pdf'),
        width = 100,
        height = 70,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure4-low-relBAU.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure4-low-relBAU.pdf'),
+            outfile = paste0(main_path, save_path, 'figure4-low-relBAU.pdf'))
 
 
 
@@ -1670,14 +1726,26 @@ fig_carbon_sb <- ggplot(csb_npv_dt %>%
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
+
+if(zenodo_repo) {
+  
+  ggsave(fig_carbon_sb,
+         filename = file.path(main_path, save_path, 'figure6-refcase.png'),
+         width = 6.5,
+         height = 5,
+         units = "in")
+  
+  
+} else {
+
 ## save figure 3
 ggsave(fig_carbon_sb,
-       filename = file.path(main_path, fig_path, 'figs/si/figure6-refcase.png'),
+       filename = file.path(main_path, save_path, 'si/figure6-refcase.png'),
        width = 6.5,
        height = 5,
        units = "in")
 
-
+}
 
 
 ## high and low
@@ -1703,12 +1771,24 @@ fig_carbon_sb_low <- ggplot(csb_npv_dt %>%
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
-## save figure 3
-ggsave(fig_carbon_sb_low,
-       filename = file.path(main_path, fig_path, 'figs/si/figure6-low.png'),
-       width = 6.5,
-       height = 5,
-       units = "in")
+if(zenodo_repo) {
+
+  ## save figure 3
+  ggsave(fig_carbon_sb_low,
+         filename = file.path(main_path, save_path, 'figure6-low.png'),
+         width = 6.5,
+         height = 5,
+         units = "in")
+} else {
+  
+  ## save figure 3
+  ggsave(fig_carbon_sb_low,
+         filename = file.path(main_path, save_path, 'si/figure6-low.png'),
+         width = 6.5,
+         height = 5,
+         units = "in")
+  
+}
 
 
 ## high and low
@@ -1733,13 +1813,25 @@ fig_carbon_sb_high <- ggplot(csb_npv_dt %>% filter(oil_price_scenario == "high o
         # legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(vjust = 0.5, hjust=1)) 
 
+if(zenodo_repo) {
+
 ## save figure 3
 ggsave(fig_carbon_sb_high,
-       filename = file.path(main_path, fig_path, 'figs/si/figure6-high.png'),
+       filename = file.path(main_path, save_path, 'figure6-high.png'),
        width = 6.5,
        height = 5,
        units = "in")
 
+  } else {
+  
+    ## save figure 3
+    ggsave(fig_carbon_sb_high,
+           filename = file.path(main_path, save_path, 'si/figure6-high.png'),
+           width = 6.5,
+           height = 5,
+           units = "in")
+  
+}
 
 
 
@@ -2137,13 +2229,22 @@ fig_benefit_x_metric2 <- ggplot(npv_90 %>% filter(target != 'BAU',
         legend.key.width= unit(1, 'cm'),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
+if(zenodo_repo) {
 
-
-ggsave(fig_benefit_x_metric2,
-       filename = file.path(main_path, fig_path, 'figs/si/figure5a-refcase.png'),
-       width = 8,
-       height = 8,
-       units = "in")
+  ggsave(fig_benefit_x_metric2,
+         filename = file.path(main_path, save_path, 'figure5a-refcase.png'),
+         width = 8,
+         height = 8,
+         units = "in")
+} else {
+  
+  ggsave(fig_benefit_x_metric2,
+         filename = file.path(main_path, save_path, 'si/figure5a-refcase.png'),
+         width = 8,
+         height = 8,
+         units = "in")
+  
+}
 
 ## high and low
 ## ---------------------------
@@ -2190,13 +2291,23 @@ fig_benefit_x_metric2_high <- ggplot(npv_90 %>% filter(target != 'BAU',
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
+if(zenodo_repo) {
 
 ggsave(fig_benefit_x_metric2_high,
-       filename = file.path(main_path, fig_path, 'figs/si/figure5a-high.png'),
+       filename = file.path(main_path, save_path, 'figure5a-high.png'),
        width = 8,
        height = 8,
        units = "in")
 
+} else {
+  
+  ggsave(fig_benefit_x_metric2_high,
+         filename = file.path(main_path, save_path, 'si/figure5a-high.png'),
+         width = 8,
+         height = 8,
+         units = "in")
+  
+}
 
 
 # 

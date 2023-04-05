@@ -1,18 +1,40 @@
-# inputs -----
 
-# args = commandArgs(trailingOnly = TRUE)
-run_name = "revision-setbacks"
+## the user must define run_name (which will be used when saving your results) and 
+## the save path, which should direct to a folder where the outputs will be saved
 
-# outputs -------
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
 
-# save_path             = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
-save_path             = '/Volumes/calepa/extraction-out'
+if(zenodo_repo) {
+  ## zenodo users define run name save path here ----
+  zenodo_user_path <- '~/Desktop'
+  save_path  = ''
+  run_name = 'xxx'
+  
+  
+} else {
+  # args = commandArgs(trailingOnly = TRUE)
+  run_name        = "revision-setbacks"
+  # save_path     = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/predict-production'
+  save_path       = '/Volumes/calepa/extraction-out' 
+  
+}
+
+# ## set path if zenodo user
+# if(zenodo_repo) {
+#   
+#   main_path          = paste0(zenodo_user_path, '/ca-transport-supply-decarb-files/')
+#   extract_path       = 'intermediate/extraction-model/'
+#   
+# }
+
+
 
 # create save path that is based on the specified path and the run date ------
 
 cur_date              = Sys.Date()
 save_path             = file.path(save_path, paste0('extraction_', cur_date))
-dir.create(save_path, showWarnings = FALSE)
+dir.create(save_path, showWarnings = TRUE)
 
 # create directories for individual outputs
 

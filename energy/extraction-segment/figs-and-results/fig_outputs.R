@@ -10,12 +10,50 @@ library(rebus)
 library(readxl)
 library(openxlsx)
 
-## paths 
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
+
+## if using zenodo repo, define location to save outputs (code later will create folder)
+if(zenodo_repo) {
+  ## zenodo users define run name save path here ----
+  zenodo_user_path <- ''
+  save_info_path  = ""
+}
+
+## date of results (defines the folder to pull from if using original save conventions)
+energy_result_date <- "2022-11-15"
+comp_result_date <- "2022-12-27"
+
+## set paths
+if(zenodo_repo) {
+  
+  main_path              = 'ca-transport-supply-decarb-files/'
+  extraction_folder_path = 'outputs/model-out/'
+  outputs_path           = 'outputs/fig-and-results-out/'
+  county_save_path       = paste0(main_path, extraction_folder_path)
+  ct_save_path           = paste0(main_path, extraction_folder_path)
+  state_save_path        = paste0(main_path, extraction_folder_path)
+  stocks_flows_path      = outputs_path
+  benmap_path            = outputs_path
+  # field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-11-15/revision-setbacks/field-out/")
+  health_out             = paste0(main_path, "outputs/academic-out/health/")
+  
+  county_out_file        = 'subset_county_results_adj.csv'
+  
+} else {
+
+## drive paths 
 main_path              = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-extraction_folder_path = 'outputs/academic-out/extraction/extraction_2022-12-27/'
+extraction_folder_path = paste0('outputs/academic-out/extraction/extraction_', comp_result_date, '/')
+county_save_path       = paste0(main_path, extraction_folder_path, 'county-results/')
+ct_save_path           = paste0(main_path, extraction_folder_path, 'census-tract-results/')
 state_save_path        = paste0(main_path, extraction_folder_path, 'state-results/')
-field_out              = paste0(main_path, "outputs/predict-production/extraction_2022-11-15/revision-setbacks/field-out/")
+benmap_path            = "data/benmap/processed/"
+stocks_flows_path      = paste0(main_path, 'data/stocks-flows/processed/')
+# field_out              = paste0(main_path, "outputs/predict-production/extraction_", energy_result_date, "/revision-setbacks/field-out/")
 health_out             = paste0(main_path, "outputs/academic-out/health/")
+
+county_out_file        = 'subset_county_results.csv'
 
 # ## external paths
 # extraction_folder_path = '/Volumes/calepa/academic-out/extraction_2022-11-16/'
@@ -23,27 +61,35 @@ health_out             = paste0(main_path, "outputs/academic-out/health/")
 # field_out              = '/Volumes/calepa/extraction-out/extraction_2022-11-15/revision-setbacks/field-out/'
 # health_out             = '/Volumes/calepa/academic-out/extraction_2022-11-16/health/'
 
+}
 
-## create a folder to store outputs
-cur_date              = Sys.Date()
-save_info_path        = paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/final/')
-dir.create(save_info_path, showWarnings = FALSE)  
+## define location to save outputs
+if(zenodo_repo) {
+  save_info_path <- save_info_path
+} else { 
+  save_info_path <- paste0(main_path, 'outputs/academic-out/extraction/figures/nature-energy-revision/final/')
+}
+dir.create(save_info_path, showWarnings = FALSE) 
+
 
 ## files
 ghg_file            = 'indust_emissions_2000-2019.csv'
 scc_file            = 'social_cost_carbon.csv'
-carbon_px_file      = 'carbon_price_scenarios_revised.xlsx'
-field_cluster_file  = 'extraction_field_cluster_xwalk.csv'
-
+# carbon_px_file      = 'carbon_price_scenarios_revised.xlsx'
+# field_cluster_file  = 'extraction_field_cluster_xwalk.csv'
 
 ## read in social cost of carbon
-scc_df <- fread(paste0(main_path, 'data/stocks-flows/processed/', scc_file))
+if(zenodo_repo) {
+  scc_df <- fread(paste0(main_path, outputs_path, scc_file))
+} else {
+  scc_df <- fread(paste0(main_path, 'data/stocks-flows/processed/', scc_file))
+}
 
 ## filter for 3 percent, 
 scc_df_filt <- scc_df[discount_rate == 'three_perc_avg', .(year, social_cost_co2)]
 
 ## Create population by year time series
-ct_population <- fread(paste0(main_path, "data/benmap/processed/ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
+ct_population <- fread(paste0(main_path, benmap_path, "ct_inc_45.csv"), stringsAsFactors  = FALSE) %>%
   mutate(ct_id = paste0(stringr::str_sub(gisjoin, 2, 3),
                         stringr::str_sub(gisjoin, 5, 7),
                         stringr::str_sub(gisjoin, 9, 14))) %>%
@@ -89,7 +135,7 @@ VSL_2019 <- VSL_2015 * cpi2019 / cpi2015 #(https://fred.stlouisfed.org/series/CP
 income_elasticity_mort <- 0.4
 
 ## for monetary mortality impact
-growth_rates <- read.csv(paste0(main_path, "data/benmap/processed/growth_rates.csv"), stringsAsFactors = FALSE) %>%
+growth_rates <- read.csv(paste0(main_path, benmap_path, "growth_rates.csv"), stringsAsFactors = FALSE) %>%
   filter(year > 2018) %>%
   mutate(growth = ifelse(year == 2019, 0, growth_2030),
          cum_growth = cumprod(1 + growth)) %>%
@@ -103,7 +149,7 @@ future_WTP <- function(elasticity, growth_rate, WTP){
 
 ## 2019 GHG emissions
 ## --------------------------
-hist_ghg <- fread(paste0(main_path, 'data/stocks-flows/processed/', ghg_file), header = T)
+hist_ghg <- fread(paste0(stocks_flows_path, ghg_file), header = T)
 
 hist_ghg <- hist_ghg[segment %chin% c('Oil & Gas: Production & Processing') &
                        year == 2019, .(segment, unit, year, value)]
@@ -446,7 +492,7 @@ fwrite(npv_x_metric, paste0(save_info_path, 'npv_x_metric_all_oil.csv'))
 ## -------------------------------------------------------------
 
 ## labor, county
-labor_out <- fread(paste0(main_path, extraction_folder_path, 'county-results/subset_county_results.csv'))
+labor_out <- fread(paste0(county_save_path, county_out_file))
 # labor_out <- fread(paste0(extraction_folder_path, 'county-results/subset_county_results.csv'))
 
 
@@ -507,7 +553,7 @@ labor_dac_bind[, category := "Employment"]
 ## Health DAC
 ##----------------------------------------------------
 
-health_out <- fread(paste0(main_path, extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
+health_out <- fread(paste0(ct_save_path, 'subset_census_tract_results.csv'))
 # health_out <- fread(paste0(extraction_folder_path, 'census-tract-results/subset_census_tract_results.csv'))
 
 

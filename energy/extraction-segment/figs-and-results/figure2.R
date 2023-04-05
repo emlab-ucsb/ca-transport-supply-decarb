@@ -12,14 +12,35 @@ library(broom)
 library(cowplot)
 library(extrafont)
 
+## define if you are using zenodo repo for inputs (if yes, set to TRUE)
+zenodo_repo <- FALSE
+
+## if using zenodo, define location to save outputs
+zenodo_save_path <- ""
+
+
 ## source figs
 items <- "figure_themes.R"
 
 walk(items, ~ here::here("energy", "extraction-segment", "figs-and-results", .x) %>% source()) # load local items
 
+## set paths
+if(zenodo_repo) {
+  
+  ## input path
+  main_path <- 'ca-transportation-supply-decarb-files/outputs/fig-and-results-out/'
+  fig_path <- main_path
+  save_path <- zenodo_save_path
+  
+} else {
+
 ## paths
 main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 fig_path <- 'outputs/academic-out/extraction/figures/nature-energy-revision/final/'
+save_path <- paste(fig_path, "figs/")
+source_data_path <- paste0(main_path, 'nature-energy/source-data/')
+
+}
 
 ## csv names
 levels_name <- 'state_levels_all_oil.csv'
@@ -69,6 +90,19 @@ levels_dt[, policy_intervention := fifelse((policy_intervention == "setback" &
 #   theme(legend.position = "bottom",
 #         legend.key.width= unit(1, 'cm'),
 #         legend.box="vertical") 
+
+## create source data
+sd_fig2ab <- levels_dt %>%
+  filter(metric %in% c("total_state_bbl", "total_state_ghg_MtCO2"),
+         oil_price_scenario == "reference case",
+         target != "setback_1000ft",
+         setback_existing == 0,
+         year > 2019) %>%
+  select(oil_price_scenario, policy_intervention, target, target_policy, 
+         target_label, ghg_2045_perc, ghg_2045_perc_reduction, year, metric, value)
+
+fwrite(sd_fig2ab, paste0(source_data_path, "fig2/fig2ab.csv"))
+
 
 ## version 2, categorical colors for policy
 prod_fig_v2 <- ggplot(levels_dt %>% filter(metric == "total_state_bbl",
@@ -350,6 +384,19 @@ cumul_ghg$policy_intervention <- factor(cumul_ghg$policy_intervention, levels = 
 #         legend.background = element_rect(fill = "white", color = "grey")) 
 
 
+## create source data
+sd_cumul_ghg <- levels_dt[(metric == "total_state_ghg_MtCO2" & 
+                          year > 2019), .(cumul_ghg = sum(value)), by = .(scen_id, setback_existing, oil_price_scenario,  policy_intervention, 
+                                                                          target, target_policy, ghg_2045_perc, target_label)]
+
+sd_fig2c <- sd_cumul_ghg %>%
+  filter(oil_price_scenario == "reference case",
+         setback_existing == 0) %>%
+  select(oil_price_scenario:cumul_ghg) %>%
+  
+fwrite(sd_fig2c, paste0(source_data_path, "fig2/fig2c.csv"))
+
+## figure
 ghg_cumul_fig_v2 <- ggplot(cumul_ghg %>% 
                              filter(oil_price_scenario == "reference case" & setback_existing == 0), aes(x = ghg_2045_perc * -100, y = cumul_ghg, color = policy_intervention)) +
   geom_point(size = 2, alpha = 0.8) +
@@ -527,32 +574,32 @@ fig2_v2_combine <- plot_grid(
 
 
 ggsave(fig2_v2_combine,
-       filename = paste0(main_path, fig_path, 'figs/figure2-ref-case.png'),
+       filename = paste0(main_path, save_path, 'figure2-ref-case.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(fig2_v2_combine,
-       filename = paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'),
+       filename = paste0(main_path, save_path, 'figure2-ref-case.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure2-ref-case.pdf'),
+            outfile = paste0(main_path, save_path, 'figure2-ref-case.pdf'))
 
 
 
 ggsave(fig2_v2_combine,
-       filename = paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'),
+       filename = paste0(main_path, save_path, 'figure2-ref-case-test.pdf'),
        width = 88,
        height = 95,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-ref-case-test.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure2-ref-case-test.pdf'),
+            outfile = paste0(main_path, save_path, 'figure2-ref-case-test.pdf'))
 
 # ##
 # fig2_v2_combine_sb <- plot_grid(
@@ -753,20 +800,20 @@ low_px_fig <- plot_grid(
 
 
 ggsave(low_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/figure2-low.png'),
+       filename = file.path(main_path, save_path, 'figure2-low.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(low_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/figure2-low.pdf'),
+       filename = file.path(main_path, save_path, 'figure2-low.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-low.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-low.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure2-low.pdf'),
+            outfile = paste0(main_path, save_path, 'figure2-low.pdf'))
 
 
 
@@ -940,18 +987,18 @@ high_px_fig <- plot_grid(
 
 
 ggsave(high_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/figure2-high.png'),
+       filename = file.path(main_path, save_path, 'figure2-high.png'),
        width = 180,
        height = 185,
        units = "mm")
 
 ggsave(high_px_fig,
-       filename = file.path(main_path, fig_path, 'figs/figure2-high.pdf'),
+       filename = file.path(main_path, save_path, 'figure2-high.pdf'),
        width = 180,
        height = 185,
        units = "mm",
        device = 'pdf')
 
-embed_fonts(paste0(main_path, fig_path, 'figs/figure2-high.pdf'),
-            outfile = paste0(main_path, fig_path, 'figs/figure2-high.pdf'))
+embed_fonts(paste0(main_path, save_path, 'figure2-high.pdf'),
+            outfile = paste0(main_path, save_path, 'figure2-high.pdf'))
 
