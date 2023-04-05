@@ -548,11 +548,15 @@ ct_2019 <- census_tracts %>%
 ## save version for source data
 ## ---------------------------------------
 
-sd_1cd <- ct_2019 %>% 
+sd_1c <- ct_2019 %>% 
   st_drop_geometry() %>%
-  select(-ALAND, -scen_id, -pop, - total_pm25, -year, -disadvantaged) 
+  select(-ALAND, -scen_id, -pop, - total_pm25, -year, -disadvantaged) %>%
+  mutate(census_tract = paste0("x", census_tract)) %>%
+  rename(population_weighted_pm25 = pop_x_pm25) %>%
+  mutate(description = "population-weighted PM2.5 concentration",
+        unit = "micrograms per meters cubed")
 
-fwrite(sd_1cd, paste0(source_data_path, "fig1c.csv"))
+fwrite(sd_1c, paste0(source_data_path, "fig1/fig1c.csv"))
 
 
 ## health map
@@ -905,7 +909,7 @@ ct_intersect <- st_intersection(ct_map_county, county_union)
 
 ## dropped census tract
 dropped_ct <- anti_join(ct_cropped %>% st_drop_geometry() %>% select(GEOID), 
-                        ct_intersect2 %>% st_drop_geometry() %>% select(GEOID))
+                        ct_intersect %>% st_drop_geometry() %>% select(GEOID))
 
 test <- ct_cropped %>% filter(GEOID == dropped_ct$GEOID[1])
 
@@ -916,9 +920,13 @@ ggplot() + geom_sf(data = county_crop) + geom_sf(data = test, color = "red")
  sd_1d <- ct_intersect %>% 
   st_drop_geometry() %>%
   select(GEOID, total_pm25) %>%
-  rename(census_tract = GEOID) 
+  rename(census_tract = GEOID) %>%
+  mutate(census_tract = paste0("x", census_tract)) %>%
+  rename(pm25_concentration = total_pm25) %>%
+  mutate(description = "PM2.5 concentration",
+         unit = "micrograms per meters cubed")
 
-fwrite(sd_1d, paste0(source_data_path, "fig1d.csv"))
+fwrite(sd_1d, paste0(source_data_path, "fig1/fig1d.csv"))
 
 
 ## counties
