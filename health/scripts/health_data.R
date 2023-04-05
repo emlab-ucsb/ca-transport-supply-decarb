@@ -182,6 +182,7 @@ ct_inc_45 <- ct_inc_45_temp%>%
 ## Output final population and mortality incidence data
 
 write.csv(ct_inc_45,file = "./calepa-cn/data/benmap/processed/ct_inc_45.csv", row.names = FALSE)
+#ct_inc_45 <- fread("./calepa-cn/data/benmap/processed/ct_inc_45.csv", stringsAsFactors = FALSE)
 
 ## Census tract level for labor team
 
