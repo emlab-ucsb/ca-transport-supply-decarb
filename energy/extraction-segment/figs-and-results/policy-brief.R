@@ -141,7 +141,7 @@ fig_health_npv <- ggplot(health_npv_df, aes(x = ghg_2045_perc_reduction, y = val
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "HEALTH:\nAvoided mortality",
+       title = "HEALTH\navoided mortality",
        y = "BENEFITS AND LOSSES\nNet Present Value 2020-2045\n(2019 USD billion)",
        x = NULL) +
   geom_text_repel(data = health_npv_df %>% filter(!is.na(setback_lab)), aes(label = setback_lab), size = 2, color = "black") +
@@ -152,7 +152,7 @@ fig_health_npv <- ggplot(health_npv_df, aes(x = ghg_2045_perc_reduction, y = val
         plot.title = element_text(hjust = 0.5, size = fig3_text_size),
         axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
         axis.text.y = element_text(size = fig3_text_size),
-        axis.title.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size, face = "bold", margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -179,19 +179,19 @@ values_df <- health_npv_df %>%
   filter(!is.na(setback_lab))
 
 fig_health_npv_v2 <- ggplot() +
-  geom_vline(xintercept = 61.86996, lty = "dashed", color = "darkgray") +
-  geom_vline(xintercept = 65.37517, lty = "dashed", color = "darkgray") +
-  geom_vline(xintercept = 72.49368, lty = "dashed", color = "darkgray") +
-  geom_vline(xintercept = 90.00000, lty = "dashed", color = "darkgray") +
+  # geom_vline(xintercept = 61.86996, lty = "dashed", color = "darkgray") +
+  # geom_vline(xintercept = 65.37517, lty = "dashed", color = "darkgray") +
+  # geom_vline(xintercept = 72.49368, lty = "dashed", color = "darkgray") +
+  # geom_vline(xintercept = 90.00000, lty = "dashed", color = "darkgray") +
   geom_point(data = health_npv_df, aes(x = ghg_2045_perc_reduction, y = value, color = policy_intervention), size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "HEALTH:\nAvoided mortality",
+       title = "HEALTH\nAvoided mortality",
        y = "BENEFITS AND LOSSES\nNet Present Value 2020-2045\n(2019 USD billion)",
        x = NULL) +
-  annotate("text", x = c(61.86996, 65.37517, 72.49368, 90.0), y = c(0.7, 0.85, 1, 1.8), label = c("1,000 ft", "2,500 ft", "1 mile", "90% GHG\nreduction"), size = 2) +
+  annotate("text", x = c(61.86996, 65.37517, 72.49368, 90.0), y = c(1, 1.2, 1.4, 1.8), label = c("1,000 ft", "2,500 ft", "1 mile", "90% GHG\nreduction"), size = 2, angle = 90, hjust = 0.5) +
   # geom_text_repel(data = health_npv_df %>% filter(!is.na(setback_lab)), aes(label = setback_lab), size = 2, color = "black") +
-  ylim(0, 2) +
+  ylim(0, 2.25) +
   xlim(60, 100) +
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
@@ -199,7 +199,7 @@ fig_health_npv_v2 <- ggplot() +
         plot.title = element_text(hjust = 0.5, size = fig3_text_size),
         axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
         axis.text.y = element_text(size = fig3_text_size),
-        axis.title.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size,  face = "bold", margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -230,7 +230,7 @@ fig_labor_npv <- ggplot(npv_dt %>% filter(target != 'BAU',
   geom_point(size = 2, alpha = 0.8) +
   geom_hline(yintercept = 0, color = "darkgray", size = 0.5) +
   labs(color = "Policy",
-       title = "LABOR:\nLost worker compensation",
+       title = "LABOR\nLost worker compensation",
        y = NULL,
        x = NULL) +
   ylim(-15, 0) +
@@ -240,7 +240,7 @@ fig_labor_npv <- ggplot(npv_dt %>% filter(target != 'BAU',
         plot.title = element_text(hjust = 0.5, size = fig3_text_size),
         axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
         axis.text.y = element_text(size = fig3_text_size),
-        axis.title.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size, face = "bold", margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -267,7 +267,7 @@ legend_fig <- ggplot(npv_dt %>% filter(target != 'BAU',
         plot.title = element_text(hjust = 0, size = fig3_text_size),
         axis.text.x = element_text(vjust = 0.5, hjust = 1, size = fig3_text_size),
         axis.text.y = element_text(size = fig3_text_size),
-        axis.title.y = element_text(size = fig3_text_size),
+        axis.title.y = element_text(size = fig3_text_size, face = "bold", margin = margin(t = 0, r = 10, b = 0, l = 0)),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'))
 
@@ -332,15 +332,15 @@ fig_dac_bau_h <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   theme(legend.position = "bottom",
         legend.box = "vertical",
         legend.key.width= unit(1, 'cm'),
-        axis.text = element_text(vjust = 0.5, hjust=1, size = 6),
+        axis.text = element_text(vjust = 0.5, hjust=1, size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'),
         axis.line.y = element_line(color = 'black'),
         axis.ticks.y = element_line(color = 'black'),
-        axis.title = element_text(size = 6),
-        title = element_text(size = 6),
-        legend.title = element_text(size = 6),
-        legend.text = element_text(size = 6))
+        axis.title.y = element_text(size = fig3_text_size,  face = "bold", margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        title = element_text(size = fig3_text_size),
+        legend.title = element_text(size = fig3_text_size),
+        legend.text = element_text(size = fig3_text_size))
 
 fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU', 'carbon tax & setback', 'excise tax & setback'),
                                               oil_price_scenario == "reference case",
@@ -363,21 +363,21 @@ fig_dac_bau_l <- ggplot(dac_bau_dt %>% filter(!policy_intervention %in% c('BAU',
   scale_color_manual(values = policy_colors_subset) +
   theme_line_n +
   theme(legend.position = "none",
-        axis.text = element_text(vjust = 0.5, hjust=1, size = 6),
+        axis.text = element_text(vjust = 0.5, hjust=1, size = fig3_text_size),
         axis.ticks.length.y = unit(0.1, 'cm'),
         axis.ticks.length.x = unit(0.1, 'cm'),
         axis.line.y = element_line(color = 'black'),
         axis.ticks.y = element_line(color = 'black'),
-        axis.title = element_text(size = 6),
-        title = element_text(size = 6),
-        legend.title = element_text(size = 6),
-        legend.text = element_text(size = 6))
+        axis.title = element_text(size = fig3_text_size),
+        title = element_text(size = fig3_text_size),
+        legend.title = element_text(size = fig3_text_size),
+        legend.text = element_text(size = fig3_text_size))
 
 ## plot them together
 ## -------------------------------
 
 pb_plot_grid <- plot_grid(
-  fig_health_npv + theme(legend.position = "none",
+  fig_health_npv_v2 + theme(legend.position = "none",
                          plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "mm")),
   fig_labor_npv + theme(legend.position = "none",
                         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "mm")),
@@ -395,7 +395,7 @@ pb_plot_grid <- plot_grid(
 pb_plot_grid
 
 ## smaller x axis
-xaxis_lab_5 <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 5)
+xaxis_lab_5 <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 7)
 
 pb_plot_grid2 <- plot_grid(
   pb_plot_grid,
@@ -411,11 +411,9 @@ pb_plot_grid2 <- plot_grid(
 )
 pb_plot_grid2
 
-## smaller text
+## legend fig
 legend_pb_fig <- get_legend(
-  legend_fig + 
-    theme(legend.title = element_text(size = 5),
-          legend.text = element_text(size = 5))
+  legend_fig
   
 )
 
@@ -438,13 +436,13 @@ pb_plot_grid3
 ## save figure 4, v1
 ggsave(pb_plot_grid3,
        filename = file.path(main_path, save_path, 'brief_fig.png'),
-       width = 140,
+       width = 120,
        height = 100,
        units = "mm")
 
 ggsave(pb_plot_grid3,
        filename = file.path(main_path, save_path, 'brief_fig.pdf'),
-       width = 140,
+       width = 120,
        height = 100,
        units = "mm",
        device = 'pdf')
@@ -456,67 +454,6 @@ embed_fonts(paste0(main_path, save_path, 'brief_fig.pdf'),
 
 
 
-
-
-
-
-
-
-
-
-## combine figure
-## ---------------------------------
-
-## shared x axis
-xaxis_lab <- ggdraw() + draw_label("GHG emissions reduction target (%, 2045 vs 2019)", size = 7)
-
-fig3_plot_grid <- plot_grid(
-  fig_bxm_a,
-  fig_bxm_b,
-  fig_bxm_c,
-  fig_bxm_d + labs(x = NULL),
-  fig_bxm_e + labs(x = NULL),
-  fig_bxm_f+ labs(x = NULL),
-  align = 'vh',
-  # labels = c("A", "B", "C", "D", "E", "F"),
-  # # labels = 'AUTO',
-  # label_size = 10,
-  hjust = -1,
-  nrow = 2,
-  rel_widths = c(1, 1, 1, 1, 1, 1)
-)
-
-fig3_plot_grid2 <- plot_grid(
-  fig3_plot_grid,
-  xaxis_lab,
-  legend_fig_3,
-  align = "v",
-  # labels = c("(A)", "(B)", "(C)", ""),
-  # # labels = 'AUTO',
-  # label_size = 10,
-  # hjust = -1,
-  ncol = 1,
-  rel_heights = c(1, 0.05, 0.05)
-  # rel_widths = c(1, 1),
-)
-
-
-## save figure 3
-ggsave(fig3_plot_grid2,
-       filename = file.path(main_path, save_path, 'figure3-ref-case.png'),
-       width = 180,
-       height = 150,
-       units = "mm",)
-
-ggsave(fig3_plot_grid2,
-       filename = file.path(main_path, save_path, 'figure3-ref-case.pdf'),
-       width = 180,
-       height = 150,
-       units = "mm",
-       device = 'pdf')
-
-embed_fonts(paste0(main_path, save_path, 'figure3-ref-case.pdf'),
-            outfile = paste0(main_path, save_path, 'figure3-ref-case.pdf'))
 
 
 
