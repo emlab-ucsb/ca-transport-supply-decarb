@@ -476,6 +476,53 @@ pb_plot_grid_no_lines <- plot_grid(
 pb_plot_grid_no_lines
 
 
+pb_plot_grid_no_lines2 <- plot_grid(
+  pb_plot_grid_no_lines,
+  xaxis_lab_5,
+  align = "v",
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  # hjust = -1,
+  ncol = 1,
+  rel_heights = c(1, 0.025)
+  # rel_widths = c(1, 1),
+)
+pb_plot_grid_no_lines2
+
+
+pb_plot_grid_no_lines3 <- plot_grid(
+  pb_plot_grid_no_lines2,
+  NULL,
+  legend_pb_fig,
+  align = "v",
+  # labels = c("(A)", "(B)", "(C)", ""),
+  # # labels = 'AUTO',
+  # label_size = 10,
+  # hjust = -1,
+  ncol = 1,
+  rel_heights = c(1, 0.025, 0.05)
+  # rel_widths = c(1, 1),
+)
+
+pb_plot_grid_no_lines3
+
+## save figure 4, v1
+ggsave(pb_plot_grid_no_lines3,
+       filename = file.path(main_path, save_path, 'brief_fig_v2.png'),
+       width = 120,
+       height = 100,
+       units = "mm")
+
+ggsave(pb_plot_grid_no_lines3,
+       filename = file.path(main_path, save_path, 'brief_fig_v2.pdf'),
+       width = 120,
+       height = 100,
+       units = "mm",
+       device = 'pdf')
+
+embed_fonts(paste0(main_path, save_path, 'brief_fig_v2.pdf'),
+            outfile = paste0(main_path, save_path, 'brief_fig_v2.pdf'))
 
 
 
