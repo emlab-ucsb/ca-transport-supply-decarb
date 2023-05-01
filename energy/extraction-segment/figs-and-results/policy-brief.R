@@ -466,9 +466,9 @@ pb_plot_grid_no_lines <- plot_grid(
   fig_dac_bau_l + theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "mm"),
                         panel.grid.major.y = element_blank()),
   align = 'vh',
-  # labels = c("A", "B"),
+  labels = c("a.", "b.", "c.", "d."),
+  label_size = 8,
   # # labels = 'AUTO',
-  # label_size = 10,
   hjust = -1,
   nrow = 2,
   rel_widths = c(1, 1)
