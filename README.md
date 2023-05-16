@@ -9,7 +9,7 @@
 **GitHub repository manager:** Tracey Mangin (tmangin@ucsb.edu)
 **Zenodo repository manager:** Tracey Mangin (tmangin@ucsb.edu)
 
-The purpose of this file is to document the data and scripts used in the study “Equitable low-carbon transition pathways for California’s oil extraction.” The first section includes information about data inputs. The second section includes descriptions of the scripts developed to conduct the study (all code related to this study is available in the GitHub repository ca-transport-supply-decarb). The third section includes information about the files included in the study’s Zenodo repository. 
+The purpose of this file is to document the data and scripts used in the study “Equitable low-carbon transition pathways for California’s oil extraction.” The first section includes information about data inputs. The second section includes descriptions of the scripts developed to conduct the study (all code related to this study is available in the GitHub repository ca-transport-supply-decarb). The third section includes information about the files included in the study’s [Zenodo repository](https://zenodo.org/record/7742803#.ZGPBrezML0o). 
 
 Due to data confidentiality, the user can only run a subset of the scripts. Thus, we provide all of the intermediate outputs needed to run the following scripts:
 * `ca-transport-supply-decarb/energy/extraction-segment/model/full-run-revised/00_extraction_steps.R` - this script runs the energy model that results in oil extraction outputs. To successfully run the energy model, the user should make the following changes in the script:
@@ -25,7 +25,7 @@ Due to data confidentiality, the user can only run a subset of the scripts. Thus
 * The scripts contained in the main `ca-transport-supply-decarb/energy/extraction-segment/figs-and-results/` (these scripts create figures and values presented in the manuscript. The files `figure2.R`, `figure3.R`, and `figure6.R` are set up so that the user can set `zenodo_repo <- TRUE`  and specify a `zenodo_user_path and zenodo_save_path`. For all other scripts in this folder, the user will need to update file paths. 
 
 ## External data
-The following section documents all inputs needed to conduct the study. The “Required” column indicates if the file is needed to conduct the analysis, and the “Zenodo” column indicates if the input is included in the Zenodo repository. Note that a asterisk* indicates files that are not publicly available.
+The following section documents all inputs needed to conduct the study. The “Required” column indicates if the file is needed to conduct the analysis, and the “Zenodo” column indicates if the input is included in the [Zenodo repository](https://zenodo.org/record/7742803#.ZGPBrezML0o). Note that a asterisk* indicates files that are not publicly available.
 
 ### Extraction inputs
 | File | Description | Source | Required | Zenodo |
@@ -1073,7 +1073,7 @@ This section lists the files that are included in the Zenodo repository. It incl
   * Zenodo users do not need to specify `energy_result_date` or `comp_result_date`. 
  - The scripts contained in the `ca-transport-supply-decarb/energy/extraction-segment/figs-and-results/` folder (these scripts create figures and values presented in the manuscript). The files `figure2.R`, `figure3.R`, and `figure6.R` are set up so that the user can set `zenodo_repo <- TRUE` and specify a `zenodo_user_path` and `zenodo_save_path`. For all other scripts in this folder, the user will need to update file paths.  
 
-### List of files contained in Zenodo repository
+### List of files contained in [Zenodo repository](https://zenodo.org/record/7742803#.ZGPBrezML0o)
 **ca-transport-supply-decarb-files/**
 - inputs/
   * gis/
