@@ -1,7 +1,7 @@
 # CalEPA: Homemade refining emission factors from NEI and XXX data
 # vthivierge@ucsb.edu
 # created: 04/05/2023
-# updated: 04/26/2023
+# updated: 06/21/2023
 
 # set up environment
 
@@ -94,7 +94,7 @@ nei_ca_ref <- nei_2017_raw %>%
   filter(naics6 %in% c("324110"))%>%
   #filter(naics4 %in% c("3241"))%>%
   filter(pollutant_code %in% c("NOX","SO2","NH3","PM25-PRI","VOC"))%>%
-  select(eis_facility_id,reporting_year,naics6,company_name,site_name,county,total_emissions,pollutant_code)%>%
+  select(eis_facility_id,reporting_year,naics6,company_name,site_name,address,city,county,total_emissions,pollutant_code)%>%
   bind_rows(nei_2014)
   
 # #graph
@@ -117,6 +117,14 @@ nei_ca_ref <- nei_2017_raw %>%
 ref_analysis %>% select(site_id,company,corp,refinery_name,county) %>% arrange(county)
 nei_ca_ref %>% select(eis_facility_id,naics6,company_name,site_name,county,total_emissions,pollutant_code) %>% filter(pollutant_code %in% "NOX") %>% distinct() %>% arrange(county)
 nei_ca_ref %>% select(eis_facility_id,naics6,company_name,site_name,county) %>% distinct() %>% arrange(county)
+
+ref_analysis %>% select(site_id,company,corp,refinery_name,county) %>% arrange(county) %>% filter(county %in% "Los Angeles")%>%
+  arrange(refinery_name)%>% write.csv("C://Users/User/Desktop/ref.csv", row.names = F)
+
+nei_ca_ref %>% 
+  select(-reporting_year,-total_emissions)%>%distinct()%>%
+  filter(pollutant_code %in% "NOX") %>% distinct() %>% arrange(county) %>% filter(county %in% "Los Angeles")%>%
+  arrange(site_name)%>% write.csv("C://Users/User/Desktop/nei.csv", row.names = F)
 
 # At the cluster level
 
