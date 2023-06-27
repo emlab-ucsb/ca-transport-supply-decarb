@@ -1,13 +1,14 @@
 # CalEPA: Emission factors from Jaramillo and Muller (2009)
 # vthivierge@ucsb.edu
 # created: 08/11/2020
-# updated: 08/25/2020
-
+# updated: 06/26/2023
 
 # set up environment
 
 rm(list=ls())
 `%notin%` <- Negate(`%in%`)
+
+options(scipen=999)
 
 ## Packages
 
@@ -41,5 +42,5 @@ ef <- ef_raw %>%
 
 ## Save final emission factors (kg/bbl)
 
-write.csv(ef %>% select(-quantity:-quantity_kg_mmillionbbl),"./emission_factors_final.csv",row.names = F)
+write.csv(ef %>% select(-quantity:-quantity_ton_mmillionbbl),"./emission_factors_final.csv",row.names = F)
   

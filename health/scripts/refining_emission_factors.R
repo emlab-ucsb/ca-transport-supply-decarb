@@ -1,12 +1,14 @@
 # CalEPA: Homemade refining emission factors from NEI and XXX data
 # vthivierge@ucsb.edu
 # created: 04/05/2023
-# updated: 06/21/2023
+# updated: 06/26/2023
 
 # set up environment
 
 rm(list=ls())
 `%notin%` <- Negate(`%in%`)
+
+options(scipen=999)
 
 ## Packages
 
@@ -97,62 +99,58 @@ nei_ca_ref <- nei_2017_raw %>%
   select(eis_facility_id,reporting_year,naics6,company_name,site_name,address,city,county,total_emissions,pollutant_code)%>%
   bind_rows(nei_2014)
   
-# #graph
-# nei_ca_ref%>%
-#   mutate(company_clean = str_remove_all(company_name, c("REFINERY")))%>%
-#   mutate(company_clean = str_remove_all(company_clean, c("LLC")))%>%
-#   mutate(company_clean = str_remove_all(company_clean, c("COMPANY")))%>%
-#   mutate(company_clean = str_remove_all(company_clean, c("REFINING")))%>%
-#   mutate(company_clean = str_remove_all(company_clean, c("CO")))%>%
-#   #ggplot(aes(x=company_name, y = total_emissions))+
-#   ggplot(aes(fct_reorder(company_clean, -total_emissions), y = total_emissions))+
-#   geom_col()+
-#   facet_wrap(~pollutant_code)+
-#   theme_cowplot()+
-#   theme(axis.text.x = element_text(angle = 45, hjust=1))+
-#   labs(x = "Facility name", y = "2017 emissions (tons)")
-
-# Match refineries
+# Debugging the matching of refineries #####################################
 
 ref_analysis %>% select(site_id,company,corp,refinery_name,county) %>% arrange(county)
 nei_ca_ref %>% select(eis_facility_id,naics6,company_name,site_name,county,total_emissions,pollutant_code) %>% filter(pollutant_code %in% "NOX") %>% distinct() %>% arrange(county)
 nei_ca_ref %>% select(eis_facility_id,naics6,company_name,site_name,county) %>% distinct() %>% arrange(county)
 
 ref_analysis %>% select(site_id,company,corp,refinery_name,county) %>% arrange(county) %>% filter(county %in% "Los Angeles")%>%
-  arrange(refinery_name)%>% write.csv("C://Users/User/Desktop/ref.csv", row.names = F)
+  arrange(refinery_name)#%>% write.csv("C://Users/User/Desktop/ref.csv", row.names = F)
 
 nei_ca_ref %>% 
   select(-reporting_year,-total_emissions)%>%distinct()%>%
   filter(pollutant_code %in% "NOX") %>% distinct() %>% arrange(county) %>% filter(county %in% "Los Angeles")%>%
-  arrange(site_name)%>% write.csv("C://Users/User/Desktop/nei.csv", row.names = F)
+  arrange(site_name)#%>% write.csv("C://Users/User/Desktop/nei.csv", row.names = F)
 
-# At the cluster level
+# Drop renewable and asphalt refineries ############################
 
-#capacity at cluster level (do we have production data?)
-cluster_cap_2019 <- ref_analysis%>%
+#From capacity data
+
+ref_analysis_clean <- ref_analysis%>%
+  filter(site_id %notin% c("489","550", "191")) #remove asphalt refineires
+
+#From NEI data
+
+nei_ref_clean <- nei_ca_ref %>% 
+  filter(eis_facility_id %notin% c("15859711","4789411","10296811", "2534511", "5683611", "13703511", "365011"))%>%  #drop renewable, dehydration, and asphalt refineries
+  mutate(county = ifelse(county %in% "Solano", "Solano County", county))
+  
+# Emission factors at the cluster level #################################################
+
+#capacity at cluster level 
+cluster_cap_2019 <- ref_analysis_clean%>%
   group_by(cluster)%>%
   summarise(barrels_per_day = sum(barrels_per_day, na.rm=T))%>%
   ungroup()
 
-cluster_factors <- nei_ca_ref %>% 
-  filter(eis_facility_id %notin% c("15859711","4789411","10296811", "2534511"))%>% #drop (some of the) renewable refineries
-  mutate(county = ifelse(county %in% "Solano", "Solano County", county))%>%
+cluster_factors <- nei_ref_clean %>% 
   left_join(ref_analysis %>% select(cluster,county) %>% distinct(), by = c("county"))%>%
   group_by(cluster,pollutant_code,reporting_year)%>%
   summarise(total_emissions = sum(total_emissions, na.rm=TRUE))%>%
   ungroup()%>%
   left_join(cluster_cap_2019, by = c("cluster"))%>%
-  left_join(ref_prod, by = c("cluster"="region", "reporting_year"="year"))%>%
+  left_join(ref_prod,  by = c("cluster"="region", "reporting_year"="year"))%>%
   mutate(prod_per_day = (thous_barrels*1000)/365,
          capacity_util = prod_per_day/barrels_per_day)%>%
   mutate(bbl_year = thous_barrels*1000,
          emission_kg = total_emissions*1000, #Ton to kg
-         kg_bbl = emission_kg/bbl_year)
+         kg_bbl = emission_kg/bbl_year,
+         kg_bbl_cap = emission_kg/(barrels_per_day*365))
 
-## Plot emission factors compared to Jaramillo and Muller (2016)
+## Plot emission factors compared to Jaramillo and Muller (2016) #############################
 
 JM <- fread("G:/Shared drives/emlab/projects/current-projects/calepa-cn/data/health/processed/DataFiles_EmissionsFactors/emission_factors_final.csv")
-
 
 #poll <-c("pm25","nox","sox","voc","nh3")
 #names(poll) <- c("PM25-PRI","NOX","SO2","VOC","NH3")
@@ -190,18 +188,11 @@ cluster_factors %>%
        color = "Cluster")+
   scale_x_continuous(breaks = c(2014,2017))
   
-  
-# ## Read raw emission factors from Jaramillo & Muller (2016)
-# 
-# ef_raw <- read.csv("./emission_factors.csv", stringsAsFactors = FALSE)%>%
-#   filter(source %in% "jaramillo")%>%
-#   select(-source)
-# 
-# ef <- ef_raw %>%
-#   mutate(quantity_ton_mmillionbbl = quantity,
-#          quantity_ton_bbl = quantity_ton_mmillionbbl/1000000)%>%
-#   select(-unit); ef
-# 
-# ## Save final emission factors (kg/bbl)
-# 
-# write.csv(ef %>% select(-quantity:-quantity_kg_mmillionbbl),"./emission_factors_final.csv",row.names = F)
+## Output emission factors ########################
+
+cluster_factors %>%
+  filter(reporting_year %in% 2017)%>%
+  select(cluster,pollutant_code,kg_bbl)%>% 
+  write.csv("C://git/ca-transport-supply-decarb/health/data/ref_emission_factor.csv", row.names = F)
+
+
