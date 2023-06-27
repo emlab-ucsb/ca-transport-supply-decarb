@@ -256,7 +256,7 @@ This script re-organizes and cleans data relevant to the energy portion of our s
   * Crude Oil Receipts 1981-2020.xlsx (from *External data*)
   * PET_CRD_CRPDN_ADC_MBBL_A.xls (from *External data*)
   * Imports_of_Light_Sweet_to_California.csv (from *External data*)
-  * California Transportion Fuel Consumption - Summary 2020-06-01 GDS.xlsx (from E*External data*)
+  * California Transportion Fuel Consumption - Summary 2020-06-01 GDS.xlsx (from *External data*)
   * 050515staffreport_opgee.pdf (from *External data*)
   * ci_2012.csv (from *External data*)
   * ci_2013.csv (from *External data*)
