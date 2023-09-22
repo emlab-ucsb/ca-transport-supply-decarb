@@ -147,22 +147,7 @@ county_outputs2_sub <- county_outputs2 %>%
 ## save county outputs
 fwrite(county_outputs2_sub, paste0(save_info_path, 'kern_state_health_labor_results.csv'))
 
-## -----------------------------------------------------
-## make requested subsets
-## ----------------------------------------------------- 
 
-
-
-## kern county -----------------------------------------
-
-
-## kern
-
-kern_out <- county_outputs[scen_id %in% scen_list &
-                              county == "Kern"]
-
-## save kern outputs
-fwrite(kern_out, paste0(save_info_path, 'kern_health_labor.csv'))
 
 
 
