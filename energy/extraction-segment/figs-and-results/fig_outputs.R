@@ -43,7 +43,7 @@ if(zenodo_repo) {
 } else {
 
 ## drive paths 
-main_path              = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path              = '/Users/tracey/Library/CloudStorage/GoogleDrive-tmangin@ucsb.edu/Shared\ drives/emlab/projects/current-projects/calepa-cn/'
 extraction_folder_path = paste0('outputs/academic-out/extraction/extraction_', comp_result_date, '/')
 county_save_path       = paste0(main_path, extraction_folder_path, 'county-results/')
 ct_save_path           = paste0(main_path, extraction_folder_path, 'census-tract-results/')
@@ -516,6 +516,10 @@ labor_scens[, dac_comp := total_comp_usd19 * dac_share]
 labor_scens[, dac_comp_PV := total_comp_PV * dac_share]
 labor_scens[, dac_emp := total_emp * dac_share]
 
+## save county-level outputs
+fwrite(labor_scens, paste0(save_info_path, 'labor_county_results.csv'))
+
+
 ## state-level cumulative dac and total 
 labor_dac_state <- labor_scens[, .(cumul_dac_comp = sum(dac_comp), 
                                    cumul_total_comp = sum(total_comp_usd19),
@@ -565,6 +569,9 @@ health_scens <- merge(health_out, unique(state_levels[, .(scen_id, policy_interv
                      by = "scen_id",
                      all.x = T)
 
+## save ct-level outputs
+fwrite(health_scens, paste0(save_info_path, 'health_ct_results.csv'))
+
 ## calculate dac share, mortality
 health_scens[, dac_multiplier := fifelse(disadvantaged == "Yes", 1, 0)]
 
@@ -580,7 +587,7 @@ health_dac_state <- health_scens %>%
   group_by(year) %>%
   mutate(cost_PV = cost/ ((1 + discount_rate) ^ (year - 2019))) %>%
   ungroup() %>%
-  select(scen_id, setback_existing, census_tract, policy_intervention, target, target_policy, disadvantaged, dac_multiplier,
+  select(scen_id, setback_existing, census_tract, year, policy_intervention, target, target_policy, disadvantaged, dac_multiplier,
          mortality_level, cost, cost_PV)
 
 setDT(health_dac_state)
@@ -589,6 +596,7 @@ setDT(health_dac_state)
 health_dac_state[, dac_mort := dac_multiplier * mortality_level]
 health_dac_state[, dac_mort_cost := dac_multiplier * cost]
 health_dac_state[, dac_mort_pv := dac_multiplier * cost_PV]
+
 
 ## aggregate at state level
 health_dac_state <- health_dac_state[, .(cumul_dac_mort = sum(dac_mort), 
