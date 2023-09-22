@@ -60,19 +60,16 @@ labor_bau_dac <- labor_bau_dac[, .(cumul_total_emp_loss = sum(diff_emp),
                                    cumul_total_pv_loss = sum(diff_pv)), by = .(scen_id, county, oil_price_scenario, carbon_price_scenario,
                                                                                setback_scenario, setback_existing, excise_tax_scenario,
                                                                                target, target_policy, policy_intervention)]
+## longer, select columns
+labor_bau_dac <- labor_bau_dac %>%
+  pivot_longer(cumul_total_emp_loss:cumul_total_pv_loss, names_to = "metric", values_to = "value") %>%
+  mutate(segment = "labor") %>%
+  select(scen_id, county, carbon_price_scenario, setback_scenario, target, target_policy, policy_intervention, segment, metric, value) %>%
+  as.data.table()
 
 ## total_comp_PV = Labor: forgone wages
 
-## filter for Kern, existing == 0; 2500ft setback, 1 mile setback, 90% reduction with C tax
-scen_list <- c("reference case-setback_2500ft-no quota-price floor-no ccs-low innovation-no tax-0",
-               "reference case-setback_5280ft-no quota-price floor-no ccs-low innovation-no tax-0",
-               "reference case-no_setback-no quota-carbon_target_90perc_reduction-no ccs-low innovation-no tax-0")
-
-
-kern_labor <- labor_bau_dac[scen_id %in% scen_list &
-                              county == "Kern"]
-
-
+## -----------------------------------------------------
 ## health, relative to BAU
 ## -----------------------------------------------------
 
@@ -90,44 +87,82 @@ health_df <-  merge(health_df, ct_county_df,
 
 ## join with county names
 health_df2 <-  merge(health_df, ca_counties,
-                    by = c("COUNTYFP"),
-                    all.x = T)
+                     by = c("COUNTYFP"),
+                     all.x = T)
 
 ## aggregate at state level
 health_df2 <- health_df2[, .(cumul_total_av_mort = sum(mortality_delta),
-                                     cumul_total_av_mort_cost = sum(cost),
-                                     cumul_total_av_mort_pv = sum(cost_PV)), by = .(scen_id, COUNTYFP, NAME, setback_existing, target, policy_intervention, target_policy)]
+                             cumul_total_av_mort_cost = sum(cost),
+                             cumul_total_av_mort_pv = sum(cost_PV)), by = .(scen_id, COUNTYFP, NAME, setback_existing, target, policy_intervention, target_policy)]
 
-kern_health <- health_df2[scen_id %in% scen_list &
-                              NAME == "Kern"]
 
-## organize for saving
-kern_labor <- kern_labor %>%
-  pivot_longer(cumul_total_emp_loss:cumul_total_pv_loss, names_to = "metric", values_to = "value") %>%
-  mutate(segment = "labor") %>%
-  select(scen_id, county, carbon_price_scenario, setback_scenario, target, target_policy, policy_intervention, segment, metric, value) %>%
-  as.data.table()
+## create df for adding carbon price scenario and setback scenario to health
+scen_info <- labor_df %>%
+  select(scen_id, carbon_price_scenario, setback_scenario) %>%
+  unique()
 
-kern_health <- kern_health %>%
+## align with labor df
+health_df2 <- health_df2 %>%
   rename(county = NAME) %>%
   pivot_longer(cumul_total_av_mort:cumul_total_av_mort_pv, names_to = "metric", values_to = "value") %>%
   mutate(segment = "health") %>%
-  mutate(carbon_price_scenario = ifelse(scen_id %in% c("reference case-setback_2500ft-no quota-price floor-no ccs-low innovation-no tax-0",
-                                                       "reference case-setback_5280ft-no quota-price floor-no ccs-low innovation-no tax-0"),
-                                        "price floor", "carbon_target_90perc_reduction"),
-         setback_scenario = ifelse(scen_id == "reference case-setback_2500ft-no quota-price floor-no ccs-low innovation-no tax-0", "setback_2500ft",
-                                   ifelse(scen_id == "reference case-setback_1000ft-no quota-price floor-no ccs-low innovation-no tax-0", "setback_1000ft", "no_setback"))) %>%
+  left_join(scen_info) %>%
   select(scen_id, county, carbon_price_scenario, setback_scenario, target, target_policy, policy_intervention, segment, metric, value) %>%
   as.data.table()
 
-kern_df <- rbind(kern_labor, kern_health) %>%
-  as.data.table() %>%
-  arrange(scen_id, segment)
+## -----------------------------------------------------
+## join and save
+## ----------------------------------------------------- 
+
+county_outputs <- rbind(labor_bau_dac, health_df2)
+
+
+## state -----------------------------------------
+state_out <- county_outputs[, .(value = sum(value)), by = .(scen_id, carbon_price_scenario, setback_scenario, target, policy_intervention, target_policy, segment, metric)]
+
+state_sub <- state_out[scen_id %in% scen_list]
+
+# fwrite(state_sub, paste0(save_info_path, 'state_labor_health_subset.csv'))
+
+## compare counties
+county_outputs2 <- county_outputs %>%
+  left_join(state_out %>% rename(ca_value = value)) %>%
+  mutate(rel_to_state = value / ca_value)
+
+## save county outputs
+fwrite(county_outputs2, paste0(save_info_path, 'county_state_health_labor_results.csv'))
+
+## subset
+
+## filter for Kern, existing == 0; 2500ft setback, 1 mile setback, 90% reduction with C tax
+scen_list <- c("reference case-setback_2500ft-no quota-price floor-no ccs-low innovation-no tax-0",
+               "reference case-setback_5280ft-no quota-price floor-no ccs-low innovation-no tax-0",
+               "reference case-no_setback-no quota-carbon_target_90perc_reduction-no ccs-low innovation-no tax-0")
+
+county_outputs2_sub <- county_outputs2 %>%
+  filter(scen_id %in% scen_list &
+           county == "Kern")
+
+
+## save county outputs
+fwrite(county_outputs2_sub, paste0(save_info_path, 'kern_state_health_labor_results.csv'))
+
+## -----------------------------------------------------
+## make requested subsets
+## ----------------------------------------------------- 
+
+
+
+## kern county -----------------------------------------
+
+
+## kern
+
+kern_out <- county_outputs[scen_id %in% scen_list &
+                              county == "Kern"]
 
 ## save kern outputs
-fwrite(kern_df, paste0(save_info_path, 'kern_health_labor.csv'))
+fwrite(kern_out, paste0(save_info_path, 'kern_health_labor.csv'))
 
 
 
-
-  
