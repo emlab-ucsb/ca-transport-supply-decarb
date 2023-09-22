@@ -64,7 +64,7 @@ labor_bau_dac <- labor_bau_dac[, .(cumul_total_emp_loss = sum(diff_emp),
 labor_bau_dac <- labor_bau_dac %>%
   pivot_longer(cumul_total_emp_loss:cumul_total_pv_loss, names_to = "metric", values_to = "value") %>%
   mutate(segment = "labor") %>%
-  select(scen_id, county, carbon_price_scenario, setback_scenario, target, target_policy, policy_intervention, segment, metric, value) %>%
+  select(scen_id, county, carbon_price_scenario, setback_scenario, setback_existing, target, target_policy, policy_intervention, segment, metric, value) %>%
   as.data.table()
 
 ## total_comp_PV = Labor: forgone wages
@@ -91,7 +91,8 @@ health_df2 <-  merge(health_df, ca_counties,
                      all.x = T)
 
 ## aggregate at state level
-health_df2 <- health_df2[, .(cumul_total_av_mort = sum(mortality_delta),
+health_df2 <- health_df2[, .(cumul_total_mort = sum(mortality_level),
+                             cumul_total_av_mort = sum(mortality_delta),
                              cumul_total_av_mort_cost = sum(cost),
                              cumul_total_av_mort_pv = sum(cost_PV)), by = .(scen_id, COUNTYFP, NAME, setback_existing, target, policy_intervention, target_policy)]
 
@@ -104,10 +105,10 @@ scen_info <- labor_df %>%
 ## align with labor df
 health_df2 <- health_df2 %>%
   rename(county = NAME) %>%
-  pivot_longer(cumul_total_av_mort:cumul_total_av_mort_pv, names_to = "metric", values_to = "value") %>%
+  pivot_longer(cumul_total_mort:cumul_total_av_mort_pv, names_to = "metric", values_to = "value") %>%
   mutate(segment = "health") %>%
   left_join(scen_info) %>%
-  select(scen_id, county, carbon_price_scenario, setback_scenario, target, target_policy, policy_intervention, segment, metric, value) %>%
+  select(scen_id, county, carbon_price_scenario, setback_scenario, setback_existing, target, target_policy, policy_intervention, segment, metric, value) %>%
   as.data.table()
 
 ## -----------------------------------------------------
@@ -120,7 +121,14 @@ county_outputs <- rbind(labor_bau_dac, health_df2)
 ## state -----------------------------------------
 state_out <- county_outputs[, .(value = sum(value)), by = .(scen_id, carbon_price_scenario, setback_scenario, target, policy_intervention, target_policy, segment, metric)]
 
-state_sub <- state_out[scen_id %in% scen_list]
+## filter for Kern, existing == 0; 2500ft setback, 1 mile setback, 90% reduction with C tax
+scen_list <- c("reference case-setback_2500ft-no quota-price floor-no ccs-low innovation-no tax-0",
+               "reference case-setback_5280ft-no quota-price floor-no ccs-low innovation-no tax-0",
+               "reference case-no_setback-no quota-carbon_target_90perc_reduction-no ccs-low innovation-no tax-0",
+               "reference case-no_setback-no quota-price floor-no ccs-low innovation-no tax-0")
+
+
+# state_sub <- state_out[scen_id %in% scen_list]
 
 # fwrite(state_sub, paste0(save_info_path, 'state_labor_health_subset.csv'))
 
@@ -134,10 +142,6 @@ fwrite(county_outputs2, paste0(save_info_path, 'county_state_health_labor_result
 
 ## subset
 
-## filter for Kern, existing == 0; 2500ft setback, 1 mile setback, 90% reduction with C tax
-scen_list <- c("reference case-setback_2500ft-no quota-price floor-no ccs-low innovation-no tax-0",
-               "reference case-setback_5280ft-no quota-price floor-no ccs-low innovation-no tax-0",
-               "reference case-no_setback-no quota-carbon_target_90perc_reduction-no ccs-low innovation-no tax-0")
 
 county_outputs2_sub <- county_outputs2 %>%
   filter(scen_id %in% scen_list &
