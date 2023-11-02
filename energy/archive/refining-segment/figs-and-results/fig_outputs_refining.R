@@ -9,7 +9,7 @@ library(rebus)
 library(tidyverse)
 
 ## paths 
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path <- '/Users/tracey/Library/CloudStorage/GoogleDrive-tmangin@ucsb.edu/Shared\ drives/emlab/projects/current-projects/calepa-cn/'
 refining_folder_path <- 'outputs/academic-out/refining/refining_2022-05-11/'
 state_save_path     = paste0(main_path, refining_folder_path)
 

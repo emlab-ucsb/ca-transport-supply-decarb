@@ -12,7 +12,7 @@ library(doParallel)
 
 ## create a folder to store outputs
 cur_date              = Sys.Date()
-compiled_save_path_refining  = file.path('/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining', paste0('refining_', cur_date))
+compiled_save_path_refining  = file.path('/Users/tracey/Library/CloudStorage/GoogleDrive-tmangin@ucsb.edu/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/academic-out/refining', paste0('refining_', cur_date))
 dir.create(compiled_save_path_refining, showWarnings = FALSE)  
 
 ## create a folder for health outputs
