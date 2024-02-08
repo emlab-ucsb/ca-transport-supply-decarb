@@ -30,8 +30,10 @@ getwd()
 
 #census tract age-population
 
-ct_raw <- read.csv("./calepa-cn/data/benmap/raw/nhgis0001_ts_geog2010_tract.csv", stringsAsFactors = FALSE); str(ct_raw)
-ct_age_desc <- read.csv("./calepa-cn/data/benmap/raw/age_group_desc.csv", stringsAsFactors = FALSE); str(ct_age_desc)
+# UPDATED
+ct_raw <- read.csv("/data/ca-transportation-supply-decarb-files/inputs/health/nhgis0001_ts_geog2010_tract.csv", stringsAsFactors = FALSE); str(ct_raw)
+# UPDATED
+ct_age_desc <- read.csv("/data/ca-transportation-supply-decarb-files/inputs/health/age_group_desc.csv", stringsAsFactors = FALSE); str(ct_age_desc)
 
 ct_ca <- ct_raw %>%
   `colnames<-`(tolower(colnames(ct_raw)))%>%
@@ -56,7 +58,8 @@ age_group_ct <- ct_ca %>%
 
 #CDOF demographic projections
 
-cdof_raw <- fread("./calepa-cn/data/benmap/raw/CDOF_p2_Age_1yr_Nosup.csv", stringsAsFactors = FALSE, blank.lines.skip = TRUE)%>%
+# UPDATED
+cdof_raw <- fread("/data/ca-transportation-supply-decarb-files/inputs/health/CDOF_p2_Age_1yr_Nosup.csv", stringsAsFactors = FALSE, blank.lines.skip = TRUE)%>%
   select(-Column1:-Column16331)%>%
   gather(year,pop,'2010':'2060')%>%
   mutate(pop = as.numeric(str_replace(pop,",","")),
@@ -89,8 +92,8 @@ cdof_pred <- cdof_raw %>%
 
 #County name to merged with BenMAP row/col county indicators
 
-ct <- read_sf("./calepa-cn/data/benmap/raw/County_def.shp")
-
+# UPDATED
+ct <- read_sf("/data/ca-transportation-supply-decarb-files/inputs/health/County_def.shp")
 county <- as.data.frame(cbind(ct$NAME, ct$STATE_NAME, ct$ROW, ct$COL), stringsAsFactors = F) 
 colnames(county) <- c("county","state", "row", "col")
 
@@ -99,7 +102,8 @@ county$col <- as.integer(county$col)
 
 # Mortality incidence data (2015 baseline)
 
-incidence_ca <- read.csv("./calepa-cn/data/benmap/raw/Mortality Incidence (2015).csv", stringsAsFactors = F) %>%
+# UPDATED
+incidence_ca <- read.csv("/data/ca-transportation-supply-decarb-files/inputs/health/Mortality Incidence (2015).csv", stringsAsFactors = F) %>%
   filter(Endpoint == "Mortality, All Cause") %>%
   select(-Endpoint.Group,-Race:-Ethnicity, -Type)%>%
   left_join(county, by = c("Column"="col","Row"="row"))%>%
@@ -148,7 +152,7 @@ ct_incidence_ca <- temp_ct_ca %>%
   select(-start.age.x,-start.age.y,-end.age.x, -end.age.y,
          -county.x,-county.y,-value.x,-value.y)
 
-
+# 
 write.csv(ct_incidence_ca,file = "./calepa-cn/data/benmap/processed/ct_incidence_ca.csv", row.names = FALSE)
 ct_incidence_ca <- read.csv("./calepa-cn/data/benmap/processed/ct_incidence_ca.csv", stringsAsFactors =  FALSE)
 
