@@ -10,6 +10,7 @@ library(lubridate)
 library(rebus)
 library(readtext)
 library(readxl)
+library(here)
 
 ## set directory
 data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/"
@@ -26,7 +27,7 @@ data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-pr
 ## OilorCondensateProduced
 
 # UPDATED
-all_wells <- read_xlsx("/data/ca-transportation-supply-decarb-files/inputs/extraction/All_wells_20200417.xlsx")
+all_wells <- read_xlsx("./data/inputs/extraction/All_wells_20200417.xlsx")
 
 ## well production
 prod_7785 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1977_1985/CaliforniaOilAndGasWellMonthlyProduction.csv"))
@@ -48,7 +49,7 @@ monthly_prod <- rbind(prod_7785, prod_8689, prod_9094, prod_9599, prod_0004, pro
                       prod_18, prod_19)
 
 ## county codes
-ccodes <- read_csv(paste0(data_directory, "raw/prod/county_codes.csv")) %>%
+ccodes <- read_csv("./data/inputs/extraction/county_codes.csv") %>%
   rename(county_name = county,
          county = number) %>%
   select(county_name, county)
