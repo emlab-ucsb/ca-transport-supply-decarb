@@ -2,6 +2,7 @@
 ## April 21, 2020
 ## Data cleaning -- oil production and injection data
 ## Data from DOC
+# updated: 02/09/2024
 
 ## libraries
 library(tidyverse)
@@ -13,7 +14,10 @@ library(readxl)
 library(here)
 
 ## set directory
-data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/"
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd('/capstone/freshcair/meds-freshcair-capstone') # Sets directory based on Taylor structure
+getwd()
+
 
 ## read in data
 # -------------------------------------
@@ -26,8 +30,8 @@ data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-pr
 ## WellTypeCode -- The code for the Completion type.
 ## OilorCondensateProduced
 
-# UPDATED
-all_wells <- read_xlsx("./data/inputs/extraction/All_wells_20200417.xlsx")
+# UPDATED - MP
+all_wells <- read_xlsx("data/inputs/extraction/All_wells_20200417.xlsx")
 
 ## well production
 prod_7785 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1977_1985/CaliforniaOilAndGasWellMonthlyProduction.csv"))
@@ -48,8 +52,8 @@ prod_19 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2019/CaliforniaOil
 monthly_prod <- rbind(prod_7785, prod_8689, prod_9094, prod_9599, prod_0004, prod_0509, prod_1514, prod_15, prod_16, prod_17,
                       prod_18, prod_19)
 
-## county codes
-ccodes <- read_csv("./data/inputs/extraction/county_codes.csv") %>%
+## county codes - UPDATED - MP
+ccodes <- read_csv("data/inputs/extraction/county_codes.csv") %>%
   rename(county_name = county,
          county = number) %>%
   select(county_name, county)
@@ -73,7 +77,8 @@ all_prod <- monthly_prod %>%
   left_join(welltype_df) %>%
   mutate(well_type_name = ifelse(is.na(well_type_name), WellTypeCode, well_type_name))
 
-saveRDS(all_prod, file = paste0(data_directory, "processed/well_prod_m.rds"))
+# UPDATED - MP
+saveRDS(all_prod, file = "data/processed/well_prod_m.rds")
 
 ## injection data
 ## ------------------------------

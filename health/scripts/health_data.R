@@ -2,6 +2,7 @@
 # vthivierge@ucsb.edu
 # created: 08/25/2021
 # updated: 05/26/2022
+# updated: 02/09/2024
 
 # set up environment ########################################
 
@@ -12,16 +13,15 @@ options(java.parameters = "-Xmx8000m")
 ## Packages
 
 packages=c("xlsx", "gdata", "dplyr","tidyr", "stringr", "fuzzyjoin", "stringr", 
-           "ggplot2", "stargazer", "plm", "cowplot", "sf", "lwgeom","data.table")
+           "ggplot2", "stargazer", "plm", "cowplot", "sf", "lwgeom","data.table", "here")
 
 lapply(1:length(packages), function(x) 
   ifelse((require(packages[x],character.only=TRUE)==FALSE),install.packages(packages[x]),
          require(packages[x],character.only=TRUE)))
 
-#Set directory
-
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) 
-setwd('../../..') #Goes back to home project directory
+# Set directory 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd('/capstone/freshcair/meds-freshcair-capstone') # Sets directory based on Taylor structure
 getwd()
 
 # Load and process data #####################################
@@ -30,10 +30,10 @@ getwd()
 
 #census tract age-population
 
-# UPDATED
-ct_raw <- read.csv("/data/inputs/health/nhgis0001_ts_geog2010_tract.csv", stringsAsFactors = FALSE); str(ct_raw)
-# UPDATED
-ct_age_desc <- read.csv("/data/inputs/health/age_group_desc.csv", stringsAsFactors = FALSE); str(ct_age_desc)
+# UPDATED - MP
+ct_raw <- read.csv("data/inputs/health/nhgis0001_ts_geog2010_tract.csv", stringsAsFactors = FALSE); str(ct_raw)
+# UPDATED - MP
+ct_age_desc <- read.csv("data/inputs/health/age_group_desc.csv", stringsAsFactors = FALSE); str(ct_age_desc)
 
 ct_ca <- ct_raw %>%
   `colnames<-`(tolower(colnames(ct_raw)))%>%
@@ -58,8 +58,8 @@ age_group_ct <- ct_ca %>%
 
 #CDOF demographic projections
 
-# UPDATED
-cdof_raw <- fread("/data/inputs/health/CDOF_p2_Age_1yr_Nosup.csv", stringsAsFactors = FALSE, blank.lines.skip = TRUE)%>%
+# UPDATED - MP
+cdof_raw <- fread("data/inputs/health/CDOF_p2_Age_1yr_Nosup.csv", stringsAsFactors = FALSE, blank.lines.skip = TRUE)%>%
   select(-Column1:-Column16331)%>%
   gather(year,pop,'2010':'2060')%>%
   mutate(pop = as.numeric(str_replace(pop,",","")),
@@ -92,8 +92,8 @@ cdof_pred <- cdof_raw %>%
 
 #County name to merged with BenMAP row/col county indicators
 
-# UPDATED
-ct <- read_sf("/data/inputs/health/County_def.shp")
+# UPDATED - MP
+ct <- read_sf("data/inputs/health/County_def.shp")
 county <- as.data.frame(cbind(ct$NAME, ct$STATE_NAME, ct$ROW, ct$COL), stringsAsFactors = F) 
 colnames(county) <- c("county","state", "row", "col")
 
@@ -102,8 +102,8 @@ county$col <- as.integer(county$col)
 
 # Mortality incidence data (2015 baseline)
 
-# UPDATED
-incidence_ca <- read.csv("/data/inputs/health/Mortality Incidence (2015).csv", stringsAsFactors = F) %>%
+# UPDATED - MP
+incidence_ca <- read.csv("data/inputs/health/Mortality Incidence (2015).csv", stringsAsFactors = F) %>%
   filter(Endpoint == "Mortality, All Cause") %>%
   select(-Endpoint.Group,-Race:-Ethnicity, -Type)%>%
   left_join(county, by = c("Column"="col","Row"="row"))%>%
@@ -153,8 +153,8 @@ ct_incidence_ca <- temp_ct_ca %>%
          -county.x,-county.y,-value.x,-value.y)
 
 # UPDATED - MP
-write.csv(ct_incidence_ca,file = "/data/processed/ct_incidence_ca.csv", row.names = FALSE)
-ct_incidence_ca <- read.csv("/data/processed/ct_incidence_ca.csv", stringsAsFactors =  FALSE)
+write.csv(ct_incidence_ca,file = "data/processed/ct_incidence_ca.csv", row.names = FALSE)
+ct_incidence_ca <- read.csv("data/processed/ct_incidence_ca.csv", stringsAsFactors =  FALSE)
 
 ##Projected population data and mortality incidence
 
@@ -186,8 +186,8 @@ ct_inc_45 <- ct_inc_45_temp%>%
 ## Output final population and mortality incidence data
 
 # UPDATED - MP
-write.csv(ct_inc_45,file = "/data/processed/ct_inc_45.csv", row.names = FALSE)
-ct_inc_45 <- fread("/data/processed/ct_inc_45.csv", stringsAsFactors = FALSE)
+write.csv(ct_inc_45,file = "data/processed/ct_inc_45.csv", row.names = FALSE)
+ct_inc_45 <- fread("data/processed/ct_inc_45.csv", stringsAsFactors = FALSE)
 
 ## Census tract level for labor team
 
@@ -197,4 +197,4 @@ ct_pop_45 <- ct_inc_45 %>%
             pop = sum(pop))
 
 # UPDATED - MP
-write.csv(ct_pop_45,file = "/data/processed/ct_pop_45.csv", row.names = FALSE)
+write.csv(ct_pop_45,file = "data/processed/ct_pop_45.csv", row.names = FALSE)
