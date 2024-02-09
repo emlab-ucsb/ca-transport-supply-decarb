@@ -25,8 +25,8 @@ data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-pr
 ## WellTypeCode -- The code for the Completion type.
 ## OilorCondensateProduced
 
-## all wells
-all_wells <- read_xlsx(paste0(data_directory, "raw/All_wells_20200417.xlsx"))
+# UPDATED
+all_wells <- read_xlsx("/data/ca-transportation-supply-decarb-files/inputs/extraction/All_wells_20200417.xlsx")
 
 ## well production
 prod_7785 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1977_1985/CaliforniaOilAndGasWellMonthlyProduction.csv"))
