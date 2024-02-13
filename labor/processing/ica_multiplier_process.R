@@ -28,23 +28,14 @@ library("sf")
 
 
 #Set wd 
-
-#Chris' macbook 
-ica_dollar <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results/academic-paper-multipliers/ica' 
-impact_dollar <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results/academic-paper-multipliers/impact'
-statewide_processed <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results/statewide/processed'
-processed <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results/academic-paper-multipliers/processed'
-fte <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/labor/processed/implan-results'
-
-
+setwd('/capstone/freshcair/meds-freshcair-capstone') # Sets directory based on Taylor structure
+getwd()
 
 ############################################################################################ 
 
 #Read in spreadsheet for FTE conversion 
 
-setwd(fte) 
-
-fte_convert <- read_xlsx('fte-convert.xlsx')%>% 
+fte_convert <- read_xlsx('data/inputs/labor/fte-convert.xlsx')%>% 
   rename(fte_per_job = FTEperTotalEmp, ind_code = Implan546Index) %>% 
   select(ind_code,fte_per_job)
 
@@ -55,12 +46,13 @@ fte_convert <- read_xlsx('fte-convert.xlsx')%>%
 
 ### NOTE: all multipliers are for $1 million of output value in an industry 
 
-setwd(ica_dollar)
+# setwd(ica_dollar)
 
 ### Kern
 
 #### extraction 
 
+# UPDATE - not sure where ICA data is located
 ica_emp_ext_kern <- read_csv('ica-emp-ext-kern.csv') %>% 
   filter(is.na(X1)==F) %>% 
   mutate(county = "Kern", segment = "extraction") %>% 

@@ -18,12 +18,6 @@ library(dplyr)
 rm(list=ls())
 
 
-inmapExFiles  <- "calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm/extraction"
-sourceFiles  <- "calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm"
-mainFiles <- "calepa-cn/data/health/raw"
-
-
-
 # (0) Load CES3.0
 ces3<-read_csv(paste0(mainFiles,"/ces3results_part.csv", sep=""))
 ces3$GEOID=paste("0",as.character(ces3$census_tract),sep="")
