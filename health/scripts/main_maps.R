@@ -1,4 +1,7 @@
 #Danae Hernandez-Cortes hernandezcortes@ucsb.edu
+
+# Updated: 2/14/2024 by MG
+
 #EXTRACTION MAP
 #Libraries
 library(sf)
@@ -31,12 +34,17 @@ inmapReFiles  <- "C:/Users/dhern125/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_re
 #inmapExFiles  <- "emlab/projects/current-projects/calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm/extraction"
 #inmapReFiles  <- "emlab/projects/current-projects/calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm/refining"
 
+# Updating working directory 
+setwd('/capstone/freshcair/meds-freshcair-capstone')
+
+
 #############################################
 # PREPARE FILES FROM INMAP OUTPUT: EXTRACTION
 #############################################
 
+# UPDATED - MG
 #Census tracts
-CA_ct<-st_read("C:/Users/dhern125/Dropbox/UCSB-PhD/emLab/CALEPA/data/census_tracts/census-tract/tl_2019_06_tract.shp")
+CA_ct<-st_read("./data/inputs/gis/census-tract/tl_2019_06_tract.shp")
  
 #EXTRACTION MAP CLUSTER 1
 sites_vector <- c(1)
