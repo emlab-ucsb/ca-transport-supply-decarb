@@ -62,7 +62,9 @@ toc()
 
 #3 Merge population and incidence
 
-ct_inc_pop_45 <- read.csv("./calepa-cn/data/benmap/processed/ct_inc_45.csv", stringsAsFactors  = FALSE)%>%
+
+# UPDATED -MG 
+ct_inc_pop_45 <- read.csv("./data/processed/ct_inc_45.csv", stringsAsFactors  = FALSE)%>%
   mutate(ct_id = as.numeric(paste0(stringr::str_sub(gisjoin,3,3),
                         stringr::str_sub(gisjoin,5,7),
                         stringr::str_sub(gisjoin,9,14))))%>%
