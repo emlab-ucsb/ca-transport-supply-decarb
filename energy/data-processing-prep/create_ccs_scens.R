@@ -1,12 +1,14 @@
 ## Tracey Mangin
 ## October 22, 2021
 ## add infinity price to ccs
+# revised: feb 16 2024 by Haejin 
 
 library(tidyverse)
 library(data.table)
 
 # paths -----
-scen_path         = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/project-materials/scenario-inputs'
+scen_path         = '/capstone/freshcair/meds-freshcair-capstone/data/inputs/scenarios'
+file_path         = '/capstone/freshcair/meds-freshcair-capstone/data/processed' # added file path, b/c read and store at the same place
 
 ## files
 ccs_ext_file      = 'ccs_extraction_scenarios.csv'
@@ -25,7 +27,7 @@ setorder(ccs_infin, "year", "ccs_scenario", "ccs_price", "units")
 ## bind
 ccs_ext_revised <- rbind(ccs_scens_ext, ccs_infin)
 
-fwrite(ccs_ext_revised, file.path(scen_path, "ccs_extraction_scenarios_revised.csv"))
+fwrite(ccs_ext_revised, file.path(file_path , "ccs_extraction_scenarios_revised.csv")) # revised file path 
 
 
 ## refining - load ccs scenarios
@@ -42,7 +44,7 @@ setorder(ccs_infin_r, "year", "ccs_scenario", "ccs_price", "units")
 ## bind
 ccs_ref_revised <- rbind(ccs_scens_ref, ccs_infin_r)
 
-fwrite(ccs_ref_revised, file.path(scen_path, "ccs_refining_scenarios_revised.csv"))
+fwrite(ccs_ref_revised, file.path(file_path, "ccs_refining_scenarios_revised.csv")) # revised the file path 
 
 
 

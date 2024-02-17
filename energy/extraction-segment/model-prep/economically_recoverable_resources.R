@@ -2,14 +2,16 @@
 ## august 8, 2020
 ## script for analyzing economically recoverable resources scenarios
 
+# revise: Feb 14, 2024 - Haejin 
+
 # load libraries -------- 
 
   library(data.table)
 
 # inputs and file paths -----
 
-  rystad_path   = '/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/Rystad/data/'
-  err_file      = 'processed/economically_recoverable_resources_scenarios_wide.csv'
+  rystad_path   = '/capstone/freshcair/meds-freshcair-capstone/data/'
+  err_file      = '/processed/economically_recoverable_resources_scenarios_wide.csv' #--missing, need to run other file to generate this ------
 
 # read in data ------
   

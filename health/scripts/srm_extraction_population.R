@@ -1,5 +1,8 @@
 #Danae Hernandez-Cortes hernandezcortes@ucsb.edu
 #INFRASTRUCTURE TO SEND TO THE MODELING TEAM
+
+# Updated 2/14/2024 by MG 
+
 #Libraries
 library(sf)
 library(tidyverse)
@@ -16,6 +19,10 @@ library(haven)
 library(readr)
 library(dplyr)
 rm(list=ls())
+
+
+# setting working directory 
+setwd('/capstone/freshcair/meds-freshcair-capstone')
 
 
 # (0) Load CES3.0

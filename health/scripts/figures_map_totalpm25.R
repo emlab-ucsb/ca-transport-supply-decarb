@@ -1,6 +1,7 @@
 #Danae Hernandez-Cortes hernandezcortes@ucsb.edu
 #vthiviergge@ucsb.edu
 #last change: 10/08/2021
+# modified : 02/13/2024 - Haejin 
 
 #WEIGHTED POLLUTION EXPOSURE
 #Libraries
@@ -20,7 +21,7 @@ library(RColorBrewer)
 #EXTRACTION
 rm(list=ls())
 
-sourceFiles <- "./calepa-cn/data/"
+sourceFiles <- "./data/inputs"
 
 
 ######################VINCENT: PLEASE ADD THE MODIFIED CODE THAT OBTAINS EXTRACTION
@@ -40,14 +41,14 @@ extraction_BAU_2019<-extraction_BAU%>%dplyr::filter(year==2019)
 
 ###################POPULATION##########################
 #0. Bring disadvantaged communities data from CES
-ces_data <- read_csv(paste0(sourceFiles,"health/raw/ces3results_part.csv",sep=""), stringsAsFactors = FALSE) %>%
+ces_data <- read_csv(paste0(sourceFiles,"health/ces3results_part.csv",sep=""), stringsAsFactors = FALSE) %>%
   dplyr::select("census_tract","total_population")
 
-CA<-st_read(paste0(sourceFiles,"GIS/raw/state/california2016.shp",sep=""))
+#CA<-st_read(paste0(sourceFiles,"GIS/raw/state/california2016.shp",sep="")) # missing data ------
 
-CA_counties<-st_read(paste0(sourceFiles,"GIS/raw/CA_Counties/CA_Counties_TIGER2016.shp",sep=""))
+CA_counties<-st_read(paste0(sourceFiles,"gis/CA_Counties/CA_Counties_TIGER2016.shp",sep=""))
 
-CA_ct<-st_read(paste0(sourceFiles,"GIS/raw/census-tract/tl_2019_06_tract.shp",sep=""))
+CA_ct<-st_read(paste0(sourceFiles,"gis/census-tract/tl_2019_06_tract.shp",sep=""))
 
 #Merge refining
 

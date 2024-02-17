@@ -2,29 +2,32 @@
 ## July 15, 2020
 ## Script for cleaning Rystad data
 
+# revised: Feb 14, 2024 - Haejin 
+
 ## load libraries
 library(tidyverse)
 library(rebus)
 library(stringi)
 library(data.table)
+library(dplyr)
 
 ## file paths
-rystad_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/Rystad/data/"
-data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
+rystad_path <- "/capstone/freshcair/meds-freshcair-capstone/data/"
+data_directory <- "/capstone/freshcair/meds-freshcair-capstone/data/processed/"
 
 ## laod data
-# economics_df <- read_csv(paste0(rystad_path, "raw/archive/ca_asset_opex_apex_govtt.csv"))
-economics_df_update <- read_csv(paste0(rystad_path, "raw/asset_opex_capex_govtt.csv"))
-production_df <- read_csv(paste0(rystad_path, "raw/ca_production.csv"))
-econ_cats <- read_csv(paste0(rystad_path, "raw/asset_econ_categories.csv"))
-err_df <- fread(paste0(rystad_path, "raw/resources_prod_myprod.csv"), skip = 1)
-rystad_capex_recov_bbl <- read_csv(paste0(rystad_path, "raw/capex_per_recoverable_bbl.csv"))
-api_asset <- read.csv(paste0(rystad_path, "raw/asset-wells.csv"))
-rystad_capex_bbl_nom <- read_csv(paste0(rystad_path, "raw/capex_per_bbl_nom.csv"))
-rystad_opex_bbl_nom <- read_csv(paste0(rystad_path, "raw/opex_per_bbl_nom.csv"))
-asset_rename <- read_csv(paste0(rystad_path, "processed/rystad_asset_rename.csv"))
-well_cost_eur <- read.csv(paste0(rystad_path, "raw/well_cost_per_eur.csv"))
-field_asset <- read_csv(paste0(rystad_path, "raw/field_to_asset.csv"))
+#economics_df <- read_csv(paste0(rystad_path, "proprietery-data/ca_asset_opex_apex_govtt.csv")) 
+economics_df_update <- read_csv(paste0(rystad_path, "proprietery-data/asset_opex_capex_govtt.csv"))
+production_df <- read_csv(paste0(rystad_path, "proprietery-data/ca_production.csv"))
+econ_cats <- read_csv(paste0(rystad_path, "proprietery-data/asset_econ_categories.csv"))
+err_df <- fread(paste0(rystad_path, "proprietery-data/resources_prod_myprod.csv"), skip = 1)
+rystad_capex_recov_bbl <- read_csv(paste0(rystad_path, "proprietery-data/capex_per_recoverable_bbl.csv"))
+api_asset <- read.csv(paste0(rystad_path, "proprietery-data/asset-wells.csv"))
+rystad_capex_bbl_nom <- read_csv(paste0(rystad_path, "proprietery-data/capex_per_bbl_nom.csv"))
+rystad_opex_bbl_nom <- read_csv(paste0(rystad_path, "proprietery-data/opex_per_bbl_nom.csv"))
+asset_rename <- read_csv(paste0(rystad_path, "proprietery-data/rystad_asset_rename.csv"))
+well_cost_eur <- read.csv(paste0(rystad_path, "proprietery-data/well_cost_per_eur.csv"))
+field_asset <- read_csv(paste0(rystad_path, "proprietery-data/field_to_asset.csv"))
 
 ## well prod
 
@@ -34,24 +37,24 @@ well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_di
                                                                                'doc_field_code' = 'character'))
 
 
-## economics
+## economics --- not using - by Haejin 
 ##-----------------------------------------
 
 ## clean data
-economics_df2 <- janitor::clean_names(economics_df) %>%
-  select(-data_values) %>%
-  rename(usd_nom = sum) %>%
-  mutate(usd_nom = usd_nom * 1e6,
-         string_end = str_detect(asset, pattern = ", US" %R% END),
-         ca_string = str_detect(asset, pattern = "_CA_"),
-         clean_asset = str_remove(asset, pattern = ", US" %R% END),
-         location = sub("_CA.*", "", clean_asset),
-         location = ifelse(ca_string == FALSE, clean_asset, location),
-         location = ifelse(str_detect(clean_asset, pattern = "_United States") == TRUE, "United States", location),
-         company = sub(".*_CA_", "", clean_asset),
-         company = ifelse(str_detect(clean_asset, pattern = "_United States") == TRUE, sub("_United States*.", "", clean_asset), company),
-         company = ifelse(company == location, NA, company)) %>%
-  select(original_asset_name = asset, location, company, economics_group, year, usd_nom)
+#economics_df2 <- janitor::clean_names(economics_df) %>%
+#  dplyr::select(-data_values) %>%
+#  rename(usd_nom = sum) %>%
+#  mutate(usd_nom = usd_nom * 1e6,
+#         string_end = str_detect(asset, pattern = ", US" %R% END),
+#         ca_string = str_detect(asset, pattern = "_CA_"),
+#         clean_asset = str_remove(asset, pattern = ", US" %R% END),
+#         location = sub("_CA.*", "", clean_asset),
+#         location = ifelse(ca_string == FALSE, clean_asset, location),
+#         location = ifelse(str_detect(clean_asset, pattern = "_United States") == TRUE, "United States", location),
+#         company = sub(".*_CA_", "", clean_asset),
+#         company = ifelse(str_detect(clean_asset, pattern = "_United States") == TRUE, sub("_United States*.", "", clean_asset), company),
+#         company = ifelse(company == location, NA, company)) %>%
+#  dplyr::select(original_asset_name = asset, location, company, economics_group, year, usd_nom)
 
 # ## add field names
 # fieldnames2 <- fieldnames %>%
@@ -64,7 +67,7 @@ economics_df2 <- janitor::clean_names(economics_df) %>%
 
 
 
-write_csv(economics_df2, paste0(rystad_path, "processed/ca_asset_opex_capex_govtt_clean.csv"))
+#write_csv(economics_df2, paste0(rystad_path, "processed/ca_asset_opex_capex_govtt_clean.csv"))
 
 
 ## updated economics variables (only oil and condensate operations included)
@@ -84,7 +87,7 @@ economics_up_df2 <- janitor::clean_names(economics_df_update) %>%
          company = sub(".*_CA_", "", clean_asset),
          company = ifelse(str_detect(clean_asset, pattern = "_United States") == TRUE, sub("_United States*.", "", clean_asset), company),
          company = ifelse(company == location, NA, company)) %>%
-  select(original_asset_name = asset, location, company, economics_group, year, usd_nom)
+  dplyr::select(original_asset_name = asset, location, company, economics_group, year, usd_nom)
          
 
 write_csv(economics_up_df2, paste0(rystad_path, "processed/oil_asset_opex_capex_govtt_clean.csv"))  
@@ -93,7 +96,7 @@ write_csv(economics_up_df2, paste0(rystad_path, "processed/oil_asset_opex_capex_
 ##-----------------------------------------
 
 prod_df2 <- janitor::clean_names(production_df) %>%
-  select(-data_values) %>%
+  dplyr::select(-data_values) %>%
   rename(bbls = sum) %>%
   mutate(bbls = bbls * 1e6,
          string_end = str_detect(asset, pattern = ", US" %R% END),
@@ -105,7 +108,7 @@ prod_df2 <- janitor::clean_names(production_df) %>%
          company = sub(".*_CA_", "", clean_asset),
          company = ifelse(str_detect(clean_asset, pattern = "_United States") == TRUE, sub("_United States*.", "", clean_asset), company),
          company = ifelse(company == location, NA, company)) %>%
-  select(original_asset_name = asset, location, company, data_source, data_type, oil_and_gas_category, year, bbls)
+  dplyr::select(original_asset_name = asset, location, company, data_source, data_type, oil_and_gas_category, year, bbls)
 
 write_csv(prod_df2, paste0(rystad_path, "processed/ca_oil_production.csv"))
 
@@ -123,15 +126,15 @@ prod_df2 %>%
 ## econ categories
 ## ----------------------------
 econ_cats2 <- econ_cats %>%
-  filter(!is.na(X1)) %>%
-  filter(X1 != "Economics Group") %>%
-  rename(econ_group = X1,
-         econ_cat = X2,
+  dplyr::filter(!is.na(...1)) %>% # revise X1 to ...1
+  dplyr::filter(...1 != "Economics Group") %>% # revise X1 to ...1 - by Haejin
+  rename(econ_group = ...1, # revise X1 to ...1 - by Haejin 
+         econ_cat = ...2, # revise X2 to ...2
          original_asset_name = Year) %>%
   pivot_longer(`1970`:`2050`, names_to = "year", values_to = "million_usd") %>%
   mutate(year = as.numeric(year),
          usd = as.numeric(million_usd) * 1e6) %>%
-  select(-million_usd)
+  dplyr::select(-million_usd)
 
 write_csv(econ_cats2, paste0(rystad_path, "processed/asset_economics_cats.csv"))
 
@@ -157,9 +160,9 @@ fwrite(err_df2_wide, paste0(rystad_path, "processed/economically_recoverable_res
 ## ------------------------------------
 
 capex_recov_bbl2 <- rystad_capex_recov_bbl %>%
-  filter(!is.na(X1)) %>%
-  filter(X1 != "Asset") %>%
-  rename(original_asset_name = X1,
+  dplyr::filter(!is.na(...1)) %>%  # revise X1 to ...1 and add dplyr - by Haejin 
+  dplyr::filter(...1 != "Asset") %>%  # revise X1 to ...1 - by Haejin 
+  rename(original_asset_name = ...1,  # revise X1 to ...1 - by Haejin 
          economics_group = Year) %>%
   pivot_longer(`1970`:`2050`, names_to = "year", values_to = "usd_per_bbl") %>%
   mutate(year = as.numeric(year)) %>%
@@ -183,7 +186,7 @@ api_asset2 <- api_asset %>%
 
 ## how many have more than one asset?
 n_asset <- api_asset2 %>%
-  select(APINumber, asset_name) %>%
+  dplyr::select(APINumber, asset_name) %>%
   group_by(APINumber) %>%
   mutate(n = n()) %>%
   ungroup() 
@@ -196,7 +199,7 @@ diff_df <- api_asset2 %>%
 ## clean asset names
 api_asset3 <- api_asset2 %>%
   left_join(asset_rename) %>%
-  select(-asset_name)
+  dplyr::select(-asset_name)
   
 
 # write_csv(api_asset3, paste0(rystad_path, "processed/rystad_asset_apis.csv"))
@@ -212,7 +215,7 @@ api_asset4 <- api_asset3 %>%
          api_adj = ifelse(api_n < 12, paste0(api_adj, "00000"), APINumber),
          api_adj2 = ifelse(nchar(api_adj) > 12 & state == "04", str_sub(api_adj, 1, 12), api_adj)) %>%
   rename(orig_api = APINumber) %>%
-  select(APINumber = api_adj2, original_asset_name) %>%
+  dplyr::select(APINumber = api_adj2, original_asset_name) %>%
   mutate(api_ten_digit = str_sub(APINumber, 1, 10))
 
 ## unique api_ten_digit - field combos
@@ -264,7 +267,7 @@ field_n_asset <- api_asset_match_rev %>%
   mutate(rel_field = n_wells_asset / n_wells_field,
          rel_prod = bbl_prod / field_prod)
 
-anti_join(api_asset4 %>% select(original_asset_name) %>%  unique(), field_n_asset %>% select(original_asset_name) %>% unique())
+anti_join(api_asset4 %>% dplyr::select(original_asset_name) %>%  unique(), field_n_asset %>% dplyr::select(original_asset_name) %>% unique())
 
 write_csv(field_n_asset, paste0(rystad_path, "processed/field_rystad_match_apis_revised.csv"))
   
@@ -274,15 +277,15 @@ rystad_capex_bbl_nom2 <- rystad_capex_bbl_nom %>%
   pivot_longer(`1900`:`2099`, names_to = "year", values_to = "capex_per_bbl_nom") %>%
   mutate(year = as.numeric(year),
          capex_per_bbl_nom = as.numeric(capex_per_bbl_nom)) %>%
-  select(-`Economics Group`)
+  dplyr::select(-`Economics Group`)
 
 write_csv(rystad_capex_bbl_nom2, paste0(rystad_path, "processed/rystad_capex_bbl_nom_clean.csv"))
 
 
 ## opex per bbl nominal
 rystad_opex_bbl_nom2 <- rystad_opex_bbl_nom[3:nrow(rystad_opex_bbl_nom),] %>%
-  select(-Year) %>%
-  rename(original_asset_name = X1) %>%
+  dplyr::select(-Year) %>%
+  rename(original_asset_name = ...1) %>%  # revise X1 to ...1 - by Haejin 
   pivot_longer(`1970`:`2050`, names_to = "year", values_to = "opex_per_bbl_nom") %>%
   mutate(year = as.numeric(year),
          opex_per_bbl_nom = as.numeric(opex_per_bbl_nom)) 
@@ -300,7 +303,7 @@ well_cost_eur2 <- well_cost_eur %>%
   mutate(APInumber = as.character(str_remove_all(APInumber, pattern = "-"))) %>%
   mutate(both_na = ifelse(is.na(X) & is.na(well_cost_eurusd_per_bbl), 1, 0)) %>%
   filter(both_na != 1) %>%
-  select(-X, -both_na) 
+  dplyr::select(-X, -both_na) 
 
 
 write_csv(well_cost_eur2, paste0(rystad_path, "processed/well_cost_per_eur_clean.csv"))
@@ -312,7 +315,7 @@ write_csv(well_cost_eur2, paste0(rystad_path, "processed/well_cost_per_eur_clean
 field_asset2 <- field_asset %>%
  rename(days_prod = `Days on Production (Days)`) %>%
  filter(!is.na(Asset)) %>%
- select(-days_prod) %>%
+ dplyr::select(-days_prod) %>%
  unique()
   
 write_csv(field_asset2, paste0(rystad_path, "processed/rystad_field_asset.csv"))

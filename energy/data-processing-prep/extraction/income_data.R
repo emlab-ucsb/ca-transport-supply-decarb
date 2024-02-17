@@ -1,20 +1,21 @@
 ## Tracey Mangin
 ## October 19, 2021
 ## Census data
+## revised 02/13/2024 - Haejin 
 
 library(censusapi)
 library(tidycensus)
 library(tidyverse)
 library(data.table)
 
-main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
+main_path <- '/capstone/freshcair/meds-freshcair-capstone/'
 
 mycensuskey <- "ae05491f7dfe185b0af5b9d56f1287b4c2c78eca"
 
-# apis <- listCensusApis()
+#apis <- listCensusApis()
 # View(apis)
 # 
-# availablevars <- listCensusMetadata(name="cps/asec/mar", vintage = 2021)
+availablevars <- listCensusMetadata(name="cps/asec/mar", vintage = 2021)
 # View(availablevars)
 # 
 # 
@@ -44,7 +45,7 @@ income <- get_acs(state = "CA", geography = "tract",
 income <- income %>%
   mutate(source = "2015-2019 5-year ACS, 2019 dollars")
 
-fwrite(income, paste0(main_path, "data/Census/ca-median-house-income.csv"))
+fwrite(income, paste0(main_path, "data/inputs/gis/census-tract/ca-median-house-income.csv"))
 
 ## repeat for county
 
@@ -54,7 +55,7 @@ county_income <- get_acs(state = "CA", geography = "county",
 county_income <- county_income %>%
   mutate(county = str_remove(NAME, " County, California"),
          source = "2015-2019 5-year ACS, 2019 dollars") %>%
-  select(county, variable, estimate, moe, source)
+  dplyr::select(county, variable, estimate, moe, source) # add dplyr - haejin
 
-fwrite(county_income, paste0(main_path, "data/Census/ca-median-house-income-county.csv"))
+fwrite(county_income, paste0(main_path, "data/inputs/gis/census-tract/ca-median-house-income-county.csv"))
 

@@ -20,17 +20,17 @@ save_external <- 0
 cur_date              = Sys.Date()
 
 ## paths 
-main_path     <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
-sp_data_path     <- paste0(main_path, "data/GIS/raw/")
+main_path     <- '/capstone/freshcair/meds-freshcair-capstone/'
+sp_data_path     <- paste0(main_path, "data/input/gis/")
 
 ## UPDATE THESE WITH NEW RUNS!!!!!
-extraction_folder_path <- 'outputs/predict-production/extraction_2022-11-15/'
+extraction_folder_path <- 'outputs/processed'
 extraction_folder_name <- 'revision-setbacks/'
-data_path  <-'data/stocks-flows/processed/'
+data_path  <-'data/processed/'
 
 ## health code paths
-source_path   <- paste0(main_path, 'data/health/source_receptor_matrix/')
-inmap_ex_path  <- paste0(main_path, "data/health/source_receptor_matrix/inmap_processed_srm/extraction")
+source_path   <- paste0(main_path, 'data/inputs/health/source_receptor_matrix/')
+inmap_ex_path  <- paste0(main_path, "data/inputs/health/source_receptor_matrix/inmap_processed_srm/extraction")
 
 ## external paths
 main_path_external <- '/Volumes/calepa/'
@@ -91,7 +91,7 @@ dir.create(health_county_save_path, showWarnings = FALSE)
 ## --------------------------------
 
 ## DAC and CES
-dac_ces <- read_xlsx(paste0(main_path, 'data/health/raw/ces3results.xlsx'))
+dac_ces <- read_xlsx(paste0(main_path, 'data/inputs/health/ces3results.xlsx'))
 
 ces_county <- dac_ces %>%
   select(`Census Tract`, `California County`) %>%
@@ -100,24 +100,24 @@ ces_county <- dac_ces %>%
   mutate(census_tract = paste0("0", census_tract, sep="")) 
 
 ## income -- cencus tract
-med_house_income <- fread(paste0(main_path, "data/Census/ca-median-house-income.csv"), stringsAsFactors = F)
+med_house_income <- fread(paste0(main_path, "data/inputs/gis/census-tract/ca-median-house-income.csv"), stringsAsFactors = F) # not exist -------
 med_house_income[, census_tract := paste0("0", GEOID)]
 med_house_income <- med_house_income[, .(census_tract, estimate)]
 setnames(med_house_income, "estimate", "median_hh_income")
 
 ## income -- county
-county_income <- fread(paste0(main_path, "data/Census/ca-median-house-income-county.csv"), stringsAsFactors = F)
+county_income <- fread(paste0(main_path, "data/input/gis/census-tract/ca-median-house-income-county.csv"), stringsAsFactors = F) # not exist -----
 county_income <- county_income[, .(county, estimate)]
 setnames(county_income, "estimate", "median_hh_income")
 
 
 ## monthly well production
-well_prod <- fread(paste0(main_path, "/data/stocks-flows/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
+well_prod <- fread(paste0(main_path, "data/processed/", prod_file), colClasses = c('api_ten_digit' = 'character',
                                                                                                  'doc_field_code' = 'character'))
 
 ## historical GHG emissions, 2019
 ## --------------------------
-hist_ghg <- fread(paste0(main_path, 'data/stocks-flows/processed/', ghg_hist_file), header = T)
+hist_ghg <- fread(paste0(main_path, 'data/processed/', ghg_hist_file), header = T)
 
 hist_ghg <- hist_ghg[segment %chin% c('Oil & Gas: Production & Processing') &
                        year == 2019, .(segment, unit, year, value)]
@@ -127,7 +127,7 @@ ghg_2019 <- as.numeric(hist_ghg[, value][1])
 
 
 ## ghg factors
-ghg_factors = fread(file.path(main_path, 'outputs/stocks-flows', ghg_file), header = T, colClasses = c('doc_field_code' = 'character'))
+ghg_factors = fread(file.path(main_path, 'proprietery-data/stocks-flows', ghg_file), header = T, colClasses = c('doc_field_code' = 'character'))
 ghg_factors_2019 = ghg_factors[year == 2019, c('doc_field_code', 'year', 'upstream_kgCO2e_bbl')]
 
 ## oil prices

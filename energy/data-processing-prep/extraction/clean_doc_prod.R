@@ -2,16 +2,19 @@
 ## April 21, 2020
 ## Data cleaning -- oil production and injection data
 ## Data from DOC
-# updated: 02/09/2024
+# updated: 02/09/2024 by Maxwell
+
+# add update: Feb 14 2024 by Haejin 
 
 ## libraries
 library(tidyverse)
 library(readr)
 library(lubridate)
 library(rebus)
-library(readtext)
+#library(readtext) # update -haejin
 library(readxl)
 library(here)
+library(dplyr) # update -haejin
 
 ## set directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -58,7 +61,9 @@ monthly_prod <- rbind(prod_7785, prod_8689, prod_9094, prod_9599, prod_0004, pro
 ccodes <- read_csv("data/inputs/extraction/county_codes.csv") %>%
   rename(county_name = county,
          county = number) %>%
-  select(county_name, county)
+  as.data.frame() %>% # add this 
+  dplyr::select(county_name, county) # add dplyr::
+
 
 ## well type code
 welltype_df <- tibble(WellTypeCode = c("AI", "DG", "GD", "GS", 
@@ -79,11 +84,14 @@ all_prod <- monthly_prod %>%
   left_join(welltype_df) %>%
   mutate(well_type_name = ifelse(is.na(well_type_name), WellTypeCode, well_type_name))
 
+
+
+
 # UPDATED - MP
 saveRDS(all_prod, file = "data/processed/well_prod_m.rds")
 
 ## injection data
-# UPDATE - should work once data is inputted into all the CSV folders
+# UPDATE - should work once data is inputted into all the CSV folders -Done!(haejin)
 ## ------------------------------
 inj_7785 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1977_1985/CaliforniaOilAndGasWellMonthlyInjection.csv")
 inj_8689 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1986_1989/CaliforniaOilAndGasWellMonthlyInjection.csv")
@@ -107,11 +115,15 @@ all_inject <- monthly_inj %>%
   mutate(county = as.numeric(str_sub(APINumber, 3, 5)),
          year = year(InjectionDate),
          month = month(InjectionDate)) %>%
-  left_join(ccodes) %>%
+  left_join(ccodes) %>% 
   left_join(welltype_df) %>%
   mutate(well_type_name = ifelse(is.na(well_type_name), WellTypeCode, well_type_name))
 
-saveRDS(all_inject, file = paste0(data_directory, "processed/well_inject_m.rds")) 
+## missing data_directory -- Haejin
+data_directory <- "/capstone/freshcair/meds-freshcair-capstone/data/"
+
+
+saveRDS(all_inject, file = paste0(data_directory, "processed/well_inject_m.rds")) # have a error message : Error: Status code 401 returned by RStudio Server when executing 'console_input'
 
 ## well data
 # UPDATE - should work once data is inputted into all the CSV folders
@@ -219,7 +231,7 @@ wells2 <- wells_19 %>%
 # test2 <- str_replace_all(test2, pattern = "Sterling, East " %R% OPEN_PAREN %R% "ABD" %R% CLOSE_PAREN, "Sterling East ABD")
 # test2 <- str_replace_all(test2, pattern = "Compton Landing, S., Gas " %R% OPEN_PAREN %R% "ABD" %R% CLOSE_PAREN, "Compton Landing S. Gas ABD")
 
-fix_2019 <- readLines(paste0(data_directory, "raw/hist_well/CSV_2019/CaliforniaOilAndGasWells.csv"))
+fix_2019 <- readLines(paste0(data_directory, "inputs/extraction/monthly-prod-inj-wells/CSV_2019/CaliforniaOilAndGasWells.csv")) # update by Haejin 
 fix_20192<- str_replace_all(fix_2019, pattern = "8-9B INT, Sec. 32", "8-9B INT Sec. 32")
 
 
@@ -230,8 +242,8 @@ fix_20192<- str_replace_all(fix_2019, pattern = "8-9B INT, Sec. 32", "8-9B INT S
 #040212008000
 #040112009400
 
-writeLines(fix_20192, paste0(data_directory, "processed/wells_19.csv"))
+writeLines(fix_20192, paste0(data_directory, "processed/wells_19.csv"))  # update by Haejin 
 
-wells_2019 <- read_csv(paste0(data_directory, "processed/parseprobs/wells_19.csv"))
+wells_2019 <- read_csv(paste0(data_directory, "processed/wells_19.csv"))
 
 

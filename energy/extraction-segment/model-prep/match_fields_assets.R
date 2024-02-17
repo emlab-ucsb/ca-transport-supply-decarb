@@ -2,14 +2,18 @@
 ## May 11, 2021
 ## Match fields to assets
 
+## revised: feb 16 2024 by haejin 
+
 # ------------------------------------------- INPUTS -----------------------------------
-data_directory     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
-rystad_path        <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/Rystad/data/"
-sp_dir             <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/GIS/raw/field-boundaries/"
-save_directory     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/"
-proj_dir           <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/"
-output_dir         <- "outputs/stocks-flows/"
-match_out_path     <- "stocks-flows/entry-model-input/final/"
+data_directory     <- "/capstone/freshcair/meds-freshcair-capstone/data/processed/"
+rystad_path        <- "/capstone/freshcair/meds-freshcair-capstone/data/processed/"
+sp_dir             <- "/capstone/freshcair/meds-freshcair-capstone/data/inputs/gis/"
+save_directory     <- "/capstone/freshcair/meds-freshcair-capstone/data/proprietery-data/"
+proj_dir           <- "/capstone/freshcair/meds-freshcair-capstone/"
+output_dir         <- "proprietery-data"
+match_out_path     <- "proprietery-data"
+
+
 
 ## files
 rystad_file  <- "field_rystad_match_apis_revised.csv"
@@ -27,7 +31,7 @@ library(data.table)
 library(mapview)
 library(sf)
 library(rgeos) #nearest poly to each point
-library(nngeo) #nearest point to each poly
+#library(nngeo) #nearest point to each poly
 
 
 ## step 0: fields matched to assets through wells
@@ -39,7 +43,7 @@ well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_di
 
 
 ## asset to field match using well APIs
-field_asset_match <- fread(paste0(rystad_path, "processed/", rystad_file), colClasses = c('doc_field_code' = 'character'))
+field_asset_match <- fread(paste0(rystad_path, rystad_file), colClasses = c('doc_field_code' = 'character'))
 field_asset_match[, c("doc_fieldname", "bbl_prod", "n_wells_field", "field_prod", "rel_field", "rel_prod") := NULL]
 
 ## compute productive fields
@@ -48,20 +52,20 @@ productive_fields <- productive_fields[total_prod > 0]
 
 ## field to asset match by well apis
 well_match_df <- productive_fields %>%
-  select(doc_field_code) %>%
+  dplyr::select(doc_field_code) %>%
   left_join(field_asset_match) 
 
 fieldcodes <- well_prod %>%
-  select(doc_field_code, doc_fieldname) %>%
-  unique() %>%
-  filter(doc_field_code %in% productive_fields$doc_field_code)
+  dplyr::select(doc_field_code, doc_fieldname) %>%
+  raster::unique() %>%
+  dplyr::filter(doc_field_code %in% productive_fields$doc_field_code)
 
 
 ## fields that get matched with assets
 field_asset_well_match <- well_match_df %>%
-  select(doc_field_code, original_asset_name) %>%
-  unique() %>%
-  filter(!is.na(original_asset_name))
+  dpylr::select(doc_field_code, original_asset_name) %>%
+  raster::unique() %>%
+  dplyr::filter(!is.na(original_asset_name))
 
 ## save file
 # write_csv(field_asset_well_match, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/entry-model-input/well_doc_asset_match.csv")
