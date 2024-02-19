@@ -7,8 +7,6 @@ library(zoo)
 # Read in well processed data
 well_prod_m_processed <- read.csv("data/processed/well_prod_m_processed.csv")
 
-
-
 # Inspect the structure of the well_prod_m_processed dataset
 str(well_prod_m_processed)
 
@@ -143,7 +141,7 @@ print(total_gas_per_well)
 # Calculate the total Gas Produced per month
 total_gas_production_per_month <- processed_active %>%
   group_by(month_year = floor_date(ProductionReportDate, "month")) %>%
-  summarise(TotalGasProduced = sum(GasProduced, na.rm = TRUE)) %>%
+  summarise(TotalProduced = sum(OilorCondensateProduced + GasProduced + WaterProduced, na.rm = TRUE)) %>%
   ungroup()
 
 # Make sure data is ordered
