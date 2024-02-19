@@ -106,18 +106,19 @@ ica_comp_drill_kern <- read_csv('ica-va-drill-kern.csv',skip = 1) %>%
                 -`Taxes on Production & Imports...21`, -`Value Added...22`,-...1)
 
 
+# UPDATED - MG - 2/19/2024
 
 #### refining 
 
 ica_emp_ref_kern <- read_csv('ica-emp-ref-kern.csv') %>% 
-  filter(is.na(X1)==F) %>% 
+  filter(is.na(...1)==F) %>% 
   mutate(county = "Kern", segment = "refining") %>% 
-  rename(industry = Impact) %>% 
-  select(-X1,-X6) 
+  dplyr::rename(industry = Impact) %>% 
+  dplyr::select(-...1,-...6) 
 
-
+# UPDATED - MG - 2/19/2024
 ica_comp_ref_kern <- read_csv('ica-va-ref-kern.csv',skip = 1) %>% 
-  filter(is.na(X1)==F) %>% 
+  filter(is.na(...1)==F) %>% 
   mutate(county = "Kern", segment = "refining") %>% 
   rename(industry = `Industry Display`, direct_comp = `Employee Compensation`, 
          direct_proprietor_income = `Proprietor Income`, direct_other_property_income = `Other Property Income`,
