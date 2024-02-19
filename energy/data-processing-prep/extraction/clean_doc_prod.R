@@ -2,17 +2,25 @@
 ## April 21, 2020
 ## Data cleaning -- oil production and injection data
 ## Data from DOC
+# updated: 02/09/2024 by Maxwell
+
+# add update: Feb 14 2024 by Haejin 
 
 ## libraries
 library(tidyverse)
 library(readr)
 library(lubridate)
 library(rebus)
-library(readtext)
+#library(readtext) # update -haejin
 library(readxl)
+library(here)
+library(dplyr) # update -haejin
 
 ## set directory
-data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/"
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd('/capstone/freshcair/meds-freshcair-capstone') # Sets directory based on Taylor structure
+getwd()
+
 
 ## read in data
 # -------------------------------------
@@ -25,33 +33,37 @@ data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-pr
 ## WellTypeCode -- The code for the Completion type.
 ## OilorCondensateProduced
 
-## all wells
-all_wells <- read_xlsx(paste0(data_directory, "raw/All_wells_20200417.xlsx"))
+# UPDATED - MP
+all_wells <- read_xlsx("data/inputs/extraction/All_wells_20200417.xlsx")
 
+# UPDATE - not all of the data is in the folders, must not have been loaded somehow
+# But the paths will be correct when the data is inputted properly
 ## well production
-prod_7785 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1977_1985/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_8689 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1986_1989/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_9094 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1990_1994/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_9599 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1995_1999/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_0004 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2000_2004/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_0509 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2005_2009/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_1514 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2010_2014/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_15 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2015/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_16 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2016/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_17 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2017/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_18 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2018/CaliforniaOilAndGasWellMonthlyProduction.csv"))
-prod_19 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2019/CaliforniaOilAndGasWellMonthlyProduction.csv"))
+prod_7785 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1977_1985/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_8689 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1986_1989/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_9094 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1990_1994/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_9599 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1995_1999/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_0004 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2000_2004/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_0509 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2005_2009/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_1514 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2010_2014/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_15 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2015/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_16 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2016/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_17 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2017/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_18 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2018/CaliforniaOilAndGasWellMonthlyProduction.csv")
+prod_19 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2019/CaliforniaOilAndGasWellMonthlyProduction.csv")
 
 
 ## bind rows
 monthly_prod <- rbind(prod_7785, prod_8689, prod_9094, prod_9599, prod_0004, prod_0509, prod_1514, prod_15, prod_16, prod_17,
                       prod_18, prod_19)
 
-## county codes
-ccodes <- read_csv(paste0(data_directory, "raw/prod/county_codes.csv")) %>%
+## county codes - UPDATED - MP
+ccodes <- read_csv("data/inputs/extraction/county_codes.csv") %>%
   rename(county_name = county,
          county = number) %>%
-  select(county_name, county)
+  as.data.frame() %>% # add this 
+  dplyr::select(county_name, county) # add dplyr::
+
 
 ## well type code
 welltype_df <- tibble(WellTypeCode = c("AI", "DG", "GD", "GS", 
@@ -72,22 +84,27 @@ all_prod <- monthly_prod %>%
   left_join(welltype_df) %>%
   mutate(well_type_name = ifelse(is.na(well_type_name), WellTypeCode, well_type_name))
 
-saveRDS(all_prod, file = paste0(data_directory, "processed/well_prod_m.rds"))
+
+
+
+# UPDATED - MP
+saveRDS(all_prod, file = "data/processed/well_prod_m.rds")
 
 ## injection data
+# UPDATE - should work once data is inputted into all the CSV folders -Done!(haejin)
 ## ------------------------------
-inj_7785 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1977_1985/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_8689 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1986_1989/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_9094 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1990_1994/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_9599 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1995_1999/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_0004 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2000_2004/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_0509 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2005_2009/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_1514 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2010_2014/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_15 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2015/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_16 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2016/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_17 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2017/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_18 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2018/CaliforniaOilAndGasWellMonthlyInjection.csv"))
-inj_19 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2019/CaliforniaOilAndGasWellMonthlyInjection.csv"))
+inj_7785 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1977_1985/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_8689 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1986_1989/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_9094 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1990_1994/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_9599 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1995_1999/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_0004 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2000_2004/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_0509 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2005_2009/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_1514 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2010_2014/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_15 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2015/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_16 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2016/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_17 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2017/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_18 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2018/CaliforniaOilAndGasWellMonthlyInjection.csv")
+inj_19 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2019/CaliforniaOilAndGasWellMonthlyInjection.csv")
 
 ## bind rows
 monthly_inj <- rbind(inj_7785, inj_8689, inj_9094, inj_9599, inj_0004, inj_0509, inj_1514, inj_15, inj_16, inj_17,
@@ -98,26 +115,31 @@ all_inject <- monthly_inj %>%
   mutate(county = as.numeric(str_sub(APINumber, 3, 5)),
          year = year(InjectionDate),
          month = month(InjectionDate)) %>%
-  left_join(ccodes) %>%
+  left_join(ccodes) %>% 
   left_join(welltype_df) %>%
   mutate(well_type_name = ifelse(is.na(well_type_name), WellTypeCode, well_type_name))
 
-saveRDS(all_inject, file = paste0(data_directory, "processed/well_inject_m.rds")) 
+## missing data_directory -- Haejin
+data_directory <- "/capstone/freshcair/meds-freshcair-capstone/data/"
+
+
+saveRDS(all_inject, file = paste0(data_directory, "processed/well_inject_m.rds")) # have a error message : Error: Status code 401 returned by RStudio Server when executing 'console_input'
 
 ## well data
+# UPDATE - should work once data is inputted into all the CSV folders
 ## -----------------------------
-wells_7785 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1977_1985/CaliforniaOilAndGasWells.csv"))
-wells_8689 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1986_1989/CaliforniaOilAndGasWells.csv"))
-wells_9094 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1990_1994/CaliforniaOilAndGasWells.csv"))
-wells_9599 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_1995_1999/CaliforniaOilAndGasWells.csv"))
-wells_0004 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2000_2004/CaliforniaOilAndGasWells.csv"))
-wells_0509 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2005_2009/CaliforniaOilAndGasWells.csv"))
-wells_1014 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2010_2014/CaliforniaOilAndGasWells.csv"))
-wells_15 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2015/CaliforniaOilAndGasWells.csv"))
-wells_16 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2016/CaliforniaOilAndGasWells.csv"))
-wells_17 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2017/CaliforniaOilAndGasWells.csv"))
-wells_18 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2018/CaliforniaOilAndGasWells.csv"))
-wells_19 <- read_csv(paste0(data_directory, "raw/hist_well/CSV_2019/CaliforniaOilAndGasWells.csv"))
+wells_7785 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1977_1985/CaliforniaOilAndGasWells.csv")
+wells_8689 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1986_1989/CaliforniaOilAndGasWells.csv")
+wells_9094 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1990_1994/CaliforniaOilAndGasWells.csv")
+wells_9599 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_1995_1999/CaliforniaOilAndGasWells.csv")
+wells_0004 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2000_2004/CaliforniaOilAndGasWells.csv")
+wells_0509 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2005_2009/CaliforniaOilAndGasWells.csv")
+wells_1014 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2010_2014/CaliforniaOilAndGasWells.csv")
+wells_15 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2015/CaliforniaOilAndGasWells.csv")
+wells_16 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2016/CaliforniaOilAndGasWells.csv")
+wells_17 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2017/CaliforniaOilAndGasWells.csv")
+wells_18 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2018/CaliforniaOilAndGasWells.csv")
+wells_19 <- read_csv("data/inputs/extraction/monthly-prod-inj-wells/CSV_2019/CaliforniaOilAndGasWells.csv")
 
 
 ## figure this ish out
@@ -209,7 +231,7 @@ wells2 <- wells_19 %>%
 # test2 <- str_replace_all(test2, pattern = "Sterling, East " %R% OPEN_PAREN %R% "ABD" %R% CLOSE_PAREN, "Sterling East ABD")
 # test2 <- str_replace_all(test2, pattern = "Compton Landing, S., Gas " %R% OPEN_PAREN %R% "ABD" %R% CLOSE_PAREN, "Compton Landing S. Gas ABD")
 
-fix_2019 <- readLines(paste0(data_directory, "raw/hist_well/CSV_2019/CaliforniaOilAndGasWells.csv"))
+fix_2019 <- readLines(paste0(data_directory, "inputs/extraction/monthly-prod-inj-wells/CSV_2019/CaliforniaOilAndGasWells.csv")) # update by Haejin 
 fix_20192<- str_replace_all(fix_2019, pattern = "8-9B INT, Sec. 32", "8-9B INT Sec. 32")
 
 
@@ -220,8 +242,8 @@ fix_20192<- str_replace_all(fix_2019, pattern = "8-9B INT, Sec. 32", "8-9B INT S
 #040212008000
 #040112009400
 
-writeLines(fix_20192, paste0(data_directory, "processed/wells_19.csv"))
+writeLines(fix_20192, paste0(data_directory, "processed/wells_19.csv"))  # update by Haejin 
 
-wells_2019 <- read_csv(paste0(data_directory, "processed/parseprobs/wells_19.csv"))
+wells_2019 <- read_csv(paste0(data_directory, "processed/wells_19.csv"))
 
 

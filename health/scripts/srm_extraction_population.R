@@ -1,5 +1,8 @@
 #Danae Hernandez-Cortes hernandezcortes@ucsb.edu
 #INFRASTRUCTURE TO SEND TO THE MODELING TEAM
+
+# Updated 2/14/2024 by MG 
+
 #Libraries
 library(sf)
 library(tidyverse)
@@ -18,10 +21,8 @@ library(dplyr)
 rm(list=ls())
 
 
-inmapExFiles  <- "calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm/extraction"
-sourceFiles  <- "calepa-cn/data/health/source_receptor_matrix/inmap_processed_srm"
-mainFiles <- "calepa-cn/data/health/raw"
-
+# setting working directory 
+setwd('/capstone/freshcair/meds-freshcair-capstone')
 
 
 # (0) Load CES3.0

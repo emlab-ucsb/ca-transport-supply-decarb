@@ -1,6 +1,7 @@
 ## Tracey Mangin
 ## April 22, 2021
 ## zero production investigation
+# revised: Feb 14, 2024 - Haejin 
 
 library(tidyverse)
 library(data.table)
@@ -9,15 +10,15 @@ library(zoo)
 library(readxl)
 library(openxlsx)
 
-## set directory
-proj_dir <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/"
-raw_dir            <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/raw/"
-data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
-output_dir <- "outputs/exit/"
+## set directory 
+proj_dir <- "/capstone/freshcair/meds-freshcair-capstone/data/" # revised file directory -Haejin
+raw_dir            <- "/capstone/freshcair/meds-freshcair-capstone/data/inputs/" #  revised file directory -Haejin
+data_directory <- "/capstone/freshcair/meds-freshcair-capstone/data/processed/" #  revised file directory -Haejin
+output_dir <- "proprietery-data/"
 
 ## files
 prod_file       <- "well_prod_m_processed.csv"
-well_file    <- "AllWells_table/AllWells_20210427.csv"
+well_file    <- "extraction/AllWells_20210427.csv" #  revised file directory -Haejin
 
 ## read in files
 well_prod <- fread(paste0(data_directory, prod_file), colClasses = c('api_ten_digit' = 'character',
@@ -32,7 +33,7 @@ all_wells <- fread(paste0(raw_dir, well_file))
 ## wells status
 status <- all_wells %>%
   mutate(api_ten_digit = paste0("0", API)) %>%
-  select(api_ten_digit, well_status = WellStatus)
+  dplyr::select(api_ten_digit, well_status = WellStatus) #revise dplyr - haejin 
 
 ## find wells that produce at some point over time period
 pos_well_api_prod <- well_prod %>%
@@ -40,7 +41,7 @@ pos_well_api_prod <- well_prod %>%
   summarise(oil_total = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
   mutate(pos_pro = ifelse(oil_total > 0, 1, 0)) %>%
-  filter(pos_pro == 1)
+  dplyr::filter(pos_pro == 1) #revise dplyr - haejin 
 
 pos_api_vec <- pos_well_api_prod$api_ten_digit
 
@@ -51,7 +52,7 @@ pos_api_field_prod <- well_prod %>%
   summarise(oil_total = sum(OilorCondensateProduced, na.rm = T)) %>%
   ungroup() %>%
   mutate(pos_pro = ifelse(oil_total > 0, 1, 0)) %>%
-  filter(pos_pro == 1)
+  dplyr::filter(pos_pro == 1) #revise dplyr - haejin 
 
 pos_api_field_vec <- pos_api_field_prod$api_field_code
 
@@ -213,7 +214,7 @@ filt_zero_prod <- function(n_month_val) {
   
   ## make data table
   out_df <- tmp_zero_prod %>% 
-    select(api_ten_digit, zero_prod_months, well_status) %>%
+    dplyr::select(api_ten_digit, zero_prod_months, well_status) %>% # add dplyr - haejin
     mutate(year_cut_off = n_month_val / 12)
   
 }

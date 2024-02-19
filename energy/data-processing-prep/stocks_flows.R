@@ -4,8 +4,8 @@
 
 
 ## set directory
-data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/"
-save_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/project-materials/focus-areas-1-2/"
+data_directory <- "/capstone/freshcair/meds-freshcair-capstone/data/inputs/"
+save_directory <- "//capstone/freshcair/meds-freshcair-capstone/data/processed/"
 
 
 ## attach libraries
@@ -15,8 +15,8 @@ library(rebus)
 library(readxl)
 library(countrycode)
 library(rJava)
-library(tabulizer)
-library(tabulizerjars)
+# library(tabulizer)
+# library(tabulizerjars)
 library(lubridate)
 library(scales)
 library(openxlsx)
@@ -26,11 +26,11 @@ library(openxlsx)
 ## ---------------------------------------------------------------------------------------
 
 ## read in data
-port_imports <- read_csv(paste0(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"), skip = 4) ## first four rows mess up data
+port_imports <- read_csv(paste0(data_directory, "inputs/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"), skip = 4) ## first four rows mess up data
 port_imports <- clean_names(port_imports)
 
 ## get info from raw data
-port_imports_info <- read_csv(paste0(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"))
+port_imports_info <- read_csv(paste0(data_directory, "inputs/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"))
 port_imports_info <- port_imports_info[1:3, 1]
 colnames(port_imports_info) <- c("info")
 

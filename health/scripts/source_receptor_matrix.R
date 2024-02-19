@@ -1,12 +1,14 @@
 ## Directory
+# updated: 2/12/24
 
 library(tidyverse)
 library(sf)
 
 
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #In scripts folder
-# setwd('../../..') #Goes back to home project directory
-# getwd()
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd('/capstone/freshcair/meds-freshcair-capstone') # Sets directory based on Taylor structure
+getwd()
+
 
 ## paths 
 main_path        <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
@@ -14,13 +16,13 @@ sp_data_path     <- paste0(main_path, "data/GIS/raw/")
 health_data_path <- paste0(main_path, "data/health/source_receptor_matrix/inmap_output_srm/")
 srm_save_path    <- paste0(main_path, "data/health/source_receptor_matrix/inmap_processed_srm/")
 
-## Read census tract shp file
-census_tract <- read_sf(paste0(sp_data_path,"census-tract/tl_2019_06_tract.shp")) %>%
+## Read census tract shp file - UPDATED - MP
+census_tract <- read_sf('data/inputs/gis/census-tract/tl_2019_06_tract.shp') %>%
   select(-STATEFP:-TRACTCE,-NAME:-INTPTLON)%>%
   st_transform(crs=3310)
 
-## counties, no islands
-CA_counties <- st_read(paste0(sp_data_path, "CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp")) %>%
+## counties, no islands - UPDATED - MP
+CA_counties <- st_read('data/inputs/gis/CA_counties_noislands/CA_Counties_TIGER2016_noislands.shp') %>%
   st_transform(crs=3310) %>%
   select(OBJECTID, GEOID)
 
