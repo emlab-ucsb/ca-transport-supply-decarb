@@ -3,6 +3,9 @@
 # created: 08/25/2021
 # updated: 09/13/2021
 
+# UPDATED MG 2/13/2024
+
+
 # set up environment ########################################
 
 rm(list=ls())
@@ -10,7 +13,7 @@ rm(list=ls())
 ## Packages
 
 packages=c("xlsx", "gdata", "dplyr","tidyr", "stringr", "fuzzyjoin", "stringr", "tictoc",
-           "ggplot2", "stargazer", "plm", "cowplot", "sf", "lwgeom","data.table")
+           "ggplot2", "stargazer", "plm", "cowplot", "sf", "lwgeom","data.table","tidyverse")
 
 lapply(1:length(packages), function(x) 
   ifelse((require(packages[x],character.only=TRUE)==FALSE),install.packages(packages[x]),
@@ -18,16 +21,23 @@ lapply(1:length(packages), function(x)
 
 #Set directory
 
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) 
-setwd('../../..') #Goes back to home project directory
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) 
+
+# UPDATED MG 
+setwd('/capstone/freshcair/meds-freshcair-capstone') # Sets directory based on Taylor structure
+
 getwd()
 
 # Load and merge processed data #####################################
 
 #1 Disadvantaged community definition
 
-ces3 <- read.csv("./calepa-cn/data/health/processed/ces3_data.csv", stringsAsFactors = FALSE)%>%
-  select(census_tract,disadvantaged)
+# UPDATED MG 
+ces3 <- read.csv("data/inputs/health/ces3_data.csv", stringsAsFactors = FALSE)
+
+# UPDATED MG 
+ces3 <- ces3 %>% 
+  dplyr::select(census_tract,disadvantaged)
 
 #2 Merge pollution reduction scenarios
 
@@ -52,7 +62,9 @@ toc()
 
 #3 Merge population and incidence
 
-ct_inc_pop_45 <- read.csv("./calepa-cn/data/benmap/processed/ct_inc_45.csv", stringsAsFactors  = FALSE)%>%
+
+# UPDATED -MG 
+ct_inc_pop_45 <- read.csv("./data/processed/ct_inc_45.csv", stringsAsFactors  = FALSE)%>%
   mutate(ct_id = as.numeric(paste0(stringr::str_sub(gisjoin,3,3),
                         stringr::str_sub(gisjoin,5,7),
                         stringr::str_sub(gisjoin,9,14))))%>%

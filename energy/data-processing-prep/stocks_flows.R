@@ -1,11 +1,14 @@
 ## Tracey Mangin
 ## February 20, 2020
 ## Data cleaning: Focus areas 1 and 2
+# Updated 2/19/24 - MP
 
 
-## set directory
-data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/"
-save_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/project-materials/focus-areas-1-2/"
+# 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd('/capstone/freshcair/meds-freshcair-capstone') # Sets directory based on Taylor structure
+getwd()
+
 
 
 ## attach libraries
@@ -22,150 +25,150 @@ library(scales)
 library(openxlsx)
 
 
-## Crude imports to CA ports by export country
+## Crude imports to CA ports by export country -- NOT NEEDED IN UPDATED MODEL - MP
 ## ---------------------------------------------------------------------------------------
-
-## read in data
-port_imports <- read_csv(paste0(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"), skip = 4) ## first four rows mess up data
-port_imports <- clean_names(port_imports)
-
-## get info from raw data
-port_imports_info <- read_csv(paste0(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"))
-port_imports_info <- port_imports_info[1:3, 1]
-colnames(port_imports_info) <- c("info")
-
-## break out information
-oiltype <- c("Heavy Sweet", "Light Sour", "Light Sweet", "Medium", "Heavy Sour")
-
-port_imports_clean <- port_imports %>%
-  rename(cats = span_style_float_right_thousand_barrels_span) %>%
-  mutate(export_region = countrycode(cats, 'country.name', 'country.name'),
-         export_region = ifelse(cats == "World", "World", export_region),
-         port = str_detect(cats, pattern = ", CA" %R% END),
-         port = ifelse(port == TRUE, cats, NA),
-         oil = ifelse(cats %in% oiltype, cats, NA)) %>%
-  select(cats, export_region, port, oil, jan_2009:nov_2019) %>%
-  fill(export_region, .direction = 'down') %>%
-  fill(port, .direction = 'down') %>%
-  select(-cats) %>%
-  filter(!is.na(oil)) %>%
-  pivot_longer(jan_2009:nov_2019, names_to = "date", values_to = "barrels_thous") %>%
-  mutate(barrels_thous = as.numeric(ifelse(barrels_thous == "--", 0, barrels_thous)),
-         month_orig = str_extract(date, pattern = ANY_CHAR %R% ANY_CHAR %R% ANY_CHAR),
-         month2 = paste0(toupper(substr(month_orig, 1, 1)), substr(month_orig, 2, nchar(month_orig))),
-         month = match(month2, month.abb),
-         year = as.numeric(str_extract(date, pattern = DIGIT %R% DIGIT %R% DIGIT %R% DIGIT))) %>%
-  select(-month_orig, -month2) %>%
-  mutate(source = port_imports_info$info[3],
-         link = port_imports_info$info[1],
-         download_date = port_imports_info$info[2]) %>%
-  mutate(region_type = ifelse(export_region == "World", "world", "country")) %>%
-  select(export_region, region_type, port:download_date)
-
-## save clean file
-write_csv(port_imports_clean, path = paste0(data_directory, "processed/crude_imports_port.csv"))
-
-
-## WTI monthly prices of crude
-## ---------------------------------------------------------------------------------------
-
-## read in data
-spt_price_m <- read_xls(paste0(data_directory, "raw/PET_PRI_SPT_S1_M.xls"), sheet = 2, skip = 2)
-colnames(spt_price_m) <- c("date", "cushing_ok_wti_FOB", "europe_brent_FOB")
-
-spt_price_m2 <- spt_price_m %>%
-  pivot_longer(cushing_ok_wti_FOB:europe_brent_FOB, names_to = "price", values_to = "value") %>%
-  mutate(unit = "dollars_per_barrel",
-         description = ifelse(price == "cushing_ok_wti_FOB", "Cushing, OK WTI Spot Price FOB", "Europe Brent Spot Price FOB"),
-         product = "crude_oil") %>%
-  select(date, description, product, price, value, unit) %>%
-  mutate(source = "EIA",
-         url = "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_m.htm")
-
-## save clean file
-write_csv(spt_price_m2, path = paste0(data_directory, "processed/spot_price_wti_m.csv"))
-
-## WTI annual prices of crude
-## ---------------------------------------------------------------------------------------
-
-## read in data
-spt_price_a <- read_xls(paste0(data_directory, "raw/PET_PRI_SPT_S1_A.xls"), sheet = 2, skip = 2)
-colnames(spt_price_a) <- c("date", "cushing_ok_wti_FOB", "europe_brent_FOB")
-
-spt_price_a2 <- spt_price_a %>%
-  pivot_longer(cushing_ok_wti_FOB:europe_brent_FOB, names_to = "price", values_to = "value") %>%
-  mutate(unit = "dollars_per_barrel",
-         description = ifelse(price == "cushing_ok_wti_FOB", "Cushing, OK WTI Spot Price FOB", "Europe Brent Spot Price FOB"),
-         product = "crude_oil") %>%
-  select(date, description, product, price, value, unit) %>%
-  mutate(source = "EIA",
-         url = "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_a.htm")
-
-## save clean file
-write_csv(spt_price_a2, file = paste0(data_directory, "processed/eia_spot_price_a.csv"))
-
-## Domestic Crude Oil First Purchase Prices for Selected Crude Streams
-## ---------------------------------------------------------------------------------------
-
-## read in data
-firstp_p_streams <- read_xls(paste0(data_directory, "raw/PET_PRI_DFP2_K_M.xls"), sheet = 2, skip = 2)
-colnames(firstp_p_streams) <- c("date", "ak_ns", "ca_kr", "ca_ms", "hls", "lls", "mb", "wti", "wts", "ws")
-
-firstp_p_streams2 <- firstp_p_streams %>%
-  pivot_longer(ak_ns:ws, names_to = "crude_stream", values_to = "price") %>%
-  mutate(unit = "dollars_per_barrel",
-         description = ifelse(crude_stream == "ak_ns", "Alaska North Slope First Purchase Price", 
-                              ifelse(crude_stream == "ca_kr", "California Kern River First Purchase Price",
-                                     ifelse(crude_stream == "ca_ms", "California Midway-Sunset First Purchase Price",
-                                            ifelse(crude_stream == "hls", "Heavy Louisiana Sweet First Purchase Price",
-                                                   ifelse(crude_stream == "lls", "Light Louisiana Sweet First Purchase Price",
-                                                          ifelse(crude_stream == "mb", "Mars Blend First Purchase Price",
-                                                                 ifelse(crude_stream == "wti", "West Texas Intermediate First Purchase Price",
-                                                                        ifelse(crude_stream == "wts", "West Texas Sour First Purchase Price", "Wyoming Sweet First Purchase Price")))))))),
-         product = "crude_oil") %>%
-  select(date, description, product, crude_stream, price, unit) %>%
-  mutate(source = "EIA",
-         url = "https://www.eia.gov/dnav/pet/pet_pri_dfp2_k_m.htm")
-
-## save clean file
-write_csv(firstp_p_streams2, path = paste0(data_directory, "processed/domestic_crude_first_p_price_streams.csv"))
-
-
-## Crude oil productoin in California
-## ---------------------------------------------------------------------------------------
-
-## read in data
-crude_prod_ca <- read_xls(paste0(data_directory, "raw/MCRFPCA1m.xls"), sheet = 2, skip = 2)
-colnames(crude_prod_ca) <- c("date", "crude_prod_ca_thous_b")
-
-crude_prod_ca2 <- crude_prod_ca %>%
-  mutate(description = "California Field Production of Crude Oil",
-         source = "EIA",
-         url = "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=mcrfpca1&f=m")
-
-## save clean file
-write_csv(crude_prod_ca2, path = paste0(data_directory, "processed/ca_crude_prod_m.csv"))
-
-## Emissions by Facility
-## ---------------------------------------------------------------------------------------
-emissions_fac <- read_csv(paste0(data_directory, "raw/EmissionsByFacility.csv"))
-emissions_fac <- clean_names(emissions_fac)
-
-# ## how many refineries in 2017?
-# refin_2017 <- emissions_fac %>%
-#   filter(year == 2017,
-#          naics_code == 324110)
 # 
-# refin_2014 <- emissions_fac %>%
-#   filter(year == 2014,
-#          naics_code == 324110)
+# ## read in data
+# port_imports <- read_csv(paste0(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"), skip = 4) ## first four rows mess up data
+# port_imports <- clean_names(port_imports)
 # 
-# refin_2013 <- emissions_fac %>%
-#   filter(year == 2013,
-#          naics_code == 324110)
+# ## get info from raw data
+# port_imports_info <- read_csv(paste0(data_directory, "raw/Imports_of_Heavy_Sour_to_Los_Angeles_CA.csv"))
+# port_imports_info <- port_imports_info[1:3, 1]
+# colnames(port_imports_info) <- c("info")
+# 
+# ## break out information
+# oiltype <- c("Heavy Sweet", "Light Sour", "Light Sweet", "Medium", "Heavy Sour")
+# 
+# port_imports_clean <- port_imports %>%
+#   rename(cats = span_style_float_right_thousand_barrels_span) %>%
+#   mutate(export_region = countrycode(cats, 'country.name', 'country.name'),
+#          export_region = ifelse(cats == "World", "World", export_region),
+#          port = str_detect(cats, pattern = ", CA" %R% END),
+#          port = ifelse(port == TRUE, cats, NA),
+#          oil = ifelse(cats %in% oiltype, cats, NA)) %>%
+#   select(cats, export_region, port, oil, jan_2009:nov_2019) %>%
+#   fill(export_region, .direction = 'down') %>%
+#   fill(port, .direction = 'down') %>%
+#   select(-cats) %>%
+#   filter(!is.na(oil)) %>%
+#   pivot_longer(jan_2009:nov_2019, names_to = "date", values_to = "barrels_thous") %>%
+#   mutate(barrels_thous = as.numeric(ifelse(barrels_thous == "--", 0, barrels_thous)),
+#          month_orig = str_extract(date, pattern = ANY_CHAR %R% ANY_CHAR %R% ANY_CHAR),
+#          month2 = paste0(toupper(substr(month_orig, 1, 1)), substr(month_orig, 2, nchar(month_orig))),
+#          month = match(month2, month.abb),
+#          year = as.numeric(str_extract(date, pattern = DIGIT %R% DIGIT %R% DIGIT %R% DIGIT))) %>%
+#   select(-month_orig, -month2) %>%
+#   mutate(source = port_imports_info$info[3],
+#          link = port_imports_info$info[1],
+#          download_date = port_imports_info$info[2]) %>%
+#   mutate(region_type = ifelse(export_region == "World", "world", "country")) %>%
+#   select(export_region, region_type, port:download_date)
+# 
+# ## save clean file
+# write_csv(port_imports_clean, path = paste0(data_directory, "processed/crude_imports_port.csv"))
 
-## save clean file
-write_csv(emissions_fac, path = paste0(data_directory, "processed/emissions_by_facility.csv"))
+
+# ## WTI monthly prices of crude -- NOT NEEDED IN UPDATED MODEL - MP
+# ## ---------------------------------------------------------------------------------------
+# 
+# ## read in data
+# spt_price_m <- read_xls(paste0(data_directory, "raw/PET_PRI_SPT_S1_M.xls"), sheet = 2, skip = 2)
+# colnames(spt_price_m) <- c("date", "cushing_ok_wti_FOB", "europe_brent_FOB")
+# 
+# spt_price_m2 <- spt_price_m %>%
+#   pivot_longer(cushing_ok_wti_FOB:europe_brent_FOB, names_to = "price", values_to = "value") %>%
+#   mutate(unit = "dollars_per_barrel",
+#          description = ifelse(price == "cushing_ok_wti_FOB", "Cushing, OK WTI Spot Price FOB", "Europe Brent Spot Price FOB"),
+#          product = "crude_oil") %>%
+#   select(date, description, product, price, value, unit) %>%
+#   mutate(source = "EIA",
+#          url = "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_m.htm")
+# 
+# ## save clean file
+# write_csv(spt_price_m2, path = paste0(data_directory, "processed/spot_price_wti_m.csv"))
+
+# ## WTI annual prices of crude - NOT NEEDED FOR UPDATED MODEL - MP
+# ## ---------------------------------------------------------------------------------------
+# 
+# ## read in data
+# spt_price_a <- read_xls(paste0(data_directory, "raw/PET_PRI_SPT_S1_A.xls"), sheet = 2, skip = 2)
+# colnames(spt_price_a) <- c("date", "cushing_ok_wti_FOB", "europe_brent_FOB")
+# 
+# spt_price_a2 <- spt_price_a %>%
+#   pivot_longer(cushing_ok_wti_FOB:europe_brent_FOB, names_to = "price", values_to = "value") %>%
+#   mutate(unit = "dollars_per_barrel",
+#          description = ifelse(price == "cushing_ok_wti_FOB", "Cushing, OK WTI Spot Price FOB", "Europe Brent Spot Price FOB"),
+#          product = "crude_oil") %>%
+#   select(date, description, product, price, value, unit) %>%
+#   mutate(source = "EIA",
+#          url = "https://www.eia.gov/dnav/pet/pet_pri_spt_s1_a.htm")
+# 
+# ## save clean file
+# write_csv(spt_price_a2, file = paste0(data_directory, "processed/eia_spot_price_a.csv"))
+
+# ## Domestic Crude Oil First Purchase Prices for Selected Crude Streams - NOT NEEDED FOR UPDATED MODEL - MP
+# ## ---------------------------------------------------------------------------------------
+# 
+# ## read in data
+# firstp_p_streams <- read_xls(paste0(data_directory, "raw/PET_PRI_DFP2_K_M.xls"), sheet = 2, skip = 2)
+# colnames(firstp_p_streams) <- c("date", "ak_ns", "ca_kr", "ca_ms", "hls", "lls", "mb", "wti", "wts", "ws")
+# 
+# firstp_p_streams2 <- firstp_p_streams %>%
+#   pivot_longer(ak_ns:ws, names_to = "crude_stream", values_to = "price") %>%
+#   mutate(unit = "dollars_per_barrel",
+#          description = ifelse(crude_stream == "ak_ns", "Alaska North Slope First Purchase Price", 
+#                               ifelse(crude_stream == "ca_kr", "California Kern River First Purchase Price",
+#                                      ifelse(crude_stream == "ca_ms", "California Midway-Sunset First Purchase Price",
+#                                             ifelse(crude_stream == "hls", "Heavy Louisiana Sweet First Purchase Price",
+#                                                    ifelse(crude_stream == "lls", "Light Louisiana Sweet First Purchase Price",
+#                                                           ifelse(crude_stream == "mb", "Mars Blend First Purchase Price",
+#                                                                  ifelse(crude_stream == "wti", "West Texas Intermediate First Purchase Price",
+#                                                                         ifelse(crude_stream == "wts", "West Texas Sour First Purchase Price", "Wyoming Sweet First Purchase Price")))))))),
+#          product = "crude_oil") %>%
+#   select(date, description, product, crude_stream, price, unit) %>%
+#   mutate(source = "EIA",
+#          url = "https://www.eia.gov/dnav/pet/pet_pri_dfp2_k_m.htm")
+# 
+# ## save clean file
+# write_csv(firstp_p_streams2, path = paste0(data_directory, "processed/domestic_crude_first_p_price_streams.csv"))
+
+
+# ## Crude oil production in California -- NOT NEEDED FOR FINAL MODEL
+# ## ---------------------------------------------------------------------------------------
+# 
+# ## read in data
+# crude_prod_ca <- read_xls(paste0(data_directory, "raw/MCRFPCA1m.xls"), sheet = 2, skip = 2)
+# colnames(crude_prod_ca) <- c("date", "crude_prod_ca_thous_b")
+# 
+# crude_prod_ca2 <- crude_prod_ca %>%
+#   mutate(description = "California Field Production of Crude Oil",
+#          source = "EIA",
+#          url = "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=mcrfpca1&f=m")
+# 
+# ## save clean file
+# write_csv(crude_prod_ca2, path = paste0(data_directory, "processed/ca_crude_prod_m.csv"))
+
+# ## Emissions by Facility - NOT NEEDED FOR UPDATED MODEL
+# ## ---------------------------------------------------------------------------------------
+# emissions_fac <- read_csv(paste0(data_directory, "raw/EmissionsByFacility.csv"))
+# emissions_fac <- clean_names(emissions_fac)
+# 
+# # ## how many refineries in 2017?
+# # refin_2017 <- emissions_fac %>%
+# #   filter(year == 2017,
+# #          naics_code == 324110)
+# # 
+# # refin_2014 <- emissions_fac %>%
+# #   filter(year == 2014,
+# #          naics_code == 324110)
+# # 
+# # refin_2013 <- emissions_fac %>%
+# #   filter(year == 2013,
+# #          naics_code == 324110)
+# 
+# ## save clean file
+# write_csv(emissions_fac, path = paste0(data_directory, "processed/emissions_by_facility.csv"))
 
 ## oil and gas production by county
 ## ---------------------------------------------------------------------------------------
