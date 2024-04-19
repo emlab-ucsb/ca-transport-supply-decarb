@@ -17,7 +17,7 @@ library(extrafont)
 library(xlsx)
 
 ## paths 
-main_path             = '/Volumes/GoogleDrive-103159311076289514198/.shortcut-targets-by-id/139aDqzs5T2c-DtdKyLw7S5iJ9rqveGaP/calepa-cn' # meas path
+main_path             = '/Users/traceymangin/Library/CloudStorage/GoogleDrive-tmangin@ucsb.edu/Shared\ drives/emlab/projects/current-projects/calepa-cn/' # meas path
 # main_path <- '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/'
 ct_out_path <- 'outputs/academic-out/refining/refining_2021-11-22/census-tract-results/'
 refin_out_path <- 'outputs/academic-out/refining/refining_2021-11-22/'
@@ -451,7 +451,7 @@ ct_intersect <- st_intersection(ct_map_county, county_crop)
 total_pm25 <- ggplot() +
   geom_sf(data = ct_intersect, aes(fill=total_pm25), color=NA) + 
   theme_void() + 
-  labs(title = expression(bold(paste("C. PM"[2.5], " concentration from Torrance Refinery"))),
+  labs(title = expression(bold(paste("C. PM"[2.5], "concentration from Torrance Refinery"))),
        fill=expression(paste("PM"[2.5], " (",mu,"/",m^3,")"))) +
   scale_fill_gradient(high = "#A84268", low = "#FAFAFA", space = "Lab", na.value = "grey50",
                       limits = c(min(ct_cropped$total_pm25), max(ct_cropped$total_pm25)),
