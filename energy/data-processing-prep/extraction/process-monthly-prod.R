@@ -1,10 +1,11 @@
 ## Tracey Mangin
 ## March 10, 2021
 ## process well production, save for later use through out
+## revised: feb 14, 2024 -haejin
 
 # ------------------------------------------- INPUTS -----------------------------------
 
-data_dir     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
+data_dir     <- "/capstone/freshcair/meds-freshcair-capstone/data/processed/"
 mprod_fil    <- "well_prod_m.rds"
 wells_19_fil <- "wells_19.csv"
 

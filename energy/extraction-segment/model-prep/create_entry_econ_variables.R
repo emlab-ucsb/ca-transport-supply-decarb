@@ -1,14 +1,15 @@
 ## Tracey Mangin
 ## August 30, 2020
 ## create 
+# revise Feb 14, 2024 - Haejin 
 
 library(tidyverse)
 
 
 ## set directory
-data_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
-rystad_path <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/Rystad/data/"
-save_directory <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/"
+data_directory <- "/capstone/freshcair/meds-freshcair-capstone/data/processed/"
+rystad_path <- "/capstone/freshcair/meds-freshcair-capstone/data/"
+save_directory <- "/capstone/freshcair/meds-freshcair-capstone/data/outputs/"
 
 ## read in the data
 rystad_econ <- read_csv(paste0(rystad_path, "processed/oil_asset_opex_capex_govtt_clean.csv"))
@@ -51,17 +52,17 @@ rystad_econ_adj <- rystad_econ %>%
                                                                                                                           ifelse(location == "Venice Beach", "Venice Beach (ABD)",
                                                                                                                                  ifelse(location == "Ventura (Yuma Energy acquisition)", "Ventura",
                                                                                                                                         ifelse(location == "West Montalvo Offshore", "Montalvo West", location)))))))))))))))))) %>%
-  filter(economics_group %in% c("Capex", "Opex")) %>%
-  select(original_asset_name, adj_location, year, economics_group, usd_nom) %>%
-  pivot_wider(names_from = economics_group, values_from = usd_nom) %>%
-  rename(FieldName = adj_location, capex = Capex, opex = Opex) %>%
-  filter(year <= 2019)
+  dplyr::filter(economics_group %in% c("Capex", "Opex")) %>% # add dplyr - haejin
+  dplyr::select(original_asset_name, adj_location, year, economics_group, usd_nom) %>% # add dplyr - haejin
+  pivot_wider(names_from = economics_group, values_from = usd_nom) %>% 
+  rename(FieldName = adj_location, capex = Capex, opex = Opex) %>% 
+  dplyr::filter(year <= 2019) # add dplyr - haejin
 
 
 
 ## prep capex per bbl reserves
 rystad_capex_bbl2 <- rystad_capex_bbl %>%
-  select(original_asset_name, year, capex_per_bbl_reserves = usd_per_bbl)
+  dplyr::select(original_asset_name, year, capex_per_bbl_reserves = usd_per_bbl) # add dplyr - haejin
 
 ## join with production, calculate capex and opex per 
 econ_per_bbl_df <- left_join(rystad_econ_adj, rystad_prod_adj) %>%
@@ -70,14 +71,14 @@ econ_per_bbl_df <- left_join(rystad_econ_adj, rystad_prod_adj) %>%
   left_join(rystad_capex_bbl2) %>%
   left_join(rystad_capex_bbl_nom_df) %>%
   left_join(rystad_opex_bbl_nom_df) %>%
-  select(original_asset_name, FieldName, year, rystad_prod_bbl = total_prod_bbls, capex, capex_bbl_rp, capex_per_bbl_reserves, capex_per_bbl_nom, opex, opex_bbl_rp, opex_per_bbl_nom)
+  dplyr::select(original_asset_name, FieldName, year, rystad_prod_bbl = total_prod_bbls, capex, capex_bbl_rp, capex_per_bbl_reserves, capex_per_bbl_nom, opex, opex_bbl_rp, opex_per_bbl_nom)
 
 
 ## add sum my prod, two versions of depletion, max resource
 ## prep meas's df
 ratio_df2 <- ratio_df %>%
-  select(asset, year, cumsum_div_my_prod, cumsum_div_max_resources) %>%
-  filter(year <= 2019) %>%
+  dplyr::select(asset, year, cumsum_div_my_prod, cumsum_div_max_resources) %>% # add dplyr - haejin
+  dplyr::filter(year <= 2019) %>% # add dplyr - haejin
   rename(original_asset_name = asset)
 
 
@@ -86,15 +87,15 @@ econ_per_bbl_df2 <- econ_per_bbl_df %>%
   rename(asset = original_asset_name) %>%
   left_join(asset_sum_my_production) %>%
   mutate(sum_err_my_production_bbl = sum_err_my_production * 1e6) %>%
-  select(-units) %>%
+  dplyr::select(-units) %>% # add dplyr - haejin
   left_join(asset_max_resources) %>%
   mutate(max_err_resources_bbl = max_err_resources * 1e6) %>%
-  select(-units) %>%
+  dplyr::select(-units) %>%
   left_join(asset_yr_cumsum_production) %>%
   mutate(cumsum_err_production_bbl = cumsum_err_production * 1e6) %>%
-  select(-production, - units) %>%
+  dplyr::select(-production, - units) %>% # add dplyr - haejin
   rename(original_asset_name = asset) %>%
   left_join(ratio_df2)
 
 # ## save to use later
-write_csv(econ_per_bbl_df2, path = "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/outputs/stocks-flows/rystad_entry_variables.csv")
+write_csv(econ_per_bbl_df2, path = "/capstone/freshcair/meds-freshcair-capstone/data/proprietery-data/rystad_entry_variables.csv")

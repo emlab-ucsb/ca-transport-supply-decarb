@@ -1,10 +1,11 @@
 ## Tracey Mangin
 ## May 7, 2021
 ## prep FrackTracker data for analysis
+##revised : Feb 14, 2024 by Haejin 
 
 # comment out and add your own machine's file path
-home <- "/Volumes/GoogleDrive/Shared drives"
-ft_path <- "emlab/projects/current-projects/calepa-cn/data/FracTracker/FracTrackerSetbackgdb-newest/FracTrackerSetbackgdb/FracTrackerSetbackdata.gdb"
+home <- "/capstone/freshcair/meds-freshcair-capstone"
+ft_path <- "/data/inputs/FracTracker/FracTrackerSetbackgdb-newest/FracTrackerSetbackgdb/FracTrackerSetbackdata.gdb" #--- missing file ----
 save_path <- paste0(home, "/emlab/projects/current-projects/calepa-cn/data/GIS/processed/fracktracker-sr/")
 
 # load packages
@@ -27,7 +28,7 @@ ca <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
 ################################# READ DATA AND TRANSFORM
 
 # to get the names of layers in the shapefile
-layers <- sf::st_layers(dsn = file.path(home, "emlab/projects/current-projects/calepa-cn/data/FracTracker/FracTrackerSetbackgdb-newest/FracTrackerSetbackgdb/FracTrackerSetbackdata.gdb"))
+layers <- sf::st_layers(dsn = file.path(home, "emlab/projects/current-projects/calepa-cn/data/FracTracker/FracTrackerSetbackgdb-newest/FracTrackerSetbackgdb/FracTrackerSetbackdata.gdb")) #### ----- missing
 
 ## read in the SR layers
 layer_vec <- c("SetbackOutlines_SR_Dwellings_082220", "PlaygroundsinCities", "DayCareCenters", "reselderlyCare",

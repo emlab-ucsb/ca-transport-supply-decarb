@@ -3,6 +3,8 @@
 # created: 08/06/2020
 # updated: 09/28/2020
 
+# updated: 02/14/2024
+
 
 # set up environment
 
@@ -24,15 +26,19 @@ for (i in packages) {
 
 ## Directory
 
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #In scripts folder
-setwd('../../..') #Goes back to home project directory
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) #In scripts folder
+
+# Updated working directory 
+setwd('/capstone/freshcair/meds-freshcair-capstone') 
 getwd()
 
 
 ## Read census tract shp file
 
-census_tract <- read_sf("./calepa-cn/data/inmap/census-tract/tl_2019_06_tract.shp")%>%
-  select(-STATEFP:-TRACTCE,-NAME:-INTPTLON)%>%
+# UPDATED - MG 
+
+census_tract <- read_sf("./data/inputs/gis/census-tract/tl_2019_06_tract.shp")%>%
+  dplyr::select(-STATEFP:-TRACTCE,-NAME:-INTPTLON)%>%
   st_transform(crs=3310)
 
 ## Load shape files names

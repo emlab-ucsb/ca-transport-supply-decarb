@@ -1,5 +1,10 @@
 #Danae Hernandez-Cortes hernandezcortes@ucsb.edu
 #INFRASTRUCTURE TO SEND TO THE MODELING TEAM
+
+
+# UPDATED 2/13/2024 by Mariam Garcia 
+
+
 #Libraries
 library(sf)
 library(tidyverse)
@@ -18,6 +23,10 @@ library(dplyr)
 rm(list=ls())
 
 
+# Updated working directory 
+setwd('/capstone/freshcair/meds-freshcair-capstone') # Sets directory based on Taylor structure
+
+
 #DANAE'S MACHINE
 outputFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/academic_output"
 sourceFiles <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix"
@@ -28,7 +37,9 @@ inmapReFiles  <- "D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/source_receptor_matrix/i
 
 CA<-st_read("H:/CALEPA/GIS/state/california2016.shp")
 
-CA_counties<-st_read("D:/Dropbox/UCSB-PhD/emLab/CALEPA/data/CA_counties/CA_Counties/CA_Counties_TIGER2016.shp")
+
+# UPDATED - MG 
+CA_counties<-st_read("/capstone/freshcair/meds-freshcair-capstone/data/inputs/gis/CA_Counties/CA_Counties_TIGER2016.shp")
 
 extraction_clusters<-st_read("D:/Dropbox/UCSB-PhD/emLab/CALEPA/CALEPA_bren_computer/CALEPA/GIS/fields/academic_paper/extraction_fields_clusters_10km.shp")
 

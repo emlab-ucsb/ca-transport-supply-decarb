@@ -1,10 +1,11 @@
 ## Tracey Mangin
 ## April 29, 2021
 ## process well injection, save for later use through out
+# revised: feb 14, 2024  by Haejin 
 
 # ------------------------------------------- INPUTS -----------------------------------
 
-data_dir     <- "/Volumes/GoogleDrive/Shared\ drives/emlab/projects/current-projects/calepa-cn/data/stocks-flows/processed/"
+data_dir     <- "/capstone/freshcair/meds-freshcair-capstone/data/processed/"
 minj_fil    <- "well_inject_m.rds"
 wells_19_fil <- "wells_19.csv"
 

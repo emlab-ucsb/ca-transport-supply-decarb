@@ -4,9 +4,9 @@
 
 # ------------------------------------------- INPUTS -----------------------------------
 
-  data_dir    = '/Volumes/GoogleDrive/Shared drives/emlab/projects/current-projects/calepa-cn/data/OPGEE/'
-  opgee_fil   = 'OPGEE_v2.0_with-CARB-inputs.xlsm'
-  names_fil   = 'opgee_field_names.csv'
+  data_dir    = '/capstone/freshcair/meds-freshcair-capstone/data/inputs/'
+  opgee_fil   = 'OPGEE_v2.0_with-CARB-inputs.xlsm' ## no file here - haejin 
+  names_fil   = 'opgee_field_names.csv' ## no file here - haejin 
 
 # ------------------------------------------- MAIN -----------------------------------
   

@@ -3,6 +3,9 @@
 # created: 08/11/2020
 # updated: 06/26/2023
 
+
+# Updated by Mariam Garcia 2/13/2024
+
 # set up environment
 
 rm(list=ls())
@@ -25,7 +28,9 @@ for (i in packages) {
 ## Directory
 
 #wd <- c("H:/EJ_wells") # Danae's WD
-wd <- c("G:/Shared drives/emlab/projects/current-projects/calepa-cn/data/health/processed/DataFiles_EmissionsFactors") #Vincent's WD
+
+# UPDATED - MG 
+wd <- c('/capstone/freshcair/meds-freshcair-capstone') #freshCAir main directory
 setwd(wd)
 getwd()
 
