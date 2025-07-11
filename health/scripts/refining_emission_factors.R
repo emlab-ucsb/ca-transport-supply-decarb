@@ -148,6 +148,23 @@ cluster_factors <- nei_ref_clean %>%
          kg_bbl = emission_kg/bbl_year,
          kg_bbl_cap = emission_kg/(barrels_per_day*365))
 
+
+#### State-wide share of point source emissions ##############
+
+ref_tot <- nei_ref_clean %>%
+  filter(reporting_year %in% 2017)%>%
+  group_by(pollutant_code)%>%
+  summarise(total_emissions = sum(total_emissions))
+
+nei_2017_raw%>%
+  filter(state %in% "CA")%>%
+  filter(pollutant_code %in% c("NOX","SO2","NH3","PM25-PRI","VOC"))%>%
+  group_by(pollutant_code)%>%
+  summarise(total_emissions = sum(total_emissions))%>%
+  left_join(ref_tot, by = c("pollutant_code"))%>%
+  mutate(total_emissions.y/total_emissions.x)
+
+  
 ## Plot emission factors compared to Jaramillo and Muller (2016) #############################
 
 JM <- fread("G:/Shared drives/emlab/projects/current-projects/calepa-cn/data/health/processed/DataFiles_EmissionsFactors/emission_factors_final.csv")
